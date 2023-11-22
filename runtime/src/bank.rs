@@ -51,7 +51,10 @@ impl AddressLoader for LightAddressLoader {
 }
 
 pub struct TransactionResult {
+    pub accounts_data_len_delta: i64,
     pub accumulated_consume_units: u64,
+    pub programs_modified_by_tx: LoadedProgramsForTxBatch,
+    pub programs_updated_only_for_global_cache: LoadedProgramsForTxBatch,
 }
 
 pub struct LightBank {
@@ -208,7 +211,7 @@ impl LightBank {
         Ok(tx)
     }
 
-    //TODO rework it with process_transaction and another one
+    //TODO rework it with process_transaction and another on and optimize
     fn process_transaction(
         &self,
         tx: &SanitizedTransaction,
@@ -216,14 +219,19 @@ impl LightBank {
         context: &mut TransactionContext,
     ) -> Result<TransactionResult, Error> {
         let blockhash = tx.message().recent_blockhash();
-
-        self.replenish_program_cache();
-
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
-        let program_indices = vec![vec![2]]; //TODO
+        self.replenish_program_cache();
+
+        //TODO optimize
+        let program_indices = [self
+            .loaded_programs
+            .keys()
+            .filter_map(|prog_key| context.find_index_of_program_account(prog_key))
+            .collect()];
+
         let process_result = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
@@ -243,10 +251,11 @@ impl LightBank {
             &mut accumulated_consume_units,
         )?;
 
-        // Ok(transaction_context.get_return_data().1)
-        // Ok(context.get_return_data().1)
         Ok(TransactionResult {
+            accounts_data_len_delta: process_result.accounts_data_len_delta,
             accumulated_consume_units,
+            programs_modified_by_tx,
+            programs_updated_only_for_global_cache,
         })
     }
 
