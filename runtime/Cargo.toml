@@ -1,0 +1,13 @@
+[package]
+name = "light-sol-bankrun"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror = "1.0"
+solana-program-runtime = "1.17"
+solana-bpf-loader-program = "1.17"
+solana-sdk = "1.17"
+solana-system-program = "1.17"
+solana-program = "1.17"
