@@ -50,6 +50,10 @@ impl AddressLoader for LightAddressLoader {
     }
 }
 
+pub struct TransactionResult {
+    pub accumulated_consume_units: u64,
+}
+
 pub struct LightBank {
     accounts: RefCell<HashMap<Pubkey, AccountSharedData>>,
     //TODO compute budget
@@ -87,7 +91,7 @@ impl LightBank {
         let mut feature_set = FeatureSet::default();
 
         // light_bank.feature_set.activate(feature_id, slot)
-        BUILTINS.into_iter().for_each(|builtint| {
+        BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
             light_bank
@@ -120,12 +124,12 @@ impl LightBank {
         Rent::default().minimum_balance(data_len).max(1)
     }
 
-    // pub fn get_account(&self, pubkey: Pubkey) -> Option<Account> {
-    //     self.accounts
-    //         .borrow()
-    //         .get(pubkey)
-    //         .and_then(|acc| acc.into())
-    // }
+    pub fn get_account(&self, pubkey: Pubkey) -> Option<Account> {
+        self.accounts
+            .borrow()
+            .get(&pubkey)
+            .map(|acc| acc.to_owned().into())
+    }
 
     pub fn set_sysvar<T>(&self, sysvar: &T)
     where
@@ -150,11 +154,7 @@ impl LightBank {
         )
         .unwrap();
 
-        let (sanitized_tx, mut context) = self.prepare_transaction(tx)?;
-
-        self.execute_transaction(&sanitized_tx, &mut context)?;
-
-        Ok(())
+        self.execute_transaction(tx)
     }
 
     pub fn load_and_execute_transactions(&self, txs: &[SanitizedTransaction]) {}
@@ -171,55 +171,50 @@ impl LightBank {
         }
     }
 
-    fn prepare_transaction(
-        &self,
-        tx: VersionedTransaction,
-    ) -> Result<(SanitizedTransaction, TransactionContext), Error> {
+    //TODO
+    fn create_transaction_context(&self, tx: &SanitizedTransaction) -> TransactionContext {
         let compute_budget = ComputeBudget::default(); //TODO
-        let sanitized_tx: SanitizedTransaction = SanitizedTransaction::try_create(
-            tx,
-            MessageHash::Compute,
-            Some(false),
-            LightAddressLoader::default(), //TODO
-        )?;
-
-        let accounts: Vec<(Pubkey, AccountSharedData)> = sanitized_tx
+        let accounts: Vec<(Pubkey, AccountSharedData)> = tx
             .message()
             .account_keys()
             .iter()
             .map(|p| {
                 (
                     *p,
-                    self.accounts
-                        .borrow()
-                        .get(p)
-                        .and_then(|acc| Some(acc.clone()))
-                        .unwrap_or_default(),
+                    self.accounts.borrow().get(p).cloned().unwrap_or_default(),
                 )
             })
             .collect();
 
-        let mut transaction_context = TransactionContext::new(
+        TransactionContext::new(
             accounts,
             Some(Rent::default()), //TODO remove rent in future
             compute_budget.max_invoke_stack_height,
             compute_budget.max_instruction_trace_length,
-        );
-
-        Ok((sanitized_tx, transaction_context))
+        )
     }
 
-    //TODO
-    // fn create_transaction_context(&self, tx: &SanitizedTransaction) -> TransactionContext {}
+    fn sanitize_transaction(
+        &self,
+        tx: VersionedTransaction,
+    ) -> Result<SanitizedTransaction, Error> {
+        let tx = SanitizedTransaction::try_create(
+            tx,
+            MessageHash::Compute,
+            Some(false),
+            LightAddressLoader::default(), //TODO
+        )?;
+
+        Ok(tx)
+    }
 
     //TODO rework it with process_transaction and another one
-    fn execute_transaction(
+    fn process_transaction(
         &self,
         tx: &SanitizedTransaction,
+        compute_budget: ComputeBudget,
         context: &mut TransactionContext,
-    ) -> Result<(), Error> {
-        let compute_budget = ComputeBudget::default();
-
+    ) -> Result<TransactionResult, Error> {
         let blockhash = tx.message().recent_blockhash();
 
         self.replenish_program_cache();
@@ -248,6 +243,20 @@ impl LightBank {
             &mut accumulated_consume_units,
         )?;
 
+        // Ok(transaction_context.get_return_data().1)
+        // Ok(context.get_return_data().1)
+        Ok(TransactionResult {
+            accumulated_consume_units,
+        })
+    }
+
+    pub fn execute_transaction(&self, tx: impl Into<VersionedTransaction>) -> Result<(), Error> {
+        let sanitized_tx = self.sanitize_transaction(tx.into())?;
+        let mut context = self.create_transaction_context(&sanitized_tx);
+
+        let process_tx =
+            self.process_transaction(&sanitized_tx, ComputeBudget::default(), &mut context)?;
+
         for index in 0..context.get_number_of_accounts() {
             let data = context.get_account_at_index(index)?;
             let pubkey = context.get_key_of_account_at_index(index)?;
@@ -256,10 +265,11 @@ impl LightBank {
                 .borrow_mut()
                 .insert(*pubkey, data.borrow().to_owned());
         }
-        // Ok(transaction_context.get_return_data().1)
-        // Ok(context.get_return_data().1)
+
         Ok(())
     }
+
+    pub fn simulate_transaction(&self) {}
 }
 
 #[cfg(test)]
@@ -279,6 +289,10 @@ mod tests {
         let from = from_keypair.try_pubkey().unwrap();
         let to = Pubkey::new_unique();
 
+        let light_bank = LightBank::new();
+
+        light_bank.airdrop(&from, 100).unwrap();
+
         let instruction = solana_program::system_instruction::transfer(&from, &to, 64);
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new(&[instruction], Some(&from))),
@@ -286,15 +300,12 @@ mod tests {
         )
         .unwrap();
 
-        let light_bank = LightBank::new();
+        light_bank.execute_transaction(tx).unwrap();
 
-        light_bank.airdrop(&from, 100).unwrap();
+        let from_account = light_bank.get_account(from).unwrap_or_default();
+        let to_account = light_bank.get_account(to).unwrap_or_default();
 
-        let (sanitized_tx, mut context) = light_bank.prepare_transaction(tx).unwrap();
-        light_bank
-            .execute_transaction(&sanitized_tx, &mut context)
-            .unwrap();
-
-        assert_eq!(1, 2);
+        assert_eq!(from_account.lamports, 36);
+        assert_eq!(to_account.lamports, 64);
     }
 }
