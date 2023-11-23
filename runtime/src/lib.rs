@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 pub mod bank;
+pub mod types;
 
 mod accounts_db;
 mod builtin;
