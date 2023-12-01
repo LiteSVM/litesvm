@@ -1,40 +1,43 @@
-use solana_program::{
-    message::{
-        v0::{LoadedAddresses, MessageAddressTableLookup},
-        AddressLoader, AddressLoaderError, Message, VersionedMessage,
-    },
-    native_token::LAMPORTS_PER_SOL,
-    system_instruction,
-};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
-    loaded_programs::{LoadedProgram, LoadedProgramsForTxBatch},
+    loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
     log_collector::LogCollector,
     message_processor::MessageProcessor,
     sysvar_cache::SysvarCache,
     timings::ExecuteTimings,
 };
 use solana_sdk::{
-    account::{Account, AccountSharedData},
+    account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
+    bpf_loader,
+    clock::Clock,
     feature_set::FeatureSet,
+    hash::Hash,
+    message::{
+        v0::{LoadedAddresses, MessageAddressTableLookup},
+        AddressLoader, AddressLoaderError, Message, VersionedMessage,
+    },
     native_loader,
+    native_token::LAMPORTS_PER_SOL,
     pubkey::Pubkey,
     rent::Rent,
     signature::Keypair,
     signer::Signer,
+    signers::Signers,
     slot_history::Slot,
-    system_program,
+    system_instruction, system_program,
     sysvar::{Sysvar, SysvarId},
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
-    transaction_context::{TransactionContext, TransactionReturnData},
+    transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
-use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
-    types::{TransactionMetadata, TransactionResult},
-    Error,
+    create_blockhash,
+    types::{ExecutionResult, TransactionMetadata, TransactionResult},
+    utils::RentState,
+    Error, PROGRAM_OWNERS,
 };
 
 #[derive(Clone, Default)]
@@ -52,12 +55,13 @@ impl AddressLoader for LightAddressLoader {
 pub struct LightBank {
     accounts: AccountsDb,
     //TODO compute budget
-    loaded_programs: HashMap<Pubkey, Arc<LoadedProgram>>, //TODO: Maybe with LoadedPrograms
-    loaded_programs_cache_for_tx: RefCell<LoadedProgramsForTxBatch>,
+    programs_cache: LoadedProgramsForTxBatch,
     airdrop_kp: Keypair,
     sysvar_cache: SysvarCache,
     feature_set: Arc<FeatureSet>,
+    block_height: u64,
     slot: Slot,
+    latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
 }
 
@@ -65,12 +69,13 @@ impl Default for LightBank {
     fn default() -> Self {
         Self {
             accounts: Default::default(),
-            loaded_programs: Default::default(),
-            loaded_programs_cache_for_tx: Default::default(),
+            programs_cache: Default::default(),
             airdrop_kp: Keypair::new(),
             sysvar_cache: Default::default(),
             feature_set: Default::default(),
-            slot: Default::default(),
+            block_height: 0,
+            slot: 0,
+            latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
         }
     }
@@ -78,20 +83,26 @@ impl Default for LightBank {
 
 impl LightBank {
     pub fn new() -> Self {
-        let mut light_bank = LightBank::default();
+        LightBank::default()
+            .with_builtins()
+            .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
+            .with_sysvars()
+    }
 
-        //TODO sysvar
-        //TODO feature
+    pub fn with_sysvars(mut self) -> Self {
+        self.set_sysvar(&Clock::default());
+        self.set_sysvar(&Rent::default());
+        self
+    }
+
+    pub fn with_builtins(mut self) -> Self {
         let mut feature_set = FeatureSet::default();
-
-        // light_bank.feature_set.activate(feature_id, slot)
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
-            light_bank
-                .loaded_programs
-                .insert(builtint.program_id, Arc::new(loaded_program));
-            light_bank.accounts.add_account(
+            self.programs_cache
+                .replenish(builtint.program_id, Arc::new(loaded_program));
+            self.accounts.add_account(
                 builtint.program_id,
                 native_loader::create_loadable_account_for_test(builtint.name),
             );
@@ -100,42 +111,59 @@ impl LightBank {
                 feature_set.activate(&feature_id, 0);
             }
         });
+        self.feature_set = Arc::new(feature_set);
+        self
+    }
 
-        light_bank.accounts.add_account(
-            light_bank.airdrop_kp.pubkey(),
-            AccountSharedData::new(
-                1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL),
-                0,
-                &system_program::id(),
-            ),
+    pub fn with_lamports(mut self, lamports: u64) -> Self {
+        self.accounts.add_account(
+            self.airdrop_kp.pubkey(),
+            AccountSharedData::new(lamports, 0, &system_program::id()),
         );
-
-        let rent_data =
-            AccountSharedData::new_data(1, &Rent::default(), &solana_sdk::sysvar::id()).unwrap();
-        light_bank.accounts.add_account(Rent::id(), rent_data);
-        // sysvar_cache.set_clock(clock)
-        light_bank.sysvar_cache.set_rent(Rent::default());
-
-        light_bank
+        self
     }
 
     pub fn get_minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
-        Rent::default().minimum_balance(data_len).max(1)
+        1.max(
+            self.sysvar_cache
+                .get_rent()
+                .unwrap_or_default()
+                .minimum_balance(data_len),
+        )
     }
 
-    pub fn get_account(&self, pubkey: Pubkey) -> Account {
-        self.accounts.get_account(&pubkey).into()
+    pub fn get_account(&self, pubkey: &Pubkey) -> Account {
+        self.accounts.get_account(pubkey).into()
     }
 
-    pub fn set_sysvar<T>(&self, sysvar: &T)
+    pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {
+        self.accounts.get_account(pubkey).lamports()
+    }
+
+    pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
         T: Sysvar + SysvarId,
     {
-        // self.sysvar_cache.
-        //self.sysvar_cache.set_last_restart_slot(last_restart_slot)
+        let Ok(data) = bincode::serialize(sysvar) else {
+            return;
+        };
+
+        let account = AccountSharedData::new_data(1, &sysvar, &solana_sdk::sysvar::id()).unwrap();
+
+        if T::id() == Clock::id() {
+            if let Ok(clock) = bincode::deserialize(&data) {
+                self.sysvar_cache.set_clock(clock);
+                self.accounts.add_account(Clock::id(), account);
+            }
+        } else if T::id() == Rent::id() {
+            if let Ok(rent) = bincode::deserialize(&data) {
+                self.sysvar_cache.set_rent(rent);
+                self.accounts.add_account(Rent::id(), account);
+            }
+        }
     }
 
-    pub fn airdrop(&self, pubkey: &Pubkey, lamports: u64) -> Result<(), Error> {
+    pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> Result<(), Error> {
         let payer = &self.airdrop_kp;
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new(
@@ -150,25 +178,36 @@ impl LightBank {
         )
         .unwrap();
 
-        self.execute_transaction(tx)?;
+        self.send_transaction(tx)?;
         Ok(())
     }
 
-    fn replenish_program_cache(&self) {
-        let mut loaded_programs_cache_for_tx = self.loaded_programs_cache_for_tx.borrow_mut();
+    pub fn store_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
+        let program_len = program_bytes.len();
+        let lamports = self.get_minimum_balance_for_rent_exemption(program_len);
+        let mut account = AccountSharedData::new(lamports, program_len, &program_id);
+        account.set_executable(true);
+        account.set_data_from_slice(program_bytes);
 
-        if self.slot >= loaded_programs_cache_for_tx.slot() {
-            for (program_key, loaded_program) in &self.loaded_programs {
-                if self.slot >= loaded_program.effective_slot {
-                    loaded_programs_cache_for_tx.replenish(*program_key, loaded_program.clone());
-                }
-            }
-        }
+        let loaded_program = LoadedProgram::new(
+            &bpf_loader::id(),
+            self.programs_cache.environments.program_runtime_v1.clone(),
+            0,
+            0,
+            None,
+            program_bytes,
+            program_len,
+            &mut LoadProgramMetrics::default(),
+        )
+        .unwrap();
+
+        self.programs_cache
+            .replenish(program_id, Arc::new(loaded_program));
     }
 
     //TODO
     fn create_transaction_context(
-        &self,
+        &mut self,
         tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
     ) -> TransactionContext {
@@ -203,32 +242,30 @@ impl LightBank {
 
     //TODO rework it with process_transaction and another on and optimize
     fn process_transaction(
-        &self,
+        &mut self,
         tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
         context: &mut TransactionContext,
-    ) -> Result<(Result<(), TransactionError>, u64), Error> {
+    ) -> Result<(Result<(), TransactionError>, LoadedProgramsForTxBatch, u64), Error> {
         let blockhash = tx.message().recent_blockhash();
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
-        self.replenish_program_cache();
-
-        //TODO optimize
-        let program_indices = [self
-            .loaded_programs
-            .keys()
-            .filter_map(|prog_key| context.find_index_of_program_account(prog_key))
-            .collect()];
+        let program_indices = tx
+            .message()
+            .instructions()
+            .iter()
+            .map(|c| vec![c.program_id_index as u16])
+            .collect::<Vec<Vec<u16>>>();
 
         let tx_result = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
             context,
-            Rent::default(),
+            *self.sysvar_cache.get_rent().unwrap_or_default(),
             Some(self.log_collector.clone()),
-            &self.loaded_programs_cache_for_tx.borrow(),
+            &self.programs_cache,
             &mut programs_modified_by_tx,
             &mut programs_updated_only_for_global_cache,
             self.feature_set.clone(),
@@ -237,36 +274,113 @@ impl LightBank {
             &self.sysvar_cache,
             *blockhash,
             0,
-            0,
+            u64::MAX,
             &mut accumulated_consume_units,
         )
         .map(|_| ());
 
-        Ok((tx_result, accumulated_consume_units))
+        self.check_accounts_rent(tx, context)?;
+
+        Ok((
+            tx_result,
+            programs_modified_by_tx,
+            accumulated_consume_units,
+        ))
     }
 
-    pub fn execute_transaction(
-        &self,
-        tx: impl Into<VersionedTransaction>,
-    ) -> Result<TransactionResult, Error> {
+    //TODO self.rent
+    fn check_accounts_rent(
+        &mut self,
+        tx: &SanitizedTransaction,
+        context: &TransactionContext,
+    ) -> Result<(), Error> {
+        for index in 0..tx.message().account_keys().len() {
+            if tx.message().is_writable(index) {
+                let account = context
+                    .get_account_at_index(index as IndexOfAccount)?
+                    .borrow();
+                let pubkey = context.get_key_of_account_at_index(index as IndexOfAccount)?;
+                let rent = self.sysvar_cache.get_rent().unwrap_or_default();
+
+                if !account.data().is_empty() {
+                    let post_rent_state = RentState::from_account(&account, &rent);
+                    let pre_rent_state =
+                        RentState::from_account(&self.accounts.get_account(pubkey), &rent);
+
+                    if !post_rent_state.transition_allowed_from(&pre_rent_state) {
+                        return Err(TransactionError::InsufficientFundsForRent {
+                            account_index: index as u8,
+                        }
+                        .into());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn execute_transaction(&mut self, tx: VersionedTransaction) -> Result<ExecutionResult, Error> {
         let compute_budget = ComputeBudget::default();
-        let sanitized_tx = self.sanitize_transaction(tx.into())?;
+        let sanitized_tx = self.sanitize_transaction(tx)?;
         let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
 
-        let (result, compute_units_consumed) =
+        let (result, programs_modified, compute_units_consumed) =
             self.process_transaction(&sanitized_tx, compute_budget, &mut context)?;
 
-        self.accounts.sync_accounts(&context)?;
+        let ExecutionRecord {
+            accounts,
+            return_data,
+            touched_account_count: _,
+            accounts_resize_delta: _,
+        } = context.into();
 
-        let return_data = context.get_return_data();
-        let return_data = TransactionReturnData {
-            data: return_data.1.to_vec(),
-            program_id: return_data.0.to_owned(),
-        };
-        let logs = self.log_collector.borrow().get_recorded_content().to_vec();
+        Ok(ExecutionResult {
+            tx_result: result,
+            programs_modified,
+            post_accounts: accounts,
+            compute_units_consumed,
+            return_data,
+        })
+    }
+
+    pub fn send_message<T: Signers>(
+        &mut self,
+        message: Message,
+        signers: &T,
+    ) -> Result<TransactionResult, Error> {
+        let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(message), signers)?;
+        self.send_transaction(tx)
+    }
+
+    pub fn send_transaction(
+        &mut self,
+        tx: VersionedTransaction,
+    ) -> Result<TransactionResult, Error> {
+        let ExecutionResult {
+            post_accounts,
+            tx_result,
+            programs_modified,
+            compute_units_consumed,
+            return_data,
+        } = self.execute_transaction(tx)?;
+
+        if tx_result.is_ok() {
+            if post_accounts
+                .iter()
+                .any(|(k, _)| PROGRAM_OWNERS.contains(k))
+            {
+                self.programs_cache.merge(&programs_modified);
+            }
+            self.accounts.sync_accounts(post_accounts);
+        }
+
+        let logs = self.log_collector.take().into_messages();
+
+        // We don't care about parallelized transaction. (1 transaction by slot)
+        self.next_slot();
 
         Ok(TransactionResult {
-            result,
+            result: tx_result,
             metadata: TransactionMetadata {
                 logs,
                 compute_units_consumed,
@@ -276,30 +390,32 @@ impl LightBank {
     }
 
     pub fn simulate_transaction(
-        &self,
-        tx: impl Into<VersionedTransaction>,
+        &mut self,
+        tx: VersionedTransaction,
     ) -> Result<TransactionResult, Error> {
-        let compute_budget = ComputeBudget::default(); //TODO
-        let sanitized_tx = self.sanitize_transaction(tx.into())?;
-        let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
+        let ExecutionResult {
+            post_accounts: _,
+            tx_result,
+            programs_modified: _,
+            compute_units_consumed,
+            return_data,
+        } = self.execute_transaction(tx)?;
 
-        let (result, compute_units_consumed) =
-            self.process_transaction(&sanitized_tx, ComputeBudget::default(), &mut context)?;
-
-        let return_data = context.get_return_data();
-        let return_data = TransactionReturnData {
-            data: return_data.1.to_vec(),
-            program_id: return_data.0.to_owned(),
-        };
-        let logs = self.log_collector.borrow().get_recorded_content().to_vec();
+        let logs = self.log_collector.take().into_messages();
 
         Ok(TransactionResult {
-            result,
+            result: tx_result,
             metadata: TransactionMetadata {
                 logs,
                 compute_units_consumed,
                 return_data,
             },
         })
+    }
+
+    fn next_slot(&mut self) {
+        self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
+        self.slot += 1;
+        self.block_height += 1;
     }
 }

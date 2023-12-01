@@ -10,4 +10,9 @@ solana-program-runtime = "1.17"
 solana-bpf-loader-program = "1.17"
 solana-sdk = "1.17"
 solana-system-program = "1.17"
+solana-compute-budget-program = "1.17"
+bincode = "1.3"
+
+[dev-dependencies]
+spl-token = "3.5.0"
 solana-program = "1.17"

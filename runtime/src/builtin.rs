@@ -51,12 +51,12 @@ pub static BUILTINS: &[BuiltinPrototype] = &[
         name: "solana_bpf_loader_upgradeable_program",
         entrypoint: solana_bpf_loader_program::Entrypoint::vm,
     },
-    // BuiltinPrototype {
-    //     feature_id: None,
-    //     program_id: solana_sdk::compute_budget::id(),
-    //     name: "compute_budget_program",
-    //     entrypoint: solana_compute_budget_program::Entrypoint::vm,
-    // },
+    BuiltinPrototype {
+        feature_id: None,
+        program_id: solana_sdk::compute_budget::id(),
+        name: "compute_budget_program",
+        entrypoint: solana_compute_budget_program::Entrypoint::vm,
+    },
     // BuiltinPrototype {
     //     feature_id: None,
     //     program_id: solana_sdk::address_lookup_table::program::id(),
