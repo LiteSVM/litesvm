@@ -185,24 +185,26 @@ impl LightBank {
     pub fn store_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.get_minimum_balance_for_rent_exemption(program_len);
-        let mut account = AccountSharedData::new(lamports, program_len, &program_id);
+        let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
         account.set_executable(true);
         account.set_data_from_slice(program_bytes);
 
-        let loaded_program = LoadedProgram::new(
-            &bpf_loader::id(),
-            self.programs_cache.environments.program_runtime_v1.clone(),
-            0,
-            0,
-            None,
-            program_bytes,
-            program_len,
+        let loaded_program = solana_bpf_loader_program::load_program_from_bytes(
+            false,
+            Some(self.log_collector.clone()),
             &mut LoadProgramMetrics::default(),
+            program_bytes,
+            &bpf_loader::id(),
+            program_len,
+            0,
+            self.programs_cache.environments.program_runtime_v1.clone(),
+            false,
         )
         .unwrap();
 
         self.programs_cache
             .replenish(program_id, Arc::new(loaded_program));
+        self.accounts.add_account(program_id, account);
     }
 
     //TODO
@@ -229,7 +231,7 @@ impl LightBank {
     fn sanitize_transaction(
         &self,
         tx: VersionedTransaction,
-    ) -> Result<SanitizedTransaction, Error> {
+    ) -> Result<SanitizedTransaction, TransactionError> {
         let tx = SanitizedTransaction::try_create(
             tx,
             MessageHash::Compute,
