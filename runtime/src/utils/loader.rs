@@ -22,7 +22,7 @@ pub fn deploy_program(
     let instruction = system_instruction::create_account(
         &payer_keypair.pubkey(),
         &program_keypair.pubkey(),
-        1.max(bank.get_minimum_balance_for_rent_exemption(program_bytes.len())),
+        bank.get_minimum_balance_for_rent_exemption(program_bytes.len()),
         program_bytes.len() as u64,
         &bpf_loader::id(),
     );
@@ -72,62 +72,136 @@ pub fn set_upgrade_authority(
     Ok(())
 }
 
-pub fn deploy_upgradeable_program(
+fn load_upgradeable_buffer(
     bank: &mut LightBank,
-    owner_kp: &Keypair,
+    payer_kp: &Keypair,
     program_bytes: &[u8],
 ) -> Result<Pubkey, Error> {
-    let program_len = program_bytes.len();
-
+    let payer_pk = payer_kp.pubkey();
     let buffer_kp = Keypair::new();
     let buffer_pk = buffer_kp.pubkey();
-    let buffer_len = UpgradeableLoaderState::size_of_buffer(program_len);
-    let buffer_lamports = bank.get_minimum_balance_for_rent_exemption(buffer_len);
-    let owner_pk = owner_kp.pubkey();
+    // loader
+    let buffer_len = UpgradeableLoaderState::size_of_buffer(program_bytes.len());
+    let lamports = bank.get_minimum_balance_for_rent_exemption(buffer_len);
 
-    let create_buffer = bpf_loader_upgradeable::create_buffer(
-        &owner_pk,
-        &buffer_pk,
-        &owner_pk,
-        buffer_lamports,
-        program_len,
-    )?;
-    bank.send_message(
-        Message::new(&create_buffer, Some(&owner_pk)),
-        &[&owner_kp, &buffer_kp],
-    )?
-    .result?;
+    let message = Message::new(
+        &bpf_loader_upgradeable::create_buffer(
+            &payer_pk,
+            &buffer_pk,
+            &payer_pk,
+            lamports,
+            program_bytes.len(),
+        )
+        .unwrap(),
+        Some(&payer_pk),
+    );
+    bank.send_message(message, &[payer_kp, &buffer_kp])?
+        .result?;
 
+    let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
-    for chunk in program_bytes.chunks(CHUNK_SIZE) {
+    for chunk in program_bytes.chunks(chunk_size) {
         let message = Message::new(
             &[bpf_loader_upgradeable::write(
                 &buffer_pk,
-                &owner_pk,
+                &payer_pk,
                 offset,
                 chunk.to_vec(),
             )],
-            Some(&owner_pk),
+            Some(&payer_pk),
         );
-        bank.send_message(message, &[owner_kp])?.result?;
-        offset += CHUNK_SIZE as u32;
+        bank.send_message(message, &[payer_kp])?.result?;
+        offset += chunk_size as u32;
     }
 
+    Ok(buffer_pk)
+}
+
+pub fn deploy_upgradeable_program(
+    bank: &mut LightBank,
+    payer_kp: &Keypair,
+    program_bytes: &[u8],
+) -> Result<Pubkey, Error> {
     let program_kp = Keypair::new();
     let program_pk = program_kp.pubkey();
+    let payer_pk = payer_kp.pubkey();
+    let buffer_pk = load_upgradeable_buffer(bank, payer_kp, program_bytes)?;
+
+    let lamports = bank.get_minimum_balance_for_rent_exemption(program_bytes.len());
     let message = Message::new(
         &bpf_loader_upgradeable::deploy_with_max_program_len(
-            &owner_pk,
+            &payer_pk,
             &program_pk,
             &buffer_pk,
-            &owner_pk,
-            buffer_lamports,
-            program_len * 2,
-        )?,
-        Some(&owner_pk),
+            &payer_pk,
+            lamports,
+            program_bytes.len() * 2,
+        )
+        .unwrap(),
+        Some(&payer_pk),
     );
-    bank.send_message(message, &[&owner_kp, &program_kp])?
+    bank.send_message(message, &[payer_kp, &program_kp])?
         .result?;
 
     Ok(program_pk)
 }
+
+// pub fn deploy_upgradeable_program(
+//     bank: &mut LightBank,
+//     owner_kp: &Keypair,
+//     program_bytes: &[u8],
+// ) -> Result<Pubkey, Error> {
+//     let program_len = program_bytes.len();
+
+//     let buffer_kp = Keypair::new();
+//     let buffer_pk = buffer_kp.pubkey();
+//     let buffer_len = UpgradeableLoaderState::size_of_program();
+//     let buffer_lamports = bank.get_minimum_balance_for_rent_exemption(buffer_len);
+//     let owner_pk = owner_kp.pubkey();
+
+//     let create_buffer = bpf_loader_upgradeable::create_buffer(
+//         &owner_pk,
+//         &buffer_pk,
+//         &owner_pk,
+//         buffer_lamports,
+//         program_len,
+//     )?;
+//     bank.send_message(
+//         Message::new(&create_buffer, Some(&owner_pk)),
+//         &[&owner_kp, &buffer_kp],
+//     )?
+//     .result?;
+
+//     let mut offset = 0;
+//     for chunk in program_bytes.chunks(CHUNK_SIZE) {
+//         let message = Message::new(
+//             &[bpf_loader_upgradeable::write(
+//                 &buffer_pk,
+//                 &owner_pk,
+//                 offset,
+//                 chunk.to_vec(),
+//             )],
+//             Some(&owner_pk),
+//         );
+//         bank.send_message(message, &[owner_kp])?.result?;
+//         offset += CHUNK_SIZE as u32;
+//     }
+
+//     let program_kp = Keypair::new();
+//     let program_pk = program_kp.pubkey();
+//     let message = Message::new(
+//         &bpf_loader_upgradeable::deploy_with_max_program_len(
+//             &owner_pk,
+//             &program_pk,
+//             &buffer_pk,
+//             &owner_pk,
+//             buffer_lamports,
+//             program_len * 2,
+//         )?,
+//         Some(&owner_pk),
+//     );
+//     let tx_result = bank.send_message(message, &[&owner_kp, &program_kp])?;
+//     println!("{tx_result:?}");
+
+//     Ok(program_pk)
+// }

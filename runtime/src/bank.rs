@@ -1,3 +1,4 @@
+use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
@@ -8,10 +9,13 @@ use solana_program_runtime::{
 };
 use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
-    bpf_loader,
+    account_utils::StateMut,
+    bpf_loader, bpf_loader_deprecated,
+    bpf_loader_upgradeable::{self, UpgradeableLoaderState},
     clock::Clock,
     feature_set::FeatureSet,
     hash::Hash,
+    instruction::InstructionError,
     message::{
         v0::{LoadedAddresses, MessageAddressTableLookup},
         AddressLoader, AddressLoaderError, Message, VersionedMessage,
@@ -37,7 +41,7 @@ use crate::{
     create_blockhash,
     types::{ExecutionResult, TransactionMetadata, TransactionResult},
     utils::RentState,
-    Error, PROGRAM_OWNERS,
+    Error,
 };
 
 #[derive(Clone, Default)]
@@ -96,7 +100,8 @@ impl LightBank {
     }
 
     pub fn with_builtins(mut self) -> Self {
-        let mut feature_set = FeatureSet::default();
+        let mut feature_set = FeatureSet::all_enabled();
+
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
@@ -111,6 +116,16 @@ impl LightBank {
                 feature_set.activate(&feature_id, 0);
             }
         });
+
+        let program_runtime = create_program_runtime_environment_v1(
+            &feature_set,
+            &ComputeBudget::default(),
+            false,
+            true,
+        )
+        .unwrap();
+
+        self.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime);
         self.feature_set = Arc::new(feature_set);
         self
     }
@@ -193,18 +208,75 @@ impl LightBank {
             false,
             Some(self.log_collector.clone()),
             &mut LoadProgramMetrics::default(),
-            program_bytes,
-            &bpf_loader::id(),
-            program_len,
-            0,
+            account.data(),
+            account.owner(),
+            account.data().len(),
+            self.slot,
             self.programs_cache.environments.program_runtime_v1.clone(),
             false,
         )
-        .unwrap();
-
+        .unwrap_or_default();
+        self.accounts.add_account(program_id, account);
         self.programs_cache
             .replenish(program_id, Arc::new(loaded_program));
-        self.accounts.add_account(program_id, account);
+    }
+
+    //TODO handle reload
+    pub fn load_program(&self, program_id: &Pubkey) -> Result<LoadedProgram, InstructionError> {
+        let program_account = self.accounts.get_account(program_id);
+        let metrics = &mut LoadProgramMetrics::default();
+
+        if !program_account.executable() {
+            return Err(InstructionError::AccountNotExecutable);
+        };
+
+        let owner = program_account.owner();
+        let program_runtime_v1 = self.programs_cache.environments.program_runtime_v1.clone();
+
+        if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
+            LoadedProgram::new(
+                program_account.owner(),
+                self.programs_cache.environments.program_runtime_v1.clone(),
+                self.slot,
+                self.slot,
+                None,
+                program_account.data(),
+                program_account.data().len(),
+                &mut LoadProgramMetrics::default(),
+            )
+            .map_err(|_| InstructionError::InvalidAccountData)
+        } else if bpf_loader_upgradeable::check_id(program_account.owner()) {
+            let Ok(UpgradeableLoaderState::Program {
+                programdata_address,
+            }) = program_account.state()
+            else {
+                return Err(InstructionError::InvalidAccountData);
+            };
+            let programdata_account = self.accounts.get_account(&programdata_address);
+
+            programdata_account
+                .data()
+                .get(UpgradeableLoaderState::size_of_programdata_metadata()..)
+                .ok_or(Box::new(InstructionError::InvalidAccountData).into())
+                .and_then(|programdata| {
+                    LoadedProgram::new(
+                        program_account.owner(),
+                        program_runtime_v1,
+                        self.slot,
+                        self.slot,
+                        None,
+                        programdata,
+                        program_account
+                            .data()
+                            .len()
+                            .saturating_add(programdata_account.data().len()),
+                        metrics,
+                    )
+                })
+                .map_err(|_| InstructionError::InvalidAccountData)
+        } else {
+            Err(InstructionError::IncorrectProgramId)
+        }
     }
 
     //TODO
@@ -250,7 +322,8 @@ impl LightBank {
         context: &mut TransactionContext,
     ) -> Result<(Result<(), TransactionError>, LoadedProgramsForTxBatch, u64), Error> {
         let blockhash = tx.message().recent_blockhash();
-        let mut programs_modified_by_tx = LoadedProgramsForTxBatch::default();
+        let mut programs_modified_by_tx =
+            LoadedProgramsForTxBatch::new(self.slot, self.programs_cache.environments.clone());
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
@@ -336,6 +409,17 @@ impl LightBank {
             accounts_resize_delta: _,
         } = context.into();
 
+        let programs_modified = accounts
+            .iter()
+            .filter_map(|(k, _)| {
+                if programs_modified.find(k).is_some() {
+                    Some(*k)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         Ok(ExecutionResult {
             tx_result: result,
             programs_modified,
@@ -353,6 +437,9 @@ impl LightBank {
         let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(message), signers)?;
         self.send_transaction(tx)
     }
+    pub fn find_loaded(&self, key: &Pubkey) -> Arc<LoadedProgram> {
+        self.programs_cache.find(key).unwrap_or_default()
+    }
 
     pub fn send_transaction(
         &mut self,
@@ -367,13 +454,13 @@ impl LightBank {
         } = self.execute_transaction(tx)?;
 
         if tx_result.is_ok() {
-            if post_accounts
-                .iter()
-                .any(|(k, _)| PROGRAM_OWNERS.contains(k))
-            {
-                self.programs_cache.merge(&programs_modified);
-            }
+            //TODO check if programs are program_owners
             self.accounts.sync_accounts(post_accounts);
+            for program_id in programs_modified {
+                let loaded_program = self.load_program(&program_id)?;
+                self.programs_cache
+                    .replenish(program_id, Arc::new(loaded_program));
+            }
         }
 
         let logs = self.log_collector.take().into_messages();
@@ -419,5 +506,6 @@ impl LightBank {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
         self.slot += 1;
         self.block_height += 1;
+        self.programs_cache.set_slot_for_tests(self.slot);
     }
 }
