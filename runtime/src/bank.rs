@@ -1,4 +1,5 @@
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_loader_v4_program::create_program_runtime_environment_v2;
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
@@ -16,6 +17,7 @@ use solana_sdk::{
     feature_set::FeatureSet,
     hash::Hash,
     instruction::InstructionError,
+    loader_v4::{self, LoaderV4State},
     message::{
         v0::{LoadedAddresses, MessageAddressTableLookup},
         AddressLoader, AddressLoaderError, Message, VersionedMessage,
@@ -117,7 +119,7 @@ impl LightBank {
             }
         });
 
-        let program_runtime = create_program_runtime_environment_v1(
+        let program_runtime_v1 = create_program_runtime_environment_v1(
             &feature_set,
             &ComputeBudget::default(),
             false,
@@ -125,7 +127,11 @@ impl LightBank {
         )
         .unwrap();
 
-        self.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime);
+        let program_runtime_v2 =
+            create_program_runtime_environment_v2(&ComputeBudget::default(), true);
+
+        self.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
+        self.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
         self.feature_set = Arc::new(feature_set);
         self
     }
@@ -138,7 +144,7 @@ impl LightBank {
         self
     }
 
-    pub fn get_minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
+    pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
         1.max(
             self.sysvar_cache
                 .get_rent()
@@ -153,6 +159,14 @@ impl LightBank {
 
     pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {
         self.accounts.get_account(pubkey).lamports()
+    }
+
+    pub fn latest_blockhash(&self) -> Hash {
+        self.latest_blockhash
+    }
+
+    pub fn slot(&self) -> u64 {
+        self.slot
     }
 
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
@@ -199,7 +213,7 @@ impl LightBank {
 
     pub fn store_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
-        let lamports = self.get_minimum_balance_for_rent_exemption(program_len);
+        let lamports = self.minimum_balance_for_rent_exemption(program_len);
         let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
         account.set_executable(true);
         account.set_data_from_slice(program_bytes);
@@ -235,7 +249,7 @@ impl LightBank {
 
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
             LoadedProgram::new(
-                program_account.owner(),
+                owner,
                 self.programs_cache.environments.program_runtime_v1.clone(),
                 self.slot,
                 self.slot,
@@ -245,7 +259,7 @@ impl LightBank {
                 &mut LoadProgramMetrics::default(),
             )
             .map_err(|_| InstructionError::InvalidAccountData)
-        } else if bpf_loader_upgradeable::check_id(program_account.owner()) {
+        } else if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
             }) = program_account.state()
@@ -260,7 +274,7 @@ impl LightBank {
                 .ok_or(Box::new(InstructionError::InvalidAccountData).into())
                 .and_then(|programdata| {
                     LoadedProgram::new(
-                        program_account.owner(),
+                        owner,
                         program_runtime_v1,
                         self.slot,
                         self.slot,
@@ -270,6 +284,24 @@ impl LightBank {
                             .data()
                             .len()
                             .saturating_add(programdata_account.data().len()),
+                        metrics,
+                    )
+                })
+                .map_err(|_| InstructionError::InvalidAccountData)
+        } else if loader_v4::check_id(owner) {
+            program_account
+                .data()
+                .get(LoaderV4State::program_data_offset()..)
+                .ok_or(Box::new(InstructionError::InvalidAccountData).into())
+                .and_then(|elf_bytes| {
+                    LoadedProgram::new(
+                        &loader_v4::id(),
+                        program_runtime_v1,
+                        self.slot,
+                        self.slot,
+                        None,
+                        elf_bytes,
+                        program_account.data().len(),
                         metrics,
                     )
                 })
@@ -310,6 +342,9 @@ impl LightBank {
             Some(false),
             LightAddressLoader::default(), //TODO
         )?;
+
+        tx.verify()?;
+        tx.verify_precompiles(&self.feature_set)?;
 
         Ok(tx)
     }

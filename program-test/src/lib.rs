@@ -1,6 +1,6 @@
-use light_sol_bankrun::bank::LightBank;
+use light_sol_bankrun::{bank::LightBank, types::TransactionResult, Error};
 use solana_sdk::pubkey;
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey, transaction::VersionedTransaction};
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 //TODO
@@ -17,7 +17,7 @@ impl ProgramTest {
         program_test
     }
 
-    pub fn load_spl_programs(&self) {
+    fn load_spl_programs(&self) {
         let mut bank = self.get_bank_mut();
 
         bank.store_program(
@@ -55,11 +55,26 @@ impl ProgramTest {
     }
 
     pub fn get_account(&self, pubkey: &Pubkey) -> Account {
-        self.get_bank_mut().get_account(pubkey)
+        self.get_bank().get_account(pubkey)
     }
 
     pub fn store_program(&self, program_id: Pubkey, program_bytes: &[u8]) {
         self.get_bank_mut().store_program(program_id, program_bytes)
+    }
+
+    pub fn get_minimum_balance_for_rent_exemption(&self, len: usize) -> u64 {
+        self.get_bank().minimum_balance_for_rent_exemption(len)
+    }
+
+    pub fn send_transaction(
+        &self,
+        tx: impl Into<VersionedTransaction>,
+    ) -> Result<TransactionResult, Error> {
+        self.get_bank_mut().send_transaction(tx.into())
+    }
+
+    pub fn get_latest_blockhash(&self) -> Hash {
+        self.get_bank().latest_blockhash()
     }
     // pub fn deploy_program(
     //     &self,

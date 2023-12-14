@@ -1399,6 +1399,7 @@ dependencies = [
  "bincode",
  "solana-bpf-loader-program",
  "solana-compute-budget-program",
+ "solana-loader-v4-program",
  "solana-program",
  "solana-program-runtime",
  "solana-sdk",
@@ -1413,6 +1414,7 @@ version = "0.1.0"
 dependencies = [
  "light-sol-bankrun",
  "solana-sdk",
+ "spl-token",
 ]
 
 [[package]]
@@ -2360,6 +2362,19 @@ dependencies = [
  "quote",
  "rustc_version",
  "syn 2.0.39",
+]
+
+[[package]]
+name = "solana-loader-v4-program"
+version = "1.17.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a3ff7c219f5cb6ddb894edb1fdd553e0fb3210885616553fa0f30348160d47d"
+dependencies = [
+ "log",
+ "solana-measure",
+ "solana-program-runtime",
+ "solana-sdk",
+ "solana_rbpf",
 ]
 
 [[package]]

@@ -7,3 +7,6 @@ license.workspace = true
 [dependencies]
 light-sol-bankrun = { path = "../runtime" }
 solana-sdk = "1.17"
+
+[dev-dependencies]
+spl-token = "3.5.0"

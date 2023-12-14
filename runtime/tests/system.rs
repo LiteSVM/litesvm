@@ -38,7 +38,7 @@ pub fn system_create_account() {
 
     let mut bank = LightBank::new();
 
-    let lamports = bank.get_minimum_balance_for_rent_exemption(10);
+    let lamports = bank.minimum_balance_for_rent_exemption(10);
     bank.airdrop(&from, lamports).unwrap();
 
     let instruction = create_account(

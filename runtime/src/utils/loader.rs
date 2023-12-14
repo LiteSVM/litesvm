@@ -22,7 +22,7 @@ pub fn deploy_program(
     let instruction = system_instruction::create_account(
         &payer_keypair.pubkey(),
         &program_keypair.pubkey(),
-        bank.get_minimum_balance_for_rent_exemption(program_bytes.len()),
+        bank.minimum_balance_for_rent_exemption(program_bytes.len()),
         program_bytes.len() as u64,
         &bpf_loader::id(),
     );
@@ -82,7 +82,7 @@ fn load_upgradeable_buffer(
     let buffer_pk = buffer_kp.pubkey();
     // loader
     let buffer_len = UpgradeableLoaderState::size_of_buffer(program_bytes.len());
-    let lamports = bank.get_minimum_balance_for_rent_exemption(buffer_len);
+    let lamports = bank.minimum_balance_for_rent_exemption(buffer_len);
 
     let message = Message::new(
         &bpf_loader_upgradeable::create_buffer(
@@ -127,7 +127,7 @@ pub fn deploy_upgradeable_program(
     let payer_pk = payer_kp.pubkey();
     let buffer_pk = load_upgradeable_buffer(bank, payer_kp, program_bytes)?;
 
-    let lamports = bank.get_minimum_balance_for_rent_exemption(program_bytes.len());
+    let lamports = bank.minimum_balance_for_rent_exemption(program_bytes.len());
     let message = Message::new(
         &bpf_loader_upgradeable::deploy_with_max_program_len(
             &payer_pk,
