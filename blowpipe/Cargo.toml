@@ -1,0 +1,13 @@
+[package]
+name = "blowpipe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+blowpipe-runtime = { path = "../runtime" }
+solana-sdk.workspace = true
+
+[dev-dependencies]
+spl-token.workspace = true
+counter = { path = "tests/counter" }

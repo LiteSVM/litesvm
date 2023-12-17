@@ -1,6 +1,12 @@
-use light_sol_bankrun::{bank::LightBank, types::TransactionResult, Error};
+use blowpipe_runtime::{
+    bank::LightBank, deploy_program, types::TransactionResult, BuiltinFunctionWithContext, Error,
+};
 use solana_sdk::pubkey;
-use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey, transaction::VersionedTransaction};
+use solana_sdk::signer::Signer;
+use solana_sdk::{
+    account::Account, hash::Hash, pubkey::Pubkey, signature::Keypair,
+    transaction::VersionedTransaction,
+};
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 //TODO
@@ -76,11 +82,16 @@ impl ProgramTest {
     pub fn get_latest_blockhash(&self) -> Hash {
         self.get_bank().latest_blockhash()
     }
-    // pub fn deploy_program(
-    //     &self,
-    //     bank: &mut LightBank,
-    //     payer_keypair: &Keypair,
-    //     program_bytes: &[u8],
-    // ) {
-    // }
+
+    pub fn deploy_program(&self, owner: &Keypair, program_bytes: &[u8]) -> Pubkey {
+        let bank = &mut self.get_bank_mut();
+        deploy_program(bank, owner, program_bytes).unwrap()
+    }
+
+    pub fn deploy_builtin(&self, entrypoint: BuiltinFunctionWithContext) -> Pubkey {
+        let program_kp = Keypair::new();
+        let program_id = program_kp.pubkey();
+        self.get_bank_mut().add_builtin(program_id, entrypoint);
+        program_id
+    }
 }

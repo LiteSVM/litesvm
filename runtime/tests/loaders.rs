@@ -1,4 +1,4 @@
-use light_sol_bankrun::{bank::LightBank, deploy_program, deploy_upgradeable_program};
+use blowpipe_runtime::{bank::LightBank, deploy_program, deploy_upgradeable_program};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,

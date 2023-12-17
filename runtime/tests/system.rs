@@ -5,7 +5,7 @@ use solana_program::{
 };
 use solana_sdk::{signature::Keypair, signer::Signer};
 
-use light_sol_bankrun::bank::LightBank;
+use blowpipe_runtime::bank::LightBank;
 
 #[test]
 pub fn system_transfer() {

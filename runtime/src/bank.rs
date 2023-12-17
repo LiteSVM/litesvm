@@ -2,6 +2,7 @@ use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
+    invoke_context::BuiltinFunctionWithContext,
     loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
     log_collector::LogCollector,
     message_processor::MessageProcessor,
@@ -209,6 +210,14 @@ impl LightBank {
 
         self.send_transaction(tx)?;
         Ok(())
+    }
+
+    pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
+        let builtin = LoadedProgram::new_builtin(self.slot, 1, entrypoint);
+
+        self.programs_cache.replenish(program_id, Arc::new(builtin));
+        self.accounts
+            .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()));
     }
 
     pub fn store_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {

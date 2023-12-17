@@ -7,6 +7,7 @@ mod accounts_db;
 mod builtin;
 mod utils;
 
+pub use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 pub use utils::*;
 
 #[derive(Error, Debug)]

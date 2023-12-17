@@ -1,11 +1,24 @@
 [workspace]
-members = ["anchor-test", "program-test", "runtime"]
+members = ["blowpipe-anchor", "blowpipe", "runtime"]
 resolver = "2"
 
 [workspace.package]
 license = "MIT"
 version = "0.1.0"
 edition = "2021"
+
+[workspace.dependencies]
+thiserror = "1.0"
+solana-program-runtime = "1.17"
+solana-bpf-loader-program = "1.17"
+solana-sdk = "1.17"
+solana-system-program = "1.17"
+solana-compute-budget-program = "1.17"
+solana-loader-v4-program = "1.17"
+bincode = "1.3"
+spl-token = "3.5.0"
+solana-program = "1.17"
+borsh = "0.9"
 
 [profile.release]
 overflow-checks = true

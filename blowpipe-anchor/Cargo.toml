@@ -1,5 +1,8 @@
 [package]
-name = "light-anchor-program-test"
+name = "blowpipe-anchor"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+
+[dependencies]
+blowpipe = { path = "../blowpipe" }
