@@ -59,7 +59,7 @@ impl AddressLoader for LightAddressLoader {
     }
 }
 
-pub struct LightBank {
+pub struct LiteBank {
     accounts: AccountsDb,
     //TODO compute budget
     programs_cache: LoadedProgramsForTxBatch,
@@ -72,7 +72,7 @@ pub struct LightBank {
     log_collector: Rc<RefCell<LogCollector>>,
 }
 
-impl Default for LightBank {
+impl Default for LiteBank {
     fn default() -> Self {
         Self {
             accounts: Default::default(),
@@ -88,9 +88,9 @@ impl Default for LightBank {
     }
 }
 
-impl LightBank {
+impl LiteBank {
     pub fn new() -> Self {
-        LightBank::default()
+        LiteBank::default()
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()

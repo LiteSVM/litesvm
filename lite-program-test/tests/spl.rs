@@ -1,4 +1,4 @@
-use blowpipe::ProgramTest;
+use lite_program_test::ProgramTest;
 use solana_sdk::{
     program_pack::Pack, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,

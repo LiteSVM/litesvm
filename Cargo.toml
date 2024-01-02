@@ -1,5 +1,5 @@
 [workspace]
-members = ["blowpipe-anchor", "blowpipe", "runtime"]
+members = ["lite-anchor-test", "lite-program-test", "lite-svm"]
 resolver = "2"
 
 [workspace.package]

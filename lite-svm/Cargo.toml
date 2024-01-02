@@ -1,5 +1,5 @@
 [package]
-name = "blowpipe-runtime"
+name = "lite-svm"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -1,5 +1,5 @@
-use blowpipe_runtime::{
-    bank::LightBank, deploy_program, types::TransactionResult, BuiltinFunctionWithContext, Error,
+use lite_svm::{
+    bank::LiteBank, deploy_program, types::TransactionResult, BuiltinFunctionWithContext, Error,
 };
 use solana_sdk::pubkey;
 use solana_sdk::signer::Signer;
@@ -11,13 +11,13 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 //TODO
 pub struct ProgramTest {
-    bank: Arc<RwLock<LightBank>>,
+    bank: Arc<RwLock<LiteBank>>,
 }
 
 impl ProgramTest {
     pub fn new() -> Self {
         let program_test = Self {
-            bank: Arc::new(RwLock::new(LightBank::new())),
+            bank: Arc::new(RwLock::new(LiteBank::new())),
         };
         program_test.load_spl_programs();
         program_test
@@ -48,11 +48,11 @@ impl ProgramTest {
         );
     }
 
-    pub fn get_bank(&self) -> RwLockReadGuard<'_, LightBank> {
+    pub fn get_bank(&self) -> RwLockReadGuard<'_, LiteBank> {
         self.bank.read().unwrap()
     }
 
-    pub fn get_bank_mut(&self) -> RwLockWriteGuard<'_, LightBank> {
+    pub fn get_bank_mut(&self) -> RwLockWriteGuard<'_, LiteBank> {
         self.bank.write().unwrap()
     }
 

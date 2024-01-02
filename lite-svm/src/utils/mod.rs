@@ -14,7 +14,7 @@ mod rent;
 pub use loader::*;
 pub(crate) use rent::*;
 
-use crate::bank::LightBank;
+use crate::bank::LiteBank;
 
 /// Create a blockhash from the given bytes
 pub fn create_blockhash(bytes: &[u8]) -> Hash {
@@ -32,7 +32,7 @@ pub const PROGRAM_OWNERS: &[Pubkey] = &[
 ];
 
 pub(crate) fn _load_program(
-    bank: LightBank,
+    bank: LiteBank,
     program_bytes: &[u8],
     program_size: usize,
     runtime: ProgramRuntimeEnvironment,

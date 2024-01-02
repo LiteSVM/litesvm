@@ -16,4 +16,4 @@ borsh.workspace = true
 solana-program.workspace = true
 
 [dev-dependencies]
-blowpipe = { path = "../../../blowpipe" }
+lite-program-test = { path = "../../../lite-program-test" }

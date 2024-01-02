@@ -9,12 +9,12 @@ use solana_sdk::{
     system_instruction,
 };
 
-use crate::{bank::LightBank, Error};
+use crate::{bank::LiteBank, Error};
 
 const CHUNK_SIZE: usize = 512;
 
 pub fn deploy_program(
-    bank: &mut LightBank,
+    bank: &mut LiteBank,
     payer_keypair: &Keypair,
     program_bytes: &[u8],
 ) -> Result<Pubkey, Error> {
@@ -53,7 +53,7 @@ pub fn deploy_program(
 }
 
 pub fn set_upgrade_authority(
-    bank: &mut LightBank,
+    bank: &mut LiteBank,
     from_keypair: &Keypair,
     program_pubkey: &Pubkey,
     current_authority_keypair: &Keypair,
@@ -73,7 +73,7 @@ pub fn set_upgrade_authority(
 }
 
 fn load_upgradeable_buffer(
-    bank: &mut LightBank,
+    bank: &mut LiteBank,
     payer_kp: &Keypair,
     program_bytes: &[u8],
 ) -> Result<Pubkey, Error> {
@@ -118,7 +118,7 @@ fn load_upgradeable_buffer(
 }
 
 pub fn deploy_upgradeable_program(
-    bank: &mut LightBank,
+    bank: &mut LiteBank,
     payer_kp: &Keypair,
     program_bytes: &[u8],
 ) -> Result<Pubkey, Error> {
