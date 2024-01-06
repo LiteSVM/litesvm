@@ -11,3 +11,8 @@ solana-sdk.workspace = true
 [dev-dependencies]
 spl-token.workspace = true
 counter = { path = "tests/counter" }
+criterion =  "0.4" 
+
+[[bench]]
+name = "simple_bench"
+harness = false
