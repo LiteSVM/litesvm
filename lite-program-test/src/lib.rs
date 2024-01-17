@@ -1,5 +1,5 @@
 use lite_svm::{
-    bank::LiteBank, deploy_program, types::TransactionResult, BuiltinFunctionWithContext, Error,
+    bank::LiteSVM, deploy_program, types::TransactionResult, BuiltinFunctionWithContext, Error,
 };
 use solana_sdk::pubkey;
 use solana_sdk::signer::Signer;
@@ -11,48 +11,22 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 //TODO
 pub struct ProgramTest {
-    bank: Arc<RwLock<LiteBank>>,
+    bank: Arc<RwLock<LiteSVM>>,
 }
 
 impl ProgramTest {
     pub fn new() -> Self {
         let program_test = Self {
-            bank: Arc::new(RwLock::new(LiteBank::new())),
+            bank: Arc::new(RwLock::new(LiteSVM::new())),
         };
-        program_test.load_spl_programs();
         program_test
     }
 
-    fn load_spl_programs(&self) {
-        let mut bank = self.get_bank_mut();
-
-        bank.store_program(
-            pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-            include_bytes!("programs/spl_token-3.5.0.so"),
-        );
-        bank.store_program(
-            pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
-            include_bytes!("programs/spl_token_2022-0.9.0.so"),
-        );
-        bank.store_program(
-            pubkey!("Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo"),
-            include_bytes!("programs/spl_memo-1.0.0.so"),
-        );
-        bank.store_program(
-            pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-            include_bytes!("programs/spl_memo-3.0.0.so"),
-        );
-        bank.store_program(
-            pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-            include_bytes!("programs/spl_associated_token_account-1.1.1.so"),
-        );
-    }
-
-    pub fn get_bank(&self) -> RwLockReadGuard<'_, LiteBank> {
+    pub fn get_bank(&self) -> RwLockReadGuard<'_, LiteSVM> {
         self.bank.read().unwrap()
     }
 
-    pub fn get_bank_mut(&self) -> RwLockWriteGuard<'_, LiteBank> {
+    pub fn get_bank_mut(&self) -> RwLockWriteGuard<'_, LiteSVM> {
         self.bank.write().unwrap()
     }
 

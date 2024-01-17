@@ -18,7 +18,10 @@ solana-loader-v4-program = "1.17"
 bincode = "1.3"
 spl-token = "3.5.0"
 solana-program = "1.17"
+solana_rbpf = "0.8.0"
 borsh = "0.9"
+lite-svm = { path = "./lite-svm" }
+lite-program-test = { path = "./lite-program-test" }
 
 [profile.release]
 overflow-checks = true

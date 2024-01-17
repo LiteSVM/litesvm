@@ -5,6 +5,7 @@ pub mod types;
 
 mod accounts_db;
 mod builtin;
+mod spl;
 mod utils;
 
 pub use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;

@@ -42,6 +42,7 @@ use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
     create_blockhash,
+    spl::load_spl_programs,
     types::{ExecutionResult, TransactionMetadata, TransactionResult},
     utils::RentState,
     Error,
@@ -59,7 +60,7 @@ impl AddressLoader for LightAddressLoader {
     }
 }
 
-pub struct LiteBank {
+pub struct LiteSVM {
     accounts: AccountsDb,
     //TODO compute budget
     programs_cache: LoadedProgramsForTxBatch,
@@ -72,7 +73,7 @@ pub struct LiteBank {
     log_collector: Rc<RefCell<LogCollector>>,
 }
 
-impl Default for LiteBank {
+impl Default for LiteSVM {
     fn default() -> Self {
         Self {
             accounts: Default::default(),
@@ -88,12 +89,13 @@ impl Default for LiteBank {
     }
 }
 
-impl LiteBank {
+impl LiteSVM {
     pub fn new() -> Self {
-        LiteBank::default()
+        LiteSVM::default()
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
+            .with_spl_programs()
     }
 
     pub fn with_sysvars(mut self) -> Self {
@@ -142,6 +144,11 @@ impl LiteBank {
             self.airdrop_kp.pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
         );
+        self
+    }
+
+    pub fn with_spl_programs(mut self) -> Self {
+        load_spl_programs(&mut self);
         self
     }
 

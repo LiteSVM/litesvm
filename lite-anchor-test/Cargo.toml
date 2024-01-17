@@ -5,4 +5,4 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-lite-program-test = { path = "../lite-program-test" }
+lite-program-test.workspace = true

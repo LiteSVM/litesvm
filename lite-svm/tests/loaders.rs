@@ -1,4 +1,4 @@
-use lite_svm::{bank::LiteBank, deploy_program, deploy_upgradeable_program};
+use lite_svm::{bank::LiteSVM, deploy_program, deploy_upgradeable_program};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
@@ -11,7 +11,7 @@ mod programs_bytes;
 
 #[test]
 pub fn hello_world_with_store() {
-    let mut bank = LiteBank::new();
+    let mut bank = LiteSVM::new();
 
     let payer = Keypair::new();
     let program_bytes = HELLO_WORLD_BYTES;
@@ -39,7 +39,7 @@ pub fn hello_world_with_store() {
 
 #[test]
 pub fn hello_world_with_deploy() {
-    let mut bank = LiteBank::new();
+    let mut bank = LiteSVM::new();
 
     let payer = Keypair::new();
     let program_bytes = HELLO_WORLD_BYTES;
@@ -65,7 +65,7 @@ pub fn hello_world_with_deploy() {
 
 #[test]
 pub fn hello_world_with_deploy_upgradeable() {
-    let mut bank = LiteBank::new();
+    let mut bank = LiteSVM::new();
 
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();

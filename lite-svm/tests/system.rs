@@ -5,7 +5,7 @@ use solana_program::{
 };
 use solana_sdk::{signature::Keypair, signer::Signer};
 
-use lite_svm::bank::LiteBank;
+use lite_svm::bank::LiteSVM;
 
 #[test]
 pub fn system_transfer() {
@@ -13,7 +13,7 @@ pub fn system_transfer() {
     let from = from_keypair.pubkey();
     let to = Pubkey::new_unique();
 
-    let mut bank = LiteBank::new();
+    let mut bank = LiteSVM::new();
 
     bank.airdrop(&from, 100).unwrap();
 
@@ -36,7 +36,7 @@ pub fn system_create_account() {
     let new_account = Keypair::new();
     let from = from_keypair.pubkey();
 
-    let mut bank = LiteBank::new();
+    let mut bank = LiteSVM::new();
 
     let lamports = bank.minimum_balance_for_rent_exemption(10);
     bank.airdrop(&from, lamports).unwrap();
