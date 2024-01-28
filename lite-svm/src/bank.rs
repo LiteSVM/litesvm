@@ -61,7 +61,7 @@ impl AddressLoader for LightAddressLoader {
 }
 
 pub struct LiteSVM {
-    accounts: AccountsDb,
+    pub accounts: AccountsDb,
     //TODO compute budget
     programs_cache: LoadedProgramsForTxBatch,
     airdrop_kp: Keypair,

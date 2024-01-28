@@ -699,9 +699,7 @@ dependencies = [
  "borsh 0.9.3",
  "lite-program-test",
  "solana-program",
- "solana-program-runtime",
  "solana-sdk",
- "solana_rbpf",
 ]
 
 [[package]]

@@ -16,7 +16,5 @@ borsh.workspace = true
 solana-program.workspace = true
 
 [dev-dependencies]
-solana-program-runtime.workspace = true
 solana-sdk.workspace = true
-solana_rbpf.workspace = true
 lite-program-test.workspace = true
