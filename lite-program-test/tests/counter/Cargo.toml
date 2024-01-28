@@ -17,4 +17,6 @@ solana-program.workspace = true
 
 [dev-dependencies]
 solana-sdk.workspace = true
+solana-program-test = "1.16.12"
+tokio = "1.35.1"
 lite-program-test.workspace = true
