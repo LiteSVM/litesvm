@@ -56,12 +56,6 @@ pub fn integration_test() {
         svm.get_account(&counter_address).data,
         num_greets.to_le_bytes().to_vec()
     );
-
-    // svm.send_transaction(tx).unwrap();
-    // assert_eq!(
-    //     svm.get_account(&counter_address).data,
-    //     1u32.to_le_bytes().to_vec()
-    // );
 }
 
 fn make_tx(
