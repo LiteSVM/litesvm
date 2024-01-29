@@ -1,7 +1,6 @@
 use lite_svm::{
     bank::LiteSVM, deploy_program, types::TransactionResult, BuiltinFunctionWithContext, Error,
 };
-use solana_sdk::pubkey;
 use solana_sdk::signer::Signer;
 use solana_sdk::{
     account::Account, hash::Hash, pubkey::Pubkey, signature::Keypair,

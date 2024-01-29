@@ -9,7 +9,7 @@ use solana_program::{
 };
 
 mod state;
-use state::*;
+use state::Counter;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -48,8 +48,7 @@ pub fn process_increment_counter(
         counter_account.is_writable,
         "Counter account must be writable"
     );
-
-    let mut counter = Counter::try_from_slice(&counter_account.try_borrow_mut_data()?)?;
+    let mut counter = Counter::try_from_slice(&counter_account.try_borrow_data()?)?;
     counter.count += 1;
     counter.serialize(&mut *counter_account.data.borrow_mut())?;
 

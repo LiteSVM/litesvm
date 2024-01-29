@@ -9,10 +9,13 @@ lite-svm.workspace = true
 solana-sdk.workspace = true
 
 [dev-dependencies]
+solana-program.workspace = true
+solana-program-test = "1.16.12"
 spl-token.workspace = true
+tokio = "1.35.1"
 counter = { path = "tests/counter" }
 criterion =  "0.4" 
 
 [[bench]]
-name = "simple_bench"
+name = "banks_client_comparison"
 harness = false
