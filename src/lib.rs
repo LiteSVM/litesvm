@@ -1,13 +1,14 @@
 use thiserror::Error;
 
-pub mod bank;
 pub mod types;
 
 mod accounts_db;
+mod bank;
 mod builtin;
 mod spl;
 mod utils;
 
+pub use bank::*;
 pub use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 pub use utils::*;
 

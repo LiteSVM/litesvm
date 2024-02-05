@@ -414,7 +414,6 @@ impl LiteSVM {
         ))
     }
 
-    //TODO self.rent
     fn check_accounts_rent(
         &mut self,
         tx: &SanitizedTransaction,
@@ -516,9 +515,6 @@ impl LiteSVM {
 
         let logs = self.log_collector.take().into_messages();
 
-        // We don't care about parallelized transaction. (1 transaction by slot)
-        self.next_slot();
-
         Ok(TransactionResult {
             result: tx_result,
             metadata: TransactionMetadata {
@@ -553,10 +549,17 @@ impl LiteSVM {
         })
     }
 
-    fn next_slot(&mut self) {
+    pub fn next_slot(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
         self.slot += 1;
         self.block_height += 1;
         self.programs_cache.set_slot_for_tests(self.slot);
+    }
+
+    pub fn set_slot(&mut self, slot: u64) {
+        self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
+        self.slot = slot;
+        self.block_height = slot;
+        self.programs_cache.set_slot_for_tests(slot);
     }
 }

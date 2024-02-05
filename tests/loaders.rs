@@ -1,4 +1,4 @@
-use lite_svm::{bank::LiteSVM, deploy_program, deploy_upgradeable_program};
+use lite_svm::{deploy_program, deploy_upgradeable_program, LiteSVM};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
