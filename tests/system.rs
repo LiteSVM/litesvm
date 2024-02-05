@@ -1,11 +1,10 @@
+use lite_svm::LiteSVM;
 use solana_program::{
     message::Message,
     pubkey::Pubkey,
     system_instruction::{create_account, transfer},
 };
 use solana_sdk::{signature::Keypair, signer::Signer};
-
-use lite_svm::bank::LiteSVM;
 
 #[test]
 pub fn system_transfer() {

@@ -1,0 +1,21 @@
+[workspace]
+members = ["counter"]
+resolver = "2"
+
+[workspace.dependencies]
+borsh = "0.9.3"
+solana-program = "=1.17.18"
+solana-sdk = "=1.17.18"
+solana-program-test = "=1.17.18"
+lite-svm = { path = "../../" }
+tokio = "1.35"
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1

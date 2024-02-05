@@ -1,8 +1,0 @@
-[package]
-name = "lite-anchor-test"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-
-[dependencies]
-lite-program-test.workspace = true

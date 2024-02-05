@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use lite_program_test::ProgramTest;
+use lite_svm::LiteSVM;
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
@@ -10,8 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-const COUNTER_PROGRAM_BYTES: &[u8] =
-    include_bytes!("../../lite-svm/tests/programs_bytes/counter.so");
+const COUNTER_PROGRAM_BYTES: &[u8] = include_bytes!("../tests/programs_bytes/counter.so");
 
 fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::ProgramTest) {
     pt.add_account(
@@ -81,20 +80,19 @@ async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let svm = ProgramTest::new();
+    let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
 
     svm.store_program(program_id, COUNTER_PROGRAM_BYTES);
-    svm.request_airdrop(&payer_pk, 1000000000);
+    svm.airdrop(&payer_pk, 1000000000).unwrap();
     let counter_address = Pubkey::new_unique();
-    let blockhash = svm.get_latest_blockhash();
+    let blockhash = svm.latest_blockhash();
     let mut group = c.benchmark_group("comparison");
     group.bench_function("litesvm_bench", |b| {
         b.iter(|| {
-            svm.get_bank_mut()
-                .accounts
+            svm.accounts
                 .add_account(counter_address, counter_acc(program_id));
             for deduper in 0..NUM_GREETINGS {
                 let tx = make_tx(
@@ -105,7 +103,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &payer_kp,
                     deduper,
                 );
-                let _ = svm.send_transaction(tx.clone());
+                let _ = svm.send_transaction(tx.clone().into());
             }
             assert_eq!(svm.get_account(&counter_address).data[0], NUM_GREETINGS);
         })
