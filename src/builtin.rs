@@ -1,14 +1,14 @@
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 use solana_sdk::{bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, pubkey::Pubkey};
 
-pub struct BuiltinPrototype {
+pub(crate) struct BuiltinPrototype {
     pub feature_id: Option<Pubkey>,
     pub program_id: Pubkey,
     pub name: &'static str,
     pub entrypoint: BuiltinFunctionWithContext,
 }
 
-pub static BUILTINS: &[BuiltinPrototype] = &[
+pub(crate) static BUILTINS: &[BuiltinPrototype] = &[
     BuiltinPrototype {
         feature_id: None,
         program_id: solana_system_program::id(),

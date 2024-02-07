@@ -4,7 +4,7 @@ use solana_program::{
     pubkey::Pubkey,
     system_instruction::{create_account, transfer},
 };
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
 #[test]
 pub fn system_transfer() {
@@ -17,14 +17,17 @@ pub fn system_transfer() {
     bank.airdrop(&from, 100).unwrap();
 
     let instruction = transfer(&from, &to, 64);
-    let tx = bank
-        .send_message(Message::new(&[instruction], Some(&from)), &[&from_keypair])
-        .unwrap();
+    let tx = Transaction::new(
+        &[&from_keypair],
+        Message::new(&[instruction], Some(&from)),
+        bank.latest_blockhash(),
+    );
+    let tx_res = bank.send_transaction(tx.into()).unwrap();
 
     let from_account = bank.get_account(&from);
     let to_account = bank.get_account(&to);
 
-    assert!(tx.result.is_ok());
+    assert!(tx_res.result.is_ok());
     assert_eq!(from_account.lamports, 36);
     assert_eq!(to_account.lamports, 64);
 }
@@ -47,16 +50,16 @@ pub fn system_create_account() {
         10,
         &solana_program::system_program::id(),
     );
-    let tx = bank
-        .send_message(
-            Message::new(&[instruction], Some(&from)),
-            &[&from_keypair, &new_account],
-        )
-        .unwrap();
+    let tx = Transaction::new(
+        &[&from_keypair, &new_account],
+        Message::new(&[instruction], Some(&from)),
+        bank.latest_blockhash(),
+    );
+    let tx_res = bank.send_transaction(tx.into()).unwrap();
 
     let account = bank.get_account(&new_account.pubkey());
 
-    assert!(tx.result.is_ok());
+    assert!(tx_res.result.is_ok());
     assert_eq!(account.lamports, lamports);
     assert_eq!(account.data.len(), 10);
     assert_eq!(account.owner, solana_program::system_program::id());

@@ -49,7 +49,7 @@ use crate::{
 };
 
 #[derive(Clone, Default)]
-pub struct LightAddressLoader {}
+pub(crate) struct LightAddressLoader {}
 
 impl AddressLoader for LightAddressLoader {
     fn load_addresses(
@@ -61,7 +61,7 @@ impl AddressLoader for LightAddressLoader {
 }
 
 pub struct LiteSVM {
-    pub accounts: AccountsDb,
+    accounts: AccountsDb,
     //TODO compute budget
     programs_cache: LoadedProgramsForTxBatch,
     airdrop_kp: Keypair,
@@ -165,6 +165,10 @@ impl LiteSVM {
         self.accounts.get_account(pubkey).into()
     }
 
+    pub fn set_account(&mut self, pubkey: Pubkey, data: AccountSharedData) {
+        self.accounts.add_account(pubkey, data).into()
+    } 
+
     pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {
         self.accounts.get_account(pubkey).lamports()
     }
@@ -252,7 +256,7 @@ impl LiteSVM {
     }
 
     //TODO handle reload
-    pub fn load_program(&self, program_id: &Pubkey) -> Result<LoadedProgram, InstructionError> {
+    pub(crate) fn load_program(&self, program_id: &Pubkey) -> Result<LoadedProgram, InstructionError> {
         let program_account = self.accounts.get_account(program_id);
         let metrics = &mut LoadProgramMetrics::default();
 
@@ -479,16 +483,13 @@ impl LiteSVM {
         })
     }
 
-    pub fn send_message<T: Signers>(
+    pub(crate) fn send_message<T: Signers>(
         &mut self,
         message: Message,
         signers: &T,
     ) -> Result<TransactionResult, Error> {
         let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(message), signers)?;
         self.send_transaction(tx)
-    }
-    pub fn find_loaded(&self, key: &Pubkey) -> Arc<LoadedProgram> {
-        self.programs_cache.find(key).unwrap_or_default()
     }
 
     pub fn send_transaction(
@@ -547,13 +548,6 @@ impl LiteSVM {
                 return_data,
             },
         })
-    }
-
-    pub fn next_slot(&mut self) {
-        self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
-        self.slot += 1;
-        self.block_height += 1;
-        self.programs_cache.set_slot_for_tests(self.slot);
     }
 
     pub fn set_slot(&mut self, slot: u64) {

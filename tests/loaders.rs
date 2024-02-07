@@ -3,7 +3,7 @@ use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
 };
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
 use crate::programs_bytes::HELLO_WORLD_BYTES;
 
@@ -28,7 +28,8 @@ pub fn hello_world_with_store() {
         vec![AccountMeta::new(payer.pubkey(), true)],
     );
     let message = Message::new(&[instruction], Some(&payer.pubkey()));
-    let tx_result = bank.send_message(message, &[&payer]).unwrap();
+    let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
+    let tx_result = bank.send_transaction(tx.into()).unwrap();
 
     assert!(tx_result.result.is_ok());
     assert!(tx_result
@@ -54,7 +55,8 @@ pub fn hello_world_with_deploy() {
         vec![AccountMeta::new(payer.pubkey(), true)],
     );
     let message = Message::new(&[instruction], Some(&payer.pubkey()));
-    let tx_result = bank.send_message(message, &[&payer]).unwrap();
+    let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
+    let tx_result = bank.send_transaction(tx.into()).unwrap();
 
     assert!(tx_result.result.is_ok());
     assert!(tx_result
@@ -78,7 +80,8 @@ pub fn hello_world_with_deploy_upgradeable() {
     let instruction =
         Instruction::new_with_bytes(program_id, &[], vec![AccountMeta::new(payer_pk, true)]);
     let message = Message::new(&[instruction], Some(&payer_pk));
-    let tx_result = bank.send_message(message, &[&payer_kp]).unwrap();
+    let tx = Transaction::new(&[&payer_kp], message, bank.latest_blockhash());
+    let tx_result = bank.send_transaction(tx.into()).unwrap();
 
     assert!(tx_result.result.is_ok());
     assert!(tx_result

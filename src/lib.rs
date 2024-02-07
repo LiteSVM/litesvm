@@ -8,8 +8,7 @@ mod builtin;
 mod spl;
 mod utils;
 
-pub use bank::*;
-pub use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
+pub use bank::LiteSVM;
 pub use utils::*;
 
 #[derive(Error, Debug)]

@@ -17,7 +17,7 @@ pub(crate) use rent::*;
 use crate::bank::LiteSVM;
 
 /// Create a blockhash from the given bytes
-pub fn create_blockhash(bytes: &[u8]) -> Hash {
+pub(crate) fn create_blockhash(bytes: &[u8]) -> Hash {
     let mut hasher = Hasher::default();
     hasher.hash(bytes);
     hasher.result()
