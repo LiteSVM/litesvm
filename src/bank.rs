@@ -167,7 +167,7 @@ impl LiteSVM {
 
     pub fn set_account(&mut self, pubkey: Pubkey, data: AccountSharedData) {
         self.accounts.add_account(pubkey, data).into()
-    } 
+    }
 
     pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {
         self.accounts.get_account(pubkey).lamports()
@@ -256,7 +256,10 @@ impl LiteSVM {
     }
 
     //TODO handle reload
-    pub(crate) fn load_program(&self, program_id: &Pubkey) -> Result<LoadedProgram, InstructionError> {
+    pub(crate) fn load_program(
+        &self,
+        program_id: &Pubkey,
+    ) -> Result<LoadedProgram, InstructionError> {
         let program_account = self.accounts.get_account(program_id);
         let metrics = &mut LoadProgramMetrics::default();
 
