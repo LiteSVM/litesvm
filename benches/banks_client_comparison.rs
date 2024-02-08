@@ -102,7 +102,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &payer_kp,
                     deduper,
                 );
-                let _ = svm.send_transaction(tx.clone().into());
+                let _ = svm.send_transaction(tx.clone());
             }
             assert_eq!(svm.get_account(&counter_address).data[0], NUM_GREETINGS);
         })

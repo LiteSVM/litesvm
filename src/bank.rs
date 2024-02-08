@@ -497,7 +497,7 @@ impl LiteSVM {
 
     pub fn send_transaction(
         &mut self,
-        tx: VersionedTransaction,
+        tx: impl Into<VersionedTransaction>,
     ) -> Result<TransactionResult, Error> {
         let ExecutionResult {
             post_accounts,
@@ -505,7 +505,7 @@ impl LiteSVM {
             programs_modified,
             compute_units_consumed,
             return_data,
-        } = self.execute_transaction(tx)?;
+        } = self.execute_transaction(tx.into())?;
 
         if tx_result.is_ok() {
             //TODO check if programs are program_owners

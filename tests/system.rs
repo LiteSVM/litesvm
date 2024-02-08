@@ -22,7 +22,7 @@ pub fn system_transfer() {
         Message::new(&[instruction], Some(&from)),
         bank.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx.into()).unwrap();
+    let tx_res = bank.send_transaction(tx).unwrap();
 
     let from_account = bank.get_account(&from);
     let to_account = bank.get_account(&to);
@@ -55,7 +55,7 @@ pub fn system_create_account() {
         Message::new(&[instruction], Some(&from)),
         bank.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx.into()).unwrap();
+    let tx_res = bank.send_transaction(tx).unwrap();
 
     let account = bank.get_account(&new_account.pubkey());
 

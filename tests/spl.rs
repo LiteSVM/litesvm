@@ -28,15 +28,12 @@ pub fn spl_token() {
             .unwrap();
 
     let tx_result = svm
-        .send_transaction(
-            Transaction::new_signed_with_payer(
-                &[create_acc_ins, init_mint_ins],
-                Some(&payer_pk),
-                &[&payer_kp, &mint_kp],
-                svm.latest_blockhash(),
-            )
-            .into(),
-        )
+        .send_transaction(Transaction::new_signed_with_payer(
+            &[create_acc_ins, init_mint_ins],
+            Some(&payer_pk),
+            &[&payer_kp, &mint_kp],
+            svm.latest_blockhash(),
+        ))
         .unwrap();
 
     assert!(tx_result.result.is_ok());
