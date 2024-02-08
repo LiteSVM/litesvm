@@ -92,8 +92,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("comparison");
     group.bench_function("litesvm_bench", |b| {
         b.iter(|| {
-            svm.accounts
-                .add_account(counter_address, counter_acc(program_id));
+            svm.set_account(counter_address, counter_acc(program_id));
             for deduper in 0..NUM_GREETINGS {
                 let tx = make_tx(
                     program_id,
@@ -103,7 +102,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &payer_kp,
                     deduper,
                 );
-                let _ = svm.send_transaction(tx.clone().into());
+                let _ = svm.send_transaction(tx.clone());
             }
             assert_eq!(svm.get_account(&counter_address).data[0], NUM_GREETINGS);
         })
