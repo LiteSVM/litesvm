@@ -5,7 +5,7 @@ use solana_sdk::{
 };
 
 #[test]
-pub fn spl_token() {
+fn spl_token() {
     let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
@@ -27,14 +27,12 @@ pub fn spl_token() {
         spl_token::instruction::initialize_mint2(&spl_token::id(), &mint_pk, &payer_pk, None, 8)
             .unwrap();
 
-    let tx_result = svm
-        .send_transaction(Transaction::new_signed_with_payer(
-            &[create_acc_ins, init_mint_ins],
-            Some(&payer_pk),
-            &[&payer_kp, &mint_kp],
-            svm.latest_blockhash(),
-        ))
-        .unwrap();
+    let tx_result = svm.send_transaction(Transaction::new_signed_with_payer(
+        &[create_acc_ins, init_mint_ins],
+        Some(&payer_pk),
+        &[&payer_kp, &mint_kp],
+        svm.latest_blockhash(),
+    ));
 
     assert!(tx_result.result.is_ok());
 

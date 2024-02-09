@@ -7,7 +7,7 @@ use solana_program::{
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
 #[test]
-pub fn system_transfer() {
+fn system_transfer() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
     let to = Pubkey::new_unique();
@@ -22,7 +22,7 @@ pub fn system_transfer() {
         Message::new(&[instruction], Some(&from)),
         bank.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx).unwrap();
+    let tx_res = bank.send_transaction(tx);
 
     let from_account = bank.get_account(&from);
     let to_account = bank.get_account(&to);
@@ -33,7 +33,7 @@ pub fn system_transfer() {
 }
 
 #[test]
-pub fn system_create_account() {
+fn system_create_account() {
     let from_keypair = Keypair::new();
     let new_account = Keypair::new();
     let from = from_keypair.pubkey();
@@ -55,7 +55,7 @@ pub fn system_create_account() {
         Message::new(&[instruction], Some(&from)),
         bank.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx).unwrap();
+    let tx_res = bank.send_transaction(tx);
 
     let account = bank.get_account(&new_account.pubkey());
 
@@ -64,3 +64,6 @@ pub fn system_create_account() {
     assert_eq!(account.data.len(), 10);
     assert_eq!(account.owner, solana_program::system_program::id());
 }
+
+// #[test]
+// fn

@@ -10,7 +10,7 @@ use crate::programs_bytes::HELLO_WORLD_BYTES;
 mod programs_bytes;
 
 #[test]
-pub fn hello_world_with_store() {
+fn hello_world_with_store() {
     let mut bank = LiteSVM::new();
 
     let payer = Keypair::new();
@@ -29,7 +29,7 @@ pub fn hello_world_with_store() {
     );
     let message = Message::new(&[instruction], Some(&payer.pubkey()));
     let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
-    let tx_result = bank.send_transaction(tx).unwrap();
+    let tx_result = bank.send_transaction(tx);
 
     assert!(tx_result.result.is_ok());
     assert!(tx_result
@@ -39,7 +39,7 @@ pub fn hello_world_with_store() {
 }
 
 #[test]
-pub fn hello_world_with_deploy() {
+fn hello_world_with_deploy() {
     let mut bank = LiteSVM::new();
 
     let payer = Keypair::new();
@@ -56,7 +56,7 @@ pub fn hello_world_with_deploy() {
     );
     let message = Message::new(&[instruction], Some(&payer.pubkey()));
     let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
-    let tx_result = bank.send_transaction(tx).unwrap();
+    let tx_result = bank.send_transaction(tx);
 
     assert!(tx_result.result.is_ok());
     assert!(tx_result
@@ -66,7 +66,7 @@ pub fn hello_world_with_deploy() {
 }
 
 #[test]
-pub fn hello_world_with_deploy_upgradeable() {
+fn hello_world_with_deploy_upgradeable() {
     let mut bank = LiteSVM::new();
 
     let payer_kp = Keypair::new();
@@ -81,7 +81,7 @@ pub fn hello_world_with_deploy_upgradeable() {
         Instruction::new_with_bytes(program_id, &[], vec![AccountMeta::new(payer_pk, true)]);
     let message = Message::new(&[instruction], Some(&payer_pk));
     let tx = Transaction::new(&[&payer_kp], message, bank.latest_blockhash());
-    let tx_result = bank.send_transaction(tx).unwrap();
+    let tx_result = bank.send_transaction(tx);
 
     assert!(tx_result.result.is_ok());
     assert!(tx_result

@@ -7,9 +7,10 @@ use solana_sdk::{
     signature::Keypair,
     signer::Signer,
     system_instruction,
+    transaction::TransactionError,
 };
 
-use crate::{bank::LiteSVM, Error};
+use crate::bank::LiteSVM;
 
 const CHUNK_SIZE: usize = 512;
 
@@ -17,7 +18,7 @@ pub fn deploy_program(
     bank: &mut LiteSVM,
     payer_keypair: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, Error> {
+) -> Result<Pubkey, TransactionError> {
     let program_keypair = Keypair::new();
     let instruction = system_instruction::create_account(
         &payer_keypair.pubkey(),
@@ -27,7 +28,7 @@ pub fn deploy_program(
         &bpf_loader::id(),
     );
     let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-    bank.send_message(message, &[payer_keypair, &program_keypair])?
+    bank.send_message(message, &[payer_keypair, &program_keypair])
         .result?;
 
     let chunk_size = CHUNK_SIZE;
@@ -40,13 +41,13 @@ pub fn deploy_program(
             chunk.to_vec(),
         );
         let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-        bank.send_message(message, &[payer_keypair, &program_keypair])?
+        bank.send_message(message, &[payer_keypair, &program_keypair])
             .result?;
         offset += chunk_size as u32;
     }
     let instruction = loader_instruction::finalize(&program_keypair.pubkey(), &bpf_loader::id());
     let message: Message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-    bank.send_message(message, &[payer_keypair, &program_keypair])?
+    bank.send_message(message, &[payer_keypair, &program_keypair])
         .result?;
 
     Ok(program_keypair.pubkey())
@@ -58,7 +59,7 @@ pub fn set_upgrade_authority(
     program_pubkey: &Pubkey,
     current_authority_keypair: &Keypair,
     new_authority_pubkey: Option<&Pubkey>,
-) -> Result<(), Error> {
+) -> Result<(), TransactionError> {
     let message = Message::new(
         &[bpf_loader_upgradeable::set_upgrade_authority(
             program_pubkey,
@@ -67,7 +68,7 @@ pub fn set_upgrade_authority(
         )],
         Some(&from_keypair.pubkey()),
     );
-    bank.send_message(message, &[&from_keypair])?.result?;
+    bank.send_message(message, &[&from_keypair]).result?;
 
     Ok(())
 }
@@ -76,7 +77,7 @@ fn load_upgradeable_buffer(
     bank: &mut LiteSVM,
     payer_kp: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, Error> {
+) -> Result<Pubkey, TransactionError> {
     let payer_pk = payer_kp.pubkey();
     let buffer_kp = Keypair::new();
     let buffer_pk = buffer_kp.pubkey();
@@ -95,8 +96,7 @@ fn load_upgradeable_buffer(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &buffer_kp])?
-        .result?;
+    bank.send_message(message, &[payer_kp, &buffer_kp]).result?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
@@ -110,7 +110,7 @@ fn load_upgradeable_buffer(
             )],
             Some(&payer_pk),
         );
-        bank.send_message(message, &[payer_kp])?.result?;
+        bank.send_message(message, &[payer_kp]).result?;
         offset += chunk_size as u32;
     }
 
@@ -121,7 +121,7 @@ pub fn deploy_upgradeable_program(
     bank: &mut LiteSVM,
     payer_kp: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, Error> {
+) -> Result<Pubkey, TransactionError> {
     let program_kp = Keypair::new();
     let program_pk = program_kp.pubkey();
     let payer_pk = payer_kp.pubkey();
@@ -140,7 +140,7 @@ pub fn deploy_upgradeable_program(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &program_kp])?
+    bank.send_message(message, &[payer_kp, &program_kp])
         .result?;
 
     Ok(program_pk)
