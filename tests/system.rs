@@ -64,6 +64,3 @@ fn system_create_account() {
     assert_eq!(account.data.len(), 10);
     assert_eq!(account.owner, solana_program::system_program::id());
 }
-
-// #[test]
-// fn
