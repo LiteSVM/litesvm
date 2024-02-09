@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use lite_svm::LiteSVM;
+use litesvm::LiteSVM;
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,

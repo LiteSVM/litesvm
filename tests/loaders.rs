@@ -1,4 +1,4 @@
-use lite_svm::{deploy_program, deploy_upgradeable_program, LiteSVM};
+use litesvm::{deploy_program, deploy_upgradeable_program, LiteSVM};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
