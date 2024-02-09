@@ -1,4 +1,4 @@
-use lite_svm::LiteSVM;
+use litesvm::LiteSVM;
 use solana_program::{
     message::Message,
     pubkey::Pubkey,

@@ -1,4 +1,4 @@
-use lite_svm::LiteSVM;
+use litesvm::LiteSVM;
 use solana_sdk::{
     program_pack::Pack, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,
