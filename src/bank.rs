@@ -43,7 +43,7 @@ use crate::{
     builtin::BUILTINS,
     create_blockhash,
     spl::load_spl_programs,
-    types::{ExecutionResult, TransactionMetadata, TransactionResult},
+    types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::RentState,
 };
 
@@ -203,7 +203,7 @@ impl LiteSVM {
         }
     }
 
-    pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> Result<(), TransactionError> {
+    pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
         let payer = &self.airdrop_kp;
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new(
@@ -218,7 +218,7 @@ impl LiteSVM {
         )
         .unwrap();
 
-        self.send_transaction(tx).result
+        self.send_transaction(tx)
     }
 
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
@@ -519,28 +519,25 @@ impl LiteSVM {
             self.accounts.sync_accounts(post_accounts);
             for program_id in programs_modified {
                 let Ok(loaded_program) = self.load_program(&program_id) else {
-                    return TransactionResult {
-                        result: Err(TransactionError::ProgramAccountNotFound),
-                        metadata: TransactionMetadata {
+                    return TransactionResult::Err(FailedTransactionMetadata {
+                        err: TransactionError::ProgramAccountNotFound,
+                        meta: TransactionMetadata {
                             logs: self.log_collector.take().into_messages(),
                             compute_units_consumed,
                             return_data,
                         },
-                    };
+                    });
                 };
                 self.programs_cache
                     .replenish(program_id, Arc::new(loaded_program));
             }
         }
 
-        TransactionResult {
-            result: tx_result,
-            metadata: TransactionMetadata {
-                logs: self.log_collector.take().into_messages(),
-                compute_units_consumed,
-                return_data,
-            },
-        }
+        TransactionResult::Ok(TransactionMetadata {
+            logs: self.log_collector.take().into_messages(),
+            compute_units_consumed,
+            return_data,
+        })
     }
 
     pub fn simulate_transaction(&mut self, tx: VersionedTransaction) -> TransactionResult {
@@ -553,14 +550,15 @@ impl LiteSVM {
         } = self.execute_transaction(tx);
 
         let logs = self.log_collector.take().into_messages();
-
-        TransactionResult {
-            result: tx_result,
-            metadata: TransactionMetadata {
-                logs,
-                compute_units_consumed,
-                return_data,
-            },
+        let meta = TransactionMetadata {
+            logs,
+            compute_units_consumed,
+            return_data,
+        };
+        if let Err(tx_err) = tx_result {
+            TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
+        } else {
+            TransactionResult::Ok(meta)
         }
     }
 

@@ -29,7 +29,7 @@ pub fn deploy_program(
     );
     let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
     bank.send_message(message, &[payer_keypair, &program_keypair])
-        .result?;
+        .map_err(|e| e.err)?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
@@ -42,13 +42,13 @@ pub fn deploy_program(
         );
         let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
         bank.send_message(message, &[payer_keypair, &program_keypair])
-            .result?;
+            .map_err(|e| e.err)?;
         offset += chunk_size as u32;
     }
     let instruction = loader_instruction::finalize(&program_keypair.pubkey(), &bpf_loader::id());
     let message: Message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
     bank.send_message(message, &[payer_keypair, &program_keypair])
-        .result?;
+        .map_err(|e| e.err)?;
 
     Ok(program_keypair.pubkey())
 }
@@ -68,7 +68,8 @@ pub fn set_upgrade_authority(
         )],
         Some(&from_keypair.pubkey()),
     );
-    bank.send_message(message, &[&from_keypair]).result?;
+    bank.send_message(message, &[&from_keypair])
+        .map_err(|e| e.err)?;
 
     Ok(())
 }
@@ -96,7 +97,8 @@ fn load_upgradeable_buffer(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &buffer_kp]).result?;
+    bank.send_message(message, &[payer_kp, &buffer_kp])
+        .map_err(|e| e.err)?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
@@ -110,7 +112,7 @@ fn load_upgradeable_buffer(
             )],
             Some(&payer_pk),
         );
-        bank.send_message(message, &[payer_kp]).result?;
+        bank.send_message(message, &[payer_kp]).map_err(|e| e.err)?;
         offset += chunk_size as u32;
     }
 
@@ -141,7 +143,7 @@ pub fn deploy_upgradeable_program(
         Some(&payer_pk),
     );
     bank.send_message(message, &[payer_kp, &program_kp])
-        .result?;
+        .map_err(|e| e.err)?;
 
     Ok(program_pk)
 }

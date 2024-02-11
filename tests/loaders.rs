@@ -31,9 +31,9 @@ fn hello_world_with_store() {
     let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
     let tx_result = bank.send_transaction(tx);
 
-    assert!(tx_result.result.is_ok());
+    assert!(tx_result.is_ok());
     assert!(tx_result
-        .metadata
+        .unwrap()
         .logs
         .contains(&"Program log: Hello world!".to_string()));
 }
@@ -58,9 +58,9 @@ fn hello_world_with_deploy() {
     let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
     let tx_result = bank.send_transaction(tx);
 
-    assert!(tx_result.result.is_ok());
+    assert!(tx_result.is_ok());
     assert!(tx_result
-        .metadata
+        .unwrap()
         .logs
         .contains(&"Program log: Hello world!".to_string()));
 }
@@ -83,9 +83,9 @@ fn hello_world_with_deploy_upgradeable() {
     let tx = Transaction::new(&[&payer_kp], message, bank.latest_blockhash());
     let tx_result = bank.send_transaction(tx);
 
-    assert!(tx_result.result.is_ok());
+    assert!(tx_result.is_ok());
     assert!(tx_result
-        .metadata
+        .unwrap()
         .logs
         .contains(&"Program log: Hello world!".to_string()));
 }
