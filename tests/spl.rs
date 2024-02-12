@@ -34,7 +34,7 @@ fn spl_token() {
         svm.latest_blockhash(),
     ));
 
-    assert!(tx_result.result.is_ok());
+    assert!(tx_result.is_ok());
 
     let mint_acc = svm.get_account(&mint_kp.pubkey());
     let mint = spl_token::state::Mint::unpack(&mint_acc.data).unwrap();

@@ -27,7 +27,7 @@ fn system_transfer() {
     let from_account = bank.get_account(&from);
     let to_account = bank.get_account(&to);
 
-    assert!(tx_res.result.is_ok());
+    assert!(tx_res.is_ok());
     assert_eq!(from_account.lamports, 36);
     assert_eq!(to_account.lamports, 64);
 }
@@ -59,7 +59,7 @@ fn system_create_account() {
 
     let account = bank.get_account(&new_account.pubkey());
 
-    assert!(tx_res.result.is_ok());
+    assert!(tx_res.is_ok());
     assert_eq!(account.lamports, lamports);
     assert_eq!(account.data.len(), 10);
     assert_eq!(account.owner, solana_program::system_program::id());

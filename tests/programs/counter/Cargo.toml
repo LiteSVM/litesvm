@@ -19,4 +19,4 @@ solana-program.workspace = true
 solana-sdk.workspace = true
 solana-program-test.workspace = true
 tokio.workspace = true
-lite-svm.workspace = true
+litesvm.workspace = true

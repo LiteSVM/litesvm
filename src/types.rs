@@ -1,5 +1,7 @@
 use solana_sdk::{
-    account::AccountSharedData, pubkey::Pubkey, transaction::Result,
+    account::AccountSharedData,
+    pubkey::Pubkey,
+    transaction::{Result, TransactionError},
     transaction_context::TransactionReturnData,
 };
 
@@ -11,10 +13,12 @@ pub struct TransactionMetadata {
 }
 
 #[derive(Debug)]
-pub struct TransactionResult {
-    pub result: Result<()>,
-    pub metadata: TransactionMetadata,
+pub struct FailedTransactionMetadata {
+    pub err: TransactionError,
+    pub meta: TransactionMetadata,
 }
+
+pub type TransactionResult = std::result::Result<TransactionMetadata, FailedTransactionMetadata>;
 
 pub(crate) struct ExecutionResult {
     pub post_accounts: Vec<(Pubkey, AccountSharedData)>,
