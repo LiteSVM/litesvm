@@ -873,7 +873,7 @@ name = "counter"
 version = "0.1.0"
 dependencies = [
  "borsh 0.9.3",
- "lite-svm",
+ "litesvm",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
@@ -1951,7 +1951,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
 
 [[package]]
-name = "lite-svm"
+name = "litesvm"
 version = "0.1.0"
 dependencies = [
  "bincode",

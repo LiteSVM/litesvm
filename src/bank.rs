@@ -1,3 +1,4 @@
+#![allow(clippy::result_large_err)]
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 use solana_program_runtime::{
@@ -36,16 +37,15 @@ use solana_sdk::{
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, default, rc::Rc, sync::Arc};
 
 use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
     create_blockhash,
     spl::load_spl_programs,
-    types::{ExecutionResult, TransactionMetadata, TransactionResult},
+    types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::RentState,
-    Error,
 };
 
 #[derive(Clone, Default)]
@@ -204,7 +204,7 @@ impl LiteSVM {
         }
     }
 
-    pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> Result<(), Error> {
+    pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
         let payer = &self.airdrop_kp;
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new(
@@ -219,8 +219,7 @@ impl LiteSVM {
         )
         .unwrap();
 
-        self.send_transaction(tx)?;
-        Ok(())
+        self.send_transaction(tx)
     }
 
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
@@ -378,7 +377,7 @@ impl LiteSVM {
         tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
         context: &mut TransactionContext,
-    ) -> Result<(Result<(), TransactionError>, LoadedProgramsForTxBatch, u64), Error> {
+    ) -> (Result<(), TransactionError>, LoadedProgramsForTxBatch, u64) {
         let blockhash = tx.message().recent_blockhash();
         let mut programs_modified_by_tx =
             LoadedProgramsForTxBatch::new(self.slot, self.programs_cache.environments.clone());
@@ -392,7 +391,7 @@ impl LiteSVM {
             .map(|c| vec![c.program_id_index as u16])
             .collect::<Vec<Vec<u16>>>();
 
-        let tx_result = MessageProcessor::process_message(
+        let mut tx_result = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
             context,
@@ -412,26 +411,31 @@ impl LiteSVM {
         )
         .map(|_| ());
 
-        self.check_accounts_rent(tx, context)?;
+        if let Err(err) = self.check_accounts_rent(tx, context) {
+            tx_result = Err(err);
+        };
 
-        Ok((
+        (
             tx_result,
             programs_modified_by_tx,
             accumulated_consume_units,
-        ))
+        )
     }
 
     fn check_accounts_rent(
         &mut self,
         tx: &SanitizedTransaction,
         context: &TransactionContext,
-    ) -> Result<(), Error> {
+    ) -> Result<(), TransactionError> {
         for index in 0..tx.message().account_keys().len() {
             if tx.message().is_writable(index) {
                 let account = context
-                    .get_account_at_index(index as IndexOfAccount)?
+                    .get_account_at_index(index as IndexOfAccount)
+                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?
                     .borrow();
-                let pubkey = context.get_key_of_account_at_index(index as IndexOfAccount)?;
+                let pubkey = context
+                    .get_key_of_account_at_index(index as IndexOfAccount)
+                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
                 let rent = self.sysvar_cache.get_rent().unwrap_or_default();
 
                 if !account.data().is_empty() {
@@ -442,8 +446,7 @@ impl LiteSVM {
                     if !post_rent_state.transition_allowed_from(&pre_rent_state) {
                         return Err(TransactionError::InsufficientFundsForRent {
                             account_index: index as u8,
-                        }
-                        .into());
+                        });
                     }
                 }
             }
@@ -451,13 +454,21 @@ impl LiteSVM {
         Ok(())
     }
 
-    fn execute_transaction(&mut self, tx: VersionedTransaction) -> Result<ExecutionResult, Error> {
+    fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
         let compute_budget = ComputeBudget::default();
-        let sanitized_tx = self.sanitize_transaction(tx)?;
+        let sanitized_tx = match self.sanitize_transaction(tx) {
+            Ok(s_tx) => s_tx,
+            Err(err) => {
+                return ExecutionResult {
+                    tx_result: Err(err),
+                    ..default::Default::default()
+                }
+            }
+        };
         let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
 
         let (result, programs_modified, compute_units_consumed) =
-            self.process_transaction(&sanitized_tx, compute_budget, &mut context)?;
+            self.process_transaction(&sanitized_tx, compute_budget, &mut context);
 
         let ExecutionRecord {
             accounts,
@@ -477,80 +488,79 @@ impl LiteSVM {
             })
             .collect();
 
-        Ok(ExecutionResult {
+        ExecutionResult {
             tx_result: result,
             programs_modified,
             post_accounts: accounts,
             compute_units_consumed,
             return_data,
-        })
+        }
     }
 
     pub(crate) fn send_message<T: Signers>(
         &mut self,
         message: Message,
         signers: &T,
-    ) -> Result<TransactionResult, Error> {
-        let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(message), signers)?;
+    ) -> TransactionResult {
+        let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(message), signers).unwrap();
         self.send_transaction(tx)
     }
 
-    pub fn send_transaction(
-        &mut self,
-        tx: impl Into<VersionedTransaction>,
-    ) -> Result<TransactionResult, Error> {
+    pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
         let ExecutionResult {
             post_accounts,
             tx_result,
             programs_modified,
             compute_units_consumed,
             return_data,
-        } = self.execute_transaction(tx.into())?;
+        } = self.execute_transaction(tx.into());
 
         if tx_result.is_ok() {
             //TODO check if programs are program_owners
             self.accounts.sync_accounts(post_accounts);
             for program_id in programs_modified {
-                let loaded_program = self.load_program(&program_id)?;
+                let Ok(loaded_program) = self.load_program(&program_id) else {
+                    return TransactionResult::Err(FailedTransactionMetadata {
+                        err: TransactionError::ProgramAccountNotFound,
+                        meta: TransactionMetadata {
+                            logs: self.log_collector.take().into_messages(),
+                            compute_units_consumed,
+                            return_data,
+                        },
+                    });
+                };
                 self.programs_cache
                     .replenish(program_id, Arc::new(loaded_program));
             }
         }
 
-        let logs = self.log_collector.take().into_messages();
-
-        Ok(TransactionResult {
-            result: tx_result,
-            metadata: TransactionMetadata {
-                logs,
-                compute_units_consumed,
-                return_data,
-            },
+        TransactionResult::Ok(TransactionMetadata {
+            logs: self.log_collector.take().into_messages(),
+            compute_units_consumed,
+            return_data,
         })
     }
 
-    pub fn simulate_transaction(
-        &mut self,
-        tx: VersionedTransaction,
-    ) -> Result<TransactionResult, Error> {
+    pub fn simulate_transaction(&mut self, tx: VersionedTransaction) -> TransactionResult {
         let ExecutionResult {
             post_accounts: _,
             tx_result,
             programs_modified: _,
             compute_units_consumed,
             return_data,
-        } = self.execute_transaction(tx)?;
+        } = self.execute_transaction(tx);
 
         let logs = self.log_collector.take().into_messages();
-
-        Ok(TransactionResult {
-            result: tx_result,
-            metadata: TransactionMetadata {
-                logs,
-                compute_units_consumed,
-                return_data,
-            },
-        })
+        let meta = TransactionMetadata {
+            logs,
+            compute_units_consumed,
+            return_data,
+        };
+        if let Err(tx_err) = tx_result {
+            TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
+        } else {
+            TransactionResult::Ok(meta)
+        }
     }
 
     pub fn set_slot(&mut self, slot: u64) {
