@@ -165,8 +165,8 @@ impl LiteSVM {
         self.accounts.get_account(pubkey).into()
     }
 
-    pub fn set_account(&mut self, pubkey: Pubkey, data: AccountSharedData) {
-        self.accounts.add_account(pubkey, data)
+    pub fn set_account(&mut self, pubkey: Pubkey, data: Account) {
+        self.accounts.add_account(pubkey, data.into())
     }
 
     pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {

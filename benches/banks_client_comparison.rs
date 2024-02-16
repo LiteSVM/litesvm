@@ -51,7 +51,7 @@ async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
     let mut pt = solana_program_test::ProgramTest::default();
     add_program(COUNTER_PROGRAM_BYTES, program_id, &mut pt);
     let mut ctx = pt.start_with_context().await;
-    ctx.set_account(&counter_address, &counter_acc(program_id));
+    ctx.set_account(&counter_address, &counter_acc(program_id).into());
 
     for deduper in 0..NUM_GREETINGS {
         let tx = make_tx(
@@ -117,14 +117,13 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-fn counter_acc(program_id: Pubkey) -> solana_sdk::account::AccountSharedData {
+fn counter_acc(program_id: Pubkey) -> solana_sdk::account::Account {
     Account {
         lamports: 5,
         data: vec![0_u8; std::mem::size_of::<u32>()],
         owner: program_id,
         ..Default::default()
     }
-    .into()
 }
 
 criterion_group!(benches, criterion_benchmark);

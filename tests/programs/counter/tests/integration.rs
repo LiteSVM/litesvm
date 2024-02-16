@@ -91,14 +91,13 @@ fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::P
     );
 }
 
-fn counter_acc(program_id: Pubkey) -> solana_sdk::account::AccountSharedData {
+fn counter_acc(program_id: Pubkey) -> solana_sdk::account::Account {
     Account {
         lamports: 5,
         data: vec![0_u8; std::mem::size_of::<u32>()],
         owner: program_id,
         ..Default::default()
     }
-    .into()
 }
 
 async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
