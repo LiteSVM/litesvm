@@ -26,7 +26,6 @@ name = "banks_client_comparison"
 harness = false
 
 [profile.release]
-overflow-checks = true
 lto = "fat"
 codegen-units = 1
 
