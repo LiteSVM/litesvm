@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 pub mod types;
 
 mod accounts_db;
