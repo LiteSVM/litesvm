@@ -1,4 +1,3 @@
-#![allow(clippy::result_large_err)]
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 use solana_program_runtime::{

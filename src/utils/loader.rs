@@ -7,18 +7,17 @@ use solana_sdk::{
     signature::Keypair,
     signer::Signer,
     system_instruction,
-    transaction::TransactionError,
 };
 
-use crate::bank::LiteSVM;
+use crate::{bank::LiteSVM, types::FailedTransactionMetadata};
 
 const CHUNK_SIZE: usize = 512;
 
-pub fn deploy_program(
+fn deploy_program(
     bank: &mut LiteSVM,
     payer_keypair: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, TransactionError> {
+) -> Result<Pubkey, FailedTransactionMetadata> {
     let program_keypair = Keypair::new();
     let instruction = system_instruction::create_account(
         &payer_keypair.pubkey(),
@@ -28,8 +27,7 @@ pub fn deploy_program(
         &bpf_loader::id(),
     );
     let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-    bank.send_message(message, &[payer_keypair, &program_keypair])
-        .map_err(|e| e.err)?;
+    bank.send_message(message, &[payer_keypair, &program_keypair])?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
@@ -41,25 +39,23 @@ pub fn deploy_program(
             chunk.to_vec(),
         );
         let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-        bank.send_message(message, &[payer_keypair, &program_keypair])
-            .map_err(|e| e.err)?;
+        bank.send_message(message, &[payer_keypair, &program_keypair])?;
         offset += chunk_size as u32;
     }
     let instruction = loader_instruction::finalize(&program_keypair.pubkey(), &bpf_loader::id());
     let message: Message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-    bank.send_message(message, &[payer_keypair, &program_keypair])
-        .map_err(|e| e.err)?;
+    bank.send_message(message, &[payer_keypair, &program_keypair])?;
 
     Ok(program_keypair.pubkey())
 }
 
-pub fn set_upgrade_authority(
+fn set_upgrade_authority(
     bank: &mut LiteSVM,
     from_keypair: &Keypair,
     program_pubkey: &Pubkey,
     current_authority_keypair: &Keypair,
     new_authority_pubkey: Option<&Pubkey>,
-) -> Result<(), TransactionError> {
+) -> Result<(), FailedTransactionMetadata> {
     let message = Message::new(
         &[bpf_loader_upgradeable::set_upgrade_authority(
             program_pubkey,
@@ -68,8 +64,7 @@ pub fn set_upgrade_authority(
         )],
         Some(&from_keypair.pubkey()),
     );
-    bank.send_message(message, &[&from_keypair])
-        .map_err(|e| e.err)?;
+    bank.send_message(message, &[&from_keypair])?;
 
     Ok(())
 }
@@ -78,7 +73,7 @@ fn load_upgradeable_buffer(
     bank: &mut LiteSVM,
     payer_kp: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, TransactionError> {
+) -> Result<Pubkey, FailedTransactionMetadata> {
     let payer_pk = payer_kp.pubkey();
     let buffer_kp = Keypair::new();
     let buffer_pk = buffer_kp.pubkey();
@@ -97,8 +92,7 @@ fn load_upgradeable_buffer(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &buffer_kp])
-        .map_err(|e| e.err)?;
+    bank.send_message(message, &[payer_kp, &buffer_kp])?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
@@ -112,18 +106,18 @@ fn load_upgradeable_buffer(
             )],
             Some(&payer_pk),
         );
-        bank.send_message(message, &[payer_kp]).map_err(|e| e.err)?;
+        bank.send_message(message, &[payer_kp])?;
         offset += chunk_size as u32;
     }
 
     Ok(buffer_pk)
 }
 
-pub fn deploy_upgradeable_program(
+fn deploy_upgradeable_program(
     bank: &mut LiteSVM,
     payer_kp: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, TransactionError> {
+) -> Result<Pubkey, FailedTransactionMetadata> {
     let program_kp = Keypair::new();
     let program_pk = program_kp.pubkey();
     let payer_pk = payer_kp.pubkey();
@@ -142,8 +136,63 @@ pub fn deploy_upgradeable_program(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &program_kp])
-        .map_err(|e| e.err)?;
+    bank.send_message(message, &[payer_kp, &program_kp])?;
 
     Ok(program_pk)
+}
+
+pub trait Loader {
+    fn deploy_program(
+        &mut self,
+        payer_keypair: &Keypair,
+        program_bytes: &[u8],
+    ) -> Result<Pubkey, FailedTransactionMetadata>;
+
+    fn set_upgrade_authority(
+        &mut self,
+        from_keypair: &Keypair,
+        program_pubkey: &Pubkey,
+        current_authority_keypair: &Keypair,
+        new_authority_pubkey: Option<&Pubkey>,
+    ) -> Result<(), FailedTransactionMetadata>;
+
+    fn deploy_upgradeable_program(
+        &mut self,
+        payer_kp: &Keypair,
+        program_bytes: &[u8],
+    ) -> Result<Pubkey, FailedTransactionMetadata>;
+}
+
+impl Loader for LiteSVM {
+    fn deploy_program(
+        &mut self,
+        payer_keypair: &Keypair,
+        program_bytes: &[u8],
+    ) -> Result<Pubkey, FailedTransactionMetadata> {
+        deploy_program(self, payer_keypair, program_bytes)
+    }
+
+    fn deploy_upgradeable_program(
+        &mut self,
+        payer_kp: &Keypair,
+        program_bytes: &[u8],
+    ) -> Result<Pubkey, FailedTransactionMetadata> {
+        deploy_upgradeable_program(self, payer_kp, program_bytes)
+    }
+
+    fn set_upgrade_authority(
+        &mut self,
+        from_keypair: &Keypair,
+        program_pubkey: &Pubkey,
+        current_authority_keypair: &Keypair,
+        new_authority_pubkey: Option<&Pubkey>,
+    ) -> Result<(), FailedTransactionMetadata> {
+        set_upgrade_authority(
+            self,
+            from_keypair,
+            program_pubkey,
+            current_authority_keypair,
+            new_authority_pubkey,
+        )
+    }
 }
