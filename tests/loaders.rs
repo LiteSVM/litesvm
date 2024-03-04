@@ -1,4 +1,4 @@
-use litesvm::{deploy_program, deploy_upgradeable_program, LiteSVM};
+use litesvm::{LiteSVM, Loader};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
@@ -47,7 +47,7 @@ fn hello_world_with_deploy() {
 
     bank.airdrop(&payer.pubkey(), 1000000000).unwrap();
 
-    let program_id = deploy_program(&mut bank, &payer, program_bytes).unwrap();
+    let program_id = bank.deploy_program(&payer, program_bytes).unwrap();
 
     let instruction = Instruction::new_with_bytes(
         program_id,
@@ -75,7 +75,9 @@ fn hello_world_with_deploy_upgradeable() {
 
     bank.airdrop(&payer_pk, 10000000000).unwrap();
 
-    let program_id = deploy_upgradeable_program(&mut bank, &payer_kp, program_bytes).unwrap();
+    let program_id = bank
+        .deploy_upgradeable_program(&payer_kp, program_bytes)
+        .unwrap();
 
     let instruction =
         Instruction::new_with_bytes(program_id, &[], vec![AccountMeta::new(payer_pk, true)]);
