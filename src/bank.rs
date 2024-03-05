@@ -37,19 +37,18 @@ use solana_sdk::{
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
-use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
     create_blockhash,
+    history::TransactionHistory,
     spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::RentState,
     PROGRAM_OWNERS,
 };
-
-type AccountHistory = HashMap<Signature, TransactionMetadata>;
 
 #[derive(Clone, Default)]
 pub(crate) struct LightAddressLoader {}
@@ -74,7 +73,7 @@ pub struct LiteSVM {
     slot: Slot,
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
-    history: AccountHistory,
+    history: TransactionHistory,
 }
 
 impl Default for LiteSVM {
@@ -89,7 +88,7 @@ impl Default for LiteSVM {
             slot: 0,
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
-            history: HashMap::new(),
+            history: TransactionHistory::new(),
         }
     }
 }
@@ -209,7 +208,7 @@ impl LiteSVM {
         }
     }
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
-        self.history.get(signature)
+        self.history.get_transaction(signature)
     }
 
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
@@ -488,7 +487,7 @@ impl LiteSVM {
             }
         };
 
-        if self.history.contains_key(sanitized_tx.signature()) {
+        if self.history.check_transaction(sanitized_tx.signature()) {
             return ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
                 ..Default::default()
@@ -545,7 +544,8 @@ impl LiteSVM {
         if let Err(tx_err) = tx_result {
             TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
         } else {
-            self.history.insert(meta.signature, meta.clone());
+            self.history
+                .add_new_transaction(meta.signature, meta.clone());
             self.accounts.sync_accounts(post_accounts);
 
             TransactionResult::Ok(meta)
@@ -576,8 +576,12 @@ impl LiteSVM {
         }
     }
 
-    pub fn set_slot(&mut self, slot: u64) {
+    pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
+    }
+
+    pub fn set_slot(&mut self, slot: u64) {
+        self.expire_blockhash();
         self.slot = slot;
         self.block_height = slot;
         self.programs_cache.set_slot_for_tests(slot);
