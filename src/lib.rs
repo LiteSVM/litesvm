@@ -9,5 +9,6 @@ mod history;
 mod spl;
 mod utils;
 
+pub mod sysvar;
 pub use bank::LiteSVM;
 pub use utils::*;
