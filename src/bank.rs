@@ -92,6 +92,12 @@ impl Default for LiteSVM {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct KeyedAccount {
+    pub pubkey: Pubkey,
+    pub account: Account,
+}
+
 impl LiteSVM {
     pub fn new() -> Self {
         LiteSVM::default()
@@ -170,6 +176,19 @@ impl LiteSVM {
 
     pub fn set_account(&mut self, pubkey: Pubkey, data: Account) {
         self.accounts.add_account(pubkey, data.into())
+    }
+
+    pub fn get_program_accounts(&self, program_id: &Pubkey) -> Vec<KeyedAccount> {
+        self.accounts
+            .inner
+            .iter()
+            .filter_map(|(k, v)| {
+                (v.owner() == program_id).then_some(KeyedAccount {
+                    pubkey: *k,
+                    account: v.to_owned().into(),
+                })
+            })
+            .collect()
     }
 
     pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {

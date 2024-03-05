@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub(crate) struct AccountsDb {
-    inner: HashMap<Pubkey, AccountSharedData>,
+    pub(crate) inner: HashMap<Pubkey, AccountSharedData>,
 }
 
 impl AccountsDb {
