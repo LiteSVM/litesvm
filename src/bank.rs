@@ -27,7 +27,7 @@ use solana_sdk::{
     native_token::LAMPORTS_PER_SOL,
     pubkey::Pubkey,
     rent::Rent,
-    signature::Keypair,
+    signature::{Keypair, Signature},
     signer::Signer,
     signers::Signers,
     slot_history::Slot,
@@ -36,15 +36,17 @@ use solana_sdk::{
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
-use std::{cell::RefCell, default, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
     create_blockhash,
+    history::TransactionHistory,
     spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::RentState,
+    PROGRAM_OWNERS,
 };
 
 #[derive(Clone, Default)]
@@ -70,6 +72,7 @@ pub struct LiteSVM {
     slot: Slot,
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
+    history: TransactionHistory,
 }
 
 impl Default for LiteSVM {
@@ -84,6 +87,7 @@ impl Default for LiteSVM {
             slot: 0,
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
+            history: TransactionHistory::new(),
         }
     }
 }
@@ -201,6 +205,9 @@ impl LiteSVM {
                 self.accounts.add_account(Rent::id(), account);
             }
         }
+    }
+    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
+        self.history.get_transaction(signature)
     }
 
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
@@ -376,19 +383,37 @@ impl LiteSVM {
         tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
         context: &mut TransactionContext,
-    ) -> (Result<(), TransactionError>, LoadedProgramsForTxBatch, u64) {
+    ) -> (Result<(), TransactionError>, u64) {
         let blockhash = tx.message().recent_blockhash();
+
+        //reload program cache
         let mut programs_modified_by_tx =
             LoadedProgramsForTxBatch::new(self.slot, self.programs_cache.environments.clone());
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
-        let program_indices = tx
+        let Ok(program_indices) = tx
             .message()
             .instructions()
             .iter()
-            .map(|c| vec![c.program_id_index as u16])
-            .collect::<Vec<Vec<u16>>>();
+            .map(|c| {
+                let program_id = context.get_key_of_account_at_index(c.program_id_index.into())?;
+
+                if !PROGRAM_OWNERS.contains(program_id) {
+                    let loaded_program = self.load_program(program_id)?;
+                    self.programs_cache
+                        .replenish(*program_id, Arc::new(loaded_program));
+                }
+
+                Ok(vec![c.program_id_index as u16])
+            })
+            .collect::<Result<Vec<Vec<u16>>, InstructionError>>()
+        else {
+            return (
+                Err(TransactionError::InvalidProgramForExecution),
+                accumulated_consume_units,
+            );
+        };
 
         let mut tx_result = MessageProcessor::process_message(
             tx.message(),
@@ -414,11 +439,7 @@ impl LiteSVM {
             tx_result = Err(err);
         };
 
-        (
-            tx_result,
-            programs_modified_by_tx,
-            accumulated_consume_units,
-        )
+        (tx_result, accumulated_consume_units)
     }
 
     fn check_accounts_rent(
@@ -460,14 +481,23 @@ impl LiteSVM {
             Err(err) => {
                 return ExecutionResult {
                     tx_result: Err(err),
-                    ..default::Default::default()
+                    ..Default::default()
                 }
             }
         };
+
+        if self.history.check_transaction(sanitized_tx.signature()) {
+            return ExecutionResult {
+                tx_result: Err(TransactionError::AlreadyProcessed),
+                ..Default::default()
+            };
+        }
+
         let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
 
-        let (result, programs_modified, compute_units_consumed) =
+        let (result, compute_units_consumed) =
             self.process_transaction(&sanitized_tx, compute_budget, &mut context);
+        let signature = sanitized_tx.signature().to_owned();
 
         let ExecutionRecord {
             accounts,
@@ -476,20 +506,9 @@ impl LiteSVM {
             accounts_resize_delta: _,
         } = context.into();
 
-        let programs_modified = accounts
-            .iter()
-            .filter_map(|(k, _)| {
-                if programs_modified.find(k).is_some() {
-                    Some(*k)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
         ExecutionResult {
             tx_result: result,
-            programs_modified,
+            signature,
             post_accounts: accounts,
             compute_units_consumed,
             return_data,
@@ -509,52 +528,46 @@ impl LiteSVM {
         let ExecutionResult {
             post_accounts,
             tx_result,
-            programs_modified,
+            signature,
             compute_units_consumed,
             return_data,
         } = self.execute_transaction(tx.into());
 
-        if tx_result.is_ok() {
-            //TODO check if programs are program_owners
-            self.accounts.sync_accounts(post_accounts);
-            for program_id in programs_modified {
-                let Ok(loaded_program) = self.load_program(&program_id) else {
-                    return TransactionResult::Err(FailedTransactionMetadata {
-                        err: TransactionError::ProgramAccountNotFound,
-                        meta: TransactionMetadata {
-                            logs: self.log_collector.take().into_messages(),
-                            compute_units_consumed,
-                            return_data,
-                        },
-                    });
-                };
-                self.programs_cache
-                    .replenish(program_id, Arc::new(loaded_program));
-            }
-        }
-
-        TransactionResult::Ok(TransactionMetadata {
+        let meta = TransactionMetadata {
             logs: self.log_collector.take().into_messages(),
             compute_units_consumed,
             return_data,
-        })
+            signature,
+        };
+
+        if let Err(tx_err) = tx_result {
+            TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
+        } else {
+            self.history
+                .add_new_transaction(meta.signature, meta.clone());
+            self.accounts.sync_accounts(post_accounts);
+
+            TransactionResult::Ok(meta)
+        }
     }
 
     pub fn simulate_transaction(&mut self, tx: VersionedTransaction) -> TransactionResult {
         let ExecutionResult {
             post_accounts: _,
             tx_result,
-            programs_modified: _,
+            signature,
             compute_units_consumed,
             return_data,
         } = self.execute_transaction(tx);
 
         let logs = self.log_collector.take().into_messages();
         let meta = TransactionMetadata {
+            signature,
             logs,
             compute_units_consumed,
             return_data,
         };
+
         if let Err(tx_err) = tx_result {
             TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
         } else {
@@ -562,8 +575,12 @@ impl LiteSVM {
         }
     }
 
-    pub fn set_slot(&mut self, slot: u64) {
+    pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
+    }
+
+    pub fn set_slot(&mut self, slot: u64) {
+        self.expire_blockhash();
         self.slot = slot;
         self.block_height = slot;
         self.programs_cache.set_slot_for_tests(slot);

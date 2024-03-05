@@ -88,7 +88,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     svm.store_program(program_id, COUNTER_PROGRAM_BYTES);
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let counter_address = Pubkey::new_unique();
-    let blockhash = svm.latest_blockhash();
     let mut group = c.benchmark_group("comparison");
     group.bench_function("litesvm_bench", |b| {
         b.iter(|| {
@@ -98,11 +97,12 @@ fn criterion_benchmark(c: &mut Criterion) {
                     program_id,
                     counter_address,
                     &payer_pk,
-                    blockhash,
+                    svm.latest_blockhash(),
                     &payer_kp,
                     deduper,
                 );
                 let _ = svm.send_transaction(tx.clone());
+                svm.expire_blockhash();
             }
             assert_eq!(svm.get_account(&counter_address).data[0], NUM_GREETINGS);
         })
