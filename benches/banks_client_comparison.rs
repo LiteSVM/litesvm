@@ -18,7 +18,6 @@ fn read_counter_program() -> Vec<u8> {
     std::fs::read(so_path).unwrap()
 }
 
-
 fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::ProgramTest) {
     pt.add_account(
         program_id,
