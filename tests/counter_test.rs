@@ -36,7 +36,6 @@ pub fn integration_test() {
             owner: program_id,
             ..Default::default()
         }
-        .into(),
     );
     assert_eq!(
         svm.get_account(&counter_address).data,
