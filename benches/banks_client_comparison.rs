@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use litesvm::LiteSVM;
 use solana_program::{
@@ -10,7 +12,12 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-const COUNTER_PROGRAM_BYTES: &[u8] = include_bytes!("../tests/programs_bytes/counter.so");
+fn read_counter_program() -> Vec<u8> {
+    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    so_path.push("tests/programs/target/deploy/counter.so");
+    std::fs::read(so_path).unwrap()
+}
+
 
 fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::ProgramTest) {
     pt.add_account(
@@ -49,7 +56,7 @@ fn make_tx(
 
 async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
     let mut pt = solana_program_test::ProgramTest::default();
-    add_program(COUNTER_PROGRAM_BYTES, program_id, &mut pt);
+    add_program(&read_counter_program(), program_id, &mut pt);
     let mut ctx = pt.start_with_context().await;
     ctx.set_account(&counter_address, &counter_acc(program_id).into());
 
@@ -85,24 +92,25 @@ fn criterion_benchmark(c: &mut Criterion) {
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
 
-    svm.store_program(program_id, COUNTER_PROGRAM_BYTES);
+    svm.store_program(program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let counter_address = Pubkey::new_unique();
     let mut group = c.benchmark_group("comparison");
     group.bench_function("litesvm_bench", |b| {
         b.iter(|| {
+            svm.expire_blockhash();
+            let latest_blockhash = svm.latest_blockhash();
             svm.set_account(counter_address, counter_acc(program_id));
             for deduper in 0..NUM_GREETINGS {
                 let tx = make_tx(
                     program_id,
                     counter_address,
                     &payer_pk,
-                    svm.latest_blockhash(),
+                    latest_blockhash,
                     &payer_kp,
                     deduper,
                 );
-                let _ = svm.send_transaction(tx.clone());
-                svm.expire_blockhash();
+                svm.send_transaction(tx.clone()).unwrap();
             }
             assert_eq!(svm.get_account(&counter_address).data[0], NUM_GREETINGS);
         })
