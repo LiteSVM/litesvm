@@ -35,7 +35,7 @@ pub fn integration_test() {
             data: vec![0_u8; std::mem::size_of::<u32>()],
             owner: program_id,
             ..Default::default()
-        }
+        },
     );
     assert_eq!(
         svm.get_account(&counter_address).data,
