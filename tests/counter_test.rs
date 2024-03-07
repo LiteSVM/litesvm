@@ -1,4 +1,6 @@
-use lite_program_test::ProgramTest;
+use std::path::PathBuf;
+
+use litesvm::LiteSVM;
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
@@ -7,54 +9,53 @@ use solana_program::{
 };
 use solana_sdk::{account::Account, signature::Keypair, signer::Signer, transaction::Transaction};
 
-const COUNTER_PROGRAM_BYTES: &[u8] =
-    include_bytes!("../../../../lite-svm/tests/programs_bytes/counter.so");
 const NUM_GREETINGS: u8 = 255;
+
+fn read_counter_program() -> Vec<u8> {
+    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    so_path.push("tests/programs/target/deploy/counter.so");
+    std::fs::read(so_path).unwrap()
+}
 
 #[test]
 pub fn integration_test() {
-    let svm = ProgramTest::new();
+    let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
-    svm.store_program(program_id, COUNTER_PROGRAM_BYTES);
+    svm.store_program(program_id, &read_counter_program());
 
-    svm.request_airdrop(&payer_pk, 1000000000);
-    let blockhash = svm.get_latest_blockhash();
+    svm.airdrop(&payer_pk, 1000000000).unwrap();
+    let blockhash = svm.latest_blockhash();
     let counter_address = Pubkey::new_unique();
-    svm.get_bank_mut().accounts.add_account(
+    svm.set_account(
         counter_address,
         Account {
             lamports: 5,
             data: vec![0_u8; std::mem::size_of::<u32>()],
             owner: program_id,
             ..Default::default()
-        }
-        .into(),
+        },
     );
     assert_eq!(
         svm.get_account(&counter_address).data,
         0u32.to_le_bytes().to_vec()
     );
-    let msg = Message::new_with_blockhash(
-        &[Instruction {
+    let num_greets = 100u8;
+    for deduper in 0..num_greets {
+        let tx = make_tx(
             program_id,
-            accounts: vec![AccountMeta::new(counter_address, false)],
-            data: vec![0],
-        }],
-        Some(&payer_pk),
-        &blockhash,
-    );
-    let tx = Transaction::new(&[&payer_kp], msg, blockhash);
-    let num_greets = 100u32;
-    for _ in 0..num_greets {
-        let tx_res = svm.send_transaction(tx.clone()).unwrap();
-        tx_res.result.unwrap();
-        println!("tx_res.metadata.logs: {:?}", tx_res.metadata.logs);
+            counter_address,
+            &payer_pk,
+            blockhash,
+            &payer_kp,
+            deduper,
+        );
+        svm.send_transaction(tx).unwrap();
     }
     assert_eq!(
         svm.get_account(&counter_address).data,
-        num_greets.to_le_bytes().to_vec()
+        (num_greets as u32).to_le_bytes().to_vec()
     );
 }
 
@@ -102,9 +103,9 @@ fn counter_acc(program_id: Pubkey) -> solana_sdk::account::Account {
 
 async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
     let mut pt = solana_program_test::ProgramTest::default();
-    add_program(COUNTER_PROGRAM_BYTES, program_id, &mut pt);
+    add_program(&read_counter_program(), program_id, &mut pt);
     let mut ctx = pt.start_with_context().await;
-    ctx.set_account(&counter_address, &counter_acc(program_id));
+    ctx.set_account(&counter_address, &counter_acc(program_id).into());
     assert_eq!(
         ctx.banks_client
             .get_account(counter_address)
