@@ -20,11 +20,7 @@ impl AccountsDb {
 
     pub(crate) fn sync_accounts(&mut self, accounts: Vec<(Pubkey, AccountSharedData)>) {
         for (pubkey, data) in accounts {
-            if let Some(existing_account) = self.inner.get_mut(&pubkey) {
-                *existing_account = data;
-            } else {
-                self.inner.insert(pubkey, data);
-            }
+            self.add_account(pubkey, data);
         }
     }
 }
