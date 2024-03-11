@@ -37,7 +37,7 @@ fn spl_token() {
     assert!(tx_result.is_ok());
 
     let mint_acc = svm.get_account(&mint_kp.pubkey());
-    let mint = spl_token::state::Mint::unpack(&mint_acc.data).unwrap();
+    let mint = spl_token::state::Mint::unpack(&mint_acc.unwrap().data).unwrap();
 
     assert_eq!(mint.decimals, 8);
     assert_eq!(mint.mint_authority, Some(payer_pk).into());

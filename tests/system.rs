@@ -28,8 +28,8 @@ fn system_transfer() {
     let to_account = bank.get_account(&to);
 
     assert!(tx_res.is_ok());
-    assert_eq!(from_account.lamports, 36);
-    assert_eq!(to_account.lamports, 64);
+    assert_eq!(from_account.unwrap().lamports, 36);
+    assert_eq!(to_account.unwrap().lamports, 64);
 }
 
 #[test]
@@ -57,7 +57,7 @@ fn system_create_account() {
     );
     let tx_res = bank.send_transaction(tx);
 
-    let account = bank.get_account(&new_account.pubkey());
+    let account = bank.get_account(&new_account.pubkey()).unwrap();
 
     assert!(tx_res.is_ok());
     assert_eq!(account.lamports, lamports);
