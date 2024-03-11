@@ -106,7 +106,8 @@ impl LiteSVM {
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
-            self.accounts.programs_cache
+            self.accounts
+                .programs_cache
                 .replenish(builtint.program_id, Arc::new(loaded_program));
             self.accounts.add_builtin_account(
                 builtint.program_id,
@@ -224,7 +225,9 @@ impl LiteSVM {
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
         let builtin = LoadedProgram::new_builtin(self.slot, 1, entrypoint);
 
-        self.accounts.programs_cache.replenish(program_id, Arc::new(builtin));
+        self.accounts
+            .programs_cache
+            .replenish(program_id, Arc::new(builtin));
         self.accounts
             .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()));
     }
@@ -244,12 +247,17 @@ impl LiteSVM {
             account.owner(),
             account.data().len(),
             self.slot,
-            self.accounts.programs_cache.environments.program_runtime_v1.clone(),
+            self.accounts
+                .programs_cache
+                .environments
+                .program_runtime_v1
+                .clone(),
             false,
         )
         .unwrap_or_default();
         self.accounts.add_account(program_id, account);
-        self.accounts.programs_cache
+        self.accounts
+            .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
     }
 
@@ -301,8 +309,10 @@ impl LiteSVM {
         let blockhash = tx.message().recent_blockhash();
 
         //reload program cache
-        let mut programs_modified_by_tx =
-            LoadedProgramsForTxBatch::new(self.slot, self.accounts.programs_cache.environments.clone());
+        let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
+            self.slot,
+            self.accounts.programs_cache.environments.clone(),
+        );
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
@@ -358,8 +368,10 @@ impl LiteSVM {
 
                 if !account.data().is_empty() {
                     let post_rent_state = RentState::from_account(&account, &rent);
-                    let pre_rent_state =
-                        RentState::from_account(&self.accounts.get_account(pubkey).unwrap_or_default(), &rent);
+                    let pre_rent_state = RentState::from_account(
+                        &self.accounts.get_account(pubkey).unwrap_or_default(),
+                        &rent,
+                    );
 
                     if !post_rent_state.transition_allowed_from(&pre_rent_state) {
                         return Err(TransactionError::InsufficientFundsForRent {
