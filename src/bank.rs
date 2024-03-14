@@ -11,14 +11,10 @@ use solana_program_runtime::{
 };
 use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
-    account_utils::StateMut,
-    bpf_loader, bpf_loader_deprecated,
-    bpf_loader_upgradeable::{self, UpgradeableLoaderState},
+    bpf_loader,
     clock::Clock,
     feature_set::FeatureSet,
     hash::Hash,
-    instruction::InstructionError,
-    loader_v4::{self, LoaderV4State},
     message::{
         v0::{LoadedAddresses, MessageAddressTableLookup},
         AddressLoader, AddressLoaderError, Message, VersionedMessage,
@@ -46,7 +42,6 @@ use crate::{
     spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::RentState,
-    PROGRAM_OWNERS,
 };
 
 #[derive(Clone, Default)]
@@ -64,7 +59,6 @@ impl AddressLoader for LightAddressLoader {
 pub struct LiteSVM {
     accounts: AccountsDb,
     //TODO compute budget
-    programs_cache: LoadedProgramsForTxBatch,
     airdrop_kp: Keypair,
     sysvar_cache: SysvarCache,
     feature_set: Arc<FeatureSet>,
@@ -79,7 +73,6 @@ impl Default for LiteSVM {
     fn default() -> Self {
         Self {
             accounts: Default::default(),
-            programs_cache: Default::default(),
             airdrop_kp: Keypair::new(),
             sysvar_cache: Default::default(),
             feature_set: Default::default(),
@@ -113,9 +106,10 @@ impl LiteSVM {
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
-            self.programs_cache
+            self.accounts
+                .programs_cache
                 .replenish(builtint.program_id, Arc::new(loaded_program));
-            self.accounts.add_account(
+            self.accounts.add_builtin_account(
                 builtint.program_id,
                 native_loader::create_loadable_account_for_test(builtint.name),
             );
@@ -136,8 +130,8 @@ impl LiteSVM {
         let program_runtime_v2 =
             create_program_runtime_environment_v2(&ComputeBudget::default(), true);
 
-        self.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
-        self.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
+        self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
+        self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
         self.feature_set = Arc::new(feature_set);
         self
     }
@@ -164,16 +158,16 @@ impl LiteSVM {
         )
     }
 
-    pub fn get_account(&self, pubkey: &Pubkey) -> Account {
-        self.accounts.get_account(pubkey).into()
+    pub fn get_account(&self, pubkey: &Pubkey) -> Option<Account> {
+        self.accounts.get_account(pubkey).map(Into::into)
     }
 
     pub fn set_account(&mut self, pubkey: Pubkey, data: Account) {
         self.accounts.add_account(pubkey, data.into())
     }
 
-    pub fn get_balance(&self, pubkey: &Pubkey) -> u64 {
-        self.accounts.get_account(pubkey).lamports()
+    pub fn get_balance(&self, pubkey: &Pubkey) -> Option<u64> {
+        self.accounts.get_account(pubkey).map(|x| x.lamports())
     }
 
     pub fn latest_blockhash(&self) -> Hash {
@@ -231,7 +225,9 @@ impl LiteSVM {
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
         let builtin = LoadedProgram::new_builtin(self.slot, 1, entrypoint);
 
-        self.programs_cache.replenish(program_id, Arc::new(builtin));
+        self.accounts
+            .programs_cache
+            .replenish(program_id, Arc::new(builtin));
         self.accounts
             .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()));
     }
@@ -251,92 +247,18 @@ impl LiteSVM {
             account.owner(),
             account.data().len(),
             self.slot,
-            self.programs_cache.environments.program_runtime_v1.clone(),
+            self.accounts
+                .programs_cache
+                .environments
+                .program_runtime_v1
+                .clone(),
             false,
         )
         .unwrap_or_default();
         self.accounts.add_account(program_id, account);
-        self.programs_cache
+        self.accounts
+            .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
-    }
-
-    //TODO handle reload
-    pub(crate) fn load_program(
-        &self,
-        program_id: &Pubkey,
-    ) -> Result<LoadedProgram, InstructionError> {
-        let program_account = self.accounts.get_account(program_id);
-        let metrics = &mut LoadProgramMetrics::default();
-
-        if !program_account.executable() {
-            return Err(InstructionError::AccountNotExecutable);
-        };
-
-        let owner = program_account.owner();
-        let program_runtime_v1 = self.programs_cache.environments.program_runtime_v1.clone();
-
-        if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
-            LoadedProgram::new(
-                owner,
-                self.programs_cache.environments.program_runtime_v1.clone(),
-                self.slot,
-                self.slot,
-                None,
-                program_account.data(),
-                program_account.data().len(),
-                &mut LoadProgramMetrics::default(),
-            )
-            .map_err(|_| InstructionError::InvalidAccountData)
-        } else if bpf_loader_upgradeable::check_id(owner) {
-            let Ok(UpgradeableLoaderState::Program {
-                programdata_address,
-            }) = program_account.state()
-            else {
-                return Err(InstructionError::InvalidAccountData);
-            };
-            let programdata_account = self.accounts.get_account(&programdata_address);
-
-            programdata_account
-                .data()
-                .get(UpgradeableLoaderState::size_of_programdata_metadata()..)
-                .ok_or(Box::new(InstructionError::InvalidAccountData).into())
-                .and_then(|programdata| {
-                    LoadedProgram::new(
-                        owner,
-                        program_runtime_v1,
-                        self.slot,
-                        self.slot,
-                        None,
-                        programdata,
-                        program_account
-                            .data()
-                            .len()
-                            .saturating_add(programdata_account.data().len()),
-                        metrics,
-                    )
-                })
-                .map_err(|_| InstructionError::InvalidAccountData)
-        } else if loader_v4::check_id(owner) {
-            program_account
-                .data()
-                .get(LoaderV4State::program_data_offset()..)
-                .ok_or(Box::new(InstructionError::InvalidAccountData).into())
-                .and_then(|elf_bytes| {
-                    LoadedProgram::new(
-                        &loader_v4::id(),
-                        program_runtime_v1,
-                        self.slot,
-                        self.slot,
-                        None,
-                        elf_bytes,
-                        program_account.data().len(),
-                        metrics,
-                    )
-                })
-                .map_err(|_| InstructionError::InvalidAccountData)
-        } else {
-            Err(InstructionError::IncorrectProgramId)
-        }
     }
 
     //TODO
@@ -349,7 +271,7 @@ impl LiteSVM {
             .message()
             .account_keys()
             .iter()
-            .map(|p| (*p, self.accounts.get_account(p)))
+            .map(|p| (*p, self.accounts.get_account(p).unwrap_or_default()))
             .collect();
 
         TransactionContext::new(
@@ -387,33 +309,19 @@ impl LiteSVM {
         let blockhash = tx.message().recent_blockhash();
 
         //reload program cache
-        let mut programs_modified_by_tx =
-            LoadedProgramsForTxBatch::new(self.slot, self.programs_cache.environments.clone());
+        let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
+            self.slot,
+            self.accounts.programs_cache.environments.clone(),
+        );
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
-        let Ok(program_indices) = tx
+        let program_indices = tx
             .message()
             .instructions()
             .iter()
-            .map(|c| {
-                let program_id = context.get_key_of_account_at_index(c.program_id_index.into())?;
-
-                if !PROGRAM_OWNERS.contains(program_id) {
-                    let loaded_program = self.load_program(program_id)?;
-                    self.programs_cache
-                        .replenish(*program_id, Arc::new(loaded_program));
-                }
-
-                Ok(vec![c.program_id_index as u16])
-            })
-            .collect::<Result<Vec<Vec<u16>>, InstructionError>>()
-        else {
-            return (
-                Err(TransactionError::InvalidProgramForExecution),
-                accumulated_consume_units,
-            );
-        };
+            .map(|c| vec![c.program_id_index as u16])
+            .collect::<Vec<Vec<u16>>>();
 
         let mut tx_result = MessageProcessor::process_message(
             tx.message(),
@@ -421,7 +329,7 @@ impl LiteSVM {
             context,
             *self.sysvar_cache.get_rent().unwrap_or_default(),
             Some(self.log_collector.clone()),
-            &self.programs_cache,
+            &self.accounts.programs_cache,
             &mut programs_modified_by_tx,
             &mut programs_updated_only_for_global_cache,
             self.feature_set.clone(),
@@ -460,8 +368,10 @@ impl LiteSVM {
 
                 if !account.data().is_empty() {
                     let post_rent_state = RentState::from_account(&account, &rent);
-                    let pre_rent_state =
-                        RentState::from_account(&self.accounts.get_account(pubkey), &rent);
+                    let pre_rent_state = RentState::from_account(
+                        &self.accounts.get_account(pubkey).unwrap_or_default(),
+                        &rent,
+                    );
 
                     if !post_rent_state.transition_allowed_from(&pre_rent_state) {
                         return Err(TransactionError::InsufficientFundsForRent {
@@ -494,22 +404,26 @@ impl LiteSVM {
         }
 
         let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
-
         let (result, compute_units_consumed) =
             self.process_transaction(&sanitized_tx, compute_budget, &mut context);
         let signature = sanitized_tx.signature().to_owned();
-
         let ExecutionRecord {
             accounts,
             return_data,
             touched_account_count: _,
             accounts_resize_delta: _,
         } = context.into();
+        let msg = sanitized_tx.message();
+        let post_accounts = accounts
+            .into_iter()
+            .enumerate()
+            .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
+            .collect();
 
         ExecutionResult {
             tx_result: result,
             signature,
-            post_accounts: accounts,
+            post_accounts,
             compute_units_consumed,
             return_data,
         }
@@ -525,13 +439,14 @@ impl LiteSVM {
     }
 
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
+        let vtx: VersionedTransaction = tx.into();
         let ExecutionResult {
             post_accounts,
             tx_result,
             signature,
             compute_units_consumed,
             return_data,
-        } = self.execute_transaction(tx.into());
+        } = self.execute_transaction(vtx);
 
         let meta = TransactionMetadata {
             logs: self.log_collector.take().into_messages(),
@@ -583,6 +498,6 @@ impl LiteSVM {
         self.expire_blockhash();
         self.slot = slot;
         self.block_height = slot;
-        self.programs_cache.set_slot_for_tests(slot);
+        self.accounts.programs_cache.set_slot_for_tests(slot);
     }
 }

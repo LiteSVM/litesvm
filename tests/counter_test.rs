@@ -24,7 +24,6 @@ pub fn integration_test() {
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
     svm.store_program(program_id, &read_counter_program());
-
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
     let counter_address = Pubkey::new_unique();
@@ -38,7 +37,7 @@ pub fn integration_test() {
         },
     );
     assert_eq!(
-        svm.get_account(&counter_address).data,
+        svm.get_account(&counter_address).unwrap().data,
         0u32.to_le_bytes().to_vec()
     );
     let num_greets = 100u8;
@@ -54,7 +53,7 @@ pub fn integration_test() {
         svm.send_transaction(tx).unwrap();
     }
     assert_eq!(
-        svm.get_account(&counter_address).data,
+        svm.get_account(&counter_address).unwrap().data,
         (num_greets as u32).to_le_bytes().to_vec()
     );
 }
@@ -137,7 +136,6 @@ async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
             .await
             .unwrap();
         tx_res.result.unwrap();
-        println!("logs: {:?}", tx_res.metadata.unwrap().log_messages);
     }
     let fetched = ctx
         .banks_client

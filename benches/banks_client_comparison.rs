@@ -111,7 +111,10 @@ fn criterion_benchmark(c: &mut Criterion) {
                 );
                 svm.send_transaction(tx.clone()).unwrap();
             }
-            assert_eq!(svm.get_account(&counter_address).data[0], NUM_GREETINGS);
+            assert_eq!(
+                svm.get_account(&counter_address).unwrap().data[0],
+                NUM_GREETINGS
+            );
         })
     });
     group.bench_function("banks_client_bench", |b| {
