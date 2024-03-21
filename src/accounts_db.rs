@@ -4,10 +4,16 @@ use solana_program::{
     clock::Clock,
     instruction::InstructionError,
     loader_v4::{self, LoaderV4State},
-    sysvar,
+    sysvar::{
+        self, clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
+        epoch_schedule::ID as EPOCH_SCHEDULE_ID, last_restart_slot::ID as LAST_RESTART_SLOT_ID,
+        rent::ID as RENT_ID, slot_hashes::ID as SLOT_HASHES_ID,
+        stake_history::ID as STAKE_HISTORY_ID, Sysvar,
+    },
 };
-use solana_program_runtime::loaded_programs::{
-    LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch,
+use solana_program_runtime::{
+    loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
+    sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
     account::{AccountSharedData, ReadableAccount},
@@ -16,10 +22,33 @@ use solana_sdk::{
 };
 use std::{collections::HashMap, sync::Arc};
 
+use crate::types::InvalidSysvarDataError;
+
+const FEES_ID: Pubkey = solana_program::pubkey!("SysvarFees111111111111111111111111111111111");
+const RECENT_BLOCKHASHES_ID: Pubkey =
+    solana_program::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
+
+fn handle_sysvar<F, T>(
+    cache: &mut SysvarCache,
+    method: F,
+    err_variant: InvalidSysvarDataError,
+    bytes: &[u8],
+) -> Result<(), InvalidSysvarDataError>
+where
+    T: Sysvar,
+    F: Fn(&mut SysvarCache, T) -> (),
+{
+    Ok(method(
+        cache,
+        bincode::deserialize::<T>(bytes).map_err(|_| err_variant)?,
+    ))
+}
+
 #[derive(Default)]
 pub(crate) struct AccountsDb {
     inner: HashMap<Pubkey, AccountSharedData>,
     pub(crate) programs_cache: LoadedProgramsForTxBatch,
+    pub(crate) sysvar_cache: SysvarCache,
 }
 
 impl AccountsDb {
@@ -27,13 +56,99 @@ impl AccountsDb {
         self.inner.get(pubkey).map(|acc| acc.to_owned())
     }
 
-    pub(crate) fn add_account(&mut self, pubkey: Pubkey, data: AccountSharedData) {
-        if data.executable() && pubkey != Pubkey::default() {
-            let loaded_program = self.load_program(&data).unwrap();
+    /// We should only use this when we know we're not touching any executable or sysvar accounts,
+    /// or have already handled such cases.
+    pub(crate) fn add_account_no_checks(&mut self, pubkey: Pubkey, account: AccountSharedData) {
+        self.inner.insert(pubkey, account);
+    }
+
+    pub(crate) fn add_account(
+        &mut self,
+        pubkey: Pubkey,
+        account: AccountSharedData,
+    ) -> Result<(), InvalidSysvarDataError> {
+        if account.executable() && pubkey != Pubkey::default() {
+            let loaded_program = self.load_program(&account).unwrap();
             self.programs_cache
                 .replenish(pubkey, Arc::new(loaded_program));
+        } else {
+            self.maybe_handle_sysvar_account(pubkey, &account)?;
         }
-        self.inner.insert(pubkey, data);
+        self.add_account_no_checks(pubkey, account);
+        Ok(())
+    }
+
+    fn maybe_handle_sysvar_account(
+        &mut self,
+        pubkey: Pubkey,
+        account: &AccountSharedData,
+    ) -> Result<(), InvalidSysvarDataError> {
+        use InvalidSysvarDataError::{
+            Clock, EpochRewards, EpochSchedule, Fees, LastRestartSlot, RecentBlockhashes, Rent,
+            SlotHashes, StakeHistory,
+        };
+        let cache = &mut self.sysvar_cache;
+        #[allow(deprecated)]
+        Ok(match pubkey {
+            CLOCK_ID => {
+                handle_sysvar(cache, SysvarCache::set_clock, Clock, account.data())?;
+            }
+            EPOCH_REWARDS_ID => {
+                handle_sysvar(
+                    cache,
+                    SysvarCache::set_epoch_rewards,
+                    EpochRewards,
+                    account.data(),
+                )?;
+            }
+            EPOCH_SCHEDULE_ID => {
+                handle_sysvar(
+                    cache,
+                    SysvarCache::set_epoch_schedule,
+                    EpochSchedule,
+                    account.data(),
+                )?;
+            }
+            FEES_ID => {
+                handle_sysvar(cache, SysvarCache::set_fees, Fees, account.data())?;
+            }
+            LAST_RESTART_SLOT_ID => {
+                handle_sysvar(
+                    cache,
+                    SysvarCache::set_last_restart_slot,
+                    LastRestartSlot,
+                    account.data(),
+                )?;
+            }
+            RECENT_BLOCKHASHES_ID => {
+                handle_sysvar(
+                    cache,
+                    SysvarCache::set_recent_blockhashes,
+                    RecentBlockhashes,
+                    account.data(),
+                )?;
+            }
+            RENT_ID => {
+                handle_sysvar(cache, SysvarCache::set_rent, Rent, account.data())?;
+            }
+            SLOT_HASHES_ID => {
+                handle_sysvar(
+                    cache,
+                    SysvarCache::set_slot_hashes,
+                    SlotHashes,
+                    account.data(),
+                )?;
+            }
+            STAKE_HISTORY_ID => {
+                handle_sysvar(
+                    cache,
+                    SysvarCache::set_stake_history,
+                    StakeHistory,
+                    account.data(),
+                )?;
+            }
+            _ => {}
+        })
     }
 
     /// Skip the executable() checks for builtin accounts
@@ -41,15 +156,19 @@ impl AccountsDb {
         self.inner.insert(pubkey, data);
     }
 
-    pub(crate) fn sync_accounts(&mut self, mut accounts: Vec<(Pubkey, AccountSharedData)>) {
+    pub(crate) fn sync_accounts(
+        &mut self,
+        mut accounts: Vec<(Pubkey, AccountSharedData)>,
+    ) -> Result<(), InvalidSysvarDataError> {
         // need to add programdata accounts first if there are any
         itertools::partition(&mut accounts, |x| {
             x.1.owner() == &bpf_loader_upgradeable::id()
                 && x.1.data().first().map_or(false, |byte| *byte == 3)
         });
         for (pubkey, acc) in accounts {
-            self.add_account(pubkey, acc);
+            self.add_account(pubkey, acc)?;
         }
+        Ok(())
     }
 
     fn load_program(
