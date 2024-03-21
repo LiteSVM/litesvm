@@ -1,5 +1,7 @@
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
+#[allow(deprecated)]
+use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     invoke_context::BuiltinFunctionWithContext,
@@ -12,6 +14,8 @@ use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     bpf_loader,
     clock::Clock,
+    epoch_rewards::EpochRewards,
+    epoch_schedule::EpochSchedule,
     feature_set::FeatureSet,
     hash::Hash,
     message::{
@@ -25,9 +29,11 @@ use solana_sdk::{
     signature::{Keypair, Signature},
     signer::Signer,
     signers::Signers,
-    slot_history::Slot,
+    slot_hashes::SlotHashes,
+    slot_history::{Slot, SlotHistory},
+    stake_history::StakeHistory,
     system_instruction, system_program,
-    sysvar::{Sysvar, SysvarId},
+    sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
@@ -96,7 +102,17 @@ impl LiteSVM {
 
     pub fn with_sysvars(mut self) -> Self {
         self.set_sysvar(&Clock::default());
+        self.set_sysvar(&EpochRewards::default());
+        self.set_sysvar(&EpochSchedule::default());
+        #[allow(deprecated)]
+        self.set_sysvar(&Fees::default());
+        self.set_sysvar(&LastRestartSlot::default());
+        #[allow(deprecated)]
+        self.set_sysvar(&RecentBlockhashes::default());
         self.set_sysvar(&Rent::default());
+        self.set_sysvar(&SlotHashes::default());
+        self.set_sysvar(&SlotHistory::default());
+        self.set_sysvar(&StakeHistory::default());
         self
     }
 
