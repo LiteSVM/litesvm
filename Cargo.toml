@@ -26,6 +26,13 @@ tokio = "1.35"
 name = "banks_client_comparison"
 harness = false
 
+[[bench]]
+name = "simple_bench"
+harness = false
+
+[profile.bench]
+debug = true
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
