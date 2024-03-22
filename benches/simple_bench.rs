@@ -50,7 +50,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let counter_address = Pubkey::new_unique();
     c.bench_function("simple_bench", |b| {
         b.iter(|| {
-            svm.set_account(counter_address, counter_acc(program_id));
+            let _ = svm.set_account(counter_address, counter_acc(program_id));
             svm.expire_blockhash();
             let latest_blockhash = svm.latest_blockhash();
             for deduper in 0..NUM_GREETINGS {
