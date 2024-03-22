@@ -99,7 +99,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             svm.expire_blockhash();
             let latest_blockhash = svm.latest_blockhash();
-            svm.set_account(counter_address, counter_acc(program_id));
+            let _ = svm.set_account(counter_address, counter_acc(program_id));
             for deduper in 0..NUM_GREETINGS {
                 let tx = make_tx(
                     program_id,

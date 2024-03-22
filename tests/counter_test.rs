@@ -27,7 +27,7 @@ pub fn integration_test() {
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
     let counter_address = Pubkey::new_unique();
-    svm.set_account(
+    let _ = svm.set_account(
         counter_address,
         Account {
             lamports: 5,

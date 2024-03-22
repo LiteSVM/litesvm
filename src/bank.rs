@@ -1,18 +1,21 @@
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
+#[allow(deprecated)]
+use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     invoke_context::BuiltinFunctionWithContext,
     loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
     log_collector::LogCollector,
     message_processor::MessageProcessor,
-    sysvar_cache::SysvarCache,
     timings::ExecuteTimings,
 };
 use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     bpf_loader,
     clock::Clock,
+    epoch_rewards::EpochRewards,
+    epoch_schedule::EpochSchedule,
     feature_set::FeatureSet,
     hash::Hash,
     message::{
@@ -26,9 +29,11 @@ use solana_sdk::{
     signature::{Keypair, Signature},
     signer::Signer,
     signers::Signers,
-    slot_history::Slot,
+    slot_hashes::SlotHashes,
+    slot_history::{Slot, SlotHistory},
+    stake_history::StakeHistory,
     system_instruction, system_program,
-    sysvar::{Sysvar, SysvarId},
+    sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
@@ -40,7 +45,10 @@ use crate::{
     create_blockhash,
     history::TransactionHistory,
     spl::load_spl_programs,
-    types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
+    types::{
+        ExecutionResult, FailedTransactionMetadata, InvalidSysvarDataError, TransactionMetadata,
+        TransactionResult,
+    },
     utils::RentState,
 };
 
@@ -60,7 +68,6 @@ pub struct LiteSVM {
     accounts: AccountsDb,
     //TODO compute budget
     airdrop_kp: Keypair,
-    sysvar_cache: SysvarCache,
     feature_set: Arc<FeatureSet>,
     block_height: u64,
     slot: Slot,
@@ -74,7 +81,6 @@ impl Default for LiteSVM {
         Self {
             accounts: Default::default(),
             airdrop_kp: Keypair::new(),
-            sysvar_cache: Default::default(),
             feature_set: Default::default(),
             block_height: 0,
             slot: 0,
@@ -96,7 +102,17 @@ impl LiteSVM {
 
     pub fn with_sysvars(mut self) -> Self {
         self.set_sysvar(&Clock::default());
+        self.set_sysvar(&EpochRewards::default());
+        self.set_sysvar(&EpochSchedule::default());
+        #[allow(deprecated)]
+        self.set_sysvar(&Fees::default());
+        self.set_sysvar(&LastRestartSlot::default());
+        #[allow(deprecated)]
+        self.set_sysvar(&RecentBlockhashes::default());
         self.set_sysvar(&Rent::default());
+        self.set_sysvar(&SlotHashes::default());
+        self.set_sysvar(&SlotHistory::default());
+        self.set_sysvar(&StakeHistory::default());
         self
     }
 
@@ -137,7 +153,7 @@ impl LiteSVM {
     }
 
     pub fn with_lamports(mut self, lamports: u64) -> Self {
-        self.accounts.add_account(
+        self.accounts.add_account_no_checks(
             self.airdrop_kp.pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
         );
@@ -151,7 +167,8 @@ impl LiteSVM {
 
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
         1.max(
-            self.sysvar_cache
+            self.accounts
+                .sysvar_cache
                 .get_rent()
                 .unwrap_or_default()
                 .minimum_balance(data_len),
@@ -162,7 +179,11 @@ impl LiteSVM {
         self.accounts.get_account(pubkey).map(Into::into)
     }
 
-    pub fn set_account(&mut self, pubkey: Pubkey, data: Account) {
+    pub fn set_account(
+        &mut self,
+        pubkey: Pubkey,
+        data: Account,
+    ) -> Result<(), InvalidSysvarDataError> {
         self.accounts.add_account(pubkey, data.into())
     }
 
@@ -182,24 +203,17 @@ impl LiteSVM {
     where
         T: Sysvar + SysvarId,
     {
-        let Ok(data) = bincode::serialize(sysvar) else {
-            return;
-        };
-
         let account = AccountSharedData::new_data(1, &sysvar, &solana_sdk::sysvar::id()).unwrap();
-
-        if T::id() == Clock::id() {
-            if let Ok(clock) = bincode::deserialize(&data) {
-                self.sysvar_cache.set_clock(clock);
-                self.accounts.add_account(Clock::id(), account);
-            }
-        } else if T::id() == Rent::id() {
-            if let Ok(rent) = bincode::deserialize(&data) {
-                self.sysvar_cache.set_rent(rent);
-                self.accounts.add_account(Rent::id(), account);
-            }
-        }
+        self.accounts.add_account(T::id(), account).unwrap();
     }
+
+    pub fn get_sysvar<T>(&self) -> T
+    where
+        T: Sysvar + SysvarId,
+    {
+        bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
+    }
+
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
         self.history.get_transaction(signature)
     }
@@ -229,7 +243,8 @@ impl LiteSVM {
             .programs_cache
             .replenish(program_id, Arc::new(builtin));
         self.accounts
-            .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()));
+            .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()))
+            .unwrap();
     }
 
     pub fn store_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
@@ -255,7 +270,7 @@ impl LiteSVM {
             false,
         )
         .unwrap_or_default();
-        self.accounts.add_account(program_id, account);
+        self.accounts.add_account(program_id, account).unwrap();
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
@@ -327,7 +342,7 @@ impl LiteSVM {
             tx.message(),
             &program_indices,
             context,
-            *self.sysvar_cache.get_rent().unwrap_or_default(),
+            *self.accounts.sysvar_cache.get_rent().unwrap_or_default(),
             Some(self.log_collector.clone()),
             &self.accounts.programs_cache,
             &mut programs_modified_by_tx,
@@ -335,7 +350,7 @@ impl LiteSVM {
             self.feature_set.clone(),
             compute_budget,
             &mut ExecuteTimings::default(),
-            &self.sysvar_cache,
+            &self.accounts.sysvar_cache,
             *blockhash,
             0,
             u64::MAX,
@@ -364,7 +379,7 @@ impl LiteSVM {
                 let pubkey = context
                     .get_key_of_account_at_index(index as IndexOfAccount)
                     .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
-                let rent = self.sysvar_cache.get_rent().unwrap_or_default();
+                let rent = self.accounts.sysvar_cache.get_rent().unwrap_or_default();
 
                 if !account.data().is_empty() {
                     let post_rent_state = RentState::from_account(&account, &rent);
@@ -460,7 +475,9 @@ impl LiteSVM {
         } else {
             self.history
                 .add_new_transaction(meta.signature, meta.clone());
-            self.accounts.sync_accounts(post_accounts);
+            self.accounts
+                .sync_accounts(post_accounts)
+                .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");
 
             TransactionResult::Ok(meta)
         }
