@@ -36,12 +36,13 @@ fn handle_sysvar<F, T>(
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar,
-    F: Fn(&mut SysvarCache, T) -> (),
+    F: Fn(&mut SysvarCache, T),
 {
-    Ok(method(
+    method(
         cache,
         bincode::deserialize::<T>(bytes).map_err(|_| err_variant)?,
-    ))
+    );
+    Ok(())
 }
 
 #[derive(Default)]
@@ -89,7 +90,7 @@ impl AccountsDb {
         };
         let cache = &mut self.sysvar_cache;
         #[allow(deprecated)]
-        Ok(match pubkey {
+        match pubkey {
             CLOCK_ID => {
                 handle_sysvar(cache, SysvarCache::set_clock, Clock, account.data())?;
             }
@@ -148,7 +149,8 @@ impl AccountsDb {
                 )?;
             }
             _ => {}
-        })
+        };
+        Ok(())
     }
 
     /// Skip the executable() checks for builtin accounts
