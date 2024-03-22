@@ -207,6 +207,13 @@ impl LiteSVM {
         self.accounts.add_account(T::id(), account).unwrap();
     }
 
+    pub fn get_sysvar<T>(&self) -> T
+    where
+        T: Sysvar + SysvarId,
+    {
+        bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
+    }
+
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
         self.history.get_transaction(signature)
     }
