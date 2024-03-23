@@ -233,7 +233,15 @@ impl LiteSVM {
     }
 
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
-        let builtin = LoadedProgram::new_builtin(self.slot, 1, entrypoint);
+        let builtin = LoadedProgram::new_builtin(
+            self.accounts
+                .sysvar_cache
+                .get_clock()
+                .unwrap_or_default()
+                .slot,
+            1,
+            entrypoint,
+        );
 
         self.accounts
             .programs_cache
@@ -257,7 +265,7 @@ impl LiteSVM {
             account.data(),
             account.owner(),
             account.data().len(),
-            self.slot,
+            self.accounts.sysvar_cache.get_clock().unwrap_or_default().slot,
             self.accounts
                 .programs_cache
                 .environments
@@ -508,7 +516,6 @@ impl LiteSVM {
     }
 
     pub fn set_slot(&mut self, slot: u64) {
-        self.slot = slot;
         self.block_height = slot;
         self.accounts.programs_cache.set_slot_for_tests(slot);
     }
