@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use litesvm::LiteSVM;
@@ -8,8 +8,8 @@ use solana_program::{
     rent::Rent,
 };
 use solana_sdk::{
-    account::Account, message::Message, signature::Keypair, signer::Signer,
-    transaction::Transaction,
+    account::Account, feature_set::FeatureSet, message::Message, signature::Keypair,
+    signer::Signer, transaction::Transaction,
 };
 
 fn read_counter_program() -> Vec<u8> {
@@ -53,7 +53,11 @@ fn make_tx(
     Transaction::new(&[payer_kp], msg, blockhash)
 }
 
-async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
+async fn do_program_test(
+    program_id: Pubkey,
+    counter_address: Pubkey,
+    feature_set: Arc<FeatureSet>,
+) {
     let mut pt = solana_program_test::ProgramTest::default();
     add_program(&read_counter_program(), program_id, &mut pt);
     let mut ctx = pt.start_with_context().await;
@@ -68,6 +72,10 @@ async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
             &ctx.payer,
             deduper,
         );
+        // We verify the transaction to align the benchmark
+        // as LiteSVM also verifies the transaction by default.
+        tx.verify().unwrap();
+        tx.verify_precompiles(&feature_set).unwrap();
         let tx_res = ctx
             .banks_client
             .process_transaction_with_metadata(tx)
@@ -93,6 +101,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     svm.store_program(program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
+    let feature_set = svm.get_feature_set();
     let counter_address = Pubkey::new_unique();
     let mut group = c.benchmark_group("comparison");
     group.bench_function("litesvm_bench", |b| {
@@ -121,7 +130,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
-                do_program_test(program_id, counter_address).await;
+                do_program_test(program_id, counter_address, feature_set.clone()).await;
             });
         })
     });
