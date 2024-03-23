@@ -514,6 +514,9 @@ impl LiteSVM {
     }
 
     pub fn set_slot(&mut self, slot: u64) {
+        let mut clock = self.get_sysvar::<Clock>();
+        clock.slot = slot;
+        self.set_sysvar(&clock);
         self.accounts.programs_cache.set_slot_for_tests(slot);
     }
 
