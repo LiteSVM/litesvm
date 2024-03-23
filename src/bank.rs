@@ -69,7 +69,6 @@ pub struct LiteSVM {
     //TODO compute budget
     airdrop_kp: Keypair,
     feature_set: Arc<FeatureSet>,
-    block_height: u64,
     slot: Slot,
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
@@ -82,7 +81,6 @@ impl Default for LiteSVM {
             accounts: Default::default(),
             airdrop_kp: Keypair::new(),
             feature_set: Default::default(),
-            block_height: 0,
             slot: 0,
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
@@ -516,7 +514,6 @@ impl LiteSVM {
     }
 
     pub fn set_slot(&mut self, slot: u64) {
-        self.block_height = slot;
         self.accounts.programs_cache.set_slot_for_tests(slot);
     }
 
