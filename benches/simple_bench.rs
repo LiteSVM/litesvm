@@ -13,7 +13,7 @@ use solana_sdk::{
 
 fn read_counter_program() -> Vec<u8> {
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    so_path.push("tests/programs/target/deploy/counter.so");
+    so_path.push("test_programs/target/deploy/counter.so");
     std::fs::read(so_path).unwrap()
 }
 
