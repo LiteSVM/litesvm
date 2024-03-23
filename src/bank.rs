@@ -72,6 +72,7 @@ pub struct LiteSVM {
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
     history: TransactionHistory,
+    compute_budget: Option<ComputeBudget>,
 }
 
 impl Default for LiteSVM {
@@ -83,6 +84,7 @@ impl Default for LiteSVM {
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
             history: TransactionHistory::new(),
+            compute_budget: None,
         }
     }
 }
@@ -94,6 +96,11 @@ impl LiteSVM {
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_spl_programs()
+    }
+
+    pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
+        self.compute_budget = Some(compute_budget);
+        self
     }
 
     pub fn with_sysvars(mut self) -> Self {
@@ -255,7 +262,6 @@ impl LiteSVM {
         account.set_data_from_slice(program_bytes);
 
         let loaded_program = solana_bpf_loader_program::load_program_from_bytes(
-            false,
             Some(self.log_collector.clone()),
             &mut LoadProgramMetrics::default(),
             account.data(),
@@ -295,7 +301,7 @@ impl LiteSVM {
 
         TransactionContext::new(
             accounts,
-            Some(Rent::default()), //TODO remove rent in future
+            Rent::default(), //TODO remove rent in future
             compute_budget.max_invoke_stack_height,
             compute_budget.max_instruction_trace_length,
         )
@@ -331,8 +337,9 @@ impl LiteSVM {
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
             self.accounts.programs_cache.environments.clone(),
+            None,
+            0,
         );
-        let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
 
         let program_indices = tx
@@ -346,18 +353,15 @@ impl LiteSVM {
             tx.message(),
             &program_indices,
             context,
-            *self.accounts.sysvar_cache.get_rent().unwrap_or_default(),
             Some(self.log_collector.clone()),
             &self.accounts.programs_cache,
             &mut programs_modified_by_tx,
-            &mut programs_updated_only_for_global_cache,
             self.feature_set.clone(),
             compute_budget,
             &mut ExecuteTimings::default(),
             &self.accounts.sysvar_cache,
             *blockhash,
             0,
-            u64::MAX,
             &mut accumulated_consume_units,
         )
         .map(|_| ());
@@ -404,7 +408,6 @@ impl LiteSVM {
     }
 
     fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        let compute_budget = ComputeBudget::default();
         let sanitized_tx = match self.sanitize_transaction(tx) {
             Ok(s_tx) => s_tx,
             Err(err) => {
@@ -414,6 +417,10 @@ impl LiteSVM {
                 }
             }
         };
+        let compute_budget = self.compute_budget.unwrap_or_else(|| {
+            let instructions = sanitized_tx.message().program_instructions_iter();
+            ComputeBudget::try_from_instructions(instructions).unwrap_or_default()
+        });
 
         if self.history.check_transaction(sanitized_tx.signature()) {
             return ExecutionResult {
