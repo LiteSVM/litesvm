@@ -517,4 +517,8 @@ impl LiteSVM {
         self.block_height = slot;
         self.accounts.programs_cache.set_slot_for_tests(slot);
     }
+
+    pub fn get_feature_set(&self) -> Arc<FeatureSet> {
+        self.feature_set.clone()
+    }
 }
