@@ -7,7 +7,12 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
 };
-use solana_sdk::{account::Account, signature::{Keypair, Signature}, signer::Signer, transaction::Transaction};
+use solana_sdk::{
+    account::Account,
+    signature::{Keypair, Signature},
+    signer::Signer,
+    transaction::Transaction,
+};
 
 const NUM_GREETINGS: u8 = 255;
 
@@ -203,7 +208,7 @@ async fn do_program_test_wrong_signature(program_id: Pubkey, counter_address: Pu
         counter_address,
         &ctx.payer.pubkey(),
         ctx.last_blockhash,
-        &ctx.payer
+        &ctx.payer,
     );
     let tx_res = ctx
         .banks_client
@@ -224,7 +229,7 @@ async fn do_program_test_wrong_signature(program_id: Pubkey, counter_address: Pu
 /// Confirm that process_transaction_with_metadata
 /// does not do sigverify.
 #[test]
-fn test_process_transaction_with_metadata_unsigned() {
+fn test_process_transaction_with_metadata_wrong_signature() {
     let program_id = Pubkey::new_unique();
 
     let counter_address = Pubkey::new_unique();
