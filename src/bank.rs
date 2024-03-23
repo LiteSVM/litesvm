@@ -195,10 +195,6 @@ impl LiteSVM {
         self.latest_blockhash
     }
 
-    pub fn slot(&self) -> u64 {
-        self.slot
-    }
-
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
         T: Sysvar + SysvarId,
