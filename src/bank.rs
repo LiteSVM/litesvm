@@ -513,7 +513,7 @@ impl LiteSVM {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
     }
 
-    pub fn set_slot(&mut self, slot: u64) {
+    pub fn warp_to_slot(&mut self, slot: u64) {
         let mut clock = self.get_sysvar::<Clock>();
         clock.slot = slot;
         self.set_sysvar(&clock);
