@@ -7,7 +7,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
 };
-use solana_sdk::{account::Account, signature::Keypair, signer::Signer, transaction::Transaction};
+use solana_sdk::{account::Account, signature::{Keypair, Signature}, signer::Signer, transaction::Transaction};
 
 const NUM_GREETINGS: u8 = 255;
 
@@ -154,4 +154,80 @@ fn banks_client_test() {
     let counter_address = Pubkey::new_unique();
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async { do_program_test(program_id, counter_address).await });
+}
+
+fn make_tx_wrong_signature(
+    program_id: Pubkey,
+    counter_address: Pubkey,
+    payer_pk: &Pubkey,
+    blockhash: solana_program::hash::Hash,
+    payer_kp: &Keypair,
+) -> Transaction {
+    let msg = Message::new_with_blockhash(
+        &[Instruction {
+            program_id,
+            accounts: vec![AccountMeta::new(counter_address, false)],
+            data: vec![0, 0],
+        }],
+        Some(payer_pk),
+        &blockhash,
+    );
+    let mut tx = Transaction::new(&[&payer_kp], msg, blockhash);
+    tx.signatures[0] = Signature::new_unique();
+    tx
+}
+
+async fn do_program_test_wrong_signature(program_id: Pubkey, counter_address: Pubkey) {
+    let mut pt = solana_program_test::ProgramTest::default();
+    add_program(&read_counter_program(), program_id, &mut pt);
+    let mut ctx = pt.start_with_context().await;
+    ctx.set_account(&counter_address, &counter_acc(program_id).into());
+    assert_eq!(
+        ctx.banks_client
+            .get_account(counter_address)
+            .await
+            .unwrap()
+            .unwrap()
+            .data,
+        0u32.to_le_bytes().to_vec()
+    );
+    assert!(ctx
+        .banks_client
+        .get_account(program_id)
+        .await
+        .unwrap()
+        .is_some());
+
+    let tx = make_tx_wrong_signature(
+        program_id,
+        counter_address,
+        &ctx.payer.pubkey(),
+        ctx.last_blockhash,
+        &ctx.payer
+    );
+    let tx_res = ctx
+        .banks_client
+        .process_transaction_with_metadata(tx)
+        .await
+        .unwrap();
+    tx_res.result.unwrap();
+    let fetched = ctx
+        .banks_client
+        .get_account(counter_address)
+        .await
+        .unwrap()
+        .unwrap()
+        .data[0];
+    assert_eq!(fetched, 1);
+}
+
+/// Confirm that process_transaction_with_metadata
+/// does not do sigverify.
+#[test]
+fn test_process_transaction_with_metadata_unsigned() {
+    let program_id = Pubkey::new_unique();
+
+    let counter_address = Pubkey::new_unique();
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async { do_program_test_wrong_signature(program_id, counter_address).await });
 }
