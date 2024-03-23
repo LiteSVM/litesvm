@@ -22,8 +22,12 @@ solana-program-test = "=1.17.18"
 criterion = "0.5"
 tokio = "1.35"
 
+[features]
+internal-test = []
+
 [[bench]]
 name = "banks_client_comparison"
+required-features = ["internal-test"]
 harness = false
 
 [[bench]]

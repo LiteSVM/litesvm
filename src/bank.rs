@@ -518,6 +518,7 @@ impl LiteSVM {
         self.accounts.programs_cache.set_slot_for_tests(slot);
     }
 
+    #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
         self.feature_set.clone()
     }
