@@ -92,7 +92,8 @@ impl AccountsDb {
         #[allow(deprecated)]
         match pubkey {
             CLOCK_ID => {
-                let parsed: Clock = bincode::deserialize(account.data()).map_err(|_| InvalidSysvarDataError::Clock)?;
+                let parsed: Clock = bincode::deserialize(account.data())
+                    .map_err(|_| InvalidSysvarDataError::Clock)?;
                 self.programs_cache.set_slot_for_tests(parsed.slot);
                 cache.set_clock(parsed);
             }

@@ -263,7 +263,11 @@ impl LiteSVM {
             account.data(),
             account.owner(),
             account.data().len(),
-            self.accounts.sysvar_cache.get_clock().unwrap_or_default().slot,
+            self.accounts
+                .sysvar_cache
+                .get_clock()
+                .unwrap_or_default()
+                .slot,
             self.accounts
                 .programs_cache
                 .environments
