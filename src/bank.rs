@@ -512,7 +512,6 @@ impl LiteSVM {
     }
 
     pub fn set_slot(&mut self, slot: u64) {
-        self.expire_blockhash();
         self.slot = slot;
         self.block_height = slot;
         self.accounts.programs_cache.set_slot_for_tests(slot);
