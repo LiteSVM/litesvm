@@ -85,14 +85,16 @@ impl AccountsDb {
         account: &AccountSharedData,
     ) -> Result<(), InvalidSysvarDataError> {
         use InvalidSysvarDataError::{
-            Clock, EpochRewards, EpochSchedule, Fees, LastRestartSlot, RecentBlockhashes, Rent,
+            EpochRewards, EpochSchedule, Fees, LastRestartSlot, RecentBlockhashes, Rent,
             SlotHashes, StakeHistory,
         };
         let cache = &mut self.sysvar_cache;
         #[allow(deprecated)]
         match pubkey {
             CLOCK_ID => {
-                handle_sysvar(cache, SysvarCache::set_clock, Clock, account.data())?;
+                let parsed: Clock = bincode::deserialize(account.data()).map_err(|_| InvalidSysvarDataError::Clock)?;
+                self.programs_cache.set_slot_for_tests(parsed.slot);
+                cache.set_clock(parsed);
             }
             EPOCH_REWARDS_ID => {
                 handle_sysvar(

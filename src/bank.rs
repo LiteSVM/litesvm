@@ -517,7 +517,6 @@ impl LiteSVM {
         let mut clock = self.get_sysvar::<Clock>();
         clock.slot = slot;
         self.set_sysvar(&clock);
-        self.accounts.programs_cache.set_slot_for_tests(slot);
     }
 
     #[cfg(feature = "internal-test")]
