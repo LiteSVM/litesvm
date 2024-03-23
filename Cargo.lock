@@ -1616,7 +1616,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http",
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "slab",
  "tokio",
  "tokio-util 0.7.10",
@@ -1883,9 +1883,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.2.2"
+version = "2.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824b2ae422412366ba479e8111fd301f7b5faece8149317bb81925979a53f520"
+checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.3",
@@ -2080,6 +2080,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "criterion",
+ "indexmap 2.2.6",
  "itertools 0.12.1",
  "solana-bpf-loader-program",
  "solana-compute-budget-program",
@@ -3710,7 +3711,7 @@ dependencies = [
  "dashmap",
  "futures",
  "futures-util",
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "indicatif",
  "log",
  "quinn",
@@ -3766,7 +3767,7 @@ dependencies = [
  "bincode",
  "crossbeam-channel",
  "futures-util",
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "log",
  "rand 0.8.5",
  "rayon",
@@ -4390,7 +4391,7 @@ dependencies = [
  "crossbeam-channel",
  "futures-util",
  "histogram",
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "itertools 0.10.5",
  "libc",
  "log",
@@ -4449,7 +4450,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "futures-util",
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "indicatif",
  "log",
  "rayon",
@@ -5332,7 +5333,7 @@ version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "toml_datetime",
  "winnow",
 ]
@@ -5343,7 +5344,7 @@ version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8534fd7f78b5405e860340ad6575217ce99f38d4d5c8f2442cb5ecb50090e1"
 dependencies = [
- "indexmap 2.2.2",
+ "indexmap 2.2.6",
  "toml_datetime",
  "winnow",
 ]

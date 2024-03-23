@@ -1,12 +1,12 @@
 use crate::types::TransactionMetadata;
+use indexmap::IndexMap;
 use solana_sdk::signature::Signature;
-use std::collections::HashMap;
 
-pub struct TransactionHistory(HashMap<Signature, TransactionMetadata>);
+pub struct TransactionHistory(IndexMap<Signature, TransactionMetadata>);
 
 impl TransactionHistory {
     pub fn new() -> Self {
-        TransactionHistory(HashMap::with_capacity(500))
+        TransactionHistory(IndexMap::with_capacity(500))
     }
 
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
@@ -15,8 +15,7 @@ impl TransactionHistory {
 
     pub fn add_new_transaction(&mut self, signature: Signature, meta: TransactionMetadata) {
         if self.0.len() == 500 {
-            let key = *self.0.iter().next().unwrap().0;
-            self.0.remove(&key);
+            self.0.shift_remove_index(0);
         }
         self.0.insert(signature, meta);
     }
