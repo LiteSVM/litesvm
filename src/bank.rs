@@ -79,7 +79,6 @@ fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedDa
 
 pub struct LiteSVM {
     accounts: AccountsDb,
-    //TODO compute budget
     airdrop_kp: Keypair,
     feature_set: Arc<FeatureSet>,
     latest_blockhash: Hash,
