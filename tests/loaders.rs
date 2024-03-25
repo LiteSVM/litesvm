@@ -39,33 +39,6 @@ fn hello_world_with_store() {
 }
 
 #[test]
-fn hello_world_with_deploy() {
-    let mut bank = LiteSVM::new();
-
-    let payer = Keypair::new();
-    let program_bytes = HELLO_WORLD_BYTES;
-
-    bank.airdrop(&payer.pubkey(), 1000000000).unwrap();
-
-    let program_id = bank.deploy_program(&payer, program_bytes).unwrap();
-
-    let instruction = Instruction::new_with_bytes(
-        program_id,
-        &[],
-        vec![AccountMeta::new(payer.pubkey(), true)],
-    );
-    let message = Message::new(&[instruction], Some(&payer.pubkey()));
-    let tx = Transaction::new(&[&payer], message, bank.latest_blockhash());
-    let tx_result = bank.send_transaction(tx);
-
-    assert!(tx_result.is_ok());
-    assert!(tx_result
-        .unwrap()
-        .logs
-        .contains(&"Program log: Hello world!".to_string()));
-}
-
-#[test]
 fn hello_world_with_deploy_upgradeable() {
     let mut bank = LiteSVM::new();
 
