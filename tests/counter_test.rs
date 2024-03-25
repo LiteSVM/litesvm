@@ -27,11 +27,11 @@ pub fn integration_test() {
     let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = pubkey!("1111111QLbz7JHiBTspS962RLKV8GndWFwiEaqKM");
+    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
     svm.store_program(program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
-    let counter_address = Pubkey::new_unique();
+    let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
     let _ = svm.set_account(
         counter_address,
         Account {
