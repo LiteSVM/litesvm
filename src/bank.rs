@@ -304,7 +304,7 @@ impl LiteSVM {
     fn create_transaction_context(
         &mut self,
         compute_budget: ComputeBudget,
-        accounts: Vec<(Pubkey, AccountSharedData)>
+        accounts: Vec<(Pubkey, AccountSharedData)>,
     ) -> TransactionContext {
         TransactionContext::new(
             accounts,
@@ -366,10 +366,9 @@ impl LiteSVM {
                     let instruction_account = u8::try_from(i)
                         .map(|i| instruction_accounts.contains(&&i))
                         .unwrap_or(false);
-                    let account = if let Some(_) = (!instruction_account
-                        && !message.is_writable(i))
-                    .then_some(())
-                    .and_then(|_| self.accounts.programs_cache.find(key))
+                    let account = if let Some(_) = (!instruction_account && !message.is_writable(i))
+                        .then_some(())
+                        .and_then(|_| self.accounts.programs_cache.find(key))
                     {
                         // Optimization to skip loading of accounts which are only used as
                         // programs in top-level instructions and not passed as instruction accounts.
@@ -380,8 +379,7 @@ impl LiteSVM {
                             let mut default_account = AccountSharedData::default();
                             default_account.set_rent_epoch(0);
                             default_account
-                        }
-                    )
+                        })
                     };
 
                     account
@@ -512,7 +510,6 @@ impl LiteSVM {
             };
         }
 
-        
         let (result, compute_units_consumed, context) =
             self.process_transaction(&sanitized_tx, compute_budget);
         let signature = sanitized_tx.signature().to_owned();
