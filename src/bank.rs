@@ -366,11 +366,10 @@ impl LiteSVM {
                     let instruction_account = u8::try_from(i)
                         .map(|i| instruction_accounts.contains(&&i))
                         .unwrap_or(false);
-                    
 
-                    if let Some(_) = (!instruction_account && !message.is_writable(i))
-                        .then_some(())
-                        .and_then(|_| self.accounts.programs_cache.find(key))
+                    if !instruction_account
+                        && !message.is_writable(i)
+                        && self.accounts.programs_cache.find(key).is_some()
                     {
                         // Optimization to skip loading of accounts which are only used as
                         // programs in top-level instructions and not passed as instruction accounts.
