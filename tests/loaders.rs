@@ -83,7 +83,6 @@ fn hello_world_with_deploy_upgradeable() {
     let message = Message::new(&[instruction], Some(&payer_pk));
     let tx = Transaction::new(&[&payer_kp], message, bank.latest_blockhash());
     let tx_result = bank.send_transaction(tx);
-    assert!(tx_result.is_ok());
     assert!(tx_result
         .unwrap()
         .logs

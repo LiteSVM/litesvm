@@ -303,16 +303,9 @@ impl LiteSVM {
     //TODO
     fn create_transaction_context(
         &mut self,
-        tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
+        accounts: Vec<(Pubkey, AccountSharedData)>
     ) -> TransactionContext {
-        let accounts: Vec<(Pubkey, AccountSharedData)> = tx
-            .message()
-            .account_keys()
-            .iter()
-            .map(|p| (*p, self.accounts.get_account(p).unwrap_or_default()))
-            .collect();
-
         TransactionContext::new(
             accounts,
             Rent::default(), //TODO remove rent in future
@@ -343,8 +336,7 @@ impl LiteSVM {
         &mut self,
         tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
-        context: &mut TransactionContext,
-    ) -> (Result<(), TransactionError>, u64) {
+    ) -> (Result<(), TransactionError>, u64, TransactionContext) {
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
@@ -398,8 +390,7 @@ impl LiteSVM {
                 (*key, account)
             })
             .collect::<Vec<_>>();
-        // used in commented out code
-        // let builtins_start_index = accounts.len();
+        let builtins_start_index = accounts.len();
         let program_indices = tx
             .message()
             .instructions()
@@ -412,40 +403,39 @@ impl LiteSVM {
                 if native_loader::check_id(program_id) {
                     return account_indices;
                 }
+                assert!(program_account.executable());
                 account_indices.insert(0, program_index as IndexOfAccount);
 
                 let owner_id = program_account.owner();
                 if native_loader::check_id(owner_id) {
                     return account_indices;
                 }
-                // this is ripped from Anza code, why does it break things?
-                // If you uncomment it you'll get an UnsupportedProgramId
-                // error.
-                // account_indices.insert(
-                //     0,
-                //     if let Some(owner_index) = accounts
-                //         .get(builtins_start_index..)
-                //         .unwrap()
-                //         .iter()
-                //         .position(|(key, _)| key == owner_id)
-                //     {
-                //         builtins_start_index.saturating_add(owner_index) as u16
-                //     } else {
-                //         let owner_index = accounts.len() as u16;
-                //         let owner_account = self.get_account(owner_id).unwrap();
-                //         assert!(native_loader::check_id(owner_account.owner()));
-                //         assert!(owner_account.executable);
-                //         accounts.push((*owner_id, owner_account.into()));
-                //         owner_index
-                //     },
-                // );
+                account_indices.insert(
+                    0,
+                    if let Some(owner_index) = accounts
+                        .get(builtins_start_index..)
+                        .unwrap()
+                        .iter()
+                        .position(|(key, _)| key == owner_id)
+                    {
+                        builtins_start_index.saturating_add(owner_index) as u16
+                    } else {
+                        let owner_index = accounts.len() as u16;
+                        let owner_account = self.get_account(owner_id).unwrap();
+                        assert!(native_loader::check_id(owner_account.owner()));
+                        assert!(owner_account.executable);
+                        accounts.push((*owner_id, owner_account.into()));
+                        owner_index
+                    },
+                );
                 account_indices
             })
             .collect::<Vec<Vec<u16>>>();
+        let mut context = self.create_transaction_context(compute_budget, accounts);
         let mut tx_result = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
-            context,
+            &mut context,
             Some(self.log_collector.clone()),
             &self.accounts.programs_cache,
             &mut programs_modified_by_tx,
@@ -459,11 +449,11 @@ impl LiteSVM {
         )
         .map(|_| ());
 
-        if let Err(err) = self.check_accounts_rent(tx, context) {
+        if let Err(err) = self.check_accounts_rent(tx, &context) {
             tx_result = Err(err);
         };
 
-        (tx_result, accumulated_consume_units)
+        (tx_result, accumulated_consume_units, context)
     }
 
     fn check_accounts_rent(
@@ -522,9 +512,9 @@ impl LiteSVM {
             };
         }
 
-        let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
-        let (result, compute_units_consumed) =
-            self.process_transaction(&sanitized_tx, compute_budget, &mut context);
+        
+        let (result, compute_units_consumed, context) =
+            self.process_transaction(&sanitized_tx, compute_budget);
         let signature = sanitized_tx.signature().to_owned();
         let ExecutionRecord {
             accounts,
