@@ -1,7 +1,12 @@
+use itertools::Itertools;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 #[allow(deprecated)]
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+use solana_program::{
+    message::SanitizedMessage,
+    sysvar::{self, instructions::construct_instructions_data},
+};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     invoke_context::BuiltinFunctionWithContext,
@@ -62,6 +67,14 @@ impl AddressLoader for LightAddressLoader {
     ) -> Result<LoadedAddresses, AddressLoaderError> {
         Err(AddressLoaderError::Disabled)
     }
+}
+
+fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedData {
+    AccountSharedData::from(Account {
+        data: construct_instructions_data(&message.decompile_instructions()),
+        owner: sysvar::id(),
+        ..Account::default()
+    })
 }
 
 pub struct LiteSVM {
@@ -261,7 +274,7 @@ impl LiteSVM {
         account.set_executable(true);
         account.set_data_from_slice(program_bytes);
 
-        let loaded_program = solana_bpf_loader_program::load_program_from_bytes(
+        let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
             Some(self.log_collector.clone()),
             &mut LoadProgramMetrics::default(),
             account.data(),
@@ -280,6 +293,7 @@ impl LiteSVM {
             false,
         )
         .unwrap_or_default();
+        loaded_program.effective_slot = 0;
         self.accounts.add_account(program_id, account).unwrap();
         self.accounts
             .programs_cache
@@ -332,7 +346,6 @@ impl LiteSVM {
         context: &mut TransactionContext,
     ) -> (Result<(), TransactionError>, u64) {
         let blockhash = tx.message().recent_blockhash();
-
         //reload program cache
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
@@ -341,14 +354,94 @@ impl LiteSVM {
             0,
         );
         let mut accumulated_consume_units = 0;
+        let message = tx.message();
+        let account_keys = message.account_keys();
+        let instruction_accounts = message
+            .instructions()
+            .iter()
+            .flat_map(|instruction| &instruction.accounts)
+            .unique()
+            .collect::<Vec<&u8>>();
+        let mut accounts = account_keys
+            .iter()
+            .enumerate()
+            .map(|(i, key)| {
+                let mut account_found = true;
+                #[allow(clippy::collapsible_else_if)]
+                let account = if solana_sdk::sysvar::instructions::check_id(key) {
+                    construct_instructions_account(message)
+                } else {
+                    let instruction_account = u8::try_from(i)
+                        .map(|i| instruction_accounts.contains(&&i))
+                        .unwrap_or(false);
+                    let account = if let Some(_) = (!instruction_account
+                        && !message.is_writable(i))
+                    .then_some(())
+                    .and_then(|_| self.accounts.programs_cache.find(key))
+                    {
+                        // Optimization to skip loading of accounts which are only used as
+                        // programs in top-level instructions and not passed as instruction accounts.
+                        self.accounts.get_account(key).unwrap()
+                    } else {
+                        self.accounts.get_account(key).unwrap_or_else(|| {
+                            account_found = false;
+                            let mut default_account = AccountSharedData::default();
+                            default_account.set_rent_epoch(0);
+                            default_account
+                        }
+                    )
+                    };
 
+                    account
+                };
+
+                (*key, account)
+            })
+            .collect::<Vec<_>>();
+        // used in commented out code
+        // let builtins_start_index = accounts.len();
         let program_indices = tx
             .message()
             .instructions()
             .iter()
-            .map(|c| vec![c.program_id_index as u16])
-            .collect::<Vec<Vec<u16>>>();
+            .map(|c| {
+                let mut account_indices: Vec<u16> = Vec::with_capacity(2);
+                let program_index = c.program_id_index as usize;
+                // This command may never return error, because the transaction is sanitized
+                let (program_id, program_account) = accounts.get(program_index).unwrap();
+                if native_loader::check_id(program_id) {
+                    return account_indices;
+                }
+                account_indices.insert(0, program_index as IndexOfAccount);
 
+                let owner_id = program_account.owner();
+                if native_loader::check_id(owner_id) {
+                    return account_indices;
+                }
+                // this is ripped from Anza code, why does it break things?
+                // If you uncomment it you'll get an UnsupportedProgramId
+                // error.
+                // account_indices.insert(
+                //     0,
+                //     if let Some(owner_index) = accounts
+                //         .get(builtins_start_index..)
+                //         .unwrap()
+                //         .iter()
+                //         .position(|(key, _)| key == owner_id)
+                //     {
+                //         builtins_start_index.saturating_add(owner_index) as u16
+                //     } else {
+                //         let owner_index = accounts.len() as u16;
+                //         let owner_account = self.get_account(owner_id).unwrap();
+                //         assert!(native_loader::check_id(owner_account.owner()));
+                //         assert!(owner_account.executable);
+                //         accounts.push((*owner_id, owner_account.into()));
+                //         owner_index
+                //     },
+                // );
+                account_indices
+            })
+            .collect::<Vec<Vec<u16>>>();
         let mut tx_result = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
