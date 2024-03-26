@@ -1,53 +1,14 @@
 use solana_sdk::{
-    bpf_loader,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
-    loader_instruction,
     message::Message,
     pubkey::Pubkey,
     signature::Keypair,
     signer::Signer,
-    system_instruction,
 };
 
 use crate::{bank::LiteSVM, types::FailedTransactionMetadata};
 
 const CHUNK_SIZE: usize = 512;
-
-fn deploy_program(
-    bank: &mut LiteSVM,
-    payer_keypair: &Keypair,
-    program_bytes: &[u8],
-) -> Result<Pubkey, FailedTransactionMetadata> {
-    let program_keypair = Keypair::new();
-    let instruction = system_instruction::create_account(
-        &payer_keypair.pubkey(),
-        &program_keypair.pubkey(),
-        bank.minimum_balance_for_rent_exemption(program_bytes.len()),
-        program_bytes.len() as u64,
-        &bpf_loader::id(),
-    );
-    let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-    bank.send_message(message, &[payer_keypair, &program_keypair])?;
-
-    let chunk_size = CHUNK_SIZE;
-    let mut offset = 0;
-    for chunk in program_bytes.chunks(chunk_size) {
-        let instruction = loader_instruction::write(
-            &program_keypair.pubkey(),
-            &bpf_loader::id(),
-            offset,
-            chunk.to_vec(),
-        );
-        let message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-        bank.send_message(message, &[payer_keypair, &program_keypair])?;
-        offset += chunk_size as u32;
-    }
-    let instruction = loader_instruction::finalize(&program_keypair.pubkey(), &bpf_loader::id());
-    let message: Message = Message::new(&[instruction], Some(&payer_keypair.pubkey()));
-    bank.send_message(message, &[payer_keypair, &program_keypair])?;
-
-    Ok(program_keypair.pubkey())
-}
 
 fn set_upgrade_authority(
     bank: &mut LiteSVM,
@@ -142,12 +103,6 @@ fn deploy_upgradeable_program(
 }
 
 pub trait Loader {
-    fn deploy_program(
-        &mut self,
-        payer_keypair: &Keypair,
-        program_bytes: &[u8],
-    ) -> Result<Pubkey, FailedTransactionMetadata>;
-
     fn set_upgrade_authority(
         &mut self,
         from_keypair: &Keypair,
@@ -164,14 +119,6 @@ pub trait Loader {
 }
 
 impl Loader for LiteSVM {
-    fn deploy_program(
-        &mut self,
-        payer_keypair: &Keypair,
-        program_bytes: &[u8],
-    ) -> Result<Pubkey, FailedTransactionMetadata> {
-        deploy_program(self, payer_keypair, program_bytes)
-    }
-
     fn deploy_upgradeable_program(
         &mut self,
         payer_kp: &Keypair,

@@ -1,7 +1,12 @@
+use itertools::Itertools;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 #[allow(deprecated)]
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+use solana_program::{
+    message::SanitizedMessage,
+    sysvar::{self, instructions::construct_instructions_data},
+};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     invoke_context::BuiltinFunctionWithContext,
@@ -64,14 +69,22 @@ impl AddressLoader for LightAddressLoader {
     }
 }
 
+fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedData {
+    AccountSharedData::from(Account {
+        data: construct_instructions_data(&message.decompile_instructions()),
+        owner: sysvar::id(),
+        ..Account::default()
+    })
+}
+
 pub struct LiteSVM {
     accounts: AccountsDb,
-    //TODO compute budget
     airdrop_kp: Keypair,
     feature_set: Arc<FeatureSet>,
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
     history: TransactionHistory,
+    compute_budget: Option<ComputeBudget>,
 }
 
 impl Default for LiteSVM {
@@ -83,6 +96,7 @@ impl Default for LiteSVM {
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
             history: TransactionHistory::new(),
+            compute_budget: None,
         }
     }
 }
@@ -94,6 +108,11 @@ impl LiteSVM {
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_spl_programs()
+    }
+
+    pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
+        self.compute_budget = Some(compute_budget);
+        self
     }
 
     pub fn with_sysvars(mut self) -> Self {
@@ -253,19 +272,19 @@ impl LiteSVM {
         let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
         account.set_executable(true);
         account.set_data_from_slice(program_bytes);
-
-        let loaded_program = solana_bpf_loader_program::load_program_from_bytes(
-            false,
+        let current_slot = self
+            .accounts
+            .sysvar_cache
+            .get_clock()
+            .unwrap_or_default()
+            .slot;
+        let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
             Some(self.log_collector.clone()),
             &mut LoadProgramMetrics::default(),
             account.data(),
             account.owner(),
             account.data().len(),
-            self.accounts
-                .sysvar_cache
-                .get_clock()
-                .unwrap_or_default()
-                .slot,
+            current_slot,
             self.accounts
                 .programs_cache
                 .environments
@@ -274,6 +293,7 @@ impl LiteSVM {
             false,
         )
         .unwrap_or_default();
+        loaded_program.effective_slot = current_slot;
         self.accounts.add_account(program_id, account).unwrap();
         self.accounts
             .programs_cache
@@ -283,19 +303,12 @@ impl LiteSVM {
     //TODO
     fn create_transaction_context(
         &mut self,
-        tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
+        accounts: Vec<(Pubkey, AccountSharedData)>,
     ) -> TransactionContext {
-        let accounts: Vec<(Pubkey, AccountSharedData)> = tx
-            .message()
-            .account_keys()
-            .iter()
-            .map(|p| (*p, self.accounts.get_account(p).unwrap_or_default()))
-            .collect();
-
         TransactionContext::new(
             accounts,
-            Some(Rent::default()), //TODO remove rent in future
+            Rent::default(), //TODO remove rent in future
             compute_budget.max_invoke_stack_height,
             compute_budget.max_instruction_trace_length,
         )
@@ -323,50 +336,121 @@ impl LiteSVM {
         &mut self,
         tx: &SanitizedTransaction,
         compute_budget: ComputeBudget,
-        context: &mut TransactionContext,
-    ) -> (Result<(), TransactionError>, u64) {
+    ) -> (Result<(), TransactionError>, u64, TransactionContext) {
         let blockhash = tx.message().recent_blockhash();
-
         //reload program cache
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
             self.accounts.programs_cache.environments.clone(),
+            None,
+            0,
         );
-        let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
         let mut accumulated_consume_units = 0;
+        let message = tx.message();
+        let account_keys = message.account_keys();
+        let instruction_accounts = message
+            .instructions()
+            .iter()
+            .flat_map(|instruction| &instruction.accounts)
+            .unique()
+            .collect::<Vec<&u8>>();
+        let mut accounts = account_keys
+            .iter()
+            .enumerate()
+            .map(|(i, key)| {
+                let mut account_found = true;
+                #[allow(clippy::collapsible_else_if)]
+                let account = if solana_sdk::sysvar::instructions::check_id(key) {
+                    construct_instructions_account(message)
+                } else {
+                    let instruction_account = u8::try_from(i)
+                        .map(|i| instruction_accounts.contains(&&i))
+                        .unwrap_or(false);
 
+                    if !instruction_account
+                        && !message.is_writable(i)
+                        && self.accounts.programs_cache.find(key).is_some()
+                    {
+                        // Optimization to skip loading of accounts which are only used as
+                        // programs in top-level instructions and not passed as instruction accounts.
+                        self.accounts.get_account(key).unwrap()
+                    } else {
+                        self.accounts.get_account(key).unwrap_or_else(|| {
+                            account_found = false;
+                            let mut default_account = AccountSharedData::default();
+                            default_account.set_rent_epoch(0);
+                            default_account
+                        })
+                    }
+                };
+
+                (*key, account)
+            })
+            .collect::<Vec<_>>();
+        let builtins_start_index = accounts.len();
         let program_indices = tx
             .message()
             .instructions()
             .iter()
-            .map(|c| vec![c.program_id_index as u16])
-            .collect::<Vec<Vec<u16>>>();
+            .map(|c| {
+                let mut account_indices: Vec<u16> = Vec::with_capacity(2);
+                let program_index = c.program_id_index as usize;
+                // This command may never return error, because the transaction is sanitized
+                let (program_id, program_account) = accounts.get(program_index).unwrap();
+                if native_loader::check_id(program_id) {
+                    return account_indices;
+                }
+                assert!(program_account.executable());
+                account_indices.insert(0, program_index as IndexOfAccount);
 
+                let owner_id = program_account.owner();
+                if native_loader::check_id(owner_id) {
+                    return account_indices;
+                }
+                account_indices.insert(
+                    0,
+                    if let Some(owner_index) = accounts
+                        .get(builtins_start_index..)
+                        .unwrap()
+                        .iter()
+                        .position(|(key, _)| key == owner_id)
+                    {
+                        builtins_start_index.saturating_add(owner_index) as u16
+                    } else {
+                        let owner_index = accounts.len() as u16;
+                        let owner_account = self.get_account(owner_id).unwrap();
+                        assert!(native_loader::check_id(owner_account.owner()));
+                        assert!(owner_account.executable);
+                        accounts.push((*owner_id, owner_account.into()));
+                        owner_index
+                    },
+                );
+                account_indices
+            })
+            .collect::<Vec<Vec<u16>>>();
+        let mut context = self.create_transaction_context(compute_budget, accounts);
         let mut tx_result = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
-            context,
-            *self.accounts.sysvar_cache.get_rent().unwrap_or_default(),
+            &mut context,
             Some(self.log_collector.clone()),
             &self.accounts.programs_cache,
             &mut programs_modified_by_tx,
-            &mut programs_updated_only_for_global_cache,
             self.feature_set.clone(),
             compute_budget,
             &mut ExecuteTimings::default(),
             &self.accounts.sysvar_cache,
             *blockhash,
             0,
-            u64::MAX,
             &mut accumulated_consume_units,
         )
         .map(|_| ());
 
-        if let Err(err) = self.check_accounts_rent(tx, context) {
+        if let Err(err) = self.check_accounts_rent(tx, &context) {
             tx_result = Err(err);
         };
 
-        (tx_result, accumulated_consume_units)
+        (tx_result, accumulated_consume_units, context)
     }
 
     fn check_accounts_rent(
@@ -404,7 +488,6 @@ impl LiteSVM {
     }
 
     fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        let compute_budget = ComputeBudget::default();
         let sanitized_tx = match self.sanitize_transaction(tx) {
             Ok(s_tx) => s_tx,
             Err(err) => {
@@ -414,6 +497,10 @@ impl LiteSVM {
                 }
             }
         };
+        let compute_budget = self.compute_budget.unwrap_or_else(|| {
+            let instructions = sanitized_tx.message().program_instructions_iter();
+            ComputeBudget::try_from_instructions(instructions).unwrap_or_default()
+        });
 
         if self.history.check_transaction(sanitized_tx.signature()) {
             return ExecutionResult {
@@ -422,9 +509,8 @@ impl LiteSVM {
             };
         }
 
-        let mut context = self.create_transaction_context(&sanitized_tx, compute_budget);
-        let (result, compute_units_consumed) =
-            self.process_transaction(&sanitized_tx, compute_budget, &mut context);
+        let (result, compute_units_consumed, context) =
+            self.process_transaction(&sanitized_tx, compute_budget);
         let signature = sanitized_tx.signature().to_owned();
         let ExecutionRecord {
             accounts,
@@ -519,6 +605,14 @@ impl LiteSVM {
         let mut clock = self.get_sysvar::<Clock>();
         clock.slot = slot;
         self.set_sysvar(&clock);
+    }
+
+    pub fn get_compute_budget(&self) -> Option<ComputeBudget> {
+        self.compute_budget
+    }
+
+    pub fn set_compute_budget(&mut self, budget: ComputeBudget) {
+        self.compute_budget = Some(budget);
     }
 
     #[cfg(feature = "internal-test")]

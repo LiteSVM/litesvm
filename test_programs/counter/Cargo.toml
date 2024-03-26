@@ -14,9 +14,3 @@ default = []
 [dependencies]
 borsh.workspace = true
 solana-program.workspace = true
-
-[dev-dependencies]
-solana-sdk.workspace = true
-solana-program-test.workspace = true
-tokio.workspace = true
-litesvm.workspace = true
