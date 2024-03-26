@@ -30,7 +30,7 @@ use solana_sdk::{
     signer::Signer,
     signers::Signers,
     slot_hashes::SlotHashes,
-    slot_history::{Slot, SlotHistory},
+    slot_history::SlotHistory,
     stake_history::StakeHistory,
     system_instruction, system_program,
     sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
@@ -69,7 +69,6 @@ pub struct LiteSVM {
     //TODO compute budget
     airdrop_kp: Keypair,
     feature_set: Arc<FeatureSet>,
-    slot: Slot,
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
     history: TransactionHistory,
@@ -81,7 +80,6 @@ impl Default for LiteSVM {
             accounts: Default::default(),
             airdrop_kp: Keypair::new(),
             feature_set: Default::default(),
-            slot: 0,
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
             history: TransactionHistory::new(),
@@ -331,7 +329,7 @@ impl LiteSVM {
 
         //reload program cache
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
-            self.slot,
+            self.accounts.sysvar_cache.get_clock().unwrap().slot,
             self.accounts.programs_cache.environments.clone(),
         );
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
