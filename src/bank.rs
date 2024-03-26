@@ -165,6 +165,11 @@ impl LiteSVM {
         self
     }
 
+    pub fn with_transaction_history(mut self, capacity: usize) -> Self {
+        self.history.set_capacity(capacity);
+        self
+    }
+
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
         1.max(
             self.accounts

@@ -9,6 +9,14 @@ impl TransactionHistory {
         TransactionHistory(IndexMap::with_capacity(500))
     }
 
+    pub fn set_capacity(&mut self, new_cap: usize) {
+        if new_cap <= self.0.capacity() {
+            self.0.shrink_to(new_cap)
+        } else {
+            self.0.reserve(new_cap - self.0.capacity())
+        }
+    }
+
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
         self.0.get(signature)
     }
