@@ -30,7 +30,7 @@ use solana_sdk::{
     signer::Signer,
     signers::Signers,
     slot_hashes::SlotHashes,
-    slot_history::{Slot, SlotHistory},
+    slot_history::SlotHistory,
     stake_history::StakeHistory,
     system_instruction, system_program,
     sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
@@ -69,8 +69,6 @@ pub struct LiteSVM {
     //TODO compute budget
     airdrop_kp: Keypair,
     feature_set: Arc<FeatureSet>,
-    block_height: u64,
-    slot: Slot,
     latest_blockhash: Hash,
     log_collector: Rc<RefCell<LogCollector>>,
     history: TransactionHistory,
@@ -82,8 +80,6 @@ impl Default for LiteSVM {
             accounts: Default::default(),
             airdrop_kp: Keypair::new(),
             feature_set: Default::default(),
-            block_height: 0,
-            slot: 0,
             latest_blockhash: create_blockhash(b"genesis"),
             log_collector: Default::default(),
             history: TransactionHistory::new(),
@@ -195,10 +191,6 @@ impl LiteSVM {
         self.latest_blockhash
     }
 
-    pub fn slot(&self) -> u64 {
-        self.slot
-    }
-
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
         T: Sysvar + SysvarId,
@@ -237,7 +229,15 @@ impl LiteSVM {
     }
 
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
-        let builtin = LoadedProgram::new_builtin(self.slot, 1, entrypoint);
+        let builtin = LoadedProgram::new_builtin(
+            self.accounts
+                .sysvar_cache
+                .get_clock()
+                .unwrap_or_default()
+                .slot,
+            1,
+            entrypoint,
+        );
 
         self.accounts
             .programs_cache
@@ -261,7 +261,11 @@ impl LiteSVM {
             account.data(),
             account.owner(),
             account.data().len(),
-            self.slot,
+            self.accounts
+                .sysvar_cache
+                .get_clock()
+                .unwrap_or_default()
+                .slot,
             self.accounts
                 .programs_cache
                 .environments
@@ -325,7 +329,7 @@ impl LiteSVM {
 
         //reload program cache
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
-            self.slot,
+            self.accounts.sysvar_cache.get_clock().unwrap().slot,
             self.accounts.programs_cache.environments.clone(),
         );
         let mut programs_updated_only_for_global_cache = LoadedProgramsForTxBatch::default();
@@ -511,11 +515,10 @@ impl LiteSVM {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
     }
 
-    pub fn set_slot(&mut self, slot: u64) {
-        self.expire_blockhash();
-        self.slot = slot;
-        self.block_height = slot;
-        self.accounts.programs_cache.set_slot_for_tests(slot);
+    pub fn warp_to_slot(&mut self, slot: u64) {
+        let mut clock = self.get_sysvar::<Clock>();
+        clock.slot = slot;
+        self.set_sysvar(&clock);
     }
 
     #[cfg(feature = "internal-test")]
