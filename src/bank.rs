@@ -292,7 +292,7 @@ impl LiteSVM {
             false,
         )
         .unwrap_or_default();
-        loaded_program.effective_slot = 0;
+        loaded_program.effective_slot = self.slot;
         self.accounts.add_account(program_id, account).unwrap();
         self.accounts
             .programs_cache
