@@ -1,9 +1,14 @@
 use solana_program::{
+    address_lookup_table::{self, error::AddressLookupError, state::AddressLookupTable},
     bpf_loader, bpf_loader_deprecated,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
     clock::Clock,
     instruction::InstructionError,
     loader_v4::{self, LoaderV4State},
+    message::{
+        v0::{LoadedAddresses, MessageAddressTableLookup},
+        AddressLoader, AddressLoaderError,
+    },
     sysvar::{
         self, clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
         epoch_schedule::ID as EPOCH_SCHEDULE_ID, last_restart_slot::ID as LAST_RESTART_SLOT_ID,
@@ -45,7 +50,7 @@ where
     Ok(())
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct AccountsDb {
     inner: HashMap<Pubkey, AccountSharedData>,
     pub(crate) programs_cache: LoadedProgramsForTxBatch,
@@ -252,5 +257,62 @@ impl AccountsDb {
         } else {
             Err(InstructionError::IncorrectProgramId)
         }
+    }
+
+    fn load_lookup_table_addresses(
+        &self,
+        address_table_lookup: &MessageAddressTableLookup,
+    ) -> std::result::Result<LoadedAddresses, AddressLookupError> {
+        let table_account = self
+            .get_account(&address_table_lookup.account_key)
+            .ok_or(AddressLookupError::LookupTableAccountNotFound)?;
+
+        if table_account.owner() == &address_lookup_table::program::id() {
+            let slot_hashes = self.sysvar_cache.get_slot_hashes().unwrap();
+            let current_slot = self.sysvar_cache.get_clock().unwrap().slot;
+            let lookup_table = AddressLookupTable::deserialize(table_account.data())
+                .map_err(|_ix_err| AddressLookupError::InvalidAccountData)?;
+
+            Ok(LoadedAddresses {
+                writable: lookup_table.lookup(
+                    current_slot,
+                    &address_table_lookup.writable_indexes,
+                    &slot_hashes,
+                )?,
+                readonly: lookup_table.lookup(
+                    current_slot,
+                    &address_table_lookup.readonly_indexes,
+                    &slot_hashes,
+                )?,
+            })
+        } else {
+            Err(AddressLookupError::InvalidAccountOwner)
+        }
+    }
+}
+
+fn into_address_loader_error(err: AddressLookupError) -> AddressLoaderError {
+    match err {
+        AddressLookupError::LookupTableAccountNotFound => {
+            AddressLoaderError::LookupTableAccountNotFound
+        }
+        AddressLookupError::InvalidAccountOwner => AddressLoaderError::InvalidAccountOwner,
+        AddressLookupError::InvalidAccountData => AddressLoaderError::InvalidAccountData,
+        AddressLookupError::InvalidLookupIndex => AddressLoaderError::InvalidLookupIndex,
+    }
+}
+
+impl AddressLoader for &AccountsDb {
+    fn load_addresses(
+        self,
+        lookups: &[MessageAddressTableLookup],
+    ) -> Result<LoadedAddresses, AddressLoaderError> {
+        lookups
+            .iter()
+            .map(|lookup| {
+                self.load_lookup_table_addresses(lookup)
+                    .map_err(into_address_loader_error)
+            })
+            .collect()
     }
 }
