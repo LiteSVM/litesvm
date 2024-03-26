@@ -272,18 +272,19 @@ impl LiteSVM {
         let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
         account.set_executable(true);
         account.set_data_from_slice(program_bytes);
-
+        let current_slot = self
+            .accounts
+            .sysvar_cache
+            .get_clock()
+            .unwrap_or_default()
+            .slot;
         let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
             Some(self.log_collector.clone()),
             &mut LoadProgramMetrics::default(),
             account.data(),
             account.owner(),
             account.data().len(),
-            self.accounts
-                .sysvar_cache
-                .get_clock()
-                .unwrap_or_default()
-                .slot,
+            current_slot,
             self.accounts
                 .programs_cache
                 .environments
@@ -292,7 +293,7 @@ impl LiteSVM {
             false,
         )
         .unwrap_or_default();
-        loaded_program.effective_slot = self.slot;
+        loaded_program.effective_slot = current_slot;
         self.accounts.add_account(program_id, account).unwrap();
         self.accounts
             .programs_cache
