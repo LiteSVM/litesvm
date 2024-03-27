@@ -110,7 +110,10 @@ impl LiteSVM {
         #[allow(deprecated)]
         self.set_sysvar(&RecentBlockhashes::default());
         self.set_sysvar(&Rent::default());
-        self.set_sysvar(&SlotHashes::default());
+        self.set_sysvar(&SlotHashes::new(&[(
+            self.accounts.sysvar_cache.get_clock().unwrap().slot,
+            self.latest_blockhash(),
+        )]));
         self.set_sysvar(&SlotHistory::default());
         self.set_sysvar(&StakeHistory::default());
         self
