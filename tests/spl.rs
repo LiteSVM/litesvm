@@ -26,15 +26,16 @@ fn spl_token() {
     let init_mint_ins =
         spl_token::instruction::initialize_mint2(&spl_token::id(), &mint_pk, &payer_pk, None, 8)
             .unwrap();
-
+    let balance_before = svm.get_balance(&payer_pk).unwrap();
     let tx_result = svm.send_transaction(Transaction::new_signed_with_payer(
         &[create_acc_ins, init_mint_ins],
         Some(&payer_pk),
         &[&payer_kp, &mint_kp],
         svm.latest_blockhash(),
     ));
-
     assert!(tx_result.is_ok());
+    let balance_after = svm.get_balance(&payer_pk).unwrap();
+    assert!(balance_after < balance_before);
 
     let mint_acc = svm.get_account(&mint_kp.pubkey());
     let mint = spl_token::state::Mint::unpack(&mint_acc.unwrap().data).unwrap();
