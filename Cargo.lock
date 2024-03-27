@@ -2166,6 +2166,7 @@ dependencies = [
  "criterion",
  "indexmap 2.2.6",
  "itertools 0.12.1",
+ "solana-address-lookup-table-program",
  "solana-bpf-loader-program",
  "solana-compute-budget-program",
  "solana-loader-v4-program",

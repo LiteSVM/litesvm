@@ -1,12 +1,17 @@
 use std::path::PathBuf;
 
 use litesvm::LiteSVM;
+use solana_program::address_lookup_table::instruction::create_lookup_table;
+use solana_program::address_lookup_table_account::AddressLookupTableAccount;
+use solana_program::message::VersionedMessage;
 use solana_program::{
+    address_lookup_table::instruction::extend_lookup_table,
     instruction::{AccountMeta, Instruction},
-    message::Message,
+    message::{v0::Message as MessageV0, Message},
     pubkey::Pubkey,
     rent::Rent,
 };
+use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{
     account::Account,
     pubkey,
@@ -236,4 +241,54 @@ fn test_process_transaction_with_metadata_wrong_signature() {
     let counter_address = Pubkey::new_unique();
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async { do_program_test_wrong_signature(program_id, counter_address).await });
+}
+
+#[test]
+fn test_address_lookup_table() {
+    let mut svm = LiteSVM::new();
+    let payer_kp = Keypair::new();
+    let payer_pk = payer_kp.pubkey();
+    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    svm.store_program(program_id, &read_counter_program());
+    svm.airdrop(&payer_pk, 1000000000).unwrap();
+    let blockhash = svm.latest_blockhash();
+    let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    let _ = svm.set_account(
+        counter_address,
+        Account {
+            lamports: 5,
+            data: vec![0_u8; std::mem::size_of::<u32>()],
+            owner: program_id,
+            ..Default::default()
+        },
+    );
+    let (lookup_table_ix, lookup_table_address) = create_lookup_table(payer_pk, payer_pk, 0);
+    let extend_ix = extend_lookup_table(
+        lookup_table_address,
+        payer_pk,
+        Some(payer_pk),
+        vec![counter_address],
+    );
+    let lookup_msg = Message::new(&[lookup_table_ix, extend_ix], Some(&payer_pk));
+    let lookup_tx = Transaction::new(&[&payer_kp], lookup_msg, blockhash);
+    svm.send_transaction(lookup_tx).unwrap();
+    let alta = AddressLookupTableAccount {
+        key: lookup_table_address,
+        addresses: vec![counter_address],
+    };
+    let counter_msg = MessageV0::try_compile(
+        &payer_pk,
+        &[Instruction {
+            program_id,
+            accounts: vec![AccountMeta::new(counter_address, false)],
+            data: vec![0, 0],
+        }],
+        &[alta],
+        blockhash,
+    )
+    .unwrap();
+    let counter_tx =
+        VersionedTransaction::try_new(VersionedMessage::V0(counter_msg), &[&payer_kp]).unwrap();
+    svm.warp_to_slot(1); // can't use the lookup table in the same slot
+    svm.send_transaction(counter_tx).unwrap();
 }
