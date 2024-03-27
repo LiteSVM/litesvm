@@ -22,10 +22,13 @@ impl TransactionHistory {
     }
 
     pub fn add_new_transaction(&mut self, signature: Signature, meta: TransactionMetadata) {
-        if self.0.len() == 500 {
-            self.0.shift_remove_index(0);
+        let capacity = self.0.capacity();
+        if capacity != 0 {
+            if self.0.len() == capacity {
+                self.0.shift_remove_index(0);
+            }
+            self.0.insert(signature, meta);
         }
-        self.0.insert(signature, meta);
     }
 
     pub fn check_transaction(&self, signature: &Signature) -> bool {
