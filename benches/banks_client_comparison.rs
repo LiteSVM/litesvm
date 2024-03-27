@@ -24,7 +24,7 @@ fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::P
         Account {
             lamports: Rent::default().minimum_balance(bytes.len()).max(1),
             data: bytes.to_vec(),
-            owner: solana_sdk::bpf_loader_upgradeable::id(),
+            owner: solana_sdk::bpf_loader::id(),
             executable: true,
             rent_epoch: 0,
         },
