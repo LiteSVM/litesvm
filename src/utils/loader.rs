@@ -77,9 +77,9 @@ fn load_upgradeable_buffer(
 fn deploy_upgradeable_program(
     bank: &mut LiteSVM,
     payer_kp: &Keypair,
+    program_kp: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, FailedTransactionMetadata> {
-    let program_kp = Keypair::new();
+) -> Result<(), FailedTransactionMetadata> {
     let program_pk = program_kp.pubkey();
     let payer_pk = payer_kp.pubkey();
     let buffer_pk = load_upgradeable_buffer(bank, payer_kp, program_bytes)?;
@@ -99,35 +99,20 @@ fn deploy_upgradeable_program(
     );
     bank.send_message(message, &[payer_kp, &program_kp])?;
 
-    Ok(program_pk)
+    Ok(())
 }
 
-pub trait Loader {
-    fn set_upgrade_authority(
-        &mut self,
-        from_keypair: &Keypair,
-        program_pubkey: &Pubkey,
-        current_authority_keypair: &Keypair,
-        new_authority_pubkey: Option<&Pubkey>,
-    ) -> Result<(), FailedTransactionMetadata>;
-
-    fn deploy_upgradeable_program(
+impl LiteSVM {
+    pub fn deploy_upgradeable_program(
         &mut self,
         payer_kp: &Keypair,
+        program_kp: &Keypair,
         program_bytes: &[u8],
-    ) -> Result<Pubkey, FailedTransactionMetadata>;
-}
-
-impl Loader for LiteSVM {
-    fn deploy_upgradeable_program(
-        &mut self,
-        payer_kp: &Keypair,
-        program_bytes: &[u8],
-    ) -> Result<Pubkey, FailedTransactionMetadata> {
-        deploy_upgradeable_program(self, payer_kp, program_bytes)
+    ) -> Result<(), FailedTransactionMetadata> {
+        deploy_upgradeable_program(self, payer_kp, program_kp, program_bytes)
     }
 
-    fn set_upgrade_authority(
+    pub fn set_upgrade_authority(
         &mut self,
         from_keypair: &Keypair,
         program_pubkey: &Pubkey,

@@ -9,7 +9,6 @@ use solana_sdk::{
 mod loader;
 mod rent;
 
-pub use loader::*;
 pub(crate) use rent::*;
 
 /// Create a blockhash from the given bytes
