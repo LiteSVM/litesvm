@@ -46,7 +46,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
 
-    svm.store_program(program_id, &read_counter_program());
+    svm.add_program(program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let counter_address = Pubkey::new_unique();
     let latest_blockhash = svm.latest_blockhash();
