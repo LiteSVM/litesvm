@@ -70,6 +70,7 @@ pub struct LiteSVM {
     log_collector: Rc<RefCell<LogCollector>>,
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
+    sigverify: bool,
 }
 
 impl Default for LiteSVM {
@@ -82,6 +83,7 @@ impl Default for LiteSVM {
             log_collector: Default::default(),
             history: TransactionHistory::new(),
             compute_budget: None,
+            sigverify: true,
         }
     }
 }
@@ -97,6 +99,11 @@ impl LiteSVM {
 
     pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
         self.compute_budget = Some(compute_budget);
+        self
+    }
+
+    pub fn with_sigverify(mut self, sigverify: bool) -> Self {
+        self.sigverify = sigverify;
         self
     }
 
@@ -307,16 +314,18 @@ impl LiteSVM {
         )
     }
 
+    fn sanitize_transaction_no_verify(
+        &self,
+        tx: VersionedTransaction,
+    ) -> Result<SanitizedTransaction, TransactionError> {
+        SanitizedTransaction::try_create(tx, MessageHash::Compute, Some(false), &self.accounts)
+    }
+
     fn sanitize_transaction(
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        let tx = SanitizedTransaction::try_create(
-            tx,
-            MessageHash::Compute,
-            Some(false),
-            &self.accounts,
-        )?;
+        let tx = self.sanitize_transaction_no_verify(tx)?;
 
         tx.verify()?;
         tx.verify_precompiles(&self.feature_set)?;
@@ -480,6 +489,19 @@ impl LiteSVM {
         Ok(())
     }
 
+    fn execute_transaction_no_verify(&mut self, tx: VersionedTransaction) -> ExecutionResult {
+        let sanitized_tx = match self.sanitize_transaction_no_verify(tx) {
+            Ok(s_tx) => s_tx,
+            Err(err) => {
+                return ExecutionResult {
+                    tx_result: Err(err),
+                    ..Default::default()
+                }
+            }
+        };
+        self.execute_sanitized_transaction(sanitized_tx)
+    }
+
     fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
         let sanitized_tx = match self.sanitize_transaction(tx) {
             Ok(s_tx) => s_tx,
@@ -490,6 +512,13 @@ impl LiteSVM {
                 }
             }
         };
+        self.execute_sanitized_transaction(sanitized_tx)
+    }
+
+    fn execute_sanitized_transaction(
+        &mut self,
+        sanitized_tx: SanitizedTransaction,
+    ) -> ExecutionResult {
         let compute_budget = self.compute_budget.unwrap_or_else(|| {
             let instructions = sanitized_tx.message().program_instructions_iter();
             ComputeBudget::try_from_instructions(instructions).unwrap_or_default()
@@ -544,7 +573,11 @@ impl LiteSVM {
             signature,
             compute_units_consumed,
             return_data,
-        } = self.execute_transaction(vtx);
+        } = if self.sigverify {
+            self.execute_transaction(vtx)
+        } else {
+            self.execute_transaction_no_verify(vtx)
+        };
 
         let meta = TransactionMetadata {
             logs: self.log_collector.take().into_messages(),
@@ -573,7 +606,11 @@ impl LiteSVM {
             signature,
             compute_units_consumed,
             return_data,
-        } = self.execute_transaction(tx);
+        } = if self.sigverify {
+            self.execute_transaction(tx)
+        } else {
+            self.execute_transaction_no_verify(tx)
+        };
 
         let logs = self.log_collector.take().into_messages();
         let meta = TransactionMetadata {
