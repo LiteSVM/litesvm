@@ -20,7 +20,7 @@ fn hello_world_with_store() {
 
     let program_kp = Keypair::new();
     let program_id = program_kp.pubkey();
-    bank.store_program(program_id, program_bytes);
+    bank.add_program(program_id, program_bytes);
 
     let instruction = Instruction::new_with_bytes(
         program_id,

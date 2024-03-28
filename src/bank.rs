@@ -271,7 +271,7 @@ impl LiteSVM {
             .unwrap();
     }
 
-    pub fn store_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
+    pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
         let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
