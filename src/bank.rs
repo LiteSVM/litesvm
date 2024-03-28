@@ -23,10 +23,7 @@ use solana_sdk::{
     epoch_schedule::EpochSchedule,
     feature_set::FeatureSet,
     hash::Hash,
-    message::{
-        v0::{LoadedAddresses, MessageAddressTableLookup},
-        AddressLoader, AddressLoaderError, Message, VersionedMessage,
-    },
+    message::{Message, VersionedMessage},
     native_loader,
     native_token::LAMPORTS_PER_SOL,
     pubkey::Pubkey,
@@ -56,18 +53,6 @@ use crate::{
     },
     utils::RentState,
 };
-
-#[derive(Clone, Default)]
-pub(crate) struct LightAddressLoader {}
-
-impl AddressLoader for LightAddressLoader {
-    fn load_addresses(
-        self,
-        _lookups: &[MessageAddressTableLookup],
-    ) -> Result<LoadedAddresses, AddressLoaderError> {
-        Err(AddressLoaderError::Disabled)
-    }
-}
 
 fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedData {
     AccountSharedData::from(Account {
@@ -125,7 +110,10 @@ impl LiteSVM {
         #[allow(deprecated)]
         self.set_sysvar(&RecentBlockhashes::default());
         self.set_sysvar(&Rent::default());
-        self.set_sysvar(&SlotHashes::default());
+        self.set_sysvar(&SlotHashes::new(&[(
+            self.accounts.sysvar_cache.get_clock().unwrap().slot,
+            self.latest_blockhash(),
+        )]));
         self.set_sysvar(&SlotHistory::default());
         self.set_sysvar(&StakeHistory::default());
         self
@@ -327,7 +315,7 @@ impl LiteSVM {
             tx,
             MessageHash::Compute,
             Some(false),
-            LightAddressLoader::default(), //TODO
+            &self.accounts,
         )?;
 
         tx.verify()?;
