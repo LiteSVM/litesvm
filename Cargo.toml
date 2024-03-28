@@ -36,6 +36,10 @@ harness = false
 name = "simple_bench"
 harness = false
 
+[[bench]]
+name = "max_perf"
+harness = false
+
 [profile.bench]
 debug = true
 
