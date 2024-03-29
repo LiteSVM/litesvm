@@ -10,7 +10,7 @@ use crate::{bank::LiteSVM, types::FailedTransactionMetadata};
 
 const CHUNK_SIZE: usize = 512;
 
-fn set_upgrade_authority(
+pub fn set_upgrade_authority(
     bank: &mut LiteSVM,
     from_keypair: &Keypair,
     program_pubkey: &Pubkey,
@@ -74,7 +74,7 @@ fn load_upgradeable_buffer(
     Ok(buffer_pk)
 }
 
-fn deploy_upgradeable_program(
+pub fn deploy_upgradeable_program(
     bank: &mut LiteSVM,
     payer_kp: &Keypair,
     program_kp: &Keypair,
@@ -100,31 +100,4 @@ fn deploy_upgradeable_program(
     bank.send_message(message, &[payer_kp, &program_kp])?;
 
     Ok(())
-}
-
-impl LiteSVM {
-    pub fn deploy_upgradeable_program(
-        &mut self,
-        payer_kp: &Keypair,
-        program_kp: &Keypair,
-        program_bytes: &[u8],
-    ) -> Result<(), FailedTransactionMetadata> {
-        deploy_upgradeable_program(self, payer_kp, program_kp, program_bytes)
-    }
-
-    pub fn set_upgrade_authority(
-        &mut self,
-        from_keypair: &Keypair,
-        program_pubkey: &Pubkey,
-        current_authority_keypair: &Keypair,
-        new_authority_pubkey: Option<&Pubkey>,
-    ) -> Result<(), FailedTransactionMetadata> {
-        set_upgrade_authority(
-            self,
-            from_keypair,
-            program_pubkey,
-            current_authority_keypair,
-            new_authority_pubkey,
-        )
-    }
 }
