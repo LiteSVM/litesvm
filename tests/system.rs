@@ -12,20 +12,20 @@ fn system_transfer() {
     let from = from_keypair.pubkey();
     let to = Pubkey::new_unique();
 
-    let mut bank = LiteSVM::new();
+    let mut svm = LiteSVM::new();
 
-    bank.airdrop(&from, 100).unwrap();
+    svm.airdrop(&from, 100).unwrap();
 
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(
         &[&from_keypair],
         Message::new(&[instruction], Some(&from)),
-        bank.latest_blockhash(),
+        svm.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx);
+    let tx_res = svm.send_transaction(tx);
 
-    let from_account = bank.get_account(&from);
-    let to_account = bank.get_account(&to);
+    let from_account = svm.get_account(&from);
+    let to_account = svm.get_account(&to);
 
     assert!(tx_res.is_ok());
     assert_eq!(from_account.unwrap().lamports, 36);
@@ -38,10 +38,10 @@ fn system_create_account() {
     let new_account = Keypair::new();
     let from = from_keypair.pubkey();
 
-    let mut bank = LiteSVM::new();
+    let mut svm = LiteSVM::new();
 
-    let lamports = bank.minimum_balance_for_rent_exemption(10);
-    bank.airdrop(&from, lamports).unwrap();
+    let lamports = svm.minimum_balance_for_rent_exemption(10);
+    svm.airdrop(&from, lamports).unwrap();
 
     let instruction = create_account(
         &from,
@@ -53,11 +53,11 @@ fn system_create_account() {
     let tx = Transaction::new(
         &[&from_keypair, &new_account],
         Message::new(&[instruction], Some(&from)),
-        bank.latest_blockhash(),
+        svm.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx);
+    let tx_res = svm.send_transaction(tx);
 
-    let account = bank.get_account(&new_account.pubkey()).unwrap();
+    let account = svm.get_account(&new_account.pubkey()).unwrap();
 
     assert!(tx_res.is_ok());
     assert_eq!(account.lamports, lamports);

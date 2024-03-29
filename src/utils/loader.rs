@@ -6,12 +6,12 @@ use solana_sdk::{
     signer::Signer,
 };
 
-use crate::{bank::LiteSVM, types::FailedTransactionMetadata};
+use crate::{types::FailedTransactionMetadata, LiteSVM};
 
 const CHUNK_SIZE: usize = 512;
 
 pub fn set_upgrade_authority(
-    bank: &mut LiteSVM,
+    svm: &mut LiteSVM,
     from_keypair: &Keypair,
     program_pubkey: &Pubkey,
     current_authority_keypair: &Keypair,
@@ -25,13 +25,13 @@ pub fn set_upgrade_authority(
         )],
         Some(&from_keypair.pubkey()),
     );
-    bank.send_message(message, &[&from_keypair])?;
+    svm.send_message(message, &[&from_keypair])?;
 
     Ok(())
 }
 
 fn load_upgradeable_buffer(
-    bank: &mut LiteSVM,
+    svm: &mut LiteSVM,
     payer_kp: &Keypair,
     program_bytes: &[u8],
 ) -> Result<Pubkey, FailedTransactionMetadata> {
@@ -40,7 +40,7 @@ fn load_upgradeable_buffer(
     let buffer_pk = buffer_kp.pubkey();
     // loader
     let buffer_len = UpgradeableLoaderState::size_of_buffer(program_bytes.len());
-    let lamports = bank.minimum_balance_for_rent_exemption(buffer_len);
+    let lamports = svm.minimum_balance_for_rent_exemption(buffer_len);
 
     let message = Message::new(
         &bpf_loader_upgradeable::create_buffer(
@@ -53,7 +53,7 @@ fn load_upgradeable_buffer(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &buffer_kp])?;
+    svm.send_message(message, &[payer_kp, &buffer_kp])?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
@@ -67,7 +67,7 @@ fn load_upgradeable_buffer(
             )],
             Some(&payer_pk),
         );
-        bank.send_message(message, &[payer_kp])?;
+        svm.send_message(message, &[payer_kp])?;
         offset += chunk_size as u32;
     }
 
@@ -75,16 +75,16 @@ fn load_upgradeable_buffer(
 }
 
 pub fn deploy_upgradeable_program(
-    bank: &mut LiteSVM,
+    svm: &mut LiteSVM,
     payer_kp: &Keypair,
     program_kp: &Keypair,
     program_bytes: &[u8],
 ) -> Result<(), FailedTransactionMetadata> {
     let program_pk = program_kp.pubkey();
     let payer_pk = payer_kp.pubkey();
-    let buffer_pk = load_upgradeable_buffer(bank, payer_kp, program_bytes)?;
+    let buffer_pk = load_upgradeable_buffer(svm, payer_kp, program_bytes)?;
 
-    let lamports = bank.minimum_balance_for_rent_exemption(program_bytes.len());
+    let lamports = svm.minimum_balance_for_rent_exemption(program_bytes.len());
     let message = Message::new(
         &bpf_loader_upgradeable::deploy_with_max_program_len(
             &payer_pk,
@@ -97,7 +97,7 @@ pub fn deploy_upgradeable_program(
         .unwrap(),
         Some(&payer_pk),
     );
-    bank.send_message(message, &[payer_kp, &program_kp])?;
+    svm.send_message(message, &[payer_kp, &program_kp])?;
 
     Ok(())
 }
