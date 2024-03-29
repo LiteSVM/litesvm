@@ -327,7 +327,6 @@ impl LiteSVM {
         )
     }
 
-    //TODO
     fn create_transaction_context(
         &mut self,
         compute_budget: ComputeBudget,
@@ -335,7 +334,7 @@ impl LiteSVM {
     ) -> TransactionContext {
         TransactionContext::new(
             accounts,
-            Rent::default(), //TODO remove rent in future
+            self.get_sysvar(),
             compute_budget.max_invoke_stack_height,
             compute_budget.max_instruction_trace_length,
         )
@@ -360,7 +359,6 @@ impl LiteSVM {
         Ok(tx)
     }
 
-    //TODO rework it with process_transaction and another on and optimize
     fn process_transaction(
         &mut self,
         tx: &SanitizedTransaction,
