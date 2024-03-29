@@ -10,4 +10,3 @@ mod spl;
 mod utils;
 
 pub use bank::LiteSVM;
-pub use utils::*;

@@ -44,14 +44,17 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
-    create_blockhash,
     history::TransactionHistory,
     spl::load_spl_programs,
     types::{
         ExecutionResult, FailedTransactionMetadata, InvalidSysvarDataError, TransactionMetadata,
         TransactionResult,
     },
-    utils::RentState,
+    utils::{
+        create_blockhash,
+        loader::{deploy_upgradeable_program, set_upgrade_authority},
+        rent::RentState,
+    },
 };
 
 fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedData {
@@ -298,6 +301,31 @@ impl LiteSVM {
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
+    }
+
+    pub fn deploy_upgradeable_program(
+        &mut self,
+        payer_kp: &Keypair,
+        program_kp: &Keypair,
+        program_bytes: &[u8],
+    ) -> Result<(), FailedTransactionMetadata> {
+        deploy_upgradeable_program(self, payer_kp, program_kp, program_bytes)
+    }
+
+    pub fn set_upgrade_authority(
+        &mut self,
+        from_keypair: &Keypair,
+        program_pubkey: &Pubkey,
+        current_authority_keypair: &Keypair,
+        new_authority_pubkey: Option<&Pubkey>,
+    ) -> Result<(), FailedTransactionMetadata> {
+        set_upgrade_authority(
+            self,
+            from_keypair,
+            program_pubkey,
+            current_authority_keypair,
+            new_authority_pubkey,
+        )
     }
 
     //TODO

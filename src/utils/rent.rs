@@ -6,7 +6,7 @@ use solana_sdk::{
 //this code is taken from https://github.com/solana-labs/solana/blob/master/runtime/src/accounts/account_rent_state.rs
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum RentState {
+pub enum RentState {
     /// account.lamports == 0
     Uninitialized,
     /// 0 < account.lamports < rent-exempt-minimum
