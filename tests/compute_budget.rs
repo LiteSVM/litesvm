@@ -17,10 +17,10 @@ fn test_set_compute_budget() {
     let from = from_keypair.pubkey();
     let to = Pubkey::new_unique();
 
-    let mut bank = LiteSVM::new();
+    let mut svm = LiteSVM::new();
 
-    bank.airdrop(&from, 100).unwrap();
-    bank.set_compute_budget(ComputeBudget {
+    svm.airdrop(&from, 100).unwrap();
+    svm.set_compute_budget(ComputeBudget {
         compute_unit_limit: 10,
         ..Default::default()
     });
@@ -28,9 +28,9 @@ fn test_set_compute_budget() {
     let tx = Transaction::new(
         &[&from_keypair],
         Message::new(&[instruction], Some(&from)),
-        bank.latest_blockhash(),
+        svm.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx);
+    let tx_res = svm.send_transaction(tx);
 
     assert_eq!(
         tx_res.unwrap_err().err,
@@ -45,9 +45,9 @@ fn test_set_compute_unit_limit() {
     let from = from_keypair.pubkey();
     let to = Pubkey::new_unique();
 
-    let mut bank = LiteSVM::new();
+    let mut svm = LiteSVM::new();
 
-    bank.airdrop(&from, 100).unwrap();
+    svm.airdrop(&from, 100).unwrap();
 
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(
@@ -59,9 +59,9 @@ fn test_set_compute_unit_limit() {
             ],
             Some(&from),
         ),
-        bank.latest_blockhash(),
+        svm.latest_blockhash(),
     );
-    let tx_res = bank.send_transaction(tx);
+    let tx_res = svm.send_transaction(tx);
 
     assert_eq!(
         tx_res.unwrap_err().err,
