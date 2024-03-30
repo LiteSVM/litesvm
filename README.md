@@ -13,7 +13,7 @@
 - [📍 Overview](#-overview)
 - [🚀 Getting Started](#-getting-started)
   - [🔧 Installation](#-installation)
-  - [🤖 Minimal Example](#-minimal-example-)
+  - [🤖 Minimal Example](#-minimal-example)
 - [🛣 Roadmap](#-roadmap)
 
 ---
