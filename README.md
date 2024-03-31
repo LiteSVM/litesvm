@@ -37,7 +37,7 @@ Please ensure you have the following dependencies installed on your system:
 ### 🔧 Installation
 
 ```sh
-cargo add litesvm
+cargo add --dev litesvm
 ```
 
 ### 🤖 Minimal Example
