@@ -1,4 +1,5 @@
 #![allow(clippy::result_large_err)]
+use log::error;
 
 use itertools::Itertools;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -7,6 +8,7 @@ use solana_loader_v4_program::create_program_runtime_environment_v2;
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
+    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
     invoke_context::BuiltinFunctionWithContext,
     loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
     log_collector::LogCollector,
@@ -19,7 +21,8 @@ use solana_sdk::{
     clock::Clock,
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
-    feature_set::FeatureSet,
+    feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
+    fee::FeeStructure,
     hash::Hash,
     message::{Message, VersionedMessage},
     native_loader,
@@ -37,6 +40,7 @@ use solana_sdk::{
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
+use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use utils::construct_instructions_account;
 
@@ -73,6 +77,7 @@ pub struct LiteSVM {
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
     sigverify: bool,
+    fee_structure: FeeStructure,
 }
 
 impl Default for LiteSVM {
@@ -86,6 +91,7 @@ impl Default for LiteSVM {
             history: TransactionHistory::new(),
             compute_budget: None,
             sigverify: true,
+            fee_structure: FeeStructure::default(),
         }
     }
 }
@@ -362,8 +368,17 @@ impl LiteSVM {
     fn process_transaction(
         &mut self,
         tx: &SanitizedTransaction,
-        compute_budget: ComputeBudget,
-    ) -> (Result<(), TransactionError>, u64, TransactionContext) {
+        compute_budget_limits: ComputeBudgetLimits,
+    ) -> (
+        Result<(), TransactionError>,
+        u64,
+        Option<TransactionContext>,
+    ) {
+        let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
+            compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
+            heap_size: compute_budget_limits.updated_heap_bytes,
+            ..ComputeBudget::default()
+        });
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
         let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
@@ -381,7 +396,15 @@ impl LiteSVM {
             .flat_map(|instruction| &instruction.accounts)
             .unique()
             .collect::<Vec<&u8>>();
-        let mut accounts = account_keys
+        let fee = self.fee_structure.calculate_fee(
+            message,
+            self.fee_structure.lamports_per_signature,
+            &compute_budget_limits.into(),
+            self.feature_set
+                .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+        );
+        let mut validated_fee_payer = false;
+        let maybe_accounts = account_keys
             .iter()
             .enumerate()
             .map(|(i, key)| {
@@ -393,8 +416,7 @@ impl LiteSVM {
                     let instruction_account = u8::try_from(i)
                         .map(|i| instruction_accounts.contains(&&i))
                         .unwrap_or(false);
-
-                    if !instruction_account
+                    let mut account = if !instruction_account
                         && !message.is_writable(i)
                         && self.accounts.programs_cache.find(key).is_some()
                     {
@@ -408,12 +430,38 @@ impl LiteSVM {
                             default_account.set_rent_epoch(0);
                             default_account
                         })
+                    };
+                    if !validated_fee_payer && message.is_non_loader_key(i) {
+                        validate_fee_payer(
+                            key,
+                            &mut account,
+                            i as IndexOfAccount,
+                            &self.accounts.sysvar_cache.get_rent().unwrap(),
+                            fee,
+                        )?;
+                        validated_fee_payer = true;
                     }
+                    account
                 };
 
-                (*key, account)
+                Ok((*key, account))
             })
-            .collect::<Vec<_>>();
+            .collect::<solana_sdk::transaction::Result<Vec<_>>>();
+
+        let mut accounts = match maybe_accounts {
+            Ok(accs) => accs,
+            Err(e) => {
+                return (Err(e), accumulated_consume_units, None);
+            }
+        };
+        if !validated_fee_payer {
+            error!("Failed to validate fee payer");
+            return (
+                Err(TransactionError::AccountNotFound),
+                accumulated_consume_units,
+                None,
+            );
+        }
         let builtins_start_index = accounts.len();
         let program_indices = tx
             .message()
@@ -422,7 +470,7 @@ impl LiteSVM {
             .map(|c| {
                 let mut account_indices: Vec<u16> = Vec::with_capacity(2);
                 let program_index = c.program_id_index as usize;
-                // This command may never return error, because the transaction is sanitized
+                // This may never error, because the transaction is sanitized
                 let (program_id, program_account) = accounts.get(program_index).unwrap();
                 if native_loader::check_id(program_id) {
                     return account_indices;
@@ -477,7 +525,7 @@ impl LiteSVM {
             tx_result = Err(err);
         };
 
-        (tx_result, accumulated_consume_units, context)
+        (tx_result, accumulated_consume_units, Some(context))
     }
 
     fn check_accounts_rent(
@@ -521,7 +569,7 @@ impl LiteSVM {
                 return ExecutionResult {
                     tx_result: Err(err),
                     ..Default::default()
-                }
+                };
             }
         };
         self.execute_sanitized_transaction(sanitized_tx)
@@ -544,11 +592,16 @@ impl LiteSVM {
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        let compute_budget = self.compute_budget.unwrap_or_else(|| {
-            let instructions = sanitized_tx.message().program_instructions_iter();
-            ComputeBudget::try_from_instructions(instructions).unwrap_or_default()
-        });
-
+        let instructions = sanitized_tx.message().program_instructions_iter();
+        let compute_budget_limits = match process_compute_budget_instructions(instructions) {
+            Ok(x) => x,
+            Err(e) => {
+                return ExecutionResult {
+                    tx_result: Err(e),
+                    ..Default::default()
+                };
+            }
+        };
         if self.history.check_transaction(sanitized_tx.signature()) {
             return ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
@@ -557,27 +610,35 @@ impl LiteSVM {
         }
 
         let (result, compute_units_consumed, context) =
-            self.process_transaction(&sanitized_tx, compute_budget);
-        let signature = sanitized_tx.signature().to_owned();
-        let ExecutionRecord {
-            accounts,
-            return_data,
-            touched_account_count: _,
-            accounts_resize_delta: _,
-        } = context.into();
-        let msg = sanitized_tx.message();
-        let post_accounts = accounts
-            .into_iter()
-            .enumerate()
-            .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
-            .collect();
+            self.process_transaction(&sanitized_tx, compute_budget_limits);
+        if let Some(ctx) = context {
+            let signature = sanitized_tx.signature().to_owned();
+            let ExecutionRecord {
+                accounts,
+                return_data,
+                touched_account_count: _,
+                accounts_resize_delta: _,
+            } = ctx.into();
+            let msg = sanitized_tx.message();
+            let post_accounts = accounts
+                .into_iter()
+                .enumerate()
+                .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
+                .collect();
 
-        ExecutionResult {
-            tx_result: result,
-            signature,
-            post_accounts,
-            compute_units_consumed,
-            return_data,
+            ExecutionResult {
+                tx_result: result,
+                signature,
+                post_accounts,
+                compute_units_consumed,
+                return_data,
+            }
+        } else {
+            return ExecutionResult {
+                tx_result: result,
+                compute_units_consumed,
+                ..Default::default()
+            };
         }
     }
 
@@ -673,5 +734,79 @@ impl LiteSVM {
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
         self.feature_set.clone()
+    }
+}
+
+/// Lighter version of the one in the solana-svm crate.
+///
+/// Check whether the payer_account is capable of paying the fee. The
+/// side effect is to subtract the fee amount from the payer_account
+/// balance of lamports. If the payer_acount is not able to pay the
+/// fee a specific error is returned.
+fn validate_fee_payer(
+    payer_address: &Pubkey,
+    payer_account: &mut AccountSharedData,
+    payer_index: IndexOfAccount,
+    rent: &Rent,
+    fee: u64,
+) -> solana_sdk::transaction::Result<()> {
+    if payer_account.lamports() == 0 {
+        error!("Payer account not found.");
+        return Err(TransactionError::AccountNotFound);
+    }
+    let system_account_kind = get_system_account_kind(payer_account).ok_or_else(|| {
+        error!("Payer account is not a system account");
+        TransactionError::InvalidAccountForFee
+    })?;
+    let min_balance = match system_account_kind {
+        SystemAccountKind::System => 0,
+        SystemAccountKind::Nonce => {
+            // Should we ever allow a fees charge to zero a nonce account's
+            // balance. The state MUST be set to uninitialized in that case
+            rent.minimum_balance(solana_sdk::nonce::State::size())
+        }
+    };
+
+    let payer_lamports = payer_account.lamports();
+
+    payer_lamports
+        .checked_sub(min_balance)
+        .and_then(|v| v.checked_sub(fee))
+        .ok_or_else(|| {
+            error!(
+                "Payer account has insufficient lamports for fee. Payer lamports: \
+                {payer_lamports} min_balance: {min_balance} fee: {fee}"
+            );
+            TransactionError::InsufficientFundsForFee
+        })?;
+
+    let payer_pre_rent_state = RentState::from_account(payer_account, rent);
+    // we already checked above if we have sufficient balance so this should never error.
+    payer_account.checked_sub_lamports(fee).unwrap();
+
+    let payer_post_rent_state = RentState::from_account(payer_account, &rent);
+    check_rent_state_with_account(
+        &payer_pre_rent_state,
+        &payer_post_rent_state,
+        payer_address,
+        payer_index,
+    )
+}
+
+// modified version of the private fn in solana-svm
+fn check_rent_state_with_account(
+    pre_rent_state: &RentState,
+    post_rent_state: &RentState,
+    address: &Pubkey,
+    account_index: IndexOfAccount,
+) -> solana_sdk::transaction::Result<()> {
+    if !solana_sdk::incinerator::check_id(address)
+        && !post_rent_state.transition_allowed_from(pre_rent_state)
+    {
+        let account_index = account_index as u8;
+        error!("Transaction would leave account {address} with insufficient funds for rent");
+        Err(TransactionError::InsufficientFundsForRent { account_index })
+    } else {
+        Ok(())
     }
 }
