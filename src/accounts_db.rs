@@ -293,10 +293,14 @@ impl AccountsDb {
         }
     }
 
-    fn withdraw(&mut self, pubkey: &Pubkey, lamports: u64) -> solana_sdk::transaction::Result<()> {
+    pub(crate) fn withdraw(
+        &mut self,
+        pubkey: &Pubkey,
+        lamports: u64,
+    ) -> solana_sdk::transaction::Result<()> {
         match self.inner.get_mut(pubkey) {
             Some(account) => {
-                let min_balance = match get_system_account_kind(&account) {
+                let min_balance = match get_system_account_kind(account) {
                     Some(SystemAccountKind::Nonce) => self
                         .sysvar_cache
                         .get_rent()

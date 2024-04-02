@@ -373,6 +373,8 @@ impl LiteSVM {
         Result<(), TransactionError>,
         u64,
         Option<TransactionContext>,
+        u64,
+        Option<Pubkey>,
     ) {
         let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
             compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
@@ -404,6 +406,7 @@ impl LiteSVM {
                 .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
         );
         let mut validated_fee_payer = false;
+        let mut payer_key = None;
         let maybe_accounts = account_keys
             .iter()
             .enumerate()
@@ -440,6 +443,7 @@ impl LiteSVM {
                             fee,
                         )?;
                         validated_fee_payer = true;
+                        payer_key = Some(*key);
                     }
                     account
                 };
@@ -451,7 +455,7 @@ impl LiteSVM {
         let mut accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
-                return (Err(e), accumulated_consume_units, None);
+                return (Err(e), accumulated_consume_units, None, fee, payer_key);
             }
         };
         if !validated_fee_payer {
@@ -460,6 +464,8 @@ impl LiteSVM {
                 Err(TransactionError::AccountNotFound),
                 accumulated_consume_units,
                 None,
+                fee,
+                payer_key,
             );
         }
         let builtins_start_index = accounts.len();
@@ -525,7 +531,13 @@ impl LiteSVM {
             tx_result = Err(err);
         };
 
-        (tx_result, accumulated_consume_units, Some(context))
+        (
+            tx_result,
+            accumulated_consume_units,
+            Some(context),
+            fee,
+            payer_key,
+        )
     }
 
     fn check_accounts_rent(
@@ -609,7 +621,7 @@ impl LiteSVM {
             };
         }
 
-        let (result, compute_units_consumed, context) =
+        let (result, compute_units_consumed, context, fee, payer_key) =
             self.process_transaction(&sanitized_tx, compute_budget_limits);
         if let Some(ctx) = context {
             let signature = sanitized_tx.signature().to_owned();
@@ -625,20 +637,32 @@ impl LiteSVM {
                 .enumerate()
                 .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
                 .collect();
+            let tx_result = if result.is_ok() {
+                result
+            } else if let Some(payer) = payer_key {
+                let withdraw_res = self.accounts.withdraw(&payer, fee);
+                if withdraw_res.is_err() {
+                    withdraw_res
+                } else {
+                    result
+                }
+            } else {
+                result
+            };
 
             ExecutionResult {
-                tx_result: result,
+                tx_result,
                 signature,
                 post_accounts,
                 compute_units_consumed,
                 return_data,
             }
         } else {
-            return ExecutionResult {
+            ExecutionResult {
                 tx_result: result,
                 compute_units_consumed,
                 ..Default::default()
-            };
+            }
         }
     }
 
@@ -784,7 +808,7 @@ fn validate_fee_payer(
     // we already checked above if we have sufficient balance so this should never error.
     payer_account.checked_sub_lamports(fee).unwrap();
 
-    let payer_post_rent_state = RentState::from_account(payer_account, &rent);
+    let payer_post_rent_state = RentState::from_account(payer_account, rent);
     check_rent_state_with_account(
         &payer_pre_rent_state,
         &payer_post_rent_state,
