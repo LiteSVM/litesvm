@@ -11,12 +11,6 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-fn read_counter_program() -> Vec<u8> {
-    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    so_path.push("test_programs/target/deploy/counter.so");
-    std::fs::read(so_path).unwrap()
-}
-
 const NUM_GREETINGS: u8 = 255;
 
 fn make_tx(
@@ -45,8 +39,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
-
-    svm.add_program(program_id, &read_counter_program());
+    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    so_path.push("test_programs/target/deploy/counter.so");
+    svm.add_program_from_file(program_id, &so_path).unwrap();
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let counter_address = Pubkey::new_unique();
     let latest_blockhash = svm.latest_blockhash();

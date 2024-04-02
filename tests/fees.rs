@@ -37,12 +37,6 @@ fn test_insufficient_funds_for_rent() {
     assert!(svm.get_transaction(&signature).is_none());
 }
 
-fn read_failure_program() -> Vec<u8> {
-    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    so_path.push("test_programs/target/deploy/failure.so");
-    std::fs::read(so_path).unwrap()
-}
-
 #[test_log::test]
 fn test_fees_failed_transaction() {
     let from_keypair = Keypair::new();
@@ -50,7 +44,9 @@ fn test_fees_failed_transaction() {
 
     let mut svm = LiteSVM::new();
     let program_id = pubkey!("HvrRMSshMx3itvsyWDnWg2E3cy5h57iMaR7oVxSZJDSA");
-    svm.add_program(program_id, &read_failure_program());
+    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    so_path.push("test_programs/target/deploy/failure.so");
+    svm.add_program_from_file(program_id, &so_path).unwrap();
     let initial_balance = 1_000_000_000;
     svm.airdrop(&from, initial_balance).unwrap();
     let instruction = Instruction {
