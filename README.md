@@ -55,5 +55,3 @@ fn system_transfer() {
     assert_eq!(to_account.unwrap().lamports, 64);
 }
 ```
-
-[**Return**](#Top)
