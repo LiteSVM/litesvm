@@ -26,13 +26,6 @@
 
 ## 🚀 Getting Started
 
-**_Dependencies_**
-
-Please ensure you have the following dependencies installed on your system:
-
-- `Rust v1.75.0`
-- `Solana v1.18.8`
-
 
 ### 🔧 Installation
 
