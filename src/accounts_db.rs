@@ -21,10 +21,13 @@ use solana_program_runtime::{
     sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
-    account::{AccountSharedData, ReadableAccount},
+    account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
+    nonce,
     pubkey::Pubkey,
+    transaction::TransactionError,
 };
+use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{collections::HashMap, sync::Arc};
 
 use crate::types::InvalidSysvarDataError;
@@ -287,6 +290,36 @@ impl AccountsDb {
             })
         } else {
             Err(AddressLookupError::InvalidAccountOwner)
+        }
+    }
+
+    pub(crate) fn withdraw(
+        &mut self,
+        pubkey: &Pubkey,
+        lamports: u64,
+    ) -> solana_sdk::transaction::Result<()> {
+        match self.inner.get_mut(pubkey) {
+            Some(account) => {
+                let min_balance = match get_system_account_kind(account) {
+                    Some(SystemAccountKind::Nonce) => self
+                        .sysvar_cache
+                        .get_rent()
+                        .unwrap()
+                        .minimum_balance(nonce::State::size()),
+                    _ => 0,
+                };
+
+                lamports
+                    .checked_add(min_balance)
+                    .filter(|required_balance| *required_balance <= account.lamports())
+                    .ok_or(TransactionError::InsufficientFundsForFee)?;
+                account
+                    .checked_sub_lamports(lamports)
+                    .map_err(|_| TransactionError::InsufficientFundsForFee)?;
+
+                Ok(())
+            }
+            None => Err(TransactionError::AccountNotFound),
         }
     }
 }

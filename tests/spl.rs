@@ -1,6 +1,6 @@
 use litesvm::LiteSVM;
 use solana_sdk::{
-    program_pack::Pack, signature::Keypair, signer::Signer, system_instruction,
+    program_pack::Pack, rent::Rent, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,
 };
 
@@ -27,6 +27,7 @@ fn spl_token() {
         spl_token::instruction::initialize_mint2(&spl_token::id(), &mint_pk, &payer_pk, None, 8)
             .unwrap();
     let balance_before = svm.get_balance(&payer_pk).unwrap();
+    let expected_fee = 2 * 5000; // two signers
     let tx_result = svm.send_transaction(Transaction::new_signed_with_payer(
         &[create_acc_ins, init_mint_ins],
         Some(&payer_pk),
@@ -34,8 +35,12 @@ fn spl_token() {
         svm.latest_blockhash(),
     ));
     assert!(tx_result.is_ok());
+    let expected_rent = svm
+        .get_sysvar::<Rent>()
+        .minimum_balance(spl_token::state::Mint::LEN);
     let balance_after = svm.get_balance(&payer_pk).unwrap();
-    assert!(balance_after < balance_before);
+
+    assert_eq!(balance_before - balance_after, expected_rent + expected_fee);
 
     let mint_acc = svm.get_account(&mint_kp.pubkey());
     let mint = spl_token::state::Mint::unpack(&mint_acc.unwrap().data).unwrap();

@@ -10,7 +10,7 @@ use solana_sdk::{
     transaction::{Transaction, TransactionError},
 };
 
-#[test]
+#[test_log::test]
 fn test_set_compute_budget() {
     // see that the tx fails if we set a tiny limit
     let from_keypair = Keypair::new();
@@ -18,8 +18,9 @@ fn test_set_compute_budget() {
     let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
+    let tx_fee = 5000;
 
-    svm.airdrop(&from, 100).unwrap();
+    svm.airdrop(&from, tx_fee + 100).unwrap();
     svm.set_compute_budget(ComputeBudget {
         compute_unit_limit: 10,
         ..Default::default()
@@ -46,8 +47,9 @@ fn test_set_compute_unit_limit() {
     let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
+    let tx_fee = 5000;
 
-    svm.airdrop(&from, 100).unwrap();
+    svm.airdrop(&from, tx_fee + 100).unwrap();
 
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(

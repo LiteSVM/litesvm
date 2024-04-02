@@ -15,7 +15,7 @@ pub struct TransactionMetadata {
     pub return_data: TransactionReturnData,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
     pub meta: TransactionMetadata,
@@ -24,11 +24,13 @@ pub struct FailedTransactionMetadata {
 pub type TransactionResult = std::result::Result<TransactionMetadata, FailedTransactionMetadata>;
 
 pub(crate) struct ExecutionResult {
-    pub post_accounts: Vec<(Pubkey, AccountSharedData)>,
-    pub tx_result: Result<()>,
-    pub signature: Signature,
-    pub compute_units_consumed: u64,
-    pub return_data: TransactionReturnData,
+    pub(crate) post_accounts: Vec<(Pubkey, AccountSharedData)>,
+    pub(crate) tx_result: Result<()>,
+    pub(crate) signature: Signature,
+    pub(crate) compute_units_consumed: u64,
+    pub(crate) return_data: TransactionReturnData,
+    /// Whether the transaction can be included in a block
+    pub(crate) included: bool,
 }
 
 impl Default for ExecutionResult {
@@ -39,6 +41,7 @@ impl Default for ExecutionResult {
             signature: Default::default(),
             compute_units_consumed: Default::default(),
             return_data: Default::default(),
+            included: false,
         }
     }
 }

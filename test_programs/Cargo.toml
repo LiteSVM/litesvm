@@ -1,5 +1,5 @@
 [workspace]
-members = ["counter"]
+members = ["counter", "failure"]
 resolver = "2"
 
 [workspace.dependencies]

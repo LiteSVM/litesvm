@@ -17,12 +17,14 @@ solana-loader-v4-program = "~1.18"
 bincode = "1.3"
 indexmap = "2.2.6"
 solana-address-lookup-table-program = "1.18.8"
+log = "0.4.21"
 
 [dev-dependencies]
 spl-token = "3.5.0"
 solana-program-test = "~1.18"
 criterion = "0.5"
 tokio = "1.35"
+test-log = "0.2.15"
 
 [features]
 internal-test = []
