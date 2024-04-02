@@ -1,9 +1,12 @@
 [package]
 name = "litesvm"
-license = "MIT"
+description = "A fast and lightweight Solana VM simulator for testing solana programs"
+license = "Apache-2.0"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75.0"
+repository = "https://github.com/LiteSVM/litesvm"
+readme = "README.md"
 
 [dependencies]
 itertools = "0.12"
