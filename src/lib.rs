@@ -41,7 +41,7 @@ use solana_sdk::{
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 use utils::construct_instructions_account;
 
 use crate::{
@@ -272,6 +272,16 @@ impl LiteSVM {
         self.accounts
             .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()))
             .unwrap();
+    }
+
+    pub fn add_program_from_file(
+        &mut self,
+        program_id: Pubkey,
+        path: impl AsRef<Path>,
+    ) -> Result<(), std::io::Error> {
+        let bytes = std::fs::read(path)?;
+        self.add_program(program_id, &bytes);
+        Ok(())
     }
 
     pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
