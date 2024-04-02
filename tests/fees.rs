@@ -27,12 +27,14 @@ fn test_insufficient_funds_for_rent() {
         Message::new(&[instruction], Some(&from)),
         svm.latest_blockhash(),
     );
+    let signature = tx.signatures[0];
     let tx_res = svm.send_transaction(tx);
 
     assert_eq!(
         tx_res.unwrap_err().err,
         TransactionError::InsufficientFundsForRent { account_index: 0 }
     );
+    assert!(svm.get_transaction(&signature).is_none());
 }
 
 fn read_failure_program() -> Vec<u8> {
@@ -61,6 +63,7 @@ fn test_fees_failed_transaction() {
         Message::new(&[instruction], Some(&from)),
         svm.latest_blockhash(),
     );
+    let signature = tx.signatures[0];
     let tx_res = svm.send_transaction(tx);
 
     assert_eq!(
@@ -68,5 +71,7 @@ fn test_fees_failed_transaction() {
         TransactionError::InstructionError(0, InstructionError::Custom(0))
     );
     let balance_after = svm.get_balance(&from).unwrap();
-    assert_eq!(initial_balance - balance_after, 5000);
+    let expected_fee = 5000;
+    assert_eq!(initial_balance - balance_after, expected_fee);
+    assert!(svm.get_transaction(&signature).unwrap().is_err());
 }

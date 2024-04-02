@@ -233,7 +233,7 @@ impl LiteSVM {
         bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
     }
 
-    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
+    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
         self.history.get_transaction(signature)
     }
 
@@ -697,14 +697,16 @@ impl LiteSVM {
             return_data,
             signature,
         };
-        if included {
-            self.history
-                .add_new_transaction(meta.signature, meta.clone());
-        }
 
         if let Err(tx_err) = tx_result {
-            TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
+            let err = TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta });
+            if included {
+                self.history.add_new_transaction(signature, err.clone());
+            }
+            err
         } else {
+            self.history
+                .add_new_transaction(signature, Ok(meta.clone()));
             self.accounts
                 .sync_accounts(post_accounts)
                 .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");

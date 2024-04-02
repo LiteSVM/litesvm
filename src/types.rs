@@ -15,7 +15,7 @@ pub struct TransactionMetadata {
     pub return_data: TransactionReturnData,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
     pub meta: TransactionMetadata,

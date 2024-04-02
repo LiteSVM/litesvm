@@ -1,8 +1,8 @@
-use crate::types::TransactionMetadata;
+use crate::types::TransactionResult;
 use indexmap::IndexMap;
 use solana_sdk::signature::Signature;
 
-pub struct TransactionHistory(IndexMap<Signature, TransactionMetadata>);
+pub struct TransactionHistory(IndexMap<Signature, TransactionResult>);
 
 impl TransactionHistory {
     pub fn new() -> Self {
@@ -17,17 +17,17 @@ impl TransactionHistory {
         }
     }
 
-    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionMetadata> {
+    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
         self.0.get(signature)
     }
 
-    pub fn add_new_transaction(&mut self, signature: Signature, meta: TransactionMetadata) {
+    pub fn add_new_transaction(&mut self, signature: Signature, result: TransactionResult) {
         let capacity = self.0.capacity();
         if capacity != 0 {
             if self.0.len() == capacity {
                 self.0.shift_remove_index(0);
             }
-            self.0.insert(signature, meta);
+            self.0.insert(signature, result);
         }
     }
 
