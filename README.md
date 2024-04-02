@@ -74,8 +74,4 @@ fn system_transfer() {
 }
 ```
 
-## 🛣 Roadmap
-
-See [Project](https://github.com/orgs/LiteSVM/projects/1).
-
 [**Return**](#Top)
