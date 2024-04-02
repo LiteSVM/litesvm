@@ -9,8 +9,7 @@
 
 ## 📍 Overview
 
-`litesvm` is designed to be a replacement of the [`solana-program-test`](https://github.com/solana-labs/solana/tree/master/program-test). A new Solana program test framework focuses on performance and ease of use. The limited number of dependencies also greatly reduces compilation time. See [benches](https://github.com/LiteSVM/litesvm/tree/master/benches).
-
+`litesvm` is a fast and lightweight Solana VM simulator for testing programs. It takes inspiration from the good parts of the [`solana-program-test`](https://github.com/solana-labs/solana/tree/master/program-test) crate, while offering superior performance and developer experience.
 ---
 
 ## 🚀 Getting Started
