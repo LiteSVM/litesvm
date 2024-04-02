@@ -656,6 +656,7 @@ impl LiteSVM {
                 post_accounts,
                 compute_units_consumed,
                 return_data,
+                included: true,
             }
         } else {
             ExecutionResult {
@@ -683,6 +684,7 @@ impl LiteSVM {
             signature,
             compute_units_consumed,
             return_data,
+            included,
         } = if self.sigverify {
             self.execute_transaction(vtx)
         } else {
@@ -695,12 +697,14 @@ impl LiteSVM {
             return_data,
             signature,
         };
+        if included {
+            self.history
+                .add_new_transaction(meta.signature, meta.clone());
+        }
 
         if let Err(tx_err) = tx_result {
             TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
         } else {
-            self.history
-                .add_new_transaction(meta.signature, meta.clone());
             self.accounts
                 .sync_accounts(post_accounts)
                 .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");
@@ -716,6 +720,7 @@ impl LiteSVM {
             signature,
             compute_units_consumed,
             return_data,
+            ..
         } = if self.sigverify {
             self.execute_transaction(tx)
         } else {
