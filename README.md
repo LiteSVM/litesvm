@@ -7,15 +7,6 @@
 
 ---
 
-## 📖 Table of Contents
-
-- [📖 Table of Contents](#-table-of-contents)
-- [📍 Overview](#-overview)
-- [🚀 Getting Started](#-getting-started)
-  - [🔧 Installation](#-installation)
-  - [🤖 Minimal Example](#-minimal-example)
----
-
 ## 📍 Overview
 
 `litesvm` is designed to be a replacement of the [`solana-program-test`](https://github.com/solana-labs/solana/tree/master/program-test). A new Solana program test framework focuses on performance and ease of use. The limited number of dependencies also greatly reduces compilation time. See [benches](https://github.com/LiteSVM/litesvm/tree/master/benches).
