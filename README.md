@@ -1,6 +1,6 @@
 <div align="center">
 <h1 align="center">
-    <img src="https://raw.githubusercontent.com/litesvm/litesvm/main/logo.jpeg" width="50%" height="50%">
+    <img src="https://raw.githubusercontent.com/litesvm/litesvm/master/logo.jpeg" width="50%" height="50%">
 <br></h1>
 <h3>LiteSVM</h3>
 </div>
