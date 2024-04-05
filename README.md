@@ -1,6 +1,8 @@
 <div align="center">
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/ec559a9f6bfd399b82bb44393651661b08aaf7ba/icons/folder-markdown-open.svg" width="100" />
+<div align="center">
+    <img src="https://raw.githubusercontent.com/litesvm/litesvm/main/logo.jpeg" width="50%" height="50%">
+</div>
 <br></h1>
 <h3>LiteSVM</h3>
 </div>
