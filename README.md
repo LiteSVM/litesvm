@@ -1,16 +1,14 @@
 <div align="center">
-<h1 align="center">
     <img src="https://raw.githubusercontent.com/litesvm/litesvm/master/logo.jpeg" width="50%" height="50%">
-<br></h1>
-<h3>LiteSVM</h3>
 </div>
 
 ---
 
+# LiteSVM
+
 ## 📍 Overview
 
 `litesvm` is a fast and lightweight library for testing Solana programs. It works by creating an in-process Solana VM optimized for program developers. This makes it much faster to run and compile than alternatives like `solana-program-test` and `solana-test-validator`. In a further break from tradition, it has an ergonomic API with sane defaults and extensive configurability for those who want it.
----
 
 ## 🚀 Getting Started
 
