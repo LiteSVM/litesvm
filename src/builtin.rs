@@ -15,24 +15,24 @@ pub(crate) static BUILTINS: &[BuiltinPrototype] = &[
         name: "system_program",
         entrypoint: solana_system_program::system_processor::Entrypoint::vm,
     },
-    // BuiltinPrototype {
-    //     feature_id: None,
-    //     program_id: solana_vote_program::id(),
-    //     name: "vote_program",
-    //     entrypoint: solana_vote_program::vote_processor::Entrypoint::vm,
-    // },
-    // BuiltinPrototype {
-    //     feature_id: None,
-    //     program_id: solana_stake_program::id(),
-    //     name: "stake_program",
-    //     entrypoint: solana_stake_program::stake_instruction::Entrypoint::vm,
-    // },
-    // BuiltinPrototype {
-    //     feature_id: None,
-    //     program_id: solana_config_program::id(),
-    //     name: "config_program",
-    //     entrypoint: solana_config_program::config_processor::Entrypoint::vm,
-    // },
+    BuiltinPrototype {
+        feature_id: None,
+        program_id: solana_vote_program::id(),
+        name: "vote_program",
+        entrypoint: solana_vote_program::vote_processor::Entrypoint::vm,
+    },
+    BuiltinPrototype {
+        feature_id: None,
+        program_id: solana_stake_program::id(),
+        name: "stake_program",
+        entrypoint: solana_stake_program::stake_instruction::Entrypoint::vm,
+    },
+    BuiltinPrototype {
+        feature_id: None,
+        program_id: solana_config_program::id(),
+        name: "config_program",
+        entrypoint: solana_config_program::config_processor::Entrypoint::vm,
+    },
     BuiltinPrototype {
         feature_id: None,
         program_id: bpf_loader_deprecated::id(),

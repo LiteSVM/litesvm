@@ -22,6 +22,9 @@ bincode = "1.3"
 indexmap = "2.2.6"
 solana-address-lookup-table-program = "1.18.8"
 log = "0.4.21"
+solana-vote-program = "~1.18"
+solana-stake-program = "~1.18"
+solana-config-program = "~1.18"
 
 [dev-dependencies]
 spl-token = "3.5.0"
