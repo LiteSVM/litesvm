@@ -32,6 +32,8 @@ solana-program-test = "~1.18"
 criterion = "0.5"
 tokio = "1.35"
 test-log = "0.2.15"
+solana-config-program = "~1.18"
+serde = "1.0.197"
 
 [features]
 internal-test = []

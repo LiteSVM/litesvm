@@ -2186,6 +2186,7 @@ dependencies = [
  "indexmap 2.2.6",
  "itertools 0.12.1",
  "log",
+ "serde",
  "solana-address-lookup-table-program",
  "solana-bpf-loader-program",
  "solana-compute-budget-program",

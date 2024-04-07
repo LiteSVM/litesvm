@@ -461,7 +461,6 @@ impl LiteSVM {
                 Ok((*key, account))
             })
             .collect::<solana_sdk::transaction::Result<Vec<_>>>();
-
         let mut accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
