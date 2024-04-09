@@ -173,7 +173,7 @@ fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
         svm.latest_blockhash(),
     );
     let mut data = svm
-        .simulate_transaction(transaction.into())
+        .simulate_transaction(transaction)
         .unwrap()
         .return_data
         .data;

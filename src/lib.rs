@@ -724,7 +724,10 @@ impl LiteSVM {
         }
     }
 
-    pub fn simulate_transaction(&mut self, tx: VersionedTransaction) -> TransactionResult {
+    pub fn simulate_transaction(
+        &mut self,
+        tx: impl Into<VersionedTransaction>,
+    ) -> TransactionResult {
         let ExecutionResult {
             post_accounts: _,
             tx_result,
@@ -733,9 +736,9 @@ impl LiteSVM {
             return_data,
             ..
         } = if self.sigverify {
-            self.execute_transaction(tx)
+            self.execute_transaction(tx.into())
         } else {
-            self.execute_transaction_no_verify(tx)
+            self.execute_transaction_no_verify(tx.into())
         };
 
         let logs = self.log_collector.take().into_messages();
