@@ -64,7 +64,7 @@ fn create_config_account(
     let payer = &ctx.payer;
 
     let space = get_config_space(keys.len());
-    let lamports = ctx.svm.get_sysvar::<Rent>().minimum_balance(space as usize);
+    let lamports = ctx.svm.get_sysvar::<Rent>().minimum_balance(space);
     let instructions = config_instruction::create_account::<MyConfig>(
         &payer.pubkey(),
         &config_keypair.pubkey(),
@@ -634,10 +634,7 @@ fn test_config_bad_owner() {
 
     // Store a config account with the wrong owner.
     let space = get_config_space(keys.len());
-    let lamports = context
-        .svm
-        .get_sysvar::<Rent>()
-        .minimum_balance(space as usize);
+    let lamports = context.svm.get_sysvar::<Rent>().minimum_balance(space);
     context
         .svm
         .set_account(

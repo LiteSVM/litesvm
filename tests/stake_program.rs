@@ -61,7 +61,7 @@ impl Accounts {
 
         create_vote(
             svm,
-            &payer,
+            payer,
             &svm.latest_blockhash(),
             &self.validator,
             &self.voter.pubkey(),
@@ -483,7 +483,7 @@ fn test_stake_initialize() {
         executable: false,
         rent_epoch: 1000,
     };
-    svm.set_account(stake, account.into()).unwrap();
+    svm.set_account(stake, account).unwrap();
 
     let instruction = ixn::initialize(&stake, &authorized, &lockup);
     let e = process_instruction(&mut svm, &instruction, &no_signers, &payer).unwrap_err();
@@ -766,7 +766,7 @@ fn test_stake_delegate() {
     let mut fake_vote_account = get_account(&mut svm, &accounts.vote_account.pubkey());
     fake_vote_account.owner = Pubkey::new_unique();
     let fake_vote_address = Pubkey::new_unique();
-    svm.set_account(fake_vote_address, fake_vote_account.into())
+    svm.set_account(fake_vote_address, fake_vote_account)
         .unwrap();
 
     let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
@@ -787,8 +787,7 @@ fn test_stake_delegate() {
         executable: false,
         rent_epoch: u64::MAX,
     };
-    svm.set_account(rewards_pool_address, rewards_pool.into())
-        .unwrap();
+    svm.set_account(rewards_pool_address, rewards_pool).unwrap();
 
     let instruction = ixn::delegate_stake(
         &rewards_pool_address,
