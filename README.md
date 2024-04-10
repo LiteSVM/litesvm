@@ -6,6 +6,11 @@
 
 # LiteSVM
 
+[<img alt="github" src="https://img.shields.io/badge/github-LiteSVM/litesvm-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/LiteSVM/litesvm)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/litesvm.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/litesvm)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-litesvm-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/litesvm/0.1.0/litesvm/)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/LiteSVM/litesvm/CI.yml?branch=master&style=for-the-badge" height="20">](https://github.com/LiteSVM/litesvm/actions?query=branch%3Amaster)
+
 ## 📍 Overview
 
 `litesvm` is a fast and lightweight library for testing Solana programs. It works by creating an in-process Solana VM optimized for program developers. This makes it much faster to run and compile than alternatives like `solana-program-test` and `solana-test-validator`. In a further break from tradition, it has an ergonomic API with sane defaults and extensive configurability for those who want it.
