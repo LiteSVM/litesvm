@@ -2,13 +2,33 @@ use litesvm::LiteSVM;
 use solana_program::{message::Message, pubkey::Pubkey, system_instruction::transfer};
 use solana_sdk::{
     account::ReadableAccount,
-    nonce::State as NonceState,
+    account_utils::StateMut,
+    nonce::{
+        state::{Data, Versions},
+        State as NonceState,
+    },
     rent::Rent,
     signature::Keypair,
     signer::Signer,
     system_instruction::advance_nonce_account,
     transaction::{Transaction, TransactionError},
 };
+
+fn data_from_state(state: &NonceState) -> &Data {
+    match state {
+        NonceState::Uninitialized => panic!("Expecting Initialized here"),
+        NonceState::Initialized(data) => data,
+    }
+}
+
+fn data_from_account<T: ReadableAccount + StateMut<Versions>>(account: &T) -> Data {
+    data_from_state(&state_from_account(account).clone()).clone()
+}
+
+fn state_from_account<T: ReadableAccount + StateMut<Versions>>(account: &T) -> NonceState {
+    let versions = StateMut::<Versions>::state(account).unwrap();
+    NonceState::from(versions)
+}
 
 #[test_log::test]
 fn test_invalid_blockhash() {
@@ -56,13 +76,10 @@ fn test_durable_nonce() {
     let nonce_account_raw = svm.get_account(&nonce_kp.pubkey()).unwrap();
     let transfer_ix = transfer(&from, &to, 1);
     let advance_ix = advance_nonce_account(&nonce_kp.pubkey(), &from);
-    let parsed: NonceState = bincode::deserialize(nonce_account_raw.data()).unwrap();
-    if let NonceState::Initialized(data) = parsed {
-        let nonce = data.blockhash();
-        let msg = Message::new_with_blockhash(&[advance_ix, transfer_ix], Some(&from), &nonce);
-        let tx_using_nonce = Transaction::new(&[&from_keypair], msg, nonce);
-        svm.send_transaction(tx_using_nonce).unwrap();
-    } else {
-        panic!("Uninitialized nonce.")
-    }
+    let parsed = data_from_account(&nonce_account_raw);
+    let nonce = parsed.blockhash();
+    let msg = Message::new_with_blockhash(&[advance_ix, transfer_ix], Some(&from), &nonce);
+    let tx_using_nonce = Transaction::new(&[&from_keypair], msg, nonce);
+    svm.expire_blockhash();
+    svm.send_transaction(tx_using_nonce).unwrap();
 }

@@ -15,6 +15,8 @@ use solana_program_runtime::{
     message_processor::MessageProcessor,
     timings::ExecuteTimings,
 };
+#[allow(deprecated)]
+use solana_sdk::sysvar::recent_blockhashes::IterItem;
 use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     bpf_loader,
@@ -124,14 +126,20 @@ impl LiteSVM {
         self.set_sysvar(&EpochRewards::default());
         self.set_sysvar(&EpochSchedule::default());
         #[allow(deprecated)]
-        self.set_sysvar(&Fees::default());
+        let fees = Fees::default();
+        self.set_sysvar(&fees);
         self.set_sysvar(&LastRestartSlot::default());
+        let latest_blockhash = self.latest_blockhash;
         #[allow(deprecated)]
-        self.set_sysvar(&RecentBlockhashes::default());
+        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
+            0,
+            &latest_blockhash,
+            fees.fee_calculator.lamports_per_signature,
+        )]));
         self.set_sysvar(&Rent::default());
         self.set_sysvar(&SlotHashes::new(&[(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
-            self.latest_blockhash(),
+            latest_blockhash,
         )]));
         self.set_sysvar(&SlotHistory::default());
         self.set_sysvar(&StakeHistory::default());
@@ -769,6 +777,12 @@ impl LiteSVM {
 
     pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
+        #[allow(deprecated)]
+        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
+            0,
+            &self.latest_blockhash,
+            self.fee_structure.lamports_per_signature,
+        )]));
     }
 
     pub fn warp_to_slot(&mut self, slot: u64) {
@@ -817,7 +831,6 @@ impl LiteSVM {
         let nonce_account = self.accounts.get_account(nonce_address)?;
         let nonce_data =
             nonce_account::verify_nonce_account(&nonce_account, message.recent_blockhash())?;
-
         let nonce_is_authorized = message
             .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
             .any(|signer| signer == &nonce_data.authority);
