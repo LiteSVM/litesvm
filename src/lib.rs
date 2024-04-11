@@ -42,9 +42,7 @@ use solana_sdk::{
     system_instruction, system_program,
     sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
-    transaction_context::{
-        ExecutionRecord, IndexOfAccount, TransactionAccount, TransactionContext,
-    },
+    transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
@@ -836,19 +834,18 @@ impl LiteSVM {
         }
     }
 
-    fn check_message_for_nonce(&self, message: &SanitizedMessage) -> Option<TransactionAccount> {
-        let nonce_address = message.get_durable_nonce()?;
-        let nonce_account = self.accounts.get_account(nonce_address)?;
-        let nonce_data =
-            nonce_account::verify_nonce_account(&nonce_account, message.recent_blockhash())?;
-        let nonce_is_authorized = message
-            .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
-            .any(|signer| signer == &nonce_data.authority);
-        if !nonce_is_authorized {
-            return None;
-        }
-
-        Some((*nonce_address, nonce_account))
+    fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
+        message
+            .get_durable_nonce()
+            .and_then(|nonce_address| self.accounts.get_account(nonce_address))
+            .and_then(|nonce_account| {
+                nonce_account::verify_nonce_account(&nonce_account, message.recent_blockhash())
+            })
+            .map_or(false, |nonce_data| {
+                message
+                    .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
+                    .any(|signer| signer == &nonce_data.authority)
+            })
     }
 
     fn check_transaction_for_nonce(
@@ -857,7 +854,7 @@ impl LiteSVM {
         next_durable_nonce: &DurableNonce,
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
-        nonce_is_advanceable && self.check_message_for_nonce(tx.message()).is_some()
+        nonce_is_advanceable && self.check_message_for_nonce(tx.message())
     }
 }
 
