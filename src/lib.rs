@@ -83,6 +83,7 @@ pub struct LiteSVM {
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
     sigverify: bool,
+    blockhash_check: bool,
     fee_structure: FeeStructure,
 }
 
@@ -96,7 +97,8 @@ impl Default for LiteSVM {
             log_collector: Default::default(),
             history: TransactionHistory::new(),
             compute_budget: None,
-            sigverify: true,
+            sigverify: false,
+            blockhash_check: false,
             fee_structure: FeeStructure::default(),
         }
     }
@@ -109,6 +111,8 @@ impl LiteSVM {
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_spl_programs()
+            .with_sigverify(true)
+            .with_blockhash_check(true)
     }
 
     pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
@@ -118,6 +122,11 @@ impl LiteSVM {
 
     pub fn with_sigverify(mut self, sigverify: bool) -> Self {
         self.sigverify = sigverify;
+        self
+    }
+
+    pub fn with_blockhash_check(mut self, check: bool) -> Self {
+        self.blockhash_check = check;
         self
     }
 
@@ -626,11 +635,13 @@ impl LiteSVM {
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if let Err(e) = self.check_transaction_age(&sanitized_tx) {
-            return ExecutionResult {
-                tx_result: Err(e),
-                ..Default::default()
-            };
+        if self.blockhash_check {
+            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
+                return ExecutionResult {
+                    tx_result: Err(e),
+                    ..Default::default()
+                };
+            }
         }
         let instructions = sanitized_tx.message().program_instructions_iter();
         let compute_budget_limits = match process_compute_budget_instructions(instructions) {
