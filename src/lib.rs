@@ -824,7 +824,6 @@ impl LiteSVM {
             Ok(())
         } else if self
             .check_transaction_for_nonce(tx, &DurableNonce::from_blockhash(&self.latest_blockhash))
-            .is_some()
         {
             Ok(())
         } else {
@@ -856,13 +855,9 @@ impl LiteSVM {
         &self,
         tx: &SanitizedTransaction,
         next_durable_nonce: &DurableNonce,
-    ) -> Option<TransactionAccount> {
+    ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
-        if nonce_is_advanceable {
-            self.check_message_for_nonce(tx.message())
-        } else {
-            None
-        }
+        nonce_is_advanceable && self.check_message_for_nonce(tx.message()).is_some()
     }
 }
 
