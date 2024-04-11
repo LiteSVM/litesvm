@@ -818,10 +818,11 @@ impl LiteSVM {
         tx: &SanitizedTransaction,
     ) -> solana_sdk::transaction::Result<()> {
         let recent_blockhash = tx.message().recent_blockhash();
-        if recent_blockhash == &self.latest_blockhash {
-            Ok(())
-        } else if self
-            .check_transaction_for_nonce(tx, &DurableNonce::from_blockhash(&self.latest_blockhash))
+        if recent_blockhash == &self.latest_blockhash
+            || self.check_transaction_for_nonce(
+                tx,
+                &DurableNonce::from_blockhash(&self.latest_blockhash),
+            )
         {
             Ok(())
         } else {
