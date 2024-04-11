@@ -17,13 +17,14 @@ pub fn set_upgrade_authority(
     current_authority_keypair: &Keypair,
     new_authority_pubkey: Option<&Pubkey>,
 ) -> Result<(), FailedTransactionMetadata> {
-    let message = Message::new(
+    let message = Message::new_with_blockhash(
         &[bpf_loader_upgradeable::set_upgrade_authority(
             program_pubkey,
             &current_authority_keypair.pubkey(),
             new_authority_pubkey,
         )],
         Some(&from_keypair.pubkey()),
+        &svm.latest_blockhash,
     );
     svm.send_message(message, &[&from_keypair])?;
 
@@ -42,7 +43,7 @@ fn load_upgradeable_buffer(
     let buffer_len = UpgradeableLoaderState::size_of_buffer(program_bytes.len());
     let lamports = svm.minimum_balance_for_rent_exemption(buffer_len);
 
-    let message = Message::new(
+    let message = Message::new_with_blockhash(
         &bpf_loader_upgradeable::create_buffer(
             &payer_pk,
             &buffer_pk,
@@ -52,13 +53,14 @@ fn load_upgradeable_buffer(
         )
         .unwrap(),
         Some(&payer_pk),
+        &svm.latest_blockhash,
     );
     svm.send_message(message, &[payer_kp, &buffer_kp])?;
 
     let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
     for chunk in program_bytes.chunks(chunk_size) {
-        let message = Message::new(
+        let message = Message::new_with_blockhash(
             &[bpf_loader_upgradeable::write(
                 &buffer_pk,
                 &payer_pk,
@@ -66,6 +68,7 @@ fn load_upgradeable_buffer(
                 chunk.to_vec(),
             )],
             Some(&payer_pk),
+            &svm.latest_blockhash,
         );
         svm.send_message(message, &[payer_kp])?;
         offset += chunk_size as u32;
@@ -85,7 +88,7 @@ pub fn deploy_upgradeable_program(
     let buffer_pk = load_upgradeable_buffer(svm, payer_kp, program_bytes)?;
 
     let lamports = svm.minimum_balance_for_rent_exemption(program_bytes.len());
-    let message = Message::new(
+    let message = Message::new_with_blockhash(
         &bpf_loader_upgradeable::deploy_with_max_program_len(
             &payer_pk,
             &program_pk,
@@ -96,6 +99,7 @@ pub fn deploy_upgradeable_program(
         )
         .unwrap(),
         Some(&payer_pk),
+        &svm.latest_blockhash,
     );
     svm.send_message(message, &[payer_kp, &program_kp])?;
 

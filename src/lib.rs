@@ -24,9 +24,11 @@ use solana_sdk::{
     feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
     fee::FeeStructure,
     hash::Hash,
-    message::{Message, VersionedMessage},
+    message::{Message, SanitizedMessage, VersionedMessage},
     native_loader,
     native_token::LAMPORTS_PER_SOL,
+    nonce::{state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
+    nonce_account,
     pubkey::Pubkey,
     rent::Rent,
     signature::{Keypair, Signature},
@@ -38,7 +40,9 @@ use solana_sdk::{
     system_instruction, system_program,
     sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
-    transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
+    transaction_context::{
+        ExecutionRecord, IndexOfAccount, TransactionAccount, TransactionContext,
+    },
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
@@ -240,13 +244,14 @@ impl LiteSVM {
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
         let payer = &self.airdrop_kp;
         let tx = VersionedTransaction::try_new(
-            VersionedMessage::Legacy(Message::new(
+            VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[system_instruction::transfer(
                     &payer.pubkey(),
                     pubkey,
                     lamports,
                 )],
                 Some(&payer.pubkey()),
+                &self.latest_blockhash,
             )),
             &[payer],
         )
@@ -613,6 +618,12 @@ impl LiteSVM {
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
+        if let Err(e) = self.check_transaction_age(&sanitized_tx) {
+            return ExecutionResult {
+                tx_result: Err(e),
+                ..Default::default()
+            };
+        }
         let instructions = sanitized_tx.message().program_instructions_iter();
         let compute_budget_limits = match process_compute_budget_instructions(instructions) {
             Ok(x) => x,
@@ -777,6 +788,57 @@ impl LiteSVM {
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
         self.feature_set.clone()
+    }
+
+    fn check_transaction_age(
+        &self,
+        tx: &SanitizedTransaction,
+    ) -> solana_sdk::transaction::Result<()> {
+        let recent_blockhash = tx.message().recent_blockhash();
+        if recent_blockhash == &self.latest_blockhash {
+            Ok(())
+        } else if self
+            .check_transaction_for_nonce(tx, &DurableNonce::from_blockhash(&self.latest_blockhash))
+            .is_some()
+        {
+            Ok(())
+        } else {
+            log::error!(
+                "Blockhash {} not found. Expected blockhash {}",
+                recent_blockhash,
+                self.latest_blockhash
+            );
+            Err(TransactionError::BlockhashNotFound)
+        }
+    }
+
+    fn check_message_for_nonce(&self, message: &SanitizedMessage) -> Option<TransactionAccount> {
+        let nonce_address = message.get_durable_nonce()?;
+        let nonce_account = self.accounts.get_account(nonce_address)?;
+        let nonce_data =
+            nonce_account::verify_nonce_account(&nonce_account, message.recent_blockhash())?;
+
+        let nonce_is_authorized = message
+            .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
+            .any(|signer| signer == &nonce_data.authority);
+        if !nonce_is_authorized {
+            return None;
+        }
+
+        Some((*nonce_address, nonce_account))
+    }
+
+    fn check_transaction_for_nonce(
+        &self,
+        tx: &SanitizedTransaction,
+        next_durable_nonce: &DurableNonce,
+    ) -> Option<TransactionAccount> {
+        let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
+        if nonce_is_advanceable {
+            self.check_message_for_nonce(tx.message())
+        } else {
+            None
+        }
     }
 }
 

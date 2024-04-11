@@ -38,7 +38,7 @@ fn hello_world_with_store() {
         .contains(&"Program log: Hello world!".to_string()));
 }
 
-#[test]
+#[test_log::test]
 fn hello_world_with_deploy_upgradeable() {
     let mut svm = LiteSVM::new();
 
