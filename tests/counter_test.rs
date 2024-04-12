@@ -11,7 +11,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
 };
-use solana_sdk::transaction::VersionedTransaction;
+use solana_sdk::transaction::{TransactionError, VersionedTransaction};
 use solana_sdk::{
     account::Account,
     pubkey,
@@ -291,4 +291,35 @@ fn test_address_lookup_table() {
         VersionedTransaction::try_new(VersionedMessage::V0(counter_msg), &[&payer_kp]).unwrap();
     svm.warp_to_slot(1); // can't use the lookup table in the same slot
     svm.send_transaction(counter_tx).unwrap();
+}
+
+#[test]
+pub fn test_nonexistent_program() {
+    let mut svm = LiteSVM::new();
+    let payer_kp = Keypair::new();
+    let payer_pk = payer_kp.pubkey();
+    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    svm.airdrop(&payer_pk, 1000000000).unwrap();
+    let blockhash = svm.latest_blockhash();
+    let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    svm.set_account(
+        counter_address,
+        Account {
+            lamports: 5,
+            data: vec![0_u8; std::mem::size_of::<u32>()],
+            owner: program_id,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let tx = make_tx(
+        program_id,
+        counter_address,
+        &payer_pk,
+        blockhash,
+        &payer_kp,
+        0,
+    );
+    let err = svm.send_transaction(tx).unwrap_err();
+    assert_eq!(err.err, TransactionError::InvalidProgramForExecution);
 }
