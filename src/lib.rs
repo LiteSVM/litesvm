@@ -497,7 +497,7 @@ impl LiteSVM {
             );
         }
         let builtins_start_index = accounts.len();
-        let program_indices = tx
+        let maybe_program_indices = tx
             .message()
             .instructions()
             .iter()
@@ -507,14 +507,17 @@ impl LiteSVM {
                 // This may never error, because the transaction is sanitized
                 let (program_id, program_account) = accounts.get(program_index).unwrap();
                 if native_loader::check_id(program_id) {
-                    return account_indices;
+                    return Ok(account_indices);
                 }
-                assert!(program_account.executable());
+                if !program_account.executable() {
+                    error!("Program account {program_id} is not executable.");
+                    return Err(TransactionError::InvalidProgramForExecution);
+                }
                 account_indices.insert(0, program_index as IndexOfAccount);
 
                 let owner_id = program_account.owner();
                 if native_loader::check_id(owner_id) {
-                    return account_indices;
+                    return Ok(account_indices);
                 }
                 account_indices.insert(
                     0,
@@ -528,44 +531,61 @@ impl LiteSVM {
                     } else {
                         let owner_index = accounts.len() as u16;
                         let owner_account = self.get_account(owner_id).unwrap();
-                        assert!(native_loader::check_id(owner_account.owner()));
-                        assert!(owner_account.executable);
+                        if !native_loader::check_id(owner_account.owner()) {
+                            error!("Owner account {owner_id} is not owned by the native loader program.");
+                            return Err(TransactionError::InvalidProgramForExecution)
+                        }
+                        if !owner_account.executable {
+                            error!("Owner account {owner_id} is not executable");
+                            return Err(TransactionError::InvalidProgramForExecution)
+                        }
                         accounts.push((*owner_id, owner_account.into()));
                         owner_index
                     },
                 );
-                account_indices
+                Ok(account_indices)
             })
-            .collect::<Vec<Vec<u16>>>();
-        let mut context = self.create_transaction_context(compute_budget, accounts);
-        let mut tx_result = MessageProcessor::process_message(
-            tx.message(),
-            &program_indices,
-            &mut context,
-            Some(self.log_collector.clone()),
-            &self.accounts.programs_cache,
-            &mut programs_modified_by_tx,
-            self.feature_set.clone(),
-            compute_budget,
-            &mut ExecuteTimings::default(),
-            &self.accounts.sysvar_cache,
-            *blockhash,
-            0,
-            &mut accumulated_consume_units,
-        )
-        .map(|_| ());
+            .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
+        match maybe_program_indices {
+            Ok(program_indices) => {
+                let mut context = self.create_transaction_context(compute_budget, accounts);
+                let mut tx_result = MessageProcessor::process_message(
+                    tx.message(),
+                    &program_indices,
+                    &mut context,
+                    Some(self.log_collector.clone()),
+                    &self.accounts.programs_cache,
+                    &mut programs_modified_by_tx,
+                    self.feature_set.clone(),
+                    compute_budget,
+                    &mut ExecuteTimings::default(),
+                    &self.accounts.sysvar_cache,
+                    *blockhash,
+                    0,
+                    &mut accumulated_consume_units,
+                )
+                .map(|_| ());
+        
+                if let Err(err) = self.check_accounts_rent(tx, &context) {
+                    tx_result = Err(err);
+                };
+        
+                (
+                    tx_result,
+                    accumulated_consume_units,
+                    Some(context),
+                    fee,
+                    payer_key,
+                )
+            }
+            Err(e) => (Err(e),
+                accumulated_consume_units,
+                None,
+                fee,
+                payer_key,
+            )
+        }
 
-        if let Err(err) = self.check_accounts_rent(tx, &context) {
-            tx_result = Err(err);
-        };
-
-        (
-            tx_result,
-            accumulated_consume_units,
-            Some(context),
-            fee,
-            payer_key,
-        )
     }
 
     fn check_accounts_rent(
