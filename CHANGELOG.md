@@ -7,6 +7,7 @@
 - Add stake, config and vote programs ([#57](https://github.com/LiteSVM/litesvm/pull/57)).
 - Implement blockhash and durable nonce checks ([#61](https://github.com/LiteSVM/litesvm/pull/61)).
 - Add `error.rs` and new `LiteSVMError` type ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
+- Add more logging for users to make debugging errors easier ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
 
 ### Changed
 
