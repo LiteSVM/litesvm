@@ -50,7 +50,6 @@ fn system_transfer() {
 
     let from_account = svm.get_account(&from);
     let to_account = svm.get_account(&to);
-
     assert!(tx_res.is_ok());
     assert_eq!(from_account.unwrap().lamports, 4936);
     assert_eq!(to_account.unwrap().lamports, 64);

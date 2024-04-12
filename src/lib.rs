@@ -1,6 +1,7 @@
 #![allow(clippy::result_large_err)]
 use log::error;
 
+use crate::error::LiteSVMError;
 use itertools::Itertools;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
@@ -53,10 +54,7 @@ use crate::{
     builtin::BUILTINS,
     history::TransactionHistory,
     spl::load_spl_programs,
-    types::{
-        ExecutionResult, FailedTransactionMetadata, InvalidSysvarDataError, TransactionMetadata,
-        TransactionResult,
-    },
+    types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::{
         create_blockhash,
         loader::{deploy_upgradeable_program, set_upgrade_authority},
@@ -64,6 +62,7 @@ use crate::{
     },
 };
 
+pub mod error;
 pub mod types;
 
 mod accounts_db;
@@ -71,6 +70,13 @@ mod builtin;
 mod history;
 mod spl;
 mod utils;
+
+// The test code doesn't actually get run because it's not
+// what doctest expects but at least it
+// compiles it so we'll see if there's a compile-time error.
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
 
 pub struct LiteSVM {
     accounts: AccountsDb,
@@ -221,11 +227,7 @@ impl LiteSVM {
         self.accounts.get_account(pubkey).map(Into::into)
     }
 
-    pub fn set_account(
-        &mut self,
-        pubkey: Pubkey,
-        data: Account,
-    ) -> Result<(), InvalidSysvarDataError> {
+    pub fn set_account(&mut self, pubkey: Pubkey, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(pubkey, data.into())
     }
 
@@ -442,7 +444,6 @@ impl LiteSVM {
             .enumerate()
             .map(|(i, key)| {
                 let mut account_found = true;
-                #[allow(clippy::collapsible_else_if)]
                 let account = if solana_sdk::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
                 } else {
@@ -498,7 +499,7 @@ impl LiteSVM {
             );
         }
         let builtins_start_index = accounts.len();
-        let program_indices = tx
+        let maybe_program_indices = tx
             .message()
             .instructions()
             .iter()
@@ -508,14 +509,17 @@ impl LiteSVM {
                 // This may never error, because the transaction is sanitized
                 let (program_id, program_account) = accounts.get(program_index).unwrap();
                 if native_loader::check_id(program_id) {
-                    return account_indices;
+                    return Ok(account_indices);
                 }
-                assert!(program_account.executable());
+                if !program_account.executable() {
+                    error!("Program account {program_id} is not executable.");
+                    return Err(TransactionError::InvalidProgramForExecution);
+                }
                 account_indices.insert(0, program_index as IndexOfAccount);
 
                 let owner_id = program_account.owner();
                 if native_loader::check_id(owner_id) {
-                    return account_indices;
+                    return Ok(account_indices);
                 }
                 account_indices.insert(
                     0,
@@ -529,44 +533,55 @@ impl LiteSVM {
                     } else {
                         let owner_index = accounts.len() as u16;
                         let owner_account = self.get_account(owner_id).unwrap();
-                        assert!(native_loader::check_id(owner_account.owner()));
-                        assert!(owner_account.executable);
+                        if !native_loader::check_id(owner_account.owner()) {
+                            error!("Owner account {owner_id} is not owned by the native loader program.");
+                            return Err(TransactionError::InvalidProgramForExecution)
+                        }
+                        if !owner_account.executable {
+                            error!("Owner account {owner_id} is not executable");
+                            return Err(TransactionError::InvalidProgramForExecution)
+                        }
                         accounts.push((*owner_id, owner_account.into()));
                         owner_index
                     },
                 );
-                account_indices
+                Ok(account_indices)
             })
-            .collect::<Vec<Vec<u16>>>();
-        let mut context = self.create_transaction_context(compute_budget, accounts);
-        let mut tx_result = MessageProcessor::process_message(
-            tx.message(),
-            &program_indices,
-            &mut context,
-            Some(self.log_collector.clone()),
-            &self.accounts.programs_cache,
-            &mut programs_modified_by_tx,
-            self.feature_set.clone(),
-            compute_budget,
-            &mut ExecuteTimings::default(),
-            &self.accounts.sysvar_cache,
-            *blockhash,
-            0,
-            &mut accumulated_consume_units,
-        )
-        .map(|_| ());
+            .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
+        match maybe_program_indices {
+            Ok(program_indices) => {
+                let mut context = self.create_transaction_context(compute_budget, accounts);
+                let mut tx_result = MessageProcessor::process_message(
+                    tx.message(),
+                    &program_indices,
+                    &mut context,
+                    Some(self.log_collector.clone()),
+                    &self.accounts.programs_cache,
+                    &mut programs_modified_by_tx,
+                    self.feature_set.clone(),
+                    compute_budget,
+                    &mut ExecuteTimings::default(),
+                    &self.accounts.sysvar_cache,
+                    *blockhash,
+                    0,
+                    &mut accumulated_consume_units,
+                )
+                .map(|_| ());
 
-        if let Err(err) = self.check_accounts_rent(tx, &context) {
-            tx_result = Err(err);
-        };
+                if let Err(err) = self.check_accounts_rent(tx, &context) {
+                    tx_result = Err(err);
+                };
 
-        (
-            tx_result,
-            accumulated_consume_units,
-            Some(context),
-            fee,
-            payer_key,
-        )
+                (
+                    tx_result,
+                    accumulated_consume_units,
+                    Some(context),
+                    fee,
+                    payer_key,
+                )
+            }
+            Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
+        }
     }
 
     fn check_accounts_rent(
@@ -677,12 +692,7 @@ impl LiteSVM {
             let tx_result = if result.is_ok() {
                 result
             } else if let Some(payer) = payer_key {
-                let withdraw_res = self.accounts.withdraw(&payer, fee);
-                if withdraw_res.is_err() {
-                    withdraw_res
-                } else {
-                    result
-                }
+                self.accounts.withdraw(&payer, fee).and(result)
             } else {
                 result
             };
@@ -873,11 +883,11 @@ fn validate_fee_payer(
     fee: u64,
 ) -> solana_sdk::transaction::Result<()> {
     if payer_account.lamports() == 0 {
-        error!("Payer account not found.");
+        error!("Payer account {payer_address} not found.");
         return Err(TransactionError::AccountNotFound);
     }
     let system_account_kind = get_system_account_kind(payer_account).ok_or_else(|| {
-        error!("Payer account is not a system account");
+        error!("Payer account {payer_address} is not a system account");
         TransactionError::InvalidAccountForFee
     })?;
     let min_balance = match system_account_kind {
@@ -896,7 +906,7 @@ fn validate_fee_payer(
         .and_then(|v| v.checked_sub(fee))
         .ok_or_else(|| {
             error!(
-                "Payer account has insufficient lamports for fee. Payer lamports: \
+                "Payer account {payer_address} has insufficient lamports for fee. Payer lamports: \
                 {payer_lamports} min_balance: {min_balance} fee: {fee}"
             );
             TransactionError::InsufficientFundsForFee
