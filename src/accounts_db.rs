@@ -31,7 +31,7 @@ use solana_sdk::{
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{collections::HashMap, sync::Arc};
 
-use crate::types::{InvalidSysvarDataError, LiteSVMError};
+use crate::error::{InvalidSysvarDataError, LiteSVMError};
 
 const FEES_ID: Pubkey = solana_program::pubkey!("SysvarFees111111111111111111111111111111111");
 const RECENT_BLOCKHASHES_ID: Pubkey =

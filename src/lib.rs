@@ -1,6 +1,7 @@
 #![allow(clippy::result_large_err)]
 use log::error;
 
+use crate::error::LiteSVMError;
 use itertools::Itertools;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
@@ -46,7 +47,6 @@ use solana_sdk::{
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
-use types::LiteSVMError;
 use utils::construct_instructions_account;
 
 use crate::{
@@ -62,6 +62,7 @@ use crate::{
     },
 };
 
+pub mod error;
 pub mod types;
 
 mod accounts_db;
