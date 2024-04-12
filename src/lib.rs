@@ -15,6 +15,8 @@ use solana_program_runtime::{
     message_processor::MessageProcessor,
     timings::ExecuteTimings,
 };
+#[allow(deprecated)]
+use solana_sdk::sysvar::recent_blockhashes::IterItem;
 use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     bpf_loader,
@@ -24,9 +26,11 @@ use solana_sdk::{
     feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
     fee::FeeStructure,
     hash::Hash,
-    message::{Message, VersionedMessage},
+    message::{Message, SanitizedMessage, VersionedMessage},
     native_loader,
     native_token::LAMPORTS_PER_SOL,
+    nonce::{state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
+    nonce_account,
     pubkey::Pubkey,
     rent::Rent,
     signature::{Keypair, Signature},
@@ -77,6 +81,7 @@ pub struct LiteSVM {
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
     sigverify: bool,
+    blockhash_check: bool,
     fee_structure: FeeStructure,
 }
 
@@ -90,7 +95,8 @@ impl Default for LiteSVM {
             log_collector: Default::default(),
             history: TransactionHistory::new(),
             compute_budget: None,
-            sigverify: true,
+            sigverify: false,
+            blockhash_check: false,
             fee_structure: FeeStructure::default(),
         }
     }
@@ -103,6 +109,8 @@ impl LiteSVM {
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_spl_programs()
+            .with_sigverify(true)
+            .with_blockhash_check(true)
     }
 
     pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
@@ -115,19 +123,30 @@ impl LiteSVM {
         self
     }
 
+    pub fn with_blockhash_check(mut self, check: bool) -> Self {
+        self.blockhash_check = check;
+        self
+    }
+
     pub fn with_sysvars(mut self) -> Self {
         self.set_sysvar(&Clock::default());
         self.set_sysvar(&EpochRewards::default());
         self.set_sysvar(&EpochSchedule::default());
         #[allow(deprecated)]
-        self.set_sysvar(&Fees::default());
+        let fees = Fees::default();
+        self.set_sysvar(&fees);
         self.set_sysvar(&LastRestartSlot::default());
+        let latest_blockhash = self.latest_blockhash;
         #[allow(deprecated)]
-        self.set_sysvar(&RecentBlockhashes::default());
+        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
+            0,
+            &latest_blockhash,
+            fees.fee_calculator.lamports_per_signature,
+        )]));
         self.set_sysvar(&Rent::default());
         self.set_sysvar(&SlotHashes::new(&[(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
-            self.latest_blockhash(),
+            latest_blockhash,
         )]));
         self.set_sysvar(&SlotHistory::default());
         self.set_sysvar(&StakeHistory::default());
@@ -240,13 +259,14 @@ impl LiteSVM {
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
         let payer = &self.airdrop_kp;
         let tx = VersionedTransaction::try_new(
-            VersionedMessage::Legacy(Message::new(
+            VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[system_instruction::transfer(
                     &payer.pubkey(),
                     pubkey,
                     lamports,
                 )],
                 Some(&payer.pubkey()),
+                &self.latest_blockhash,
             )),
             &[payer],
         )
@@ -613,6 +633,14 @@ impl LiteSVM {
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
+        if self.blockhash_check {
+            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
+                return ExecutionResult {
+                    tx_result: Err(e),
+                    ..Default::default()
+                };
+            }
+        }
         let instructions = sanitized_tx.message().program_instructions_iter();
         let compute_budget_limits = match process_compute_budget_instructions(instructions) {
             Ok(x) => x,
@@ -758,6 +786,12 @@ impl LiteSVM {
 
     pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
+        #[allow(deprecated)]
+        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
+            0,
+            &self.latest_blockhash,
+            self.fee_structure.lamports_per_signature,
+        )]));
     }
 
     pub fn warp_to_slot(&mut self, slot: u64) {
@@ -777,6 +811,51 @@ impl LiteSVM {
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
         self.feature_set.clone()
+    }
+
+    fn check_transaction_age(
+        &self,
+        tx: &SanitizedTransaction,
+    ) -> solana_sdk::transaction::Result<()> {
+        let recent_blockhash = tx.message().recent_blockhash();
+        if recent_blockhash == &self.latest_blockhash
+            || self.check_transaction_for_nonce(
+                tx,
+                &DurableNonce::from_blockhash(&self.latest_blockhash),
+            )
+        {
+            Ok(())
+        } else {
+            log::error!(
+                "Blockhash {} not found. Expected blockhash {}",
+                recent_blockhash,
+                self.latest_blockhash
+            );
+            Err(TransactionError::BlockhashNotFound)
+        }
+    }
+
+    fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
+        message
+            .get_durable_nonce()
+            .and_then(|nonce_address| self.accounts.get_account(nonce_address))
+            .and_then(|nonce_account| {
+                nonce_account::verify_nonce_account(&nonce_account, message.recent_blockhash())
+            })
+            .map_or(false, |nonce_data| {
+                message
+                    .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
+                    .any(|signer| signer == &nonce_data.authority)
+            })
+    }
+
+    fn check_transaction_for_nonce(
+        &self,
+        tx: &SanitizedTransaction,
+        next_durable_nonce: &DurableNonce,
+    ) -> bool {
+        let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
+        nonce_is_advanceable && self.check_message_for_nonce(tx.message())
     }
 }
 

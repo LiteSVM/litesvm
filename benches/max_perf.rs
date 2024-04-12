@@ -34,6 +34,7 @@ fn make_tx(
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut svm = LiteSVM::new()
+        .with_blockhash_check(false)
         .with_sigverify(false)
         .with_transaction_history(0);
     let payer_kp = Keypair::new();
@@ -42,7 +43,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     so_path.push("test_programs/target/deploy/counter.so");
     svm.add_program_from_file(program_id, &so_path).unwrap();
-    svm.airdrop(&payer_pk, 1000000000).unwrap();
+    svm.airdrop(&payer_pk, 100_000_000_000).unwrap();
     let counter_address = Pubkey::new_unique();
     let latest_blockhash = svm.latest_blockhash();
     let tx = make_tx(
