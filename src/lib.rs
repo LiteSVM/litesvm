@@ -677,12 +677,7 @@ impl LiteSVM {
             let tx_result = if result.is_ok() {
                 result
             } else if let Some(payer) = payer_key {
-                let withdraw_res = self.accounts.withdraw(&payer, fee);
-                if withdraw_res.is_err() {
-                    withdraw_res
-                } else {
-                    result
-                }
+                self.accounts.withdraw(&payer, fee).and(result)
             } else {
                 result
             };
