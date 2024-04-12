@@ -1,5 +1,6 @@
 use solana_sdk::{
     account::AccountSharedData,
+    instruction::InstructionError,
     pubkey::Pubkey,
     signature::Signature,
     transaction::{Result, TransactionError},
@@ -68,8 +69,10 @@ pub enum InvalidSysvarDataError {
     StakeHistory,
 }
 
-// #[derive(Error, Debug)]
-// pub enum LiteSVMError {
-//     #[error("Invalid {} sysvar data")]
-//     InvalidSysvar()
-// }
+#[derive(Error, Debug)]
+pub enum LiteSVMError {
+    #[error("{0}")]
+    InvalidSysvarData(#[from] InvalidSysvarDataError),
+    #[error("{0}")]
+    Instruction(#[from] InstructionError),
+}

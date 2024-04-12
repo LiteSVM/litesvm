@@ -31,7 +31,7 @@ use solana_sdk::{
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{collections::HashMap, sync::Arc};
 
-use crate::types::InvalidSysvarDataError;
+use crate::types::{InvalidSysvarDataError, LiteSVMError};
 
 const FEES_ID: Pubkey = solana_program::pubkey!("SysvarFees111111111111111111111111111111111");
 const RECENT_BLOCKHASHES_ID: Pubkey =
@@ -76,9 +76,9 @@ impl AccountsDb {
         &mut self,
         pubkey: Pubkey,
         account: AccountSharedData,
-    ) -> Result<(), InvalidSysvarDataError> {
+    ) -> Result<(), LiteSVMError> {
         if account.executable() && pubkey != Pubkey::default() {
-            let loaded_program = self.load_program(&account).unwrap();
+            let loaded_program = self.load_program(&account)?;
             self.programs_cache
                 .replenish(pubkey, Arc::new(loaded_program));
         } else {
@@ -173,7 +173,7 @@ impl AccountsDb {
     pub(crate) fn sync_accounts(
         &mut self,
         mut accounts: Vec<(Pubkey, AccountSharedData)>,
-    ) -> Result<(), InvalidSysvarDataError> {
+    ) -> Result<(), LiteSVMError> {
         // need to add programdata accounts first if there are any
         itertools::partition(&mut accounts, |x| {
             x.1.owner() == &bpf_loader_upgradeable::id()
@@ -217,12 +217,10 @@ impl AccountsDb {
                 );
                 return Err(InstructionError::InvalidAccountData);
             };
-            let programdata_account = self
-                .get_account(&programdata_address)
-                .ok_or_else(|| {
-                    error!("Program data account {programdata_address} not found");
-                    InstructionError::MissingAccount
-                })?;
+            let programdata_account = self.get_account(&programdata_address).ok_or_else(|| {
+                error!("Program data account {programdata_address} not found");
+                InstructionError::MissingAccount
+            })?;
             let program_data = programdata_account.data();
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)

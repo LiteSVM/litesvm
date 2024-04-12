@@ -46,6 +46,7 @@ use solana_sdk::{
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
+use types::LiteSVMError;
 use utils::construct_instructions_account;
 
 use crate::{
@@ -53,10 +54,7 @@ use crate::{
     builtin::BUILTINS,
     history::TransactionHistory,
     spl::load_spl_programs,
-    types::{
-        ExecutionResult, FailedTransactionMetadata, InvalidSysvarDataError, TransactionMetadata,
-        TransactionResult,
-    },
+    types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::{
         create_blockhash,
         loader::{deploy_upgradeable_program, set_upgrade_authority},
@@ -72,7 +70,7 @@ mod history;
 mod spl;
 mod utils;
 
-// The test code doesn't actually get run because it's not 
+// The test code doesn't actually get run because it's not
 // what doctest expects but at least it
 // compiles it so we'll see if there's a compile-time error.
 #[doc = include_str!("../README.md")]
@@ -228,11 +226,7 @@ impl LiteSVM {
         self.accounts.get_account(pubkey).map(Into::into)
     }
 
-    pub fn set_account(
-        &mut self,
-        pubkey: Pubkey,
-        data: Account,
-    ) -> Result<(), InvalidSysvarDataError> {
+    pub fn set_account(&mut self, pubkey: Pubkey, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(pubkey, data.into())
     }
 
