@@ -6,10 +6,13 @@
 
 - Add stake, config and vote programs ([#57](https://github.com/LiteSVM/litesvm/pull/57)).
 - Implement blockhash and durable nonce checks ([#61](https://github.com/LiteSVM/litesvm/pull/61)).
+- Add `error.rs` and new `LiteSVMError` type ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
 
 ### Changed
 
 - Accept both legacy and versioned tx in simulate_transaction ([#58](https://github.com/LiteSVM/litesvm/pull/58)).
+- Move `InvalidSysvarDataError` to `error.rs` ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
+- Change `set_account` to return `Result<(), LiteSVMError>` ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
 
 ## [0.1.0] - 2024-04-02
 
