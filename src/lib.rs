@@ -442,7 +442,6 @@ impl LiteSVM {
             .enumerate()
             .map(|(i, key)| {
                 let mut account_found = true;
-                #[allow(clippy::collapsible_else_if)]
                 let account = if solana_sdk::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
                 } else {
