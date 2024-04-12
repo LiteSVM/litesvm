@@ -565,11 +565,11 @@ impl LiteSVM {
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
-        
+
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
                 };
-        
+
                 (
                     tx_result,
                     accumulated_consume_units,
@@ -578,14 +578,8 @@ impl LiteSVM {
                     payer_key,
                 )
             }
-            Err(e) => (Err(e),
-                accumulated_consume_units,
-                None,
-                fee,
-                payer_key,
-            )
+            Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
         }
-
     }
 
     fn check_accounts_rent(
@@ -887,11 +881,11 @@ fn validate_fee_payer(
     fee: u64,
 ) -> solana_sdk::transaction::Result<()> {
     if payer_account.lamports() == 0 {
-        error!("Payer account not found.");
+        error!("Payer account {payer_address} not found.");
         return Err(TransactionError::AccountNotFound);
     }
     let system_account_kind = get_system_account_kind(payer_account).ok_or_else(|| {
-        error!("Payer account is not a system account");
+        error!("Payer account {payer_address} is not a system account");
         TransactionError::InvalidAccountForFee
     })?;
     let min_balance = match system_account_kind {
@@ -910,7 +904,7 @@ fn validate_fee_payer(
         .and_then(|v| v.checked_sub(fee))
         .ok_or_else(|| {
             error!(
-                "Payer account has insufficient lamports for fee. Payer lamports: \
+                "Payer account {payer_address} has insufficient lamports for fee. Payer lamports: \
                 {payer_lamports} min_balance: {min_balance} fee: {fee}"
             );
             TransactionError::InsufficientFundsForFee
