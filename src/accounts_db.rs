@@ -217,7 +217,12 @@ impl AccountsDb {
                 );
                 return Err(InstructionError::InvalidAccountData);
             };
-            let programdata_account = self.get_account(&programdata_address).unwrap();
+            let programdata_account = self
+                .get_account(&programdata_address)
+                .ok_or_else(|| {
+                    error!("Program data account {programdata_address} not found");
+                    InstructionError::MissingAccount
+                })?;
             let program_data = programdata_account.data();
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
