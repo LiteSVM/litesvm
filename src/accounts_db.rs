@@ -11,7 +11,7 @@ use solana_program::{
         AddressLoader, AddressLoaderError,
     },
     sysvar::{
-        self, clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
+        clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
         epoch_schedule::ID as EPOCH_SCHEDULE_ID, last_restart_slot::ID as LAST_RESTART_SLOT_ID,
         rent::ID as RENT_ID, slot_hashes::ID as SLOT_HASHES_ID,
         stake_history::ID as STAKE_HISTORY_ID, Sysvar,
@@ -193,11 +193,7 @@ impl AccountsDb {
 
         let owner = program_account.owner();
         let program_runtime_v1 = self.programs_cache.environments.program_runtime_v1.clone();
-        let clock_acc = self.get_account(&sysvar::clock::ID);
-        let clock: Clock = clock_acc
-            .map(|x| bincode::deserialize::<Clock>(x.data()).unwrap())
-            .unwrap_or_default();
-        let slot = clock.slot;
+        let slot = self.sysvar_cache.get_clock().unwrap().slot;
 
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
             LoadedProgram::new(
@@ -334,7 +330,7 @@ impl AccountsDb {
             None => {
                 error!("Account {pubkey} not found when trying to withdraw fee.");
                 Err(TransactionError::AccountNotFound)
-            },
+            }
         }
     }
 }
