@@ -673,11 +673,7 @@ impl LiteSVM {
             let tx_result = self.check_tx_result(result, payer_key, fee);
             execution_result_if_context(sanitized_tx, ctx, tx_result, compute_units_consumed)
         } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                ..Default::default()
-            }
+            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
         }
     }
 
@@ -700,11 +696,7 @@ impl LiteSVM {
         if let Some(ctx) = context {
             execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
         } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                ..Default::default()
-            }
+            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
         }
     }
 
