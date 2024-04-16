@@ -17,7 +17,6 @@
 
 ## 🚀 Getting Started
 
-
 ### 🔧 Installation
 
 ```sh
@@ -55,3 +54,7 @@ fn system_transfer() {
     assert_eq!(to_account.unwrap().lamports, 64);
 }
 ```
+
+### Development
+
+Solana CLI >= 1.18.8 required.

@@ -366,7 +366,7 @@ impl LiteSVM {
     }
 
     fn create_transaction_context(
-        &mut self,
+        &self,
         compute_budget: ComputeBudget,
         accounts: Vec<(Pubkey, AccountSharedData)>,
     ) -> TransactionContext {
@@ -398,7 +398,7 @@ impl LiteSVM {
     }
 
     fn process_transaction(
-        &mut self,
+        &self,
         tx: &SanitizedTransaction,
         compute_budget_limits: ComputeBudgetLimits,
     ) -> (
@@ -585,7 +585,7 @@ impl LiteSVM {
     }
 
     fn check_accounts_rent(
-        &mut self,
+        &self,
         tx: &SanitizedTransaction,
         context: &TransactionContext,
     ) -> Result<(), TransactionError> {
@@ -714,6 +714,95 @@ impl LiteSVM {
         }
     }
 
+    fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
+        let sanitized_tx = match self.sanitize_transaction(tx) {
+            Ok(s_tx) => s_tx,
+            Err(err) => {
+                return ExecutionResult {
+                    tx_result: Err(err),
+                    ..Default::default()
+                }
+            }
+        };
+        self.execute_sanitized_transaction_readonly(sanitized_tx)
+    }
+
+    fn execute_transaction_no_verify_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
+        let sanitized_tx = match self.sanitize_transaction_no_verify(tx) {
+            Ok(s_tx) => s_tx,
+            Err(err) => {
+                return ExecutionResult {
+                    tx_result: Err(err),
+                    ..Default::default()
+                };
+            }
+        };
+        self.execute_sanitized_transaction_readonly(sanitized_tx)
+    }
+
+    fn execute_sanitized_transaction_readonly(
+        &self,
+        sanitized_tx: SanitizedTransaction,
+    ) -> ExecutionResult {
+        if self.blockhash_check {
+            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
+                return ExecutionResult {
+                    tx_result: Err(e),
+                    ..Default::default()
+                };
+            }
+        }
+        let instructions = sanitized_tx.message().program_instructions_iter();
+        let compute_budget_limits = match process_compute_budget_instructions(instructions) {
+            Ok(x) => x,
+            Err(e) => {
+                return ExecutionResult {
+                    tx_result: Err(e),
+                    ..Default::default()
+                };
+            }
+        };
+        if self.history.check_transaction(sanitized_tx.signature()) {
+            return ExecutionResult {
+                tx_result: Err(TransactionError::AlreadyProcessed),
+                ..Default::default()
+            };
+        }
+
+        let (result, compute_units_consumed, context, _, _) =
+            self.process_transaction(&sanitized_tx, compute_budget_limits);
+        if let Some(ctx) = context {
+            let signature = sanitized_tx.signature().to_owned();
+            let ExecutionRecord {
+                accounts,
+                return_data,
+                touched_account_count: _,
+                accounts_resize_delta: _,
+            } = ctx.into();
+            let msg = sanitized_tx.message();
+            let post_accounts = accounts
+                .into_iter()
+                .enumerate()
+                .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
+                .collect();
+
+            ExecutionResult {
+                tx_result: result,
+                signature,
+                post_accounts,
+                compute_units_consumed,
+                return_data,
+                included: true,
+            }
+        } else {
+            ExecutionResult {
+                tx_result: result,
+                compute_units_consumed,
+                ..Default::default()
+            }
+        }
+    }
+
     pub(crate) fn send_message<T: Signers>(
         &mut self,
         message: Message,
@@ -762,10 +851,7 @@ impl LiteSVM {
         }
     }
 
-    pub fn simulate_transaction(
-        &mut self,
-        tx: impl Into<VersionedTransaction>,
-    ) -> TransactionResult {
+    pub fn simulate_transaction(&self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
         let ExecutionResult {
             post_accounts: _,
             tx_result,
@@ -774,9 +860,9 @@ impl LiteSVM {
             return_data,
             ..
         } = if self.sigverify {
-            self.execute_transaction(tx.into())
+            self.execute_transaction_readonly(tx.into())
         } else {
-            self.execute_transaction_no_verify(tx.into())
+            self.execute_transaction_no_verify_readonly(tx.into())
         };
 
         let logs = self.log_collector.take().into_messages();
