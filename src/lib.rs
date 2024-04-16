@@ -681,6 +681,33 @@ impl LiteSVM {
         }
     }
 
+    fn execute_sanitized_transaction_readonly(
+        &self,
+        sanitized_tx: SanitizedTransaction,
+    ) -> ExecutionResult {
+        let CheckAndProcessTransactionSuccess {
+            core:
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                },
+            ..
+        } = match self.check_and_process_transaction(&sanitized_tx) {
+            Ok(value) => value,
+            Err(value) => return value,
+        };
+        if let Some(ctx) = context {
+            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
+        } else {
+            ExecutionResult {
+                tx_result: result,
+                compute_units_consumed,
+                ..Default::default()
+            }
+        }
+    }
+
     fn check_tx_result(
         &mut self,
         result: Result<(), TransactionError>,
@@ -751,33 +778,6 @@ impl LiteSVM {
         map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
             self.execute_sanitized_transaction_readonly(s_tx)
         })
-    }
-
-    fn execute_sanitized_transaction_readonly(
-        &self,
-        sanitized_tx: SanitizedTransaction,
-    ) -> ExecutionResult {
-        let CheckAndProcessTransactionSuccess {
-            core:
-                CheckAndProcessTransactionSuccessCore {
-                    result,
-                    compute_units_consumed,
-                    context,
-                },
-            ..
-        } = match self.check_and_process_transaction(&sanitized_tx) {
-            Ok(value) => value,
-            Err(value) => return value,
-        };
-        if let Some(ctx) = context {
-            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
-        } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                ..Default::default()
-            }
-        }
     }
 
     pub(crate) fn send_message<T: Signers>(
