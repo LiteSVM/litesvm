@@ -719,11 +719,7 @@ impl LiteSVM {
         if let Some(ctx) = context {
             execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
         } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                ..Default::default()
-            }
+            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
         }
     }
 
