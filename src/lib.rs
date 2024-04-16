@@ -656,49 +656,22 @@ impl LiteSVM {
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if let Some(res) = self.maybe_blockhash_check(&sanitized_tx) {
-            return res;
-        }
-        let compute_budget_limits = match get_compute_budget_limits(&sanitized_tx) {
+        let CheckAndProcessTransactionSuccess {
+            core:
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                },
+            fee,
+            payer_key,
+        } = match self.check_and_process_transaction(&sanitized_tx) {
             Ok(value) => value,
             Err(value) => return value,
         };
-        if let Some(value) = self.maybe_history_check(&sanitized_tx) {
-            return value;
-        }
-
-        let (result, compute_units_consumed, context, fee, payer_key) =
-            self.process_transaction(&sanitized_tx, compute_budget_limits);
         if let Some(ctx) = context {
-            let signature = sanitized_tx.signature().to_owned();
-            let ExecutionRecord {
-                accounts,
-                return_data,
-                touched_account_count: _,
-                accounts_resize_delta: _,
-            } = ctx.into();
-            let msg = sanitized_tx.message();
-            let post_accounts = accounts
-                .into_iter()
-                .enumerate()
-                .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
-                .collect();
-            let tx_result = if result.is_ok() {
-                result
-            } else if let Some(payer) = payer_key {
-                self.accounts.withdraw(&payer, fee).and(result)
-            } else {
-                result
-            };
-
-            ExecutionResult {
-                tx_result,
-                signature,
-                post_accounts,
-                compute_units_consumed,
-                return_data,
-                included: true,
-            }
+            let tx_result = self.check_tx_result(result, payer_key, fee);
+            execution_result_if_context(sanitized_tx, ctx, tx_result, compute_units_consumed)
         } else {
             ExecutionResult {
                 tx_result: result,
@@ -708,25 +681,66 @@ impl LiteSVM {
         }
     }
 
-    fn maybe_history_check(&self, sanitized_tx: &SanitizedTransaction) -> Option<ExecutionResult> {
+    fn check_tx_result(
+        &mut self,
+        result: Result<(), TransactionError>,
+        payer_key: Option<Pubkey>,
+        fee: u64,
+    ) -> Result<(), TransactionError> {
+        if result.is_ok() {
+            result
+        } else if let Some(payer) = payer_key {
+            self.accounts.withdraw(&payer, fee).and(result)
+        } else {
+            result
+        }
+    }
+
+    fn check_and_process_transaction(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<CheckAndProcessTransactionSuccess, ExecutionResult> {
+        self.maybe_blockhash_check(sanitized_tx)?;
+        let compute_budget_limits = get_compute_budget_limits(sanitized_tx)?;
+        self.maybe_history_check(sanitized_tx)?;
+        let (result, compute_units_consumed, context, fee, payer_key) =
+            self.process_transaction(sanitized_tx, compute_budget_limits);
+        Ok(CheckAndProcessTransactionSuccess {
+            core: {
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                }
+            },
+            fee,
+            payer_key,
+        })
+    }
+
+    fn maybe_history_check(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<(), ExecutionResult> {
         if self.history.check_transaction(sanitized_tx.signature()) {
-            return Some(ExecutionResult {
+            return Err(ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
                 ..Default::default()
             });
         }
-        None
+        Ok(())
     }
-    
-    fn maybe_blockhash_check(&self, sanitized_tx: &SanitizedTransaction) -> Option<ExecutionResult> {
+
+    fn maybe_blockhash_check(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<(), ExecutionResult> {
         if self.blockhash_check {
-            if let Err(e) = self.check_transaction_age(sanitized_tx) {
-                return Some(e);
-            }
+            self.check_transaction_age(sanitized_tx)?;
         }
-        None
+        Ok(())
     }
-    
+
     fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
             self.execute_sanitized_transaction_readonly(s_tx)
@@ -743,42 +757,20 @@ impl LiteSVM {
         &self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if let Some(res) = self.maybe_blockhash_check(&sanitized_tx) {
-            return res;
-        }
-        let compute_budget_limits = match get_compute_budget_limits(&sanitized_tx) {
+        let CheckAndProcessTransactionSuccess {
+            core:
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                },
+            ..
+        } = match self.check_and_process_transaction(&sanitized_tx) {
             Ok(value) => value,
             Err(value) => return value,
         };
-        if let Some(value) = self.maybe_history_check(&sanitized_tx) {
-            return value;
-        }
-
-        let (result, compute_units_consumed, context, _, _) =
-            self.process_transaction(&sanitized_tx, compute_budget_limits);
         if let Some(ctx) = context {
-            let signature = sanitized_tx.signature().to_owned();
-            let ExecutionRecord {
-                accounts,
-                return_data,
-                touched_account_count: _,
-                accounts_resize_delta: _,
-            } = ctx.into();
-            let msg = sanitized_tx.message();
-            let post_accounts = accounts
-                .into_iter()
-                .enumerate()
-                .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
-                .collect();
-
-            ExecutionResult {
-                tx_result: result,
-                signature,
-                post_accounts,
-                compute_units_consumed,
-                return_data,
-                included: true,
-            }
+            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
         } else {
             ExecutionResult {
                 tx_result: result,
@@ -948,7 +940,62 @@ impl LiteSVM {
     }
 }
 
-fn get_compute_budget_limits(sanitized_tx: &SanitizedTransaction) -> Result<ComputeBudgetLimits, ExecutionResult> {
+struct CheckAndProcessTransactionSuccessCore {
+    result: Result<(), TransactionError>,
+    compute_units_consumed: u64,
+    context: Option<TransactionContext>,
+}
+
+struct CheckAndProcessTransactionSuccess {
+    core: CheckAndProcessTransactionSuccessCore,
+    fee: u64,
+    payer_key: Option<Pubkey>,
+}
+
+fn execution_result_if_context(
+    sanitized_tx: SanitizedTransaction,
+    ctx: TransactionContext,
+    result: Result<(), TransactionError>,
+    compute_units_consumed: u64,
+) -> ExecutionResult {
+    let (signature, return_data, post_accounts) = execute_tx_helper(sanitized_tx, ctx);
+    ExecutionResult {
+        tx_result: result,
+        signature,
+        post_accounts,
+        compute_units_consumed,
+        return_data,
+        included: true,
+    }
+}
+
+fn execute_tx_helper(
+    sanitized_tx: SanitizedTransaction,
+    ctx: TransactionContext,
+) -> (
+    Signature,
+    solana_sdk::transaction_context::TransactionReturnData,
+    Vec<(Pubkey, AccountSharedData)>,
+) {
+    let signature = sanitized_tx.signature().to_owned();
+    let ExecutionRecord {
+        accounts,
+        return_data,
+        touched_account_count: _,
+        accounts_resize_delta: _,
+    } = ctx.into();
+    let msg = sanitized_tx.message();
+    let post_accounts = accounts
+        .into_iter()
+        .enumerate()
+        .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
+        .collect();
+    (signature, return_data, post_accounts)
+}
+
+fn get_compute_budget_limits(
+    sanitized_tx: &SanitizedTransaction,
+) -> Result<ComputeBudgetLimits, ExecutionResult> {
     let instructions = sanitized_tx.message().program_instructions_iter();
     process_compute_budget_instructions(instructions).map_err(|e| ExecutionResult {
         tx_result: Err(e),
