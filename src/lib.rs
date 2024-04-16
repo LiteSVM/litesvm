@@ -378,18 +378,40 @@ impl LiteSVM {
         )
     }
 
-    fn sanitize_transaction_no_verify(
+    fn sanitize_transaction_no_verify_inner(
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
         SanitizedTransaction::try_create(tx, MessageHash::Compute, Some(false), &self.accounts)
     }
 
+    fn sanitize_transaction_no_verify(
+        &self,
+        tx: VersionedTransaction,
+    ) -> Result<SanitizedTransaction, ExecutionResult> {
+        self.sanitize_transaction_no_verify_inner(tx)
+            .map_err(|err| ExecutionResult {
+                tx_result: Err(err),
+                ..Default::default()
+            })
+    }
+
     fn sanitize_transaction(
         &self,
         tx: VersionedTransaction,
+    ) -> Result<SanitizedTransaction, ExecutionResult> {
+        self.sanitize_transaction_inner(tx)
+            .map_err(|err| ExecutionResult {
+                tx_result: Err(err),
+                ..Default::default()
+            })
+    }
+
+    fn sanitize_transaction_inner(
+        &self,
+        tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        let tx = self.sanitize_transaction_no_verify(tx)?;
+        let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
         tx.verify_precompiles(&self.feature_set)?;
@@ -619,29 +641,17 @@ impl LiteSVM {
     }
 
     fn execute_transaction_no_verify(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction_no_verify(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                };
-            }
-        };
-        self.execute_sanitized_transaction(sanitized_tx)
+        match self.sanitize_transaction_no_verify(tx) {
+            Ok(s_tx) => self.execute_sanitized_transaction(s_tx),
+            Err(e) => e,
+        }
     }
 
     fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                }
-            }
-        };
-        self.execute_sanitized_transaction(sanitized_tx)
+        match self.sanitize_transaction(tx) {
+            Ok(sanitized_tx) => self.execute_sanitized_transaction(sanitized_tx),
+            Err(e) => e,
+        }
     }
 
     fn execute_sanitized_transaction(
@@ -715,29 +725,17 @@ impl LiteSVM {
     }
 
     fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                }
-            }
-        };
-        self.execute_sanitized_transaction_readonly(sanitized_tx)
+        match self.sanitize_transaction(tx) {
+            Ok(s_tx) => self.execute_sanitized_transaction_readonly(s_tx),
+            Err(err) => err,
+        }
     }
 
     fn execute_transaction_no_verify_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction_no_verify(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                };
-            }
-        };
-        self.execute_sanitized_transaction_readonly(sanitized_tx)
+        match self.sanitize_transaction_no_verify(tx) {
+            Ok(s_tx) => self.execute_sanitized_transaction_readonly(s_tx),
+            Err(err) => err
+        }
     }
 
     fn execute_sanitized_transaction_readonly(
