@@ -641,17 +641,15 @@ impl LiteSVM {
     }
 
     fn execute_transaction_no_verify(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        match self.sanitize_transaction_no_verify(tx) {
-            Ok(s_tx) => self.execute_sanitized_transaction(s_tx),
-            Err(e) => e,
-        }
+        map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
+            self.execute_sanitized_transaction(s_tx)
+        })
     }
 
     fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        match self.sanitize_transaction(tx) {
-            Ok(sanitized_tx) => self.execute_sanitized_transaction(sanitized_tx),
-            Err(e) => e,
-        }
+        map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
+            self.execute_sanitized_transaction(s_tx)
+        })
     }
 
     fn execute_sanitized_transaction(
@@ -725,17 +723,15 @@ impl LiteSVM {
     }
 
     fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
-        match self.sanitize_transaction(tx) {
-            Ok(s_tx) => self.execute_sanitized_transaction_readonly(s_tx),
-            Err(err) => err,
-        }
+        map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
+            self.execute_sanitized_transaction_readonly(s_tx)
+        })
     }
 
     fn execute_transaction_no_verify_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
-        match self.sanitize_transaction_no_verify(tx) {
-            Ok(s_tx) => self.execute_sanitized_transaction_readonly(s_tx),
-            Err(err) => err
-        }
+        map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
+            self.execute_sanitized_transaction_readonly(s_tx)
+        })
     }
 
     fn execute_sanitized_transaction_readonly(
@@ -1024,5 +1020,18 @@ fn check_rent_state_with_account(
         Err(TransactionError::InsufficientFundsForRent { account_index })
     } else {
         Ok(())
+    }
+}
+
+fn map_sanitize_result<F>(
+    res: Result<SanitizedTransaction, ExecutionResult>,
+    op: F,
+) -> ExecutionResult
+where
+    F: FnOnce(SanitizedTransaction) -> ExecutionResult,
+{
+    match res {
+        Ok(s_tx) => op(s_tx),
+        Err(e) => e,
     }
 }
