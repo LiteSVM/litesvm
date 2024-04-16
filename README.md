@@ -57,4 +57,10 @@ fn system_transfer() {
 
 ### Development
 
-Solana CLI >= 1.18.8 required.
+#### Run the tests
+
+The tests use some test programs you need to build first (Solana CLI >= 1.18.8 required):
+
+```cd test_programs && cargo build-sbf```
+
+Then just run `cargo test`.
