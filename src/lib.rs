@@ -762,23 +762,24 @@ impl LiteSVM {
 
     fn maybe_history_check(&self, sanitized_tx: &SanitizedTransaction) -> Option<ExecutionResult> {
         if self.history.check_transaction(sanitized_tx.signature()) {
-            return Some(ExecutionResult {
+            return Err(ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
                 ..Default::default()
             });
         }
-        None
+        Ok(())
     }
-    
-    fn maybe_blockhash_check(&self, sanitized_tx: &SanitizedTransaction) -> Option<ExecutionResult> {
+
+    fn maybe_blockhash_check(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<(), ExecutionResult> {
         if self.blockhash_check {
-            if let Err(e) = self.check_transaction_age(sanitized_tx) {
-                return Some(e);
-            }
+            self.check_transaction_age(sanitized_tx)?;
         }
-        None
+        Ok(())
     }
-    
+
     fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
             self.execute_sanitized_transaction_readonly(s_tx)
