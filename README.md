@@ -17,8 +17,9 @@
 
 ## 🚀 Getting Started
 
-
 ### 🔧 Installation
+
+Solana CLI >= 1.18.8 required.
 
 ```sh
 cargo add --dev litesvm
