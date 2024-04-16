@@ -656,29 +656,15 @@ impl LiteSVM {
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if self.blockhash_check {
-            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
+        if let Some(res) = self.maybe_blockhash_check(&sanitized_tx) {
+            return res;
         }
-        let instructions = sanitized_tx.message().program_instructions_iter();
-        let compute_budget_limits = match process_compute_budget_instructions(instructions) {
-            Ok(x) => x,
-            Err(e) => {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
+        let compute_budget_limits = match get_compute_budget_limits(&sanitized_tx) {
+            Ok(value) => value,
+            Err(value) => return value,
         };
-        if self.history.check_transaction(sanitized_tx.signature()) {
-            return ExecutionResult {
-                tx_result: Err(TransactionError::AlreadyProcessed),
-                ..Default::default()
-            };
+        if let Some(value) = self.maybe_history_check(&sanitized_tx) {
+            return value;
         }
 
         let (result, compute_units_consumed, context, fee, payer_key) =
@@ -722,6 +708,25 @@ impl LiteSVM {
         }
     }
 
+    fn maybe_history_check(&self, sanitized_tx: &SanitizedTransaction) -> Option<ExecutionResult> {
+        if self.history.check_transaction(sanitized_tx.signature()) {
+            return Some(ExecutionResult {
+                tx_result: Err(TransactionError::AlreadyProcessed),
+                ..Default::default()
+            });
+        }
+        None
+    }
+    
+    fn maybe_blockhash_check(&self, sanitized_tx: &SanitizedTransaction) -> Option<ExecutionResult> {
+        if self.blockhash_check {
+            if let Err(e) = self.check_transaction_age(sanitized_tx) {
+                return Some(e);
+            }
+        }
+        None
+    }
+    
     fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
             self.execute_sanitized_transaction_readonly(s_tx)
@@ -738,29 +743,15 @@ impl LiteSVM {
         &self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if self.blockhash_check {
-            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
+        if let Some(res) = self.maybe_blockhash_check(&sanitized_tx) {
+            return res;
         }
-        let instructions = sanitized_tx.message().program_instructions_iter();
-        let compute_budget_limits = match process_compute_budget_instructions(instructions) {
-            Ok(x) => x,
-            Err(e) => {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
+        let compute_budget_limits = match get_compute_budget_limits(&sanitized_tx) {
+            Ok(value) => value,
+            Err(value) => return value,
         };
-        if self.history.check_transaction(sanitized_tx.signature()) {
-            return ExecutionResult {
-                tx_result: Err(TransactionError::AlreadyProcessed),
-                ..Default::default()
-            };
+        if let Some(value) = self.maybe_history_check(&sanitized_tx) {
+            return value;
         }
 
         let (result, compute_units_consumed, context, _, _) =
@@ -903,7 +894,15 @@ impl LiteSVM {
         self.feature_set.clone()
     }
 
-    fn check_transaction_age(
+    fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
+        self.check_transaction_age_inner(tx)
+            .map_err(|e| ExecutionResult {
+                tx_result: Err(e),
+                ..Default::default()
+            })
+    }
+
+    fn check_transaction_age_inner(
         &self,
         tx: &SanitizedTransaction,
     ) -> solana_sdk::transaction::Result<()> {
@@ -947,6 +946,14 @@ impl LiteSVM {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
     }
+}
+
+fn get_compute_budget_limits(sanitized_tx: &SanitizedTransaction) -> Result<ComputeBudgetLimits, ExecutionResult> {
+    let instructions = sanitized_tx.message().program_instructions_iter();
+    process_compute_budget_instructions(instructions).map_err(|e| ExecutionResult {
+        tx_result: Err(e),
+        ..Default::default()
+    })
 }
 
 /// Lighter version of the one in the solana-svm crate.
