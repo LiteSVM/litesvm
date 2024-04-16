@@ -44,3 +44,16 @@ impl Default for ExecutionResult {
         }
     }
 }
+
+impl ExecutionResult {
+    pub(crate) fn result_and_compute_units(
+        tx_result: Result<()>,
+        compute_units_consumed: u64,
+    ) -> Self {
+        Self {
+            tx_result,
+            compute_units_consumed,
+            ..Default::default()
+        }
+    }
+}

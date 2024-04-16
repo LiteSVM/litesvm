@@ -378,18 +378,40 @@ impl LiteSVM {
         )
     }
 
-    fn sanitize_transaction_no_verify(
+    fn sanitize_transaction_no_verify_inner(
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
         SanitizedTransaction::try_create(tx, MessageHash::Compute, Some(false), &self.accounts)
     }
 
+    fn sanitize_transaction_no_verify(
+        &self,
+        tx: VersionedTransaction,
+    ) -> Result<SanitizedTransaction, ExecutionResult> {
+        self.sanitize_transaction_no_verify_inner(tx)
+            .map_err(|err| ExecutionResult {
+                tx_result: Err(err),
+                ..Default::default()
+            })
+    }
+
     fn sanitize_transaction(
         &self,
         tx: VersionedTransaction,
+    ) -> Result<SanitizedTransaction, ExecutionResult> {
+        self.sanitize_transaction_inner(tx)
+            .map_err(|err| ExecutionResult {
+                tx_result: Err(err),
+                ..Default::default()
+            })
+    }
+
+    fn sanitize_transaction_inner(
+        &self,
+        tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        let tx = self.sanitize_transaction_no_verify(tx)?;
+        let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
         tx.verify_precompiles(&self.feature_set)?;
@@ -619,188 +641,135 @@ impl LiteSVM {
     }
 
     fn execute_transaction_no_verify(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction_no_verify(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                };
-            }
-        };
-        self.execute_sanitized_transaction(sanitized_tx)
+        map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
+            self.execute_sanitized_transaction(s_tx)
+        })
     }
 
     fn execute_transaction(&mut self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                }
-            }
-        };
-        self.execute_sanitized_transaction(sanitized_tx)
+        map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
+            self.execute_sanitized_transaction(s_tx)
+        })
     }
 
     fn execute_sanitized_transaction(
         &mut self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if self.blockhash_check {
-            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
-        }
-        let instructions = sanitized_tx.message().program_instructions_iter();
-        let compute_budget_limits = match process_compute_budget_instructions(instructions) {
-            Ok(x) => x,
-            Err(e) => {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
+        let CheckAndProcessTransactionSuccess {
+            core:
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                },
+            fee,
+            payer_key,
+        } = match self.check_and_process_transaction(&sanitized_tx) {
+            Ok(value) => value,
+            Err(value) => return value,
         };
-        if self.history.check_transaction(sanitized_tx.signature()) {
-            return ExecutionResult {
-                tx_result: Err(TransactionError::AlreadyProcessed),
-                ..Default::default()
-            };
-        }
-
-        let (result, compute_units_consumed, context, fee, payer_key) =
-            self.process_transaction(&sanitized_tx, compute_budget_limits);
         if let Some(ctx) = context {
-            let signature = sanitized_tx.signature().to_owned();
-            let ExecutionRecord {
-                accounts,
-                return_data,
-                touched_account_count: _,
-                accounts_resize_delta: _,
-            } = ctx.into();
-            let msg = sanitized_tx.message();
-            let post_accounts = accounts
-                .into_iter()
-                .enumerate()
-                .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
-                .collect();
-            let tx_result = if result.is_ok() {
-                result
-            } else if let Some(payer) = payer_key {
-                self.accounts.withdraw(&payer, fee).and(result)
-            } else {
-                result
-            };
-
-            ExecutionResult {
-                tx_result,
-                signature,
-                post_accounts,
-                compute_units_consumed,
-                return_data,
-                included: true,
-            }
+            let tx_result = self.check_tx_result(result, payer_key, fee);
+            execution_result_if_context(sanitized_tx, ctx, tx_result, compute_units_consumed)
         } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                ..Default::default()
-            }
+            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
         }
-    }
-
-    fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                }
-            }
-        };
-        self.execute_sanitized_transaction_readonly(sanitized_tx)
-    }
-
-    fn execute_transaction_no_verify_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
-        let sanitized_tx = match self.sanitize_transaction_no_verify(tx) {
-            Ok(s_tx) => s_tx,
-            Err(err) => {
-                return ExecutionResult {
-                    tx_result: Err(err),
-                    ..Default::default()
-                };
-            }
-        };
-        self.execute_sanitized_transaction_readonly(sanitized_tx)
     }
 
     fn execute_sanitized_transaction_readonly(
         &self,
         sanitized_tx: SanitizedTransaction,
     ) -> ExecutionResult {
-        if self.blockhash_check {
-            if let Err(e) = self.check_transaction_age(&sanitized_tx) {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
-        }
-        let instructions = sanitized_tx.message().program_instructions_iter();
-        let compute_budget_limits = match process_compute_budget_instructions(instructions) {
-            Ok(x) => x,
-            Err(e) => {
-                return ExecutionResult {
-                    tx_result: Err(e),
-                    ..Default::default()
-                };
-            }
+        let CheckAndProcessTransactionSuccess {
+            core:
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                },
+            ..
+        } = match self.check_and_process_transaction(&sanitized_tx) {
+            Ok(value) => value,
+            Err(value) => return value,
         };
+        if let Some(ctx) = context {
+            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
+        } else {
+            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
+        }
+    }
+
+    fn check_tx_result(
+        &mut self,
+        result: Result<(), TransactionError>,
+        payer_key: Option<Pubkey>,
+        fee: u64,
+    ) -> Result<(), TransactionError> {
+        if result.is_ok() {
+            result
+        } else if let Some(payer) = payer_key {
+            self.accounts.withdraw(&payer, fee).and(result)
+        } else {
+            result
+        }
+    }
+
+    fn check_and_process_transaction(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<CheckAndProcessTransactionSuccess, ExecutionResult> {
+        self.maybe_blockhash_check(sanitized_tx)?;
+        let compute_budget_limits = get_compute_budget_limits(sanitized_tx)?;
+        self.maybe_history_check(sanitized_tx)?;
+        let (result, compute_units_consumed, context, fee, payer_key) =
+            self.process_transaction(sanitized_tx, compute_budget_limits);
+        Ok(CheckAndProcessTransactionSuccess {
+            core: {
+                CheckAndProcessTransactionSuccessCore {
+                    result,
+                    compute_units_consumed,
+                    context,
+                }
+            },
+            fee,
+            payer_key,
+        })
+    }
+
+    fn maybe_history_check(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<(), ExecutionResult> {
         if self.history.check_transaction(sanitized_tx.signature()) {
-            return ExecutionResult {
+            return Err(ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
                 ..Default::default()
-            };
+            });
         }
+        Ok(())
+    }
 
-        let (result, compute_units_consumed, context, _, _) =
-            self.process_transaction(&sanitized_tx, compute_budget_limits);
-        if let Some(ctx) = context {
-            let signature = sanitized_tx.signature().to_owned();
-            let ExecutionRecord {
-                accounts,
-                return_data,
-                touched_account_count: _,
-                accounts_resize_delta: _,
-            } = ctx.into();
-            let msg = sanitized_tx.message();
-            let post_accounts = accounts
-                .into_iter()
-                .enumerate()
-                .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
-                .collect();
-
-            ExecutionResult {
-                tx_result: result,
-                signature,
-                post_accounts,
-                compute_units_consumed,
-                return_data,
-                included: true,
-            }
-        } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                ..Default::default()
-            }
+    fn maybe_blockhash_check(
+        &self,
+        sanitized_tx: &SanitizedTransaction,
+    ) -> Result<(), ExecutionResult> {
+        if self.blockhash_check {
+            self.check_transaction_age(sanitized_tx)?;
         }
+        Ok(())
+    }
+
+    fn execute_transaction_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
+        map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
+            self.execute_sanitized_transaction_readonly(s_tx)
+        })
+    }
+
+    fn execute_transaction_no_verify_readonly(&self, tx: VersionedTransaction) -> ExecutionResult {
+        map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
+            self.execute_sanitized_transaction_readonly(s_tx)
+        })
     }
 
     pub(crate) fn send_message<T: Signers>(
@@ -909,7 +878,15 @@ impl LiteSVM {
         self.feature_set.clone()
     }
 
-    fn check_transaction_age(
+    fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
+        self.check_transaction_age_inner(tx)
+            .map_err(|e| ExecutionResult {
+                tx_result: Err(e),
+                ..Default::default()
+            })
+    }
+
+    fn check_transaction_age_inner(
         &self,
         tx: &SanitizedTransaction,
     ) -> solana_sdk::transaction::Result<()> {
@@ -953,6 +930,69 @@ impl LiteSVM {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
     }
+}
+
+struct CheckAndProcessTransactionSuccessCore {
+    result: Result<(), TransactionError>,
+    compute_units_consumed: u64,
+    context: Option<TransactionContext>,
+}
+
+struct CheckAndProcessTransactionSuccess {
+    core: CheckAndProcessTransactionSuccessCore,
+    fee: u64,
+    payer_key: Option<Pubkey>,
+}
+
+fn execution_result_if_context(
+    sanitized_tx: SanitizedTransaction,
+    ctx: TransactionContext,
+    result: Result<(), TransactionError>,
+    compute_units_consumed: u64,
+) -> ExecutionResult {
+    let (signature, return_data, post_accounts) = execute_tx_helper(sanitized_tx, ctx);
+    ExecutionResult {
+        tx_result: result,
+        signature,
+        post_accounts,
+        compute_units_consumed,
+        return_data,
+        included: true,
+    }
+}
+
+fn execute_tx_helper(
+    sanitized_tx: SanitizedTransaction,
+    ctx: TransactionContext,
+) -> (
+    Signature,
+    solana_sdk::transaction_context::TransactionReturnData,
+    Vec<(Pubkey, AccountSharedData)>,
+) {
+    let signature = sanitized_tx.signature().to_owned();
+    let ExecutionRecord {
+        accounts,
+        return_data,
+        touched_account_count: _,
+        accounts_resize_delta: _,
+    } = ctx.into();
+    let msg = sanitized_tx.message();
+    let post_accounts = accounts
+        .into_iter()
+        .enumerate()
+        .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
+        .collect();
+    (signature, return_data, post_accounts)
+}
+
+fn get_compute_budget_limits(
+    sanitized_tx: &SanitizedTransaction,
+) -> Result<ComputeBudgetLimits, ExecutionResult> {
+    let instructions = sanitized_tx.message().program_instructions_iter();
+    process_compute_budget_instructions(instructions).map_err(|e| ExecutionResult {
+        tx_result: Err(e),
+        ..Default::default()
+    })
 }
 
 /// Lighter version of the one in the solana-svm crate.
@@ -1026,5 +1066,18 @@ fn check_rent_state_with_account(
         Err(TransactionError::InsufficientFundsForRent { account_index })
     } else {
         Ok(())
+    }
+}
+
+fn map_sanitize_result<F>(
+    res: Result<SanitizedTransaction, ExecutionResult>,
+    op: F,
+) -> ExecutionResult
+where
+    F: FnOnce(SanitizedTransaction) -> ExecutionResult,
+{
+    match res {
+        Ok(s_tx) => op(s_tx),
+        Err(e) => e,
     }
 }
