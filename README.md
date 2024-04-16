@@ -19,8 +19,6 @@
 
 ### 🔧 Installation
 
-Solana CLI >= 1.18.8 required.
-
 ```sh
 cargo add --dev litesvm
 ```
@@ -56,3 +54,7 @@ fn system_transfer() {
     assert_eq!(to_account.unwrap().lamports, 64);
 }
 ```
+
+### Development
+
+Solana CLI >= 1.18.8 required.
