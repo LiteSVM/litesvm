@@ -1,12 +1,11 @@
 #![allow(clippy::result_large_err)]
-use log::error;
-
 use crate::error::LiteSVMError;
 use itertools::Itertools;
+use log::error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 #[allow(deprecated)]
-use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+use solana_program::sysvar::recent_blockhashes::RecentBlockhashes;
 use solana_program_runtime::{
     compute_budget::ComputeBudget,
     compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
@@ -22,8 +21,6 @@ use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     bpf_loader,
     clock::Clock,
-    epoch_rewards::EpochRewards,
-    epoch_schedule::EpochSchedule,
     feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
     fee::FeeStructure,
     hash::Hash,
@@ -37,15 +34,13 @@ use solana_sdk::{
     signature::{Keypair, Signature},
     signer::Signer,
     signers::Signers,
-    slot_hashes::SlotHashes,
-    slot_history::SlotHistory,
-    stake_history::StakeHistory,
-    system_instruction, system_program,
-    sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
+    system_instruction,
+    sysvar::{Sysvar, SysvarId},
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
+use spl::DEFAULT_SPL_PROGRAMS;
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 use utils::construct_instructions_account;
 
@@ -53,7 +48,6 @@ use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
     history::TransactionHistory,
-    spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
     utils::{
         create_blockhash,
@@ -66,10 +60,13 @@ pub mod error;
 pub mod types;
 
 mod accounts_db;
+mod builder;
 mod builtin;
 mod history;
-mod spl;
+pub mod spl;
 mod utils;
+
+pub use builder::LiteSVMBuilder;
 
 // The test code doesn't actually get run because it's not
 // what doctest expects but at least it
@@ -110,107 +107,7 @@ impl Default for LiteSVM {
 
 impl LiteSVM {
     pub fn new() -> Self {
-        LiteSVM::default()
-            .with_builtins()
-            .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
-            .with_sysvars()
-            .with_spl_programs()
-            .with_sigverify(true)
-            .with_blockhash_check(true)
-    }
-
-    pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
-        self.compute_budget = Some(compute_budget);
-        self
-    }
-
-    pub fn with_sigverify(mut self, sigverify: bool) -> Self {
-        self.sigverify = sigverify;
-        self
-    }
-
-    pub fn with_blockhash_check(mut self, check: bool) -> Self {
-        self.blockhash_check = check;
-        self
-    }
-
-    pub fn with_sysvars(mut self) -> Self {
-        self.set_sysvar(&Clock::default());
-        self.set_sysvar(&EpochRewards::default());
-        self.set_sysvar(&EpochSchedule::default());
-        #[allow(deprecated)]
-        let fees = Fees::default();
-        self.set_sysvar(&fees);
-        self.set_sysvar(&LastRestartSlot::default());
-        let latest_blockhash = self.latest_blockhash;
-        #[allow(deprecated)]
-        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
-            0,
-            &latest_blockhash,
-            fees.fee_calculator.lamports_per_signature,
-        )]));
-        self.set_sysvar(&Rent::default());
-        self.set_sysvar(&SlotHashes::new(&[(
-            self.accounts.sysvar_cache.get_clock().unwrap().slot,
-            latest_blockhash,
-        )]));
-        self.set_sysvar(&SlotHistory::default());
-        self.set_sysvar(&StakeHistory::default());
-        self
-    }
-
-    pub fn with_builtins(mut self) -> Self {
-        let mut feature_set = FeatureSet::all_enabled();
-
-        BUILTINS.iter().for_each(|builtint| {
-            let loaded_program =
-                LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
-            self.accounts
-                .programs_cache
-                .replenish(builtint.program_id, Arc::new(loaded_program));
-            self.accounts.add_builtin_account(
-                builtint.program_id,
-                native_loader::create_loadable_account_for_test(builtint.name),
-            );
-
-            if let Some(feature_id) = builtint.feature_id {
-                feature_set.activate(&feature_id, 0);
-            }
-        });
-
-        let program_runtime_v1 = create_program_runtime_environment_v1(
-            &feature_set,
-            &ComputeBudget::default(),
-            false,
-            true,
-        )
-        .unwrap();
-
-        let program_runtime_v2 =
-            create_program_runtime_environment_v2(&ComputeBudget::default(), true);
-
-        self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
-        self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
-        self.feature_set = Arc::new(feature_set);
-        self
-    }
-
-    pub fn with_lamports(mut self, lamports: u64) -> Self {
-        self.accounts.add_account_no_checks(
-            self.airdrop_kp.pubkey(),
-            AccountSharedData::new(lamports, 0, &system_program::id()),
-        );
-        self
-    }
-
-    pub fn with_spl_programs(mut self) -> Self {
-        load_spl_programs(&mut self);
-        self
-    }
-
-    pub fn with_transaction_history(mut self, capacity: usize) -> Self {
-        self.history.set_capacity(capacity);
-        self
+        Self::builder().build()
     }
 
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
@@ -866,6 +763,32 @@ impl LiteSVM {
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
+    }
+
+    /// Creates the default LiteSVMBuilder instance with default values already set.
+    pub fn builder() -> LiteSVMBuilder {
+        let feature_set = FeatureSet::all_enabled();
+
+        let program_runtime_v1 = create_program_runtime_environment_v1(
+            &feature_set,
+            &ComputeBudget::default(),
+            false,
+            true,
+        )
+        .unwrap();
+
+        let program_runtime_v2 =
+            create_program_runtime_environment_v2(&ComputeBudget::default(), true);
+
+        LiteSVMBuilder::default()
+            .lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
+            .sigverify(true)
+            .blockhash_check(true)
+            .program_runtime_v1(program_runtime_v1)
+            .program_runtime_v2(program_runtime_v2)
+            .built_ins(BUILTINS, FeatureSet::all_enabled())
+            .load_default_sysvar()
+            .default_programs(DEFAULT_SPL_PROGRAMS)
     }
 }
 

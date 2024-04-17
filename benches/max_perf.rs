@@ -33,10 +33,12 @@ fn make_tx(
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut svm = LiteSVM::new()
-        .with_blockhash_check(false)
-        .with_sigverify(false)
-        .with_transaction_history(0);
+    let mut svm = LiteSVM::builder()
+        .blockhash_check(false)
+        .sigverify(false)
+        .transaction_history_capacity(0)
+        .build();
+
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
