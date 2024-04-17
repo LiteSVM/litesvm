@@ -8,6 +8,7 @@
 - Implement blockhash and durable nonce checks ([#61](https://github.com/LiteSVM/litesvm/pull/61)).
 - Add `error.rs` and new `LiteSVMError` type ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
 - Add more logging for users to make debugging errors easier ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
+- Add builder pattern for the svm ([#66](https://github.com/LiteSVM/litesvm/pull/66)).
 
 ### Changed
 
