@@ -786,7 +786,7 @@ impl LiteSVM {
             .blockhash_check(true)
             .program_runtime_v1(program_runtime_v1)
             .program_runtime_v2(program_runtime_v2)
-            .built_ins(BUILTINS, FeatureSet::all_enabled())
+            .built_ins(BUILTINS, feature_set)
             .load_default_sysvar()
             .default_programs(DEFAULT_SPL_PROGRAMS)
     }
