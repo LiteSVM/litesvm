@@ -63,7 +63,7 @@ mod accounts_db;
 mod builder;
 mod builtin;
 mod history;
-pub mod spl;
+mod spl;
 mod utils;
 
 pub use builder::LiteSVMBuilder;
@@ -713,6 +713,14 @@ impl LiteSVM {
 
     pub fn set_compute_budget(&mut self, budget: ComputeBudget) {
         self.compute_budget = Some(budget);
+    }
+
+    pub fn set_sigverify(&mut self, sigverify: bool) {
+        self.sigverify = sigverify;
+    }
+
+    pub fn set_blockhash_check(&mut self, blockhash_check: bool) {
+        self.blockhash_check = blockhash_check;
     }
 
     #[cfg(feature = "internal-test")]
