@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 use crate::{builtin::BuiltinPrototype, LiteSVM};
 
+#[derive(Default)]
 pub struct LiteSVMBuilder {
     svm: LiteSVM,
 }
@@ -65,11 +66,9 @@ impl LiteSVMBuilder {
 
     /// Loads programs at the start of the svm.
     pub fn default_programs(mut self, programs: &[(Pubkey, &[u8])]) -> Self {
-        programs
-            .into_iter()
-            .for_each(|(program_id, program_bytes)| {
-                self.svm.add_program(*program_id, program_bytes);
-            });
+        programs.iter().for_each(|(program_id, program_bytes)| {
+            self.svm.add_program(*program_id, program_bytes);
+        });
         self
     }
 
@@ -124,7 +123,7 @@ impl LiteSVMBuilder {
         built_ins: &[BuiltinPrototype],
         mut feature_set: FeatureSet,
     ) -> Self {
-        built_ins.into_iter().for_each(|built_in| {
+        built_ins.iter().for_each(|built_in| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, built_in.name.len(), built_in.entrypoint);
             self.svm
@@ -147,13 +146,5 @@ impl LiteSVMBuilder {
     /// Builds the svm and returns the inner type.
     pub fn build(self) -> LiteSVM {
         self.svm
-    }
-}
-
-impl Default for LiteSVMBuilder {
-    fn default() -> Self {
-        Self {
-            svm: Default::default(),
-        }
     }
 }
