@@ -796,7 +796,7 @@ impl LiteSVM {
             .program_runtime_v2(program_runtime_v2)
             .built_ins(BUILTINS, feature_set)
             .load_default_sysvar()
-            .default_programs(DEFAULT_SPL_PROGRAMS)
+            .add_programs(DEFAULT_SPL_PROGRAMS)
     }
 }
 

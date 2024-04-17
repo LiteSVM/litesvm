@@ -65,7 +65,7 @@ impl LiteSVMBuilder {
     }
 
     /// Loads programs at the start of the svm.
-    pub fn default_programs(mut self, programs: &[(Pubkey, &[u8])]) -> Self {
+    pub fn add_programs(mut self, programs: &[(Pubkey, &[u8])]) -> Self {
         programs.iter().for_each(|(program_id, program_bytes)| {
             self.svm.add_program(*program_id, program_bytes);
         });
