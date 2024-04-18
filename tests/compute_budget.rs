@@ -17,14 +17,13 @@ fn test_set_compute_budget() {
     let from = from_keypair.pubkey();
     let to = Pubkey::new_unique();
 
-    let mut svm = LiteSVM::new();
-    let tx_fee = 5000;
-
-    svm.airdrop(&from, tx_fee + 100).unwrap();
-    svm.set_compute_budget(ComputeBudget {
+    let mut svm = LiteSVM::new().with_compute_budget(ComputeBudget {
         compute_unit_limit: 10,
         ..Default::default()
     });
+    let tx_fee = 5000;
+
+    svm.airdrop(&from, tx_fee + 100).unwrap();
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(
         &[&from_keypair],
