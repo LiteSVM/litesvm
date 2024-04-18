@@ -14,7 +14,8 @@
 - Accept both legacy and versioned tx in simulate_transaction ([#58](https://github.com/LiteSVM/litesvm/pull/58)).
 - Move `InvalidSysvarDataError` to `error.rs` ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
 - Change `set_account` to return `Result<(), LiteSVMError>` ([#62](https://github.com/LiteSVM/litesvm/pull/62)).
-- Replace `&mut self` with `&self` in `simulate_transaction`. ([#63](https://github.com/LiteSVM/litesvm/pull/64)).
+- Replace `&mut self` with `&self` in `simulate_transaction`. ([#64](https://github.com/LiteSVM/litesvm/pull/64)).
+- Remove `set_compute_budget` as it duplicates `with_compute_budget`. ([#68](https://github.com/LiteSVM/litesvm/pull/68)).
 
 ## [0.1.0] - 2024-04-02
 
