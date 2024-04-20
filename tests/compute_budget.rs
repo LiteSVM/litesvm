@@ -19,9 +19,9 @@ fn test_set_compute_budget() {
 
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
-
     svm.airdrop(&from, tx_fee + 100).unwrap();
-    svm.set_compute_budget(ComputeBudget {
+    // need to set the low compute budget after the airdrop tx
+    svm = svm.with_compute_budget(ComputeBudget {
         compute_unit_limit: 10,
         ..Default::default()
     });

@@ -869,10 +869,6 @@ impl LiteSVM {
         self.compute_budget
     }
 
-    pub fn set_compute_budget(&mut self, budget: ComputeBudget) {
-        self.compute_budget = Some(budget);
-    }
-
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
         self.feature_set.clone()
