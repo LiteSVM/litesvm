@@ -36,7 +36,6 @@ use solana_sdk::{
     rent::Rent,
     signature::{Keypair, Signature},
     signer::Signer,
-    signers::Signers,
     slot_hashes::SlotHashes,
     slot_history::SlotHistory,
     stake_history::StakeHistory,
@@ -55,11 +54,7 @@ use crate::{
     history::TransactionHistory,
     spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
-    utils::{
-        create_blockhash,
-        loader::{deploy_upgradeable_program, set_upgrade_authority},
-        rent::RentState,
-    },
+    utils::{create_blockhash, rent::RentState},
 };
 
 pub mod error;
@@ -338,31 +333,6 @@ impl LiteSVM {
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
-    }
-
-    pub fn deploy_upgradeable_program(
-        &mut self,
-        payer_kp: &Keypair,
-        program_kp: &Keypair,
-        program_bytes: &[u8],
-    ) -> Result<(), FailedTransactionMetadata> {
-        deploy_upgradeable_program(self, payer_kp, program_kp, program_bytes)
-    }
-
-    pub fn set_upgrade_authority(
-        &mut self,
-        from_keypair: &Keypair,
-        program_pubkey: &Pubkey,
-        current_authority_keypair: &Keypair,
-        new_authority_pubkey: Option<&Pubkey>,
-    ) -> Result<(), FailedTransactionMetadata> {
-        set_upgrade_authority(
-            self,
-            from_keypair,
-            program_pubkey,
-            current_authority_keypair,
-            new_authority_pubkey,
-        )
     }
 
     fn create_transaction_context(
@@ -770,15 +740,6 @@ impl LiteSVM {
         map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
             self.execute_sanitized_transaction_readonly(s_tx)
         })
-    }
-
-    pub(crate) fn send_message<T: Signers>(
-        &mut self,
-        message: Message,
-        signers: &T,
-    ) -> TransactionResult {
-        let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(message), signers).unwrap();
-        self.send_transaction(tx)
     }
 
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
