@@ -1,3 +1,4 @@
+#![allow(clippy::result_large_err)]
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
