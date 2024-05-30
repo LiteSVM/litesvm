@@ -765,7 +765,13 @@ impl LiteSVM {
         };
 
         let meta = TransactionMetadata {
-            logs: self.log_collector
+            logs: self
+                .log_collector
+                .replace(LogCollector {
+                    bytes_limit: self.log_bytes_limit,
+                    ..Default::default()
+                })
+                .into_messages(),
             compute_units_consumed,
             return_data,
             signature,
@@ -802,10 +808,15 @@ impl LiteSVM {
             self.execute_transaction_no_verify_readonly(tx.into())
         };
 
-        let logs = self.log_collector.take().into_messages();
         let meta = TransactionMetadata {
             signature,
-            logs,
+            logs: self
+                .log_collector
+                .replace(LogCollector {
+                    bytes_limit: self.log_bytes_limit,
+                    ..Default::default()
+                })
+                .into_messages(),
             compute_units_consumed,
             return_data,
         };
