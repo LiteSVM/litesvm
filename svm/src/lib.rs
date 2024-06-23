@@ -69,7 +69,7 @@ mod utils;
 // The test code doesn't actually get run because it's not
 // what doctest expects but at least it
 // compiles it so we'll see if there's a compile-time error.
-#[doc = include_str!("../README.md")]
+#[doc = include_str!("../../README.md")]
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
