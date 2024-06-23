@@ -1,5 +1,5 @@
 use litesvm::LiteSVM;
-use litesvm_helpers::loader::deploy_upgradeable_program;
+use litesvm_helpers::loader::{deploy_upgradeable_program, set_upgrade_authority};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
@@ -50,9 +50,7 @@ fn hello_world_with_deploy_upgradeable() {
     svm.airdrop(&payer_pk, 10000000000).unwrap();
 
     let program_keypair = Keypair::new();
-
     deploy_upgradeable_program(&mut svm, &payer_kp, &program_keypair, program_bytes).unwrap();
-
     let program_id = program_keypair.pubkey();
     let instruction =
         Instruction::new_with_bytes(program_id, &[], vec![AccountMeta::new(payer_pk, true)]);
@@ -63,4 +61,13 @@ fn hello_world_with_deploy_upgradeable() {
         .unwrap()
         .logs
         .contains(&"Program log: Hello world!".to_string()));
+    let new_authority = Keypair::new();
+    set_upgrade_authority(
+        &mut svm,
+        &payer_kp,
+        &program_id,
+        &payer_kp,
+        Some(&new_authority.pubkey()),
+    )
+    .unwrap();
 }
