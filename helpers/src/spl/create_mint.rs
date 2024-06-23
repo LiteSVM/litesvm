@@ -5,38 +5,92 @@ use solana_sdk::{
 };
 use spl_token_2022::{instruction::initialize_mint2, state::Mint};
 
-pub fn create_mint(
-    svm: &mut LiteSVM,
-    payer: &Keypair,
-    authority: &Pubkey,
-    token_program_id: Option<Pubkey>,
-) -> Result<Pubkey, FailedTransactionMetadata> {
-    let mint_size = Mint::LEN;
-    let mint_kp = Keypair::new();
-    let mint_pk = mint_kp.pubkey();
-    let ix1 = create_account(
-        authority,
-        &mint_pk,
-        svm.minimum_balance_for_rent_exemption(mint_size),
-        mint_size as u64,
-        &spl_token_2022::ID,
-    );
-    let ix2 = initialize_mint2(
-        &token_program_id.unwrap_or(spl_token_2022::ID),
-        &mint_pk,
-        authority,
-        None,
-        8,
-    )?;
+/// ### Description
+/// Builder for the mint creation transaction.
+///
+/// ### Optional fields
+/// - `authority`: `payer` by default.
+/// - `freeze_authority`: None by default.
+/// - `decimals`: 8 by default.
+/// - `token_program_id`: [`spl_token_2022::ID`] by default.
+pub struct CreateMint<'a> {
+    svm: &'a mut LiteSVM,
+    payer: &'a Keypair,
+    authority: Option<&'a Pubkey>,
+    freeze_authority: Option<&'a Pubkey>,
+    decimals: Option<u8>,
+    token_program_id: Option<&'a Pubkey>,
+}
 
-    let block_hash = svm.latest_blockhash();
-    let tx = Transaction::new_signed_with_payer(
-        &[ix1, ix2],
-        Some(&payer.pubkey()),
-        &[&payer, &mint_kp],
-        block_hash,
-    );
-    svm.send_transaction(tx)?;
+impl<'a> CreateMint<'a> {
+    /// Creates a new instance of the mint creation transaction.
+    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair) -> Self {
+        CreateMint {
+            svm,
+            payer,
+            authority: None,
+            freeze_authority: None,
+            decimals: None,
+            token_program_id: None,
+        }
+    }
 
-    Ok(mint_pk)
+    /// Sets the authority of the mint.
+    pub fn authority(mut self, authority: &'a Pubkey) -> Self {
+        self.authority = Some(authority);
+        self
+    }
+
+    /// Sets the freeze authority of the mint.
+    pub fn freeze_authority(mut self, freeze_authority: &'a Pubkey) -> Self {
+        self.freeze_authority = Some(freeze_authority);
+        self
+    }
+
+    /// Sets the decimals of the mint.
+    pub fn decimals(mut self, value: u8) -> Self {
+        self.decimals = Some(value);
+        self
+    }
+
+    /// Sets the token program id of the mint account.
+    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+        self.token_program_id = Some(program_id);
+        self
+    }
+
+    /// Sends the transaction.
+    pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
+        let mint_size = Mint::LEN;
+        let mint_kp = Keypair::new();
+        let mint_pk = mint_kp.pubkey();
+        let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);
+        let payer_pk = self.payer.pubkey();
+
+        let ix1 = create_account(
+            self.authority.unwrap_or(&payer_pk),
+            &mint_pk,
+            self.svm.minimum_balance_for_rent_exemption(mint_size),
+            mint_size as u64,
+            token_program_id,
+        );
+        let ix2 = initialize_mint2(
+            token_program_id,
+            &mint_pk,
+            self.authority.unwrap_or(&payer_pk),
+            self.freeze_authority,
+            self.decimals.unwrap_or(8),
+        )?;
+
+        let block_hash = self.svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[ix1, ix2],
+            Some(&payer_pk),
+            &[&self.payer, &mint_kp],
+            block_hash,
+        );
+        self.svm.send_transaction(tx)?;
+
+        Ok(mint_pk)
+    }
 }

@@ -1,3 +1,4 @@
+#![allow(clippy::result_large_err)]
 use solana_sdk::signature::Keypair;
 
 pub mod loader;

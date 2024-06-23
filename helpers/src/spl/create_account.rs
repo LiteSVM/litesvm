@@ -1,19 +1,89 @@
-use litesvm::LiteSVM;
+use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{
-    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction::create_account,
-    system_program,
+    program_pack::Pack, pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
+    transaction::Transaction,
 };
+use spl_token_2022::state::Account;
 
-pub fn create_account(
-    svm: &mut LiteSVM,
-    payer: &Keypair,
-    mint: &Pubkey,
-    owner: &Pubkey,
-    keypair: Option<Keypair>,
-    program_id: Option<Pubkey>,
-) {
-    let keypair = keypair.unwrap_or(Keypair::new());
-    create_account(payer.pubkey(), &keypair.pubkey(), lamports, space, owner);
+/// ### Description
+/// Builder for the spl account creation transaction.
+///
+/// ### Optional fields
+/// - `owner`: `payer` by default.
+/// - `account_kp`: [`Keypair::new()`] by default.
+pub struct CreateAccount<'a> {
+    svm: &'a mut LiteSVM,
+    payer: &'a Keypair,
+    mint: &'a Pubkey,
+    owner: Option<&'a Pubkey>,
+    account_kp: Option<Keypair>,
+    token_program_id: Option<&'a Pubkey>,
+}
 
-    // crea
+impl<'a> CreateAccount<'a> {
+    /// Creates a new instance of the spl account creation transaction.
+    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, mint: &'a Pubkey) -> Self {
+        CreateAccount {
+            svm,
+            payer,
+            mint,
+            owner: None,
+            account_kp: None,
+            token_program_id: None,
+        }
+    }
+
+    /// Sets the owner of the spl account.
+    pub fn owner(mut self, owner: &'a Pubkey) -> Self {
+        self.owner = Some(owner);
+        self
+    }
+
+    /// Sets the [`Keypair`] of the spl account.
+    pub fn account_kp(mut self, account_kp: Keypair) -> Self {
+        self.account_kp = Some(account_kp);
+        self
+    }
+
+    /// Sets the token program id of the spl account.
+    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+        self.token_program_id = Some(program_id);
+        self
+    }
+
+    /// Sends the transaction.
+    pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
+        let lamports = self.svm.minimum_balance_for_rent_exemption(Account::LEN);
+
+        let account_kp = self.account_kp.unwrap_or(Keypair::new());
+        let account_pk = account_kp.pubkey();
+        let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);
+        let payer_pk = self.payer.pubkey();
+
+        let ix1 = system_instruction::create_account(
+            &self.payer.pubkey(),
+            &account_pk,
+            lamports,
+            Account::LEN as u64,
+            token_program_id,
+        );
+
+        let ix2 = spl_token_2022::instruction::initialize_account3(
+            token_program_id,
+            &account_pk,
+            self.mint,
+            self.owner.unwrap_or(&payer_pk),
+        )?;
+
+        let block_hash = self.svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[ix1, ix2],
+            Some(&payer_pk),
+            &[&self.payer, &account_kp],
+            block_hash,
+        );
+        self.svm.send_transaction(tx)?;
+
+        Ok(account_pk)
+    }
 }
