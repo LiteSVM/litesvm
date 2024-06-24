@@ -6,6 +6,7 @@ use solana_sdk::{
 };
 
 pub mod rent;
+pub mod inner_instructions;
 
 /// Create a blockhash from the given bytes
 pub fn create_blockhash(bytes: &[u8]) -> Hash {
