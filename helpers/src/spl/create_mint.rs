@@ -1,9 +1,9 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{
-    program_pack::Pack, pubkey::Pubkey, signature::Keypair, signer::Signer,
-    system_instruction::create_account, transaction::Transaction,
+    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction::create_account,
+    transaction::Transaction,
 };
-use spl_token_2022::{instruction::initialize_mint2, state::Mint};
+use spl_token_2022::{extension::ExtensionType, instruction::initialize_mint2, state::Mint};
 
 /// ### Description
 /// Builder for the mint creation transaction.
@@ -61,7 +61,7 @@ impl<'a> CreateMint<'a> {
 
     /// Sends the transaction.
     pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
-        let mint_size = Mint::LEN;
+        let mint_size = ExtensionType::try_calculate_account_len::<Mint>(&[])?;
         let mint_kp = Keypair::new();
         let mint_pk = mint_kp.pubkey();
         let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);

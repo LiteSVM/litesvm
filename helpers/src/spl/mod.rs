@@ -1,8 +1,10 @@
 mod create_account;
 mod create_mint;
+mod mint_to;
 
 pub use create_account::*;
 pub use create_mint::*;
+pub use mint_to::*;
 
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey, transaction::TransactionError};

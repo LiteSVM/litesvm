@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 ROOT=$(git rev-parse --show-toplevel)
 
-cd $ROOT/test_programs
+cd $ROOT/svm/test_programs
 cargo build-sbf
 
 cd $ROOT

@@ -1,9 +1,9 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{
-    program_pack::Pack, pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
+    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,
 };
-use spl_token_2022::state::Account;
+use spl_token_2022::{extension::ExtensionType, state::Account};
 
 /// ### Description
 /// Builder for the spl account creation transaction.
@@ -18,6 +18,7 @@ pub struct CreateAccount<'a> {
     owner: Option<&'a Pubkey>,
     account_kp: Option<Keypair>,
     token_program_id: Option<&'a Pubkey>,
+    extensions: Vec<ExtensionType>,
 }
 
 impl<'a> CreateAccount<'a> {
@@ -30,6 +31,7 @@ impl<'a> CreateAccount<'a> {
             owner: None,
             account_kp: None,
             token_program_id: None,
+            extensions: vec![],
         }
     }
 
@@ -51,9 +53,14 @@ impl<'a> CreateAccount<'a> {
         self
     }
 
+    // pub fn extension(mut self, extension: ExtensionType) -> Self {
+    //     self
+    // }
+
     /// Sends the transaction.
     pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
-        let lamports = self.svm.minimum_balance_for_rent_exemption(Account::LEN);
+        let account_len = ExtensionType::try_calculate_account_len::<Account>(&self.extensions)?;
+        let lamports = self.svm.minimum_balance_for_rent_exemption(account_len);
 
         let account_kp = self.account_kp.unwrap_or(Keypair::new());
         let account_pk = account_kp.pubkey();
@@ -64,7 +71,7 @@ impl<'a> CreateAccount<'a> {
             &self.payer.pubkey(),
             &account_pk,
             lamports,
-            Account::LEN as u64,
+            account_len as u64,
             token_program_id,
         );
 
