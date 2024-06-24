@@ -1,12 +1,14 @@
 use solana_sdk::{
     account::AccountSharedData,
+    instruction::InstructionError,
+    program_error::ProgramError,
     pubkey::Pubkey,
     signature::Signature,
     transaction::{Result, TransactionError},
     transaction_context::TransactionReturnData,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TransactionMetadata {
     pub signature: Signature,
     pub logs: Vec<String>,
@@ -18,6 +20,18 @@ pub struct TransactionMetadata {
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
     pub meta: TransactionMetadata,
+}
+
+impl From<ProgramError> for FailedTransactionMetadata {
+    fn from(value: ProgramError) -> Self {
+        FailedTransactionMetadata {
+            err: TransactionError::InstructionError(
+                0,
+                InstructionError::Custom(u64::from(value) as u32),
+            ),
+            meta: Default::default(),
+        }
+    }
 }
 
 pub type TransactionResult = std::result::Result<TransactionMetadata, FailedTransactionMetadata>;

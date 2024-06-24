@@ -5,9 +5,6 @@ resolver = "2"
 [workspace.dependencies]
 borsh = "0.9.3"
 solana-program = "=1.18.8"
-solana-sdk = "=1.18.8"
-solana-program-test = "=1.18.8"
-tokio = "1.35"
 
 [profile.release]
 overflow-checks = true
