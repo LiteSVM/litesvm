@@ -5,8 +5,8 @@ use solana_sdk::{
     sysvar::{self, instructions::construct_instructions_data},
 };
 
-pub mod rent;
 pub mod inner_instructions;
+pub mod rent;
 
 /// Create a blockhash from the given bytes
 pub fn create_blockhash(bytes: &[u8]) -> Hash {

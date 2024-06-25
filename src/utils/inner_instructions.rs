@@ -4,7 +4,6 @@ use solana_sdk::{
     transaction_context::TransactionContext,
 };
 
-
 /// Pulled verbatim from `solana-svm` crate, `transaction_processor.rs`
 pub fn inner_instructions_list_from_instruction_trace(
     transaction_context: &TransactionContext,
