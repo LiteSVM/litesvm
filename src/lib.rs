@@ -39,6 +39,7 @@ use solana_sdk::{
     nonce_account,
     pubkey::Pubkey,
     rent::Rent,
+    reserved_account_keys::ReservedAccountKeys,
     signature::{Keypair, Signature},
     signer::Signer,
     slot_hashes::SlotHashes,
@@ -357,7 +358,13 @@ impl LiteSVM {
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        SanitizedTransaction::try_create(tx, MessageHash::Compute, Some(false), &self.accounts)
+        SanitizedTransaction::try_create(
+            tx,
+            MessageHash::Compute,
+            Some(false),
+            &self.accounts,
+            &ReservedAccountKeys::empty_key_set(),
+        )
     }
 
     fn sanitize_transaction_no_verify(
