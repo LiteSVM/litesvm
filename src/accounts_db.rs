@@ -18,7 +18,7 @@ use solana_program::{
     },
 };
 use solana_program_runtime::{
-    loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
+    loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch},
     sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
@@ -57,7 +57,7 @@ where
 #[derive(Default)]
 pub(crate) struct AccountsDb {
     inner: HashMap<Pubkey, AccountSharedData>,
-    pub(crate) programs_cache: LoadedProgramsForTxBatch,
+    pub(crate) programs_cache: ProgramCacheForTxBatch,
     pub(crate) sysvar_cache: SysvarCache,
 }
 
@@ -188,7 +188,7 @@ impl AccountsDb {
     fn load_program(
         &self,
         program_account: &AccountSharedData,
-    ) -> Result<LoadedProgram, InstructionError> {
+    ) -> Result<ProgramCacheEntry, InstructionError> {
         let metrics = &mut LoadProgramMetrics::default();
 
         let owner = program_account.owner();
@@ -196,7 +196,7 @@ impl AccountsDb {
         let slot = self.sysvar_cache.get_clock().unwrap().slot;
 
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
-            LoadedProgram::new(
+            ProgramCacheEntry::new(
                 owner,
                 self.programs_cache.environments.program_runtime_v1.clone(),
                 slot,
@@ -225,7 +225,7 @@ impl AccountsDb {
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
             {
-                LoadedProgram::new(
+                ProgramCacheEntry::new(
                     owner,
                     program_runtime_v1,
                     slot,
@@ -237,7 +237,7 @@ impl AccountsDb {
                         .len()
                         .saturating_add(program_data.len()),
                     metrics).map_err(|_| {
-                        error!("Error encountered when calling LoadedProgram::new() for bpf_loader_upgradeable.");
+                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable.");
                         InstructionError::InvalidAccountData
                     })
             } else {
@@ -249,7 +249,7 @@ impl AccountsDb {
                 .data()
                 .get(LoaderV4State::program_data_offset()..)
             {
-                LoadedProgram::new(
+                ProgramCacheEntry::new(
                     &loader_v4::id(),
                     program_runtime_v1,
                     slot,
@@ -260,7 +260,7 @@ impl AccountsDb {
                     metrics,
                 )
                 .map_err(|_| {
-                    error!("Error encountered when calling LoadedProgram::new() for loader_v4.");
+                    error!("Error encountered when calling ProgramCacheEntry::new() for loader_v4.");
                     InstructionError::InvalidAccountData
                 })
             } else {

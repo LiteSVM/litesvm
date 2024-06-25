@@ -24,7 +24,9 @@ solana-address-lookup-table-program = "2.0.1"
 log = "0.4.21"
 solana-vote-program = "2.0.1"
 solana-stake-program = "2.0.1"
+solana-compute-budget = "2.0.1"
 solana-config-program = "2.0.1"
+solana-svm = "2.0.1"
 
 [dev-dependencies]
 spl-token = "3.5.0"
