@@ -24,7 +24,10 @@ use solana_sdk::{
     clock::Clock,
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
-    feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
+    feature_set::{
+        include_loaded_accounts_data_size_in_fee_calculation, remove_rounding_in_fee_calculation,
+        FeatureSet,
+    },
     fee::FeeStructure,
     hash::Hash,
     message::{Message, SanitizedMessage, VersionedMessage},
@@ -428,6 +431,8 @@ impl LiteSVM {
             &compute_budget_limits.into(),
             self.feature_set
                 .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+            self.feature_set
+                .is_active(&remove_rounding_in_fee_calculation::id()),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
