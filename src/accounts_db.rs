@@ -37,20 +37,23 @@ const FEES_ID: Pubkey = solana_program::pubkey!("SysvarFees111111111111111111111
 const RECENT_BLOCKHASHES_ID: Pubkey =
     solana_program::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
 
-fn handle_sysvar<F, T>(
+fn handle_sysvar<T>(
     cache: &mut SysvarCache,
-    method: F,
     err_variant: InvalidSysvarDataError,
-    bytes: &[u8],
+    account: &AccountSharedData,
+    mut accounts_clone: HashMap<Pubkey, AccountSharedData>,
+    address: Pubkey,
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar,
-    F: Fn(&mut SysvarCache, T),
 {
-    method(
-        cache,
-        bincode::deserialize::<T>(bytes).map_err(|_| err_variant)?,
-    );
+    accounts_clone.insert(address, account.clone());
+    cache.fill_missing_entries(|pubkey, set_sysvar| {
+        if let Some(acc) = accounts_clone.get(pubkey) {
+            set_sysvar(acc.data())
+        }
+    });
+    let _parsed: T = bincode::deserialize(account.data()).map_err(|_| err_variant)?;
     Ok(())
 }
 
@@ -104,60 +107,84 @@ impl AccountsDb {
                 let parsed: Clock = bincode::deserialize(account.data())
                     .map_err(|_| InvalidSysvarDataError::Clock)?;
                 self.programs_cache.set_slot_for_tests(parsed.slot);
-                cache.set_clock(parsed);
+                let mut accounts_clone = self.inner.clone();
+                accounts_clone.insert(pubkey, account.clone());
+                cache.fill_missing_entries(|pubkey, set_sysvar| {
+                    if let Some(acc) = accounts_clone.get(pubkey) {
+                        set_sysvar(acc.data())
+                    }
+                });
             }
             EPOCH_REWARDS_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::epoch_rewards::EpochRewards>(
                     cache,
-                    SysvarCache::set_epoch_rewards,
                     EpochRewards,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             EPOCH_SCHEDULE_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::epoch_schedule::EpochSchedule>(
                     cache,
-                    SysvarCache::set_epoch_schedule,
                     EpochSchedule,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             FEES_ID => {
-                handle_sysvar(cache, SysvarCache::set_fees, Fees, account.data())?;
+                handle_sysvar::<solana_sdk::sysvar::fees::Fees>(
+                    cache,
+                    Fees,
+                    account,
+                    self.inner.clone(),
+                    pubkey,
+                )?;
             }
             LAST_RESTART_SLOT_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::sysvar::last_restart_slot::LastRestartSlot>(
                     cache,
-                    SysvarCache::set_last_restart_slot,
                     LastRestartSlot,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             RECENT_BLOCKHASHES_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
                     cache,
-                    SysvarCache::set_recent_blockhashes,
                     RecentBlockhashes,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             RENT_ID => {
-                handle_sysvar(cache, SysvarCache::set_rent, Rent, account.data())?;
+                handle_sysvar::<solana_sdk::rent::Rent>(
+                    cache,
+                    Rent,
+                    account,
+                    self.inner.clone(),
+                    pubkey,
+                )?;
             }
             SLOT_HASHES_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::slot_hashes::SlotHashes>(
                     cache,
-                    SysvarCache::set_slot_hashes,
                     SlotHashes,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::stake_history::StakeHistory>(
                     cache,
-                    SysvarCache::set_stake_history,
                     StakeHistory,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             _ => {}
@@ -201,7 +228,6 @@ impl AccountsDb {
                 self.programs_cache.environments.program_runtime_v1.clone(),
                 slot,
                 slot,
-                None,
                 program_account.data(),
                 program_account.data().len(),
                 &mut LoadProgramMetrics::default(),
@@ -230,7 +256,6 @@ impl AccountsDb {
                     program_runtime_v1,
                     slot,
                     slot,
-                    None,
                     programdata,
                     program_account
                         .data()
@@ -254,13 +279,14 @@ impl AccountsDb {
                     program_runtime_v1,
                     slot,
                     slot,
-                    None,
                     elf_bytes,
                     program_account.data().len(),
                     metrics,
                 )
                 .map_err(|_| {
-                    error!("Error encountered when calling ProgramCacheEntry::new() for loader_v4.");
+                    error!(
+                        "Error encountered when calling ProgramCacheEntry::new() for loader_v4."
+                    );
                     InstructionError::InvalidAccountData
                 })
             } else {
