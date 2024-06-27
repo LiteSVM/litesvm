@@ -1,5 +1,10 @@
 #![allow(clippy::result_large_err)]
 use log::error;
+use solana_compute_budget::{
+    compute_budget::ComputeBudget,
+    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
+};
+use solana_svm::message_processor::MessageProcessor;
 
 use crate::error::LiteSVMError;
 use itertools::Itertools;
@@ -8,12 +13,9 @@ use solana_loader_v4_program::create_program_runtime_environment_v2;
 #[allow(deprecated)]
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
-    compute_budget::ComputeBudget,
-    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
-    invoke_context::BuiltinFunctionWithContext,
-    loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
+    invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
+    loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch},
     log_collector::LogCollector,
-    message_processor::MessageProcessor,
     timings::ExecuteTimings,
 };
 #[allow(deprecated)]
@@ -24,7 +26,10 @@ use solana_sdk::{
     clock::Clock,
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
-    feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
+    feature_set::{
+        include_loaded_accounts_data_size_in_fee_calculation, remove_rounding_in_fee_calculation,
+        FeatureSet,
+    },
     fee::FeeStructure,
     hash::Hash,
     message::{Message, SanitizedMessage, VersionedMessage},
@@ -34,6 +39,7 @@ use solana_sdk::{
     nonce_account,
     pubkey::Pubkey,
     rent::Rent,
+    reserved_account_keys::ReservedAccountKeys,
     signature::{Keypair, Signature},
     signer::Signer,
     slot_hashes::SlotHashes,
@@ -159,7 +165,7 @@ impl LiteSVM {
 
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
-                LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
+                ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
             self.accounts
                 .programs_cache
                 .replenish(builtint.program_id, Arc::new(loaded_program));
@@ -273,7 +279,7 @@ impl LiteSVM {
     }
 
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
-        let builtin = LoadedProgram::new_builtin(
+        let builtin = ProgramCacheEntry::new_builtin(
             self.accounts
                 .sysvar_cache
                 .get_clock()
@@ -343,7 +349,7 @@ impl LiteSVM {
         TransactionContext::new(
             accounts,
             self.get_sysvar(),
-            compute_budget.max_invoke_stack_height,
+            compute_budget.max_instruction_stack_depth,
             compute_budget.max_instruction_trace_length,
         )
     }
@@ -352,7 +358,13 @@ impl LiteSVM {
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        SanitizedTransaction::try_create(tx, MessageHash::Compute, Some(false), &self.accounts)
+        SanitizedTransaction::try_create(
+            tx,
+            MessageHash::Compute,
+            Some(false),
+            &self.accounts,
+            &ReservedAccountKeys::empty_key_set(),
+        )
     }
 
     fn sanitize_transaction_no_verify(
@@ -407,7 +419,7 @@ impl LiteSVM {
         });
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
-        let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
+        let mut programs_modified_by_tx = ProgramCacheForTxBatch::new(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
             self.accounts.programs_cache.environments.clone(),
             None,
@@ -428,6 +440,8 @@ impl LiteSVM {
             &compute_budget_limits.into(),
             self.feature_set
                 .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+            self.feature_set
+                .is_active(&remove_rounding_in_fee_calculation::id()),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -457,7 +471,9 @@ impl LiteSVM {
                             default_account
                         })
                     };
-                    if !validated_fee_payer && message.is_non_loader_key(i) {
+                    if !validated_fee_payer
+                        && (message.is_invoked(i) || message.is_instruction_account(i))
+                    {
                         validate_fee_payer(
                             key,
                             &mut account,
@@ -546,16 +562,21 @@ impl LiteSVM {
                 let mut tx_result = MessageProcessor::process_message(
                     tx.message(),
                     &program_indices,
-                    &mut context,
-                    Some(self.log_collector.clone()),
-                    &self.accounts.programs_cache,
-                    &mut programs_modified_by_tx,
-                    self.feature_set.clone(),
-                    compute_budget,
+                    &mut InvokeContext::new(
+                        &mut context,
+                        &mut programs_modified_by_tx,
+                        EnvironmentConfig::new(
+                            *blockhash,
+                            None,
+                            None,
+                            self.feature_set.clone(),
+                            0,
+                            &self.accounts.sysvar_cache,
+                        ),
+                        Some(self.log_collector.clone()),
+                        compute_budget,
+                    ),
                     &mut ExecuteTimings::default(),
-                    &self.accounts.sysvar_cache,
-                    *blockhash,
-                    0,
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
