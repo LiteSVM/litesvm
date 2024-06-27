@@ -562,12 +562,12 @@ impl LiteSVM {
                     &program_indices,
                     &mut InvokeContext::new(
                         &mut context,
-                        &mut self.accounts.programs_cache,
+                        &mut programs_modified_by_tx,
                         EnvironmentConfig::new(
                             *blockhash,
                             None,
                             None,
-                            self.feature_set,
+                            self.feature_set.clone(),
                             0,
                             &self.accounts.sysvar_cache,
                         ),
