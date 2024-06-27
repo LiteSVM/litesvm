@@ -1,8 +1,8 @@
 use litesvm::LiteSVM;
+use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_program::{
     instruction::InstructionError, message::Message, pubkey::Pubkey, system_instruction::transfer,
 };
-use solana_program_runtime::compute_budget::ComputeBudget;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     signature::Keypair,

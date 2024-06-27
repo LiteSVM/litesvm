@@ -29,7 +29,8 @@ solana-config-program = "2.0.1"
 solana-svm = "2.0.1"
 
 [dev-dependencies]
-spl-token = "3.5.0"
+solana-compute-budget = "2.0.1"
+spl-token = "6.0.0"
 solana-program-test = "2.0.1"
 criterion = "0.5"
 tokio = "1.35"
