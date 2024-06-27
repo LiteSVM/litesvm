@@ -471,7 +471,9 @@ impl LiteSVM {
                             default_account
                         })
                     };
-                    if !validated_fee_payer && message.is_non_loader_key(i) {
+                    if !validated_fee_payer
+                        && (message.is_invoked(i) || message.is_instruction_account(i))
+                    {
                         validate_fee_payer(
                             key,
                             &mut account,
