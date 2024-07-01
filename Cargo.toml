@@ -25,6 +25,7 @@ log = "0.4.21"
 solana-vote-program = "~1.18"
 solana-stake-program = "~1.18"
 solana-config-program = "~1.18"
+serde = { version = "1.0.197", optional = true }
 
 [dev-dependencies]
 spl-token = "3.5.0"

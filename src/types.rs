@@ -8,7 +8,9 @@ use solana_sdk::{
 };
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TransactionMetadata {
+    #[cfg_attr(feature = "serde", serde(with = "crate::utils::serde_with_str"))]
     pub signature: Signature,
     pub logs: Vec<String>,
     pub inner_instructions: InnerInstructionsList,
@@ -17,6 +19,7 @@ pub struct TransactionMetadata {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
     pub meta: TransactionMetadata,
