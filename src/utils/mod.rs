@@ -5,6 +5,7 @@ use solana_sdk::{
     sysvar::{self, instructions::construct_instructions_data},
 };
 
+pub mod inner_instructions;
 pub mod rent;
 
 /// Create a blockhash from the given bytes
