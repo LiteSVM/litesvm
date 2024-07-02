@@ -25,7 +25,7 @@ log = "0.4.21"
 solana-vote-program = "~1.18"
 solana-stake-program = "~1.18"
 solana-config-program = "~1.18"
-serde = { version = "1.0.197", optional = true }
+serde = { version = "1.0", optional = true }
 
 [dev-dependencies]
 spl-token = "3.5.0"
@@ -34,7 +34,7 @@ criterion = "0.5"
 tokio = "1.35"
 test-log = "0.2.15"
 solana-config-program = "~1.18"
-serde = "1.0.197"
+serde = "1.0"
 
 [features]
 internal-test = []
