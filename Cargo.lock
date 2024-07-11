@@ -2212,6 +2212,7 @@ dependencies = [
  "litesvm",
  "solana-program",
  "solana-sdk",
+ "spl-associated-token-account 3.0.3",
  "spl-token-2022 3.0.2",
  "test-log",
 ]
@@ -4682,7 +4683,7 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-sdk",
- "spl-associated-token-account",
+ "spl-associated-token-account 2.3.0",
  "spl-memo",
  "spl-token 4.0.0",
  "spl-token-2022 1.0.0",
@@ -4858,6 +4859,22 @@ dependencies = [
  "solana-program",
  "spl-token 4.0.0",
  "spl-token-2022 1.0.0",
+ "thiserror",
+]
+
+[[package]]
+name = "spl-associated-token-account"
+version = "3.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a60aa529547d7c3c6a19e97b5de156605ed5b81ec604644ff6c5419609af1af3"
+dependencies = [
+ "assert_matches",
+ "borsh 1.4.0",
+ "num-derive 0.4.2",
+ "num-traits",
+ "solana-program",
+ "spl-token 4.0.0",
+ "spl-token-2022 3.0.2",
  "thiserror",
 ]
 

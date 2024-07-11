@@ -6,7 +6,7 @@ use solana_sdk::{
 use spl_token_2022::{extension::ExtensionType, instruction::initialize_mint2, state::Mint};
 
 /// ### Description
-/// Builder for the mint creation transaction.
+/// Builder for the [`initialize_mint2`] instruction.
 ///
 /// ### Optional fields
 /// - `authority`: `payer` by default.
@@ -23,7 +23,7 @@ pub struct CreateMint<'a> {
 }
 
 impl<'a> CreateMint<'a> {
-    /// Creates a new instance of the mint creation transaction.
+    /// Creates a new instance of the [`initialize_mint2`] instruction.
     pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair) -> Self {
         CreateMint {
             svm,

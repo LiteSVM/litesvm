@@ -3,10 +3,10 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,
 };
-use spl_token_2022::{extension::ExtensionType, state::Account};
+use spl_token_2022::{extension::ExtensionType, instruction::initialize_account3, state::Account};
 
 /// ### Description
-/// Builder for the spl account creation transaction.
+/// Builder for the [`initialize_account3`] instruction.
 ///
 /// ### Optional fields
 /// - `owner`: `payer` by default.
@@ -22,7 +22,7 @@ pub struct CreateAccount<'a> {
 }
 
 impl<'a> CreateAccount<'a> {
-    /// Creates a new instance of the spl account creation transaction.
+    /// Creates a new instance of the [`initialize_account3`] instruction.
     pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, mint: &'a Pubkey) -> Self {
         CreateAccount {
             svm,
@@ -53,10 +53,6 @@ impl<'a> CreateAccount<'a> {
         self
     }
 
-    // pub fn extension(mut self, extension: ExtensionType) -> Self {
-    //     self
-    // }
-
     /// Sends the transaction.
     pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
         let account_len = ExtensionType::try_calculate_account_len::<Account>(&self.extensions)?;
@@ -75,7 +71,7 @@ impl<'a> CreateAccount<'a> {
             token_program_id,
         );
 
-        let ix2 = spl_token_2022::instruction::initialize_account3(
+        let ix2 = initialize_account3(
             token_program_id,
             &account_pk,
             self.mint,
