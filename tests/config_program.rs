@@ -94,7 +94,7 @@ fn test_process_create_ok() {
     );
 }
 
-#[test]
+#[test_log::test]
 fn test_process_store_ok() {
     let mut context = setup_test_context();
 
@@ -105,7 +105,6 @@ fn test_process_store_ok() {
     create_config_account(&mut context, &config_keypair, keys.clone());
     let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
     let payer = &context.payer;
-
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
