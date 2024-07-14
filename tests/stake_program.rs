@@ -1,30 +1,16 @@
 // ported from https://github.com/solana-program/stake-program/blob/master/tests/tests.rs
 
 use {
-    litesvm::LiteSVM,
-    solana_sdk::{
-        account::Account,
-        entrypoint::ProgramResult,
-        epoch_schedule::EpochSchedule,
-        hash::Hash,
-        instruction::Instruction,
-        program_error::ProgramError,
-        pubkey::Pubkey,
-        signature::{Keypair, Signer},
-        signers::Signers,
-        stake::{
+    litesvm::LiteSVM, serde::Deserialize, solana_sdk::{
+        account::Account, entrypoint::ProgramResult, epoch_schedule::EpochSchedule, hash::Hash, instruction::Instruction, native_token::LAMPORTS_PER_SOL, program_error::ProgramError, pubkey::Pubkey, signature::{Keypair, Signer}, signers::Signers, stake::{
             self,
             instruction::{self as ixn, LockupArgs},
             state::{Authorized, Delegation, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
-        },
-        system_instruction, system_program,
-        sysvar::{clock::Clock, rent::Rent},
-        transaction::{Transaction, TransactionError},
-    },
-    solana_vote_program::{
+        }, system_instruction, system_program, sysvar::{clock::Clock, rent::Rent, SysvarId}, transaction::{Transaction, TransactionError}
+    }, solana_vote_program::{
         vote_instruction,
         vote_state::{self, VoteInit, VoteState, VoteStateVersions},
-    },
+    }
 };
 
 fn increment_vote_account_credits(
@@ -273,7 +259,7 @@ fn process_instruction<T: Signers + ?Sized>(
     transaction.sign(additional_signers, svm.latest_blockhash());
 
     match svm.send_transaction(transaction) {
-        Ok(_) => Ok(()),
+        Ok(x) => {println!("x: {x:?}"); Ok(())},
         Err(e) => {
             // banks client error -> transaction error -> instruction error -> program error
             match e.err {
@@ -684,7 +670,6 @@ fn test_stake_delegate() {
         &Pubkey::new_unique(),
         &vote_account2,
     );
-
     let staker_keypair = Keypair::new();
     let withdrawer_keypair = Keypair::new();
 
@@ -696,12 +681,12 @@ fn test_stake_delegate() {
     let vote_state_credits = 100;
     increment_vote_account_credits(&mut svm, accounts.vote_account.pubkey(), vote_state_credits);
     let minimum_delegation = get_minimum_delegation(&mut svm, &payer);
+    assert_eq!(minimum_delegation, LAMPORTS_PER_SOL);
 
     let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
 
     test_instruction_with_missing_signers(&mut svm, &instruction, &vec![&staker_keypair], &payer);
-
     // verify that delegate() looks right
     let clock = svm.get_sysvar::<Clock>();
     let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
@@ -721,12 +706,19 @@ fn test_stake_delegate() {
 
     // verify that delegate fails as stake is active and not deactivating
     advance_epoch(&mut svm);
+    let clock_advanced = svm.get_sysvar::<Clock>();
+    assert_eq!(clock_advanced.epoch, 1);
+    let clock_from_acc: Clock = bincode::deserialize(&svm.get_account(&Clock::id()).unwrap().data).unwrap();
+    assert_eq!(clock_from_acc.epoch, 1);
     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    println!("724");
+    let res =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer);
+    println!("res: {res:?}");
+    let e = res.unwrap_err();
     // XXX TODO FIXME pr the fucking stakerror conversion this is driving me insane
     assert_eq!(e, ProgramError::Custom(3));
-
+    println!("729");
     // deactivate
     let instruction = ixn::deactivate_stake(&stake, &staker);
     process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
@@ -753,7 +745,6 @@ fn test_stake_delegate() {
         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
     // XXX TODO FIXME pr the fucking stakerror conversion this is driving me insane
     assert_eq!(e, ProgramError::Custom(3));
-
     // delegate still fails after stake is fully activated; redelegate is not supported
     advance_epoch(&mut svm);
     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
@@ -761,7 +752,6 @@ fn test_stake_delegate() {
         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
     // XXX TODO FIXME pr the fucking stakerror conversion this is driving me insane
     assert_eq!(e, ProgramError::Custom(3));
-
     // delegate to spoofed vote account fails (not owned by vote program)
     let mut fake_vote_account = get_account(&mut svm, &accounts.vote_account.pubkey());
     fake_vote_account.owner = Pubkey::new_unique();
