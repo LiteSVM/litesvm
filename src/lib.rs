@@ -419,12 +419,7 @@ impl LiteSVM {
         });
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
-        let mut programs_modified_by_tx = ProgramCacheForTxBatch::new(
-            self.accounts.sysvar_cache.get_clock().unwrap().slot,
-            self.accounts.programs_cache.environments.clone(),
-            None,
-            0,
-        );
+        let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
         let mut accumulated_consume_units = 0;
         let message = tx.message();
         let account_keys = message.account_keys();
@@ -493,6 +488,7 @@ impl LiteSVM {
         let mut accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
+                println!("returning err line 491: {e:?}");
                 return (Err(e), accumulated_consume_units, None, fee, payer_key);
             }
         };
@@ -564,7 +560,7 @@ impl LiteSVM {
                     &program_indices,
                     &mut InvokeContext::new(
                         &mut context,
-                        &mut programs_modified_by_tx,
+                        &mut program_cache_for_tx_batch,
                         EnvironmentConfig::new(
                             *blockhash,
                             None,
@@ -580,6 +576,7 @@ impl LiteSVM {
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
+            println!("tx_result: {tx_result:?}");
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
@@ -715,6 +712,7 @@ impl LiteSVM {
         self.maybe_history_check(sanitized_tx)?;
         let (result, compute_units_consumed, context, fee, payer_key) =
             self.process_transaction(sanitized_tx, compute_budget_limits);
+        println!("result in check_and_process_transaction: {result:?}");
         Ok(CheckAndProcessTransactionSuccess {
             core: {
                 CheckAndProcessTransactionSuccessCore {

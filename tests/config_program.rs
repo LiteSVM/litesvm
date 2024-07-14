@@ -617,7 +617,7 @@ fn test_config_initialize_no_panic() {
     );
 }
 
-#[test]
+#[test_log::test]
 fn test_config_bad_owner() {
     let mut context = setup_test_context();
 
