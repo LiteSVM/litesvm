@@ -467,7 +467,7 @@ impl LiteSVM {
                         })
                     };
                     if !validated_fee_payer
-                        && (message.is_invoked(i) || message.is_instruction_account(i))
+                        && (!message.is_invoked(i) || message.is_instruction_account(i))
                     {
                         validate_fee_payer(
                             key,
@@ -576,7 +576,7 @@ impl LiteSVM {
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
-            println!("tx_result: {tx_result:?}");
+                println!("tx_result: {tx_result:?}");
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
