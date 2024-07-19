@@ -1,13 +1,14 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
-use spl_token_2022::instruction::close_account;
+
+use super::{spl_token::instruction::close_account, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`close_account`] instruction.
 ///
 /// ### Optional fields
 /// - `owner`: `payer` by default.
-/// - `token_program_id`: [`spl_token_2022::ID`] by default.
+/// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct CloseAccount<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
@@ -49,7 +50,7 @@ impl<'a> CloseAccount<'a> {
 
     /// Sends the transaction.
     pub fn send(self) -> Result<(), FailedTransactionMetadata> {
-        let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);
+        let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let payer_pk = self.payer.pubkey();
         let owner = self.owner.unwrap_or(self.payer);
         let owner_pk = owner.pubkey();

@@ -1,9 +1,17 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
+#[cfg(feature = "token")]
+use solana_sdk::program_pack::Pack;
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,
 };
-use spl_token_2022::{extension::ExtensionType, instruction::initialize_account3, state::Account};
+#[cfg(feature = "token-2022")]
+use spl_token_2022::extension::ExtensionType;
+
+use super::{
+    spl_token::{instruction::initialize_account3, state::Account},
+    TOKEN_ID,
+};
 
 /// ### Description
 /// Builder for the [`initialize_account3`] instruction.
@@ -18,6 +26,7 @@ pub struct CreateAccount<'a> {
     owner: Option<&'a Pubkey>,
     account_kp: Option<Keypair>,
     token_program_id: Option<&'a Pubkey>,
+    #[cfg(feature = "token-2022")]
     extensions: Vec<ExtensionType>,
 }
 
@@ -31,6 +40,7 @@ impl<'a> CreateAccount<'a> {
             owner: None,
             account_kp: None,
             token_program_id: None,
+            #[cfg(feature = "token-2022")]
             extensions: vec![],
         }
     }
@@ -55,12 +65,16 @@ impl<'a> CreateAccount<'a> {
 
     /// Sends the transaction.
     pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
+        #[cfg(feature = "token-2022")]
         let account_len = ExtensionType::try_calculate_account_len::<Account>(&self.extensions)?;
+        #[cfg(feature = "token")]
+        let account_len = Account::LEN;
+
         let lamports = self.svm.minimum_balance_for_rent_exemption(account_len);
 
         let account_kp = self.account_kp.unwrap_or(Keypair::new());
         let account_pk = account_kp.pubkey();
-        let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);
+        let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let payer_pk = self.payer.pubkey();
 
         let ix1 = system_instruction::create_account(

@@ -1,12 +1,13 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
-use spl_token_2022::instruction::mint_to;
+
+use super::{spl_token::instruction::mint_to, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`mint_to`] instruction.
 ///
 /// ### Optional fields
-/// - `token_program_id`: [`spl_token_2022::ID`] by default.
+/// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct MintTo<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
@@ -44,7 +45,7 @@ impl<'a> MintTo<'a> {
     /// Sends the transaction.
     pub fn send(self) -> Result<(), FailedTransactionMetadata> {
         let payer_pk = self.payer.pubkey();
-        let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);
+        let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
 
         let ix = mint_to(
             token_program_id,

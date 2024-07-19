@@ -1,10 +1,12 @@
 use litesvm::LiteSVM;
 use litesvm_helpers::loader::{deploy_upgradeable_program, set_upgrade_authority};
-use solana_program::{
+use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     message::Message,
+    signature::Keypair,
+    signer::Signer,
+    transaction::Transaction,
 };
-use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
 use crate::programs_bytes::HELLO_WORLD_BYTES;
 

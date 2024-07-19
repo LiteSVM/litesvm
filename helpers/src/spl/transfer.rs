@@ -1,8 +1,7 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
-use spl_token_2022::instruction::transfer_checked;
 
-use super::get_mint;
+use super::{get_mint, spl_token::instruction::transfer_checked, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`transfer_checked`] instruction.
@@ -11,7 +10,7 @@ use super::get_mint;
 /// - `source`: associated token account of the `payer` by default.
 /// - `authority`: `payer` by default.
 /// - `decimals`: `mint` decimals by default.
-/// - `token_program_id`: [`spl_token_2022::ID`] by default.
+/// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct Transfer<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
@@ -61,7 +60,7 @@ impl<'a> Transfer<'a> {
     /// Sends the transaction.
     pub fn send(self) -> Result<(), FailedTransactionMetadata> {
         let payer_pk = self.payer.pubkey();
-        let token_program_id = self.token_program_id.unwrap_or(&spl_token_2022::ID);
+        let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let authority = self.authority.unwrap_or(self.payer);
         let authority_pk = authority.pubkey();
         let payer_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
