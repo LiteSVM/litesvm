@@ -301,14 +301,14 @@ impl LiteSVM {
         path: impl AsRef<Path>,
     ) -> Result<(), std::io::Error> {
         let bytes = std::fs::read(path)?;
-        self.add_program(program_id, &bytes);
+        self.add_program(&bpf_loader::id(), program_id, &bytes);
         Ok(())
     }
 
-    pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
+    pub fn add_program(&mut self, loader_id: &Pubkey, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
-        let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
+        let mut account = AccountSharedData::new(lamports, program_len, loader_id);
         account.set_executable(true);
         account.set_data_from_slice(program_bytes);
         let current_slot = self
@@ -333,7 +333,11 @@ impl LiteSVM {
         )
         .unwrap_or_default();
         loaded_program.effective_slot = current_slot;
-        self.accounts.add_account(program_id, account).unwrap();
+        self.accounts
+            .add_account(program_id, account)
+            .unwrap_or_else(|err| {
+                panic!("Failed to add program; program_id={program_id}; err={err}")
+            });
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));

@@ -11,6 +11,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
 };
+use solana_sdk::bpf_loader;
 use solana_sdk::transaction::{TransactionError, VersionedTransaction};
 use solana_sdk::{
     account::Account,
@@ -34,7 +35,7 @@ pub fn integration_test() {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
-    svm.add_program(program_id, &read_counter_program());
+    svm.add_program(&bpf_loader::id(), program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
     let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
@@ -249,7 +250,7 @@ fn test_address_lookup_table() {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
-    svm.add_program(program_id, &read_counter_program());
+    svm.add_program(&bpf_loader::id(), program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
     let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");

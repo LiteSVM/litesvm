@@ -8,7 +8,7 @@ use solana_program::{
     rent::Rent,
 };
 use solana_sdk::{
-    account::Account, feature_set::FeatureSet, message::Message, signature::Keypair,
+    account::Account, bpf_loader, feature_set::FeatureSet, message::Message, signature::Keypair,
     signer::Signer, transaction::Transaction,
 };
 
@@ -99,7 +99,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
 
-    svm.add_program(program_id, &read_counter_program());
+    svm.add_program(&bpf_loader::id(), program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let feature_set = svm.get_feature_set();
     let counter_address = Pubkey::new_unique();

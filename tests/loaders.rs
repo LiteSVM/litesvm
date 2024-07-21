@@ -5,6 +5,7 @@ use solana_program::{
     message::Message,
 };
 use solana_sdk::{
+    bpf_loader,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
     message::VersionedMessage,
     pubkey::Pubkey,
@@ -136,7 +137,7 @@ fn hello_world_with_store() {
 
     let program_kp = Keypair::new();
     let program_id = program_kp.pubkey();
-    svm.add_program(program_id, program_bytes);
+    svm.add_program(&bpf_loader::id(), program_id, program_bytes);
 
     let instruction = Instruction::new_with_bytes(
         program_id,
