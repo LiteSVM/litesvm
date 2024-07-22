@@ -791,9 +791,13 @@ impl LiteSVM {
         }
     }
 
-    pub fn simulate_transaction(&self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
+    pub fn simulate_transaction(
+        &self,
+        tx: impl Into<VersionedTransaction>,
+    ) -> Result<(TransactionMetadata, Vec<(Pubkey, AccountSharedData)>), FailedTransactionMetadata>
+    {
         let ExecutionResult {
-            post_accounts: _,
+            post_accounts,
             tx_result,
             signature,
             compute_units_consumed,
@@ -816,9 +820,9 @@ impl LiteSVM {
         };
 
         if let Err(tx_err) = tx_result {
-            TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
+            Err(FailedTransactionMetadata { err: tx_err, meta })
         } else {
-            TransactionResult::Ok(meta)
+            Ok((meta, post_accounts))
         }
     }
 
