@@ -35,6 +35,9 @@ thiserror.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
+ed25519-dalek.workspace = true
+expect-test.workspace = true
+libsecp256k1.workspace = true
 serde.workspace = true
 solana-program-test.workspace = true
 spl-token.workspace = true
