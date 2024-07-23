@@ -7,7 +7,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use solana_sdk::{
-    account::Account, message::Message, signature::Keypair, signer::Signer,
+    account::Account, bpf_loader, message::Message, signature::Keypair, signer::Signer,
     transaction::Transaction,
 };
 
@@ -45,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let payer_pk = payer_kp.pubkey();
     let program_id = Pubkey::new_unique();
 
-    svm.add_program(program_id, &read_counter_program());
+    svm.add_program(&bpf_loader::id(), program_id, &read_counter_program());
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let counter_address = Pubkey::new_unique();
     c.bench_function("simple_bench", |b| {
