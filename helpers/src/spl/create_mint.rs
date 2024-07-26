@@ -1,5 +1,5 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-#[cfg(feature = "token")]
+#[cfg(all(feature = "token", not(feature = "token-2022")))]
 use solana_sdk::program_pack::Pack;
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction::create_account,
@@ -71,7 +71,7 @@ impl<'a> CreateMint<'a> {
     pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
         #[cfg(feature = "token-2022")]
         let mint_size = ExtensionType::try_calculate_account_len::<Mint>(&[])?;
-        #[cfg(feature = "token")]
+        #[cfg(all(feature = "token", not(feature = "token-2022")))]
         let mint_size = Mint::LEN;
         let mint_kp = Keypair::new();
         let mint_pk = mint_kp.pubkey();
@@ -79,7 +79,7 @@ impl<'a> CreateMint<'a> {
         let payer_pk = self.payer.pubkey();
 
         let ix1 = create_account(
-            self.authority.unwrap_or(&payer_pk),
+            &payer_pk,
             &mint_pk,
             self.svm.minimum_balance_for_rent_exemption(mint_size),
             mint_size as u64,

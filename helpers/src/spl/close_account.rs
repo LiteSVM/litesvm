@@ -57,7 +57,7 @@ impl<'a> CloseAccount<'a> {
 
         let ix = close_account(
             token_program_id,
-            &self.account,
+            self.account,
             self.destination,
             &owner_pk,
             &[],

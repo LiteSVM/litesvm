@@ -1,50 +1,64 @@
-use super::{get_multisig_signers, spl_token::instruction::mint_to, TOKEN_ID};
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use smallvec::{smallvec, SmallVec};
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
 };
+use spl_token::state::Mint;
+
+use super::{
+    get_multisig_signers, get_spl_account, spl_token::instruction::burn_checked, TOKEN_ID,
+};
 
 /// ### Description
-/// Builder for the [`mint_to`] instruction.
+/// Builder for the [`burn_checked`] instruction.
 ///
 /// ### Optional fields
+/// - `authority`: `payer` by default.
+/// - `decimals`: `mint` decimals by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
-pub struct MintTo<'a> {
+pub struct BurnChecked<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
     mint: &'a Pubkey,
-    destination: &'a Pubkey,
+    account: &'a Pubkey,
     token_program_id: Option<&'a Pubkey>,
-    owner: Option<Pubkey>,
-    signers: SmallVec<[&'a Keypair; 1]>,
     amount: u64,
+    decimals: Option<u8>,
+    signers: SmallVec<[&'a Keypair; 1]>,
+    owner: Option<Pubkey>,
 }
 
-impl<'a> MintTo<'a> {
-    /// Creates a new instance of [`mint_to`] instruction.
+impl<'a> BurnChecked<'a> {
+    /// Creates a new instance of [`burn_checked`] instruction.
     pub fn new(
         svm: &'a mut LiteSVM,
         payer: &'a Keypair,
         mint: &'a Pubkey,
-        destination: &'a Pubkey,
+        account: &'a Pubkey,
         amount: u64,
     ) -> Self {
-        MintTo {
+        BurnChecked {
             svm,
             payer,
             mint,
-            destination,
+            account,
             token_program_id: None,
-            signers: smallvec![payer],
-            owner: None,
             amount,
+            decimals: None,
+            owner: None,
+            signers: smallvec![payer],
         }
     }
 
-    /// Sets the token program id of the mint account.
+    /// Sets the token program id of the burn.
     pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
         self.token_program_id = Some(program_id);
+        self
+    }
+
+    /// Sets the decimals of the burn.
+    pub fn decimals(mut self, value: u8) -> Self {
+        self.decimals = Some(value);
         self
     }
 
@@ -69,13 +83,15 @@ impl<'a> MintTo<'a> {
         let signing_keys = self.signers.pubkeys();
         let signer_keys = get_multisig_signers(&authority, &signing_keys);
 
-        let ix = mint_to(
+        let mint: Mint = get_spl_account(self.svm, self.mint)?;
+        let ix = burn_checked(
             token_program_id,
+            self.account,
             self.mint,
-            self.destination,
             &authority,
             &signer_keys,
             self.amount,
+            self.decimals.unwrap_or(mint.decimals),
         )?;
 
         let block_hash = self.svm.latest_blockhash();

@@ -2210,6 +2210,7 @@ name = "litesvm-helpers"
 version = "0.1.0"
 dependencies = [
  "litesvm",
+ "smallvec",
  "solana-sdk",
  "spl-associated-token-account 3.0.3",
  "spl-token 3.5.0",

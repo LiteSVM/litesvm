@@ -28,6 +28,7 @@ test-log = "0.2.15"
 serde = "1.0.197"
 spl-token-2022 = "3.0.2"
 spl-associated-token-account = "3.0.3"
+smallvec = "1.13"
 
 [profile.bench]
 debug = true

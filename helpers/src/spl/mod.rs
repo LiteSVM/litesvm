@@ -1,56 +1,57 @@
 mod burn;
+mod burn_checked;
 mod close_account;
 mod create_account;
 mod create_mint;
-mod create_multi_sig;
+mod create_multisig;
 #[cfg(feature = "token-2022")]
 mod create_native_mint;
 mod mint_to;
+mod mint_to_checked;
 mod revoke;
 mod set_authority;
 mod sync_native;
+mod thaw_account;
 mod transfer;
+mod transfer_checked;
 
 pub use burn::*;
+pub use burn_checked::*;
 pub use close_account::*;
 pub use create_account::*;
 pub use create_mint::*;
-pub use create_multi_sig::*;
+pub use create_multisig::*;
 #[cfg(feature = "token-2022")]
 pub use create_native_mint::*;
 pub use mint_to::*;
+pub use mint_to_checked::*;
 pub use revoke::*;
 pub use set_authority::*;
 pub use sync_native::*;
+pub use thaw_account::*;
 pub use transfer::*;
+pub use transfer_checked::*;
 
 #[cfg(feature = "token-2022")]
 use spl_token_2022 as spl_token;
 
-#[cfg(feature = "token")]
+#[cfg(all(feature = "token", not(feature = "token-2022")))]
 use spl_token;
 
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{program_pack::Pack, pubkey::Pubkey, transaction::TransactionError};
-use spl_token::state::{Account, Mint};
+use solana_sdk::{
+    program_pack::{IsInitialized, Pack},
+    pubkey::Pubkey,
+    transaction::TransactionError,
+};
 
-const TOKEN_ID: Pubkey = spl_token::ID;
+pub const TOKEN_ID: Pubkey = spl_token::ID;
 
-pub fn get_mint(svm: &LiteSVM, mint: &Pubkey) -> Result<Mint, FailedTransactionMetadata> {
-    let mint = Mint::unpack(
-        &svm.get_account(mint)
-            .ok_or(FailedTransactionMetadata {
-                err: TransactionError::AccountNotFound,
-                meta: Default::default(),
-            })?
-            .data,
-    )?;
-
-    Ok(mint)
-}
-
-pub fn get_account(svm: &LiteSVM, account: &Pubkey) -> Result<Account, FailedTransactionMetadata> {
-    let account = Account::unpack(
+pub fn get_spl_account<T: Pack + IsInitialized>(
+    svm: &LiteSVM,
+    account: &Pubkey,
+) -> Result<T, FailedTransactionMetadata> {
+    let account = T::unpack(
         &svm.get_account(account)
             .ok_or(FailedTransactionMetadata {
                 err: TransactionError::AccountNotFound,
@@ -60,4 +61,12 @@ pub fn get_account(svm: &LiteSVM, account: &Pubkey) -> Result<Account, FailedTra
     )?;
 
     Ok(account)
+}
+
+fn get_multisig_signers<'a>(authority: &Pubkey, signing_pubkeys: &'a [Pubkey]) -> Vec<&'a Pubkey> {
+    if signing_pubkeys == [*authority] {
+        vec![]
+    } else {
+        signing_pubkeys.iter().collect::<Vec<_>>()
+    }
 }

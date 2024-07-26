@@ -1,28 +1,33 @@
-use super::{get_multisig_signers, spl_token::instruction::mint_to, TOKEN_ID};
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use smallvec::{smallvec, SmallVec};
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
 };
+use spl_token::state::Mint;
+
+use super::{
+    get_multisig_signers, get_spl_account, spl_token::instruction::mint_to_checked, TOKEN_ID,
+};
 
 /// ### Description
-/// Builder for the [`mint_to`] instruction.
+/// Builder for the [`mint_to_checked`] instruction.
 ///
 /// ### Optional fields
 /// - `token_program_id`: [`TOKEN_ID`] by default.
-pub struct MintTo<'a> {
+pub struct MintToChecked<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
     mint: &'a Pubkey,
     destination: &'a Pubkey,
     token_program_id: Option<&'a Pubkey>,
-    owner: Option<Pubkey>,
-    signers: SmallVec<[&'a Keypair; 1]>,
     amount: u64,
+    decimals: Option<u8>,
+    signers: SmallVec<[&'a Keypair; 1]>,
+    owner: Option<Pubkey>,
 }
 
-impl<'a> MintTo<'a> {
-    /// Creates a new instance of [`mint_to`] instruction.
+impl<'a> MintToChecked<'a> {
+    /// Creates a new instance of [`mint_to_checked`] instruction.
     pub fn new(
         svm: &'a mut LiteSVM,
         payer: &'a Keypair,
@@ -30,21 +35,22 @@ impl<'a> MintTo<'a> {
         destination: &'a Pubkey,
         amount: u64,
     ) -> Self {
-        MintTo {
+        MintToChecked {
             svm,
             payer,
             mint,
             destination,
             token_program_id: None,
+            amount,
+            decimals: None,
             signers: smallvec![payer],
             owner: None,
-            amount,
         }
     }
 
-    /// Sets the token program id of the mint account.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
-        self.token_program_id = Some(program_id);
+    /// Sets the decimals of the burn.
+    pub fn decimals(mut self, value: u8) -> Self {
+        self.decimals = Some(value);
         self
     }
 
@@ -60,6 +66,12 @@ impl<'a> MintTo<'a> {
         self
     }
 
+    /// Sets the token program id of the mint account.
+    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+        self.token_program_id = Some(program_id);
+        self
+    }
+
     /// Sends the transaction.
     pub fn send(self) -> Result<(), FailedTransactionMetadata> {
         let payer_pk = self.payer.pubkey();
@@ -69,13 +81,15 @@ impl<'a> MintTo<'a> {
         let signing_keys = self.signers.pubkeys();
         let signer_keys = get_multisig_signers(&authority, &signing_keys);
 
-        let ix = mint_to(
+        let mint: Mint = get_spl_account(self.svm, self.mint)?;
+        let ix = mint_to_checked(
             token_program_id,
             self.mint,
             self.destination,
             &authority,
             &signer_keys,
             self.amount,
+            self.decimals.unwrap_or(mint.decimals),
         )?;
 
         let block_hash = self.svm.latest_blockhash();

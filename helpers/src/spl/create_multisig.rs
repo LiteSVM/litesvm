@@ -69,7 +69,7 @@ impl<'a> CreateMultisig<'a> {
         let tx = Transaction::new_signed_with_payer(
             &[ix1, ix2],
             Some(&self.payer.pubkey()),
-            &[self.payer],
+            &[self.payer, &multisig_kp],
             block_hash,
         );
         self.svm.send_transaction(tx)?;

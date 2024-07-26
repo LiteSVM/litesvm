@@ -38,7 +38,7 @@ impl<'a> Revoke<'a> {
         let owner = self.owner.unwrap_or(self.payer);
         let owner_pk = owner.pubkey();
 
-        let ix = revoke(token_program_id, &self.source, &owner_pk, &[])?;
+        let ix = revoke(token_program_id, self.source, &owner_pk, &[])?;
 
         let block_hash = self.svm.latest_blockhash();
         let tx = Transaction::new_signed_with_payer(
