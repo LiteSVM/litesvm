@@ -9,6 +9,7 @@ use solana_sdk::{
 /// Builder for the [`mint_to`] instruction.
 ///
 /// ### Optional fields
+/// - `owner`: payer by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct MintTo<'a> {
     svm: &'a mut LiteSVM,

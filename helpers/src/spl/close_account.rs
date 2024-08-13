@@ -1,7 +1,10 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
+use smallvec::{smallvec, SmallVec};
+use solana_sdk::{
+    pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
+};
 
-use super::{spl_token::instruction::close_account, TOKEN_ID};
+use super::{get_multisig_signers, spl_token::instruction::close_account, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`close_account`] instruction.
@@ -14,8 +17,9 @@ pub struct CloseAccount<'a> {
     payer: &'a Keypair,
     account: &'a Pubkey,
     destination: &'a Pubkey,
-    owner: Option<&'a Keypair>,
     token_program_id: Option<&'a Pubkey>,
+    signers: SmallVec<[&'a Keypair; 1]>,
+    owner: Option<Pubkey>,
 }
 
 impl<'a> CloseAccount<'a> {
@@ -32,13 +36,22 @@ impl<'a> CloseAccount<'a> {
             account,
             destination,
             owner: None,
+            signers: smallvec![payer],
             token_program_id: None,
         }
     }
 
-    /// Sets the owner of the spl account.
+    /// Sets the owner of the account with single owner.
     pub fn owner(mut self, owner: &'a Keypair) -> Self {
-        self.owner = Some(owner);
+        self.owner = Some(owner.pubkey());
+        self.signers = smallvec![owner];
+        self
+    }
+
+    /// Sets the owner of the account with multisig owner.
+    pub fn multisig(mut self, multisig: &'a Pubkey, signers: &'a [&'a Keypair]) -> Self {
+        self.owner = Some(*multisig);
+        self.signers = SmallVec::from(signers);
         self
     }
 
@@ -52,24 +65,24 @@ impl<'a> CloseAccount<'a> {
     pub fn send(self) -> Result<(), FailedTransactionMetadata> {
         let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let payer_pk = self.payer.pubkey();
-        let owner = self.owner.unwrap_or(self.payer);
-        let owner_pk = owner.pubkey();
+
+        let authority = self.owner.unwrap_or(payer_pk);
+        let signing_keys = self.signers.pubkeys();
+        let signer_keys = get_multisig_signers(&authority, &signing_keys);
 
         let ix = close_account(
             token_program_id,
             self.account,
             self.destination,
-            &owner_pk,
-            &[],
+            &authority,
+            &signer_keys,
         )?;
 
         let block_hash = self.svm.latest_blockhash();
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&payer_pk),
-            &[self.payer, &owner],
-            block_hash,
-        );
+        let mut tx = Transaction::new_with_payer(&[ix], Some(&payer_pk));
+        tx.partial_sign(&[self.payer], block_hash);
+        tx.partial_sign(self.signers.as_ref(), block_hash);
+
         self.svm.send_transaction(tx)?;
 
         Ok(())

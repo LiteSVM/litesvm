@@ -5,69 +5,63 @@ use solana_sdk::{
 };
 
 use super::{
-    get_multisig_signers, get_spl_account, spl_token::instruction::transfer_checked,
-    spl_token::state::Mint, TOKEN_ID,
+    get_multisig_signers, get_spl_account,
+    spl_token::{instruction::approve_checked, state::Mint},
+    TOKEN_ID,
 };
 
 /// ### Description
-/// Builder for the [`transfer_checked`] instruction.
+/// Builder for the [`approve_checked`] instruction.
 ///
 /// ### Optional fields
-/// - `source`: associated token account of the `owner` by default.
+/// - `source`: associated token account of the `payer` by default.
 /// - `owner`: `payer` by default.
-/// - `decimals`: `mint` decimals by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
-pub struct TransferChecked<'a> {
+pub struct ApproveChecked<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
+    delegate: &'a Pubkey,
     mint: &'a Pubkey,
     source: Option<&'a Pubkey>,
-    destination: &'a Pubkey,
-    token_program_id: Option<&'a Pubkey>,
     amount: u64,
-    decimals: Option<u8>,
     signers: SmallVec<[&'a Keypair; 1]>,
     owner: Option<Pubkey>,
+    token_program_id: Option<&'a Pubkey>,
+    decimals: Option<u8>,
 }
 
-impl<'a> TransferChecked<'a> {
-    /// Creates a new instance of [`transfer_checked`] instruction.
+impl<'a> ApproveChecked<'a> {
+    /// Creates a new instance of [`approve_checked`] instruction.
     pub fn new(
         svm: &'a mut LiteSVM,
         payer: &'a Keypair,
+        delegate: &'a Pubkey,
         mint: &'a Pubkey,
-        destination: &'a Pubkey,
         amount: u64,
     ) -> Self {
-        TransferChecked {
+        ApproveChecked {
             svm,
             payer,
+            delegate,
             mint,
             source: None,
-            destination,
             token_program_id: None,
             amount,
-            decimals: None,
             owner: None,
             signers: smallvec![payer],
+            decimals: None,
         }
-    }
-
-    /// Sets the token program id for the instruction.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
-        self.token_program_id = Some(program_id);
-        self
-    }
-
-    /// Sets the decimals of the transfer.
-    pub fn decimals(mut self, value: u8) -> Self {
-        self.decimals = Some(value);
-        self
     }
 
     /// Sets the token account source.
     pub fn source(mut self, source: &'a Pubkey) -> Self {
         self.source = Some(source);
+        self
+    }
+
+    /// Sets the token program id.
+    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+        self.token_program_id = Some(program_id);
         self
     }
 
@@ -105,11 +99,11 @@ impl<'a> TransferChecked<'a> {
         };
 
         let mint: Mint = get_spl_account(self.svm, self.mint)?;
-        let ix = transfer_checked(
+        let ix = approve_checked(
             token_program_id,
             &source_pk,
             self.mint,
-            self.destination,
+            self.delegate,
             &authority,
             &signer_keys,
             self.amount,

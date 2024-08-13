@@ -5,6 +5,9 @@ use super::{spl_token::instruction::sync_native, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`sync_native`] instruction.
+///
+/// ### Optional fields
+/// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct SyncNative<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,

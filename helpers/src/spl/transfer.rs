@@ -12,8 +12,8 @@ use super::{spl_token::instruction::transfer, TOKEN_ID};
 /// Builder for the [`transfer`] instruction.
 ///
 /// ### Optional fields
-/// - `source`: associated token account of the `payer` by default.
-/// - `authority`: `payer` by default.
+/// - `source`: associated token account of the `owner` by default.
+/// - `owner`: `payer` by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct Transfer<'a> {
     svm: &'a mut LiteSVM,
@@ -39,11 +39,11 @@ impl<'a> Transfer<'a> {
         Transfer {
             svm,
             payer,
-            mint,
             source: None,
             destination,
             token_program_id: None,
             amount,
+            mint,
             owner: None,
             signers: smallvec![payer],
         }
@@ -55,12 +55,20 @@ impl<'a> Transfer<'a> {
         self
     }
 
+    /// Sets the token account source.
+    pub fn source(mut self, source: &'a Pubkey) -> Self {
+        self.source = Some(source);
+        self
+    }
+
+    /// Sets the owner of the account with single owner.
     pub fn owner(mut self, owner: &'a Keypair) -> Self {
         self.owner = Some(owner.pubkey());
         self.signers = smallvec![owner];
         self
     }
 
+    /// Sets the owner of the account with multisig owner.
     pub fn multisig(mut self, multisig: &'a Pubkey, signers: &'a [&'a Keypair]) -> Self {
         self.owner = Some(*multisig);
         self.signers = SmallVec::from(signers);
@@ -76,17 +84,20 @@ impl<'a> Transfer<'a> {
         let signing_keys = self.signers.pubkeys();
         let signer_keys = get_multisig_signers(&authority, &signing_keys);
 
-        let payer_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
-            &authority,
-            self.mint,
-            token_program_id,
-        );
-        let source_pk = self.source.unwrap_or(&payer_ata);
+        let source_pk = if let Some(source) = self.source {
+            *source
+        } else {
+            spl_associated_token_account::get_associated_token_address_with_program_id(
+                &authority,
+                self.mint,
+                token_program_id,
+            )
+        };
 
         #[cfg_attr(feature = "token-2022", allow(deprecated))]
         let ix = transfer(
             token_program_id,
-            source_pk,
+            &source_pk,
             self.destination,
             &authority,
             &signer_keys,

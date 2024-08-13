@@ -3,10 +3,10 @@ use smallvec::{smallvec, SmallVec};
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
 };
-use spl_token::state::Mint;
 
 use super::{
-    get_multisig_signers, get_spl_account, spl_token::instruction::burn_checked, TOKEN_ID,
+    get_multisig_signers, get_spl_account, spl_token::instruction::burn_checked,
+    spl_token::state::Mint, TOKEN_ID,
 };
 
 /// ### Description
@@ -62,12 +62,14 @@ impl<'a> BurnChecked<'a> {
         self
     }
 
+    /// Sets the owner of the account with single owner.
     pub fn owner(mut self, owner: &'a Keypair) -> Self {
         self.owner = Some(owner.pubkey());
         self.signers = smallvec![owner];
         self
     }
 
+    /// Sets the owner of the account with multisig owner.
     pub fn multisig(mut self, multisig: &'a Pubkey, signers: &'a [&'a Keypair]) -> Self {
         self.owner = Some(*multisig);
         self.signers = SmallVec::from(signers);

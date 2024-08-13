@@ -3,16 +3,18 @@ use smallvec::{smallvec, SmallVec};
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
 };
-use spl_token::state::Mint;
 
 use super::{
-    get_multisig_signers, get_spl_account, spl_token::instruction::mint_to_checked, TOKEN_ID,
+    get_multisig_signers, get_spl_account, spl_token::instruction::mint_to_checked,
+    spl_token::state::Mint, TOKEN_ID,
 };
 
 /// ### Description
 /// Builder for the [`mint_to_checked`] instruction.
 ///
 /// ### Optional fields
+/// - `owner`: `payer` by default.
+/// - `decimals`: `mint` decimals by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct MintToChecked<'a> {
     svm: &'a mut LiteSVM,
