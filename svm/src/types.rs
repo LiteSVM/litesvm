@@ -1,5 +1,6 @@
 use solana_sdk::{
     account::AccountSharedData,
+    inner_instruction::InnerInstructionsList,
     instruction::InstructionError,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -9,14 +10,18 @@ use solana_sdk::{
 };
 
 #[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TransactionMetadata {
+    #[cfg_attr(feature = "serde", serde(with = "crate::utils::serde_with_str"))]
     pub signature: Signature,
     pub logs: Vec<String>,
+    pub inner_instructions: InnerInstructionsList,
     pub compute_units_consumed: u64,
     pub return_data: TransactionReturnData,
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
     pub meta: TransactionMetadata,
@@ -41,6 +46,7 @@ pub(crate) struct ExecutionResult {
     pub(crate) tx_result: Result<()>,
     pub(crate) signature: Signature,
     pub(crate) compute_units_consumed: u64,
+    pub(crate) inner_instructions: InnerInstructionsList,
     pub(crate) return_data: TransactionReturnData,
     /// Whether the transaction can be included in a block
     pub(crate) included: bool,
@@ -53,6 +59,7 @@ impl Default for ExecutionResult {
             tx_result: Err(TransactionError::UnsupportedVersion),
             signature: Default::default(),
             compute_units_consumed: Default::default(),
+            inner_instructions: Default::default(),
             return_data: Default::default(),
             included: false,
         }

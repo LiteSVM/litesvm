@@ -5,7 +5,10 @@ use solana_sdk::{
     sysvar::{self, instructions::construct_instructions_data},
 };
 
+pub mod inner_instructions;
 pub mod rent;
+#[cfg(feature = "serde")]
+pub mod serde_with_str;
 
 /// Create a blockhash from the given bytes
 pub fn create_blockhash(bytes: &[u8]) -> Hash {

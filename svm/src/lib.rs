@@ -27,6 +27,7 @@ use solana_sdk::{
     feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
     fee::FeeStructure,
     hash::Hash,
+    inner_instruction::InnerInstructionsList,
     message::{Message, SanitizedMessage, VersionedMessage},
     native_loader,
     native_token::LAMPORTS_PER_SOL,
@@ -46,7 +47,10 @@ use solana_sdk::{
 };
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
-use utils::construct_instructions_account;
+use utils::{
+    construct_instructions_account,
+    inner_instructions::inner_instructions_list_from_instruction_trace,
+};
 
 use crate::{
     accounts_db::AccountsDb,
@@ -749,6 +753,7 @@ impl LiteSVM {
             tx_result,
             signature,
             compute_units_consumed,
+            inner_instructions,
             return_data,
             included,
         } = if self.sigverify {
@@ -759,6 +764,7 @@ impl LiteSVM {
 
         let meta = TransactionMetadata {
             logs: self.log_collector.take().into_messages(),
+            inner_instructions,
             compute_units_consumed,
             return_data,
             signature,
@@ -787,6 +793,7 @@ impl LiteSVM {
             tx_result,
             signature,
             compute_units_consumed,
+            inner_instructions,
             return_data,
             ..
         } = if self.sigverify {
@@ -799,6 +806,7 @@ impl LiteSVM {
         let meta = TransactionMetadata {
             signature,
             logs,
+            inner_instructions,
             compute_units_consumed,
             return_data,
         };
@@ -907,11 +915,13 @@ fn execution_result_if_context(
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
 ) -> ExecutionResult {
-    let (signature, return_data, post_accounts) = execute_tx_helper(sanitized_tx, ctx);
+    let (signature, return_data, inner_instructions, post_accounts) =
+        execute_tx_helper(sanitized_tx, ctx);
     ExecutionResult {
         tx_result: result,
         signature,
         post_accounts,
+        inner_instructions,
         compute_units_consumed,
         return_data,
         included: true,
@@ -924,9 +934,11 @@ fn execute_tx_helper(
 ) -> (
     Signature,
     solana_sdk::transaction_context::TransactionReturnData,
+    InnerInstructionsList,
     Vec<(Pubkey, AccountSharedData)>,
 ) {
     let signature = sanitized_tx.signature().to_owned();
+    let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
     let ExecutionRecord {
         accounts,
         return_data,
@@ -939,7 +951,7 @@ fn execute_tx_helper(
         .enumerate()
         .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
         .collect();
-    (signature, return_data, post_accounts)
+    (signature, return_data, inner_instructions, post_accounts)
 }
 
 fn get_compute_budget_limits(

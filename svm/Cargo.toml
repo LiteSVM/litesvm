@@ -25,6 +25,7 @@ log.workspace = true
 solana-vote-program.workspace = true
 solana-stake-program.workspace = true
 solana-config-program.workspace = true
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 spl-token.workspace = true
