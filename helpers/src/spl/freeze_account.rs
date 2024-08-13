@@ -3,9 +3,8 @@ use smallvec::{smallvec, SmallVec};
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
 };
-use spl_token_2022::instruction::freeze_account;
 
-use super::{get_multisig_signers, TOKEN_ID};
+use super::{get_multisig_signers, spl_token::instruction::freeze_account, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`freeze_account`] instruction.

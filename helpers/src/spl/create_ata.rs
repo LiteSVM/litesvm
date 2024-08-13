@@ -13,7 +13,6 @@ use super::TOKEN_ID;
 pub struct CreateAssociatedTokenAccount<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    funding_account: &'a Pubkey,
     mint: &'a Pubkey,
     token_program_id: Option<&'a Pubkey>,
     owner: Option<Pubkey>,
@@ -21,16 +20,10 @@ pub struct CreateAssociatedTokenAccount<'a> {
 
 impl<'a> CreateAssociatedTokenAccount<'a> {
     /// Creates a new instance of [`create_associated_token_account`] instruction.
-    pub fn new(
-        svm: &'a mut LiteSVM,
-        payer: &'a Keypair,
-        mint: &'a Pubkey,
-        funding_account: &'a Pubkey,
-    ) -> Self {
+    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, mint: &'a Pubkey) -> Self {
         CreateAssociatedTokenAccount {
             svm,
             payer,
-            funding_account,
             owner: None,
             token_program_id: None,
             mint,
@@ -50,18 +43,14 @@ impl<'a> CreateAssociatedTokenAccount<'a> {
     }
 
     /// Sends the transaction.
-    pub fn send(self) -> Result<(), FailedTransactionMetadata> {
+    pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
         let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let payer_pk = self.payer.pubkey();
 
         let authority = self.owner.unwrap_or(payer_pk);
 
-        let ix = create_associated_token_account(
-            self.funding_account,
-            &authority,
-            self.mint,
-            token_program_id,
-        );
+        let ix =
+            create_associated_token_account(&payer_pk, &authority, self.mint, token_program_id);
 
         let block_hash = self.svm.latest_blockhash();
         let tx =
@@ -69,6 +58,12 @@ impl<'a> CreateAssociatedTokenAccount<'a> {
 
         self.svm.send_transaction(tx)?;
 
-        Ok(())
+        let ata = spl_associated_token_account::get_associated_token_address_with_program_id(
+            &authority,
+            self.mint,
+            token_program_id,
+        );
+
+        Ok(ata)
     }
 }

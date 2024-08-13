@@ -20,6 +20,8 @@ pub struct SetAuthority<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
     authority_type: AuthorityType,
+    account: &'a Pubkey,
+    new_authority: Option<&'a Pubkey>,
     signers: SmallVec<[&'a Keypair; 1]>,
     owner: Option<Pubkey>,
     token_program_id: Option<&'a Pubkey>,
@@ -27,12 +29,19 @@ pub struct SetAuthority<'a> {
 
 impl<'a> SetAuthority<'a> {
     /// Creates a new instance of [`set_authority`] instruction.
-    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, authority_type: AuthorityType) -> Self {
+    pub fn new(
+        svm: &'a mut LiteSVM,
+        payer: &'a Keypair,
+        account: &'a Pubkey,
+        authority_type: AuthorityType,
+    ) -> Self {
         SetAuthority {
             svm,
             payer,
             owner: None,
             authority_type,
+            account,
+            new_authority: None,
             token_program_id: None,
             signers: smallvec![payer],
         }
@@ -58,6 +67,12 @@ impl<'a> SetAuthority<'a> {
         self
     }
 
+    /// Sets the new authority.
+    pub fn new_authority(mut self, new_authority: &'a Pubkey) -> Self {
+        self.new_authority = Some(new_authority);
+        self
+    }
+
     /// Sends the transaction.
     pub fn send(self) -> Result<(), FailedTransactionMetadata> {
         let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
@@ -69,8 +84,8 @@ impl<'a> SetAuthority<'a> {
 
         let ix = set_authority(
             token_program_id,
-            &payer_pk,
-            Some(&payer_pk),
+            self.account,
+            self.new_authority,
             self.authority_type,
             &authority,
             &signer_keys,

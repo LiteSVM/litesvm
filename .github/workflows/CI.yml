@@ -37,6 +37,11 @@ jobs:
         run: cargo test
         env:
           RUST_BACKTRACE: 1
+      
+      - name: Run SPL tests
+        run: cargo test --features token-2022
+        env:
+          RUST_BACKTRACE: 1
 
   lints:
     name: Lints

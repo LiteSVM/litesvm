@@ -3,10 +3,8 @@ name = "litesvm-helpers"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
-default = ["loader", "token-2022"]
+default = ["loader", "token"]
 loader = []
 token = ["spl-token"]
 token-2022 = ["spl-token-2022"]
@@ -25,3 +23,7 @@ smallvec.workspace = true
 
 [dev-dependencies]
 test-log.workspace = true
+
+[[test]]
+name = "spl"
+required-features = ["token-2022"]

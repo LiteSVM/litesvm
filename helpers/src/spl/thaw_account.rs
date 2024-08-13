@@ -7,35 +7,30 @@ use solana_sdk::{
 use super::{get_multisig_signers, spl_token::instruction::thaw_account, TOKEN_ID};
 
 /// ### Description
-/// Builder for the [`transfer`] instruction.
+/// Builder for the [`thaw_account`] instruction.
 ///
 /// ### Optional fields
-/// - `source`: associated token account of the `payer` by default.
+/// - `account`: associated token account of the `payer` by default.
 /// - `authority`: `payer` by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct ThawAccount<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    account: &'a Pubkey,
     mint: &'a Pubkey,
     signers: SmallVec<[&'a Keypair; 1]>,
+    account: Option<&'a Pubkey>,
     owner: Option<Pubkey>,
     token_program_id: Option<&'a Pubkey>,
 }
 
 impl<'a> ThawAccount<'a> {
-    /// Creates a new instance of [`transfer`] instruction.
-    pub fn new(
-        svm: &'a mut LiteSVM,
-        payer: &'a Keypair,
-        mint: &'a Pubkey,
-        account: &'a Pubkey,
-    ) -> Self {
+    /// Creates a new instance of [`thaw_account`] instruction.
+    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, mint: &'a Pubkey) -> Self {
         ThawAccount {
             svm,
             payer,
             mint,
-            account,
+            account: None,
             owner: None,
             token_program_id: None,
             signers: smallvec![payer],
@@ -71,9 +66,19 @@ impl<'a> ThawAccount<'a> {
         let signing_keys = self.signers.pubkeys();
         let signer_keys = get_multisig_signers(&authority, &signing_keys);
 
+        let account = if let Some(account) = self.account {
+            *account
+        } else {
+            spl_associated_token_account::get_associated_token_address_with_program_id(
+                &authority,
+                self.mint,
+                token_program_id,
+            )
+        };
+
         let ix = thaw_account(
             token_program_id,
-            self.account,
+            &account,
             self.mint,
             &authority,
             &signer_keys,

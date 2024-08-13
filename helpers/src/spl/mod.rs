@@ -67,7 +67,7 @@ pub fn get_spl_account<T: Pack + IsInitialized>(
                 err: TransactionError::AccountNotFound,
                 meta: Default::default(),
             })?
-            .data,
+            .data[..T::LEN],
     )?;
 
     Ok(account)
