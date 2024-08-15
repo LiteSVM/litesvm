@@ -1,6 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["helpers", "svm"]
+members = ["loader", "svm", "token"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/LiteSVM/litesvm"
+rust-version = "1.75.0"
 
 [workspace.dependencies]
 itertools = "0.12"
@@ -41,3 +48,6 @@ codegen-units = 1
 opt-level = 3
 incremental = false
 codegen-units = 1
+
+[workspace.lints.clippy]
+result_large_err = "allow"

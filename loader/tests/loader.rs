@@ -1,5 +1,5 @@
 use litesvm::LiteSVM;
-use litesvm_helpers::loader::{deploy_upgradeable_program, set_upgrade_authority};
+use litesvm_loader::{deploy_upgradeable_program, set_upgrade_authority};
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     message::Message,

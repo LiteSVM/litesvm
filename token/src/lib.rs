@@ -45,7 +45,7 @@ pub use transfer_checked::*;
 #[cfg(feature = "token-2022")]
 pub use spl_token_2022 as spl_token;
 
-#[cfg(all(feature = "token", not(feature = "token-2022")))]
+#[cfg(not(feature = "token-2022"))]
 pub use spl_token;
 
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};

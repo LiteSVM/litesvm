@@ -1,5 +1,5 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-#[cfg(all(feature = "token", not(feature = "token-2022")))]
+#[cfg(not(feature = "token-2022"))]
 use solana_sdk::program_pack::Pack;
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
@@ -67,7 +67,7 @@ impl<'a> CreateAccount<'a> {
     pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
         #[cfg(feature = "token-2022")]
         let account_len = ExtensionType::try_calculate_account_len::<Account>(&self.extensions)?;
-        #[cfg(all(feature = "token", not(feature = "token-2022")))]
+        #[cfg(not(feature = "token-2022"))]
         let account_len = Account::LEN;
 
         let lamports = self.svm.minimum_balance_for_rent_exemption(account_len);

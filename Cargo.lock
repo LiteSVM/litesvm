@@ -2206,7 +2206,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "litesvm-helpers"
+name = "litesvm-loader"
+version = "0.1.0"
+dependencies = [
+ "litesvm",
+ "solana-sdk",
+ "test-log",
+]
+
+[[package]]
+name = "litesvm-token"
 version = "0.1.0"
 dependencies = [
  "litesvm",
@@ -2215,7 +2224,6 @@ dependencies = [
  "spl-associated-token-account 3.0.3",
  "spl-token 3.5.0",
  "spl-token-2022 3.0.2",
- "test-log",
 ]
 
 [[package]]

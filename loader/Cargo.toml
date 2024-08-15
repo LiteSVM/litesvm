@@ -1,0 +1,17 @@
+[package]
+name = "litesvm-loader"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+litesvm.workspace = true
+solana-sdk.workspace = true
+
+[dev-dependencies]
+test-log.workspace = true
+
+[lints]
+workspace = true
