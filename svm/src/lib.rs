@@ -1,8 +1,5 @@
-#![allow(clippy::result_large_err)]
-use log::error;
-
-use crate::error::LiteSVMError;
 use itertools::Itertools;
+use log::error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 #[allow(deprecated)]
@@ -55,6 +52,7 @@ use utils::{
 use crate::{
     accounts_db::AccountsDb,
     builtin::BUILTINS,
+    error::LiteSVMError,
     history::TransactionHistory,
     spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
@@ -73,7 +71,7 @@ mod utils;
 // The test code doesn't actually get run because it's not
 // what doctest expects but at least it
 // compiles it so we'll see if there's a compile-time error.
-#[doc = include_str!("../README.md")]
+#[doc = include_str!("../../README.md")]
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 

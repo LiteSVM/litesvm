@@ -1,13 +1,15 @@
 use solana_sdk::{
     account::AccountSharedData,
     inner_instruction::InnerInstructionsList,
+    instruction::InstructionError,
+    program_error::ProgramError,
     pubkey::Pubkey,
     signature::Signature,
     transaction::{Result, TransactionError},
     transaction_context::TransactionReturnData,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TransactionMetadata {
     #[cfg_attr(feature = "serde", serde(with = "crate::utils::serde_with_str"))]
@@ -23,6 +25,18 @@ pub struct TransactionMetadata {
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
     pub meta: TransactionMetadata,
+}
+
+impl From<ProgramError> for FailedTransactionMetadata {
+    fn from(value: ProgramError) -> Self {
+        FailedTransactionMetadata {
+            err: TransactionError::InstructionError(
+                0,
+                InstructionError::Custom(u64::from(value) as u32),
+            ),
+            meta: Default::default(),
+        }
+    }
 }
 
 pub type TransactionResult = std::result::Result<TransactionMetadata, FailedTransactionMetadata>;

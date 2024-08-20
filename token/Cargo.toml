@@ -1,0 +1,30 @@
+[package]
+name = "litesvm-token"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[features]
+default = ["spl-token"]
+token-2022 = ["spl-token-2022"]
+
+[dependencies]
+litesvm.workspace = true
+solana-sdk.workspace = true
+smallvec.workspace = true
+spl-token = { workspace = true, optional = true, features = ["no-entrypoint"] }
+spl-associated-token-account = { workspace = true, features = [
+    "no-entrypoint",
+] }
+spl-token-2022 = { workspace = true, optional = true, features = [
+    "no-entrypoint",
+] }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "native_mint"
+required-features = ["token-2022"]

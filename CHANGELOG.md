@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add helpers for token ([#73](https://github.com/LiteSVM/litesvm/pull/73)).
+- Add helpers for bpf_loader ([#73](https://github.com/LiteSVM/litesvm/pull/73)).
 - Add stake, config and vote programs ([#57](https://github.com/LiteSVM/litesvm/pull/57)).
 - Implement blockhash and durable nonce checks ([#61](https://github.com/LiteSVM/litesvm/pull/61)).
 - Add `error.rs` and new `LiteSVMError` type ([#62](https://github.com/LiteSVM/litesvm/pull/62)).

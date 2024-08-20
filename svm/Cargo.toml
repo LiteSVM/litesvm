@@ -1,0 +1,56 @@
+[package]
+name = "litesvm"
+description = "A fast and lightweight Solana VM simulator for testing solana programs"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+readme = "../README.md"
+
+[features]
+internal-test = []
+
+[dependencies]
+itertools.workspace = true
+thiserror.workspace = true
+solana-program.workspace = true
+solana-program-runtime.workspace = true
+solana-bpf-loader-program.workspace = true
+solana-sdk.workspace = true
+solana-system-program.workspace = true
+solana-compute-budget-program.workspace = true
+solana-loader-v4-program.workspace = true
+bincode.workspace = true
+indexmap.workspace = true
+solana-address-lookup-table-program.workspace = true
+log.workspace = true
+solana-vote-program.workspace = true
+solana-stake-program.workspace = true
+solana-config-program.workspace = true
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+spl-token.workspace = true
+solana-program-test.workspace = true
+criterion.workspace = true
+tokio.workspace = true
+test-log.workspace = true
+solana-config-program.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "banks_client_comparison"
+required-features = ["internal-test"]
+harness = false
+
+[[bench]]
+name = "simple_bench"
+harness = false
+
+[[bench]]
+name = "max_perf"
+harness = false

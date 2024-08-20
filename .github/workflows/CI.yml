@@ -31,10 +31,15 @@ jobs:
           echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Build test programs
-        run: cd test_programs && cargo build-sbf
+        run: cd svm/test_programs && cargo build-sbf
 
       - name: Run tests
         run: cargo test
+        env:
+          RUST_BACKTRACE: 1
+      
+      - name: Run SPL tests
+        run: cargo test --features token-2022
         env:
           RUST_BACKTRACE: 1
 
