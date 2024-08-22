@@ -526,30 +526,22 @@ impl LiteSVM {
                 if native_loader::check_id(owner_id) {
                     return Ok(account_indices);
                 }
-                account_indices.insert(
-                    0,
-                    if let Some(owner_index) = accounts
-                        .get(builtins_start_index..)
-                        .unwrap()
-                        .iter()
-                        .position(|(key, _)| key == owner_id)
-                    {
-                        builtins_start_index.saturating_add(owner_index) as u16
-                    } else {
-                        let owner_index = accounts.len() as u16;
-                        let owner_account = self.get_account(owner_id).unwrap();
-                        if !native_loader::check_id(owner_account.owner()) {
-                            error!("Owner account {owner_id} is not owned by the native loader program.");
-                            return Err(TransactionError::InvalidProgramForExecution)
-                        }
-                        if !owner_account.executable {
-                            error!("Owner account {owner_id} is not executable");
-                            return Err(TransactionError::InvalidProgramForExecution)
-                        }
-                        accounts.push((*owner_id, owner_account.into()));
-                        owner_index
-                    },
-                );
+                if !accounts
+                .get(builtins_start_index..)
+                .ok_or(TransactionError::ProgramAccountNotFound)?
+                .iter()
+                .any(|(key, _)| key == owner_id) {
+                    let owner_account = self.get_account(owner_id).unwrap();
+                    if !native_loader::check_id(owner_account.owner()) {
+                        error!("Owner account {owner_id} is not owned by the native loader program.");
+                        return Err(TransactionError::InvalidProgramForExecution)
+                    }
+                    if !owner_account.executable {
+                        error!("Owner account {owner_id} is not executable");
+                        return Err(TransactionError::InvalidProgramForExecution)
+                    }
+                    accounts.push((*owner_id, owner_account.into()));
+                }
                 Ok(account_indices)
             })
             .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
