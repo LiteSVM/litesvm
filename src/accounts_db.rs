@@ -109,11 +109,7 @@ impl AccountsDb {
                 self.programs_cache.set_slot_for_tests(parsed.slot);
                 let mut accounts_clone = self.inner.clone();
                 accounts_clone.insert(pubkey, account.clone());
-                cache.fill_missing_entries(|pubkey, set_sysvar| {
-                    if let Some(acc) = accounts_clone.get(pubkey) {
-                        set_sysvar(acc.data())
-                    }
-                });
+                cache.set_sysvar_for_tests(&parsed);
             }
             EPOCH_REWARDS_ID => {
                 handle_sysvar::<solana_sdk::epoch_rewards::EpochRewards>(

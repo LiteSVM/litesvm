@@ -1,7 +1,7 @@
 // ported from https://github.com/solana-program/stake-program/blob/master/tests/tests.rs
 
 use {
-    litesvm::LiteSVM, serde::Deserialize, solana_sdk::{
+    litesvm::LiteSVM, solana_sdk::{
         account::Account, entrypoint::ProgramResult, epoch_schedule::EpochSchedule, hash::Hash, instruction::Instruction, native_token::LAMPORTS_PER_SOL, program_error::ProgramError, pubkey::Pubkey, signature::{Keypair, Signer}, signers::Signers, stake::{
             self,
             instruction::{self as ixn, LockupArgs},

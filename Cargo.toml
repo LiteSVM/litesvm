@@ -18,13 +18,16 @@ solana-bpf-loader-program = { path = "/home/user/agave/programs/bpf_loader" }
 solana-compute-budget = { path = "/home/user/agave/compute-budget" }
 solana-compute-budget-program = { path = "/home/user/agave/programs/compute-budget" }
 solana-config-program = { path = "/home/user/agave/programs/config" }
+solana-fee = { path = "/home/user/agave/fee" }
 solana-loader-v4-program = { path = "/home/user/agave/programs/loader-v4" }
 solana-log-collector = { path = "/home/user/agave/log-collector" }
 solana-program = { path = "/home/user/agave/sdk/program" }
 solana-program-runtime = { path = "/home/user/agave/program-runtime" }
+solana-runtime-transaction = { path = "/home/user/agave/runtime-transaction" }
 solana-sdk = { path = "/home/user/agave/sdk" }
 solana-stake-program = { path = "/home/user/agave/programs/stake" }
 solana-svm = { path = "/home/user/agave/svm" }
+solana-svm-transaction = { path = "/home/user/agave/svm-transaction" }
 solana-system-program = { path = "/home/user/agave/programs/system" }
 solana-timings = { path = "/home/user/agave/timings" }
 solana-vote-program = { path = "/home/user/agave/programs/vote" }

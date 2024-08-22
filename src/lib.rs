@@ -2,9 +2,11 @@
 use log::error;
 use solana_compute_budget::{
     compute_budget::ComputeBudget,
-    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
+    compute_budget_limits::ComputeBudgetLimits,
 };
+use solana_runtime_transaction::instructions_processor::process_compute_budget_instructions;
 use solana_svm::message_processor::MessageProcessor;
+use solana_svm_transaction::instruction::SVMInstruction;
 
 use crate::error::LiteSVMError;
 use itertools::Itertools;
@@ -15,7 +17,7 @@ use solana_log_collector::LogCollector;
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
     invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
-    loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch},
+    loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
 };
 #[allow(deprecated)]
 use solana_sdk::sysvar::recent_blockhashes::IterItem;
@@ -26,7 +28,7 @@ use solana_sdk::{
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
     feature_set::{
-        include_loaded_accounts_data_size_in_fee_calculation, remove_rounding_in_fee_calculation,
+        remove_rounding_in_fee_calculation,
         FeatureSet,
     },
     fee::FeeStructure,
@@ -429,12 +431,11 @@ impl LiteSVM {
             .flat_map(|instruction| &instruction.accounts)
             .unique()
             .collect::<Vec<&u8>>();
-        let fee = self.fee_structure.calculate_fee(
+        let fee = solana_fee::calculate_fee(
             message,
+            self.fee_structure.lamports_per_signature == 0,
             self.fee_structure.lamports_per_signature,
-            &compute_budget_limits.into(),
-            self.feature_set
-                .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+            0,
             self.feature_set
                 .is_active(&remove_rounding_in_fee_calculation::id()),
         );
@@ -964,7 +965,7 @@ fn execute_tx_helper(
 fn get_compute_budget_limits(
     sanitized_tx: &SanitizedTransaction,
 ) -> Result<ComputeBudgetLimits, ExecutionResult> {
-    let instructions = sanitized_tx.message().program_instructions_iter();
+    let instructions = sanitized_tx.message().program_instructions_iter().map(|(program_id, ix)| (program_id, SVMInstruction::from(ix)));
     process_compute_budget_instructions(instructions).map_err(|e| ExecutionResult {
         tx_result: Err(e),
         ..Default::default()
