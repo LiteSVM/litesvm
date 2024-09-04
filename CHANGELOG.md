@@ -21,6 +21,7 @@
 - Replace `&mut self` with `&self` in `simulate_transaction`. ([#64](https://github.com/LiteSVM/litesvm/pull/64)).
 - Remove `set_compute_budget` as it duplicates `with_compute_budget`. ([#68](https://github.com/LiteSVM/litesvm/pull/68)).
 - Remove `set_upgrade_authority` and `deploy_upgradeable_program` ([#69](https://github.com/LiteSVM/litesvm/pull/69)).
+- Change `with_builtins` to take a feature_set argument `Option<FeatureSet>` ([#81](https://github.com/LiteSVM/litesvm/pull/81)).
 
 ## [0.1.0] - 2024-04-02
 
@@ -30,4 +31,3 @@
 
 [Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/LiteSVM/litesvm/releases/tag/v0.1.0
-
