@@ -165,7 +165,6 @@ impl LiteSVM {
     pub fn with_builtins(mut self, feature_set: Option<FeatureSet>) -> Self {
         let mut feature_set = feature_set.unwrap_or(FeatureSet::all_enabled());
 
-
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
                 LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
