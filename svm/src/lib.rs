@@ -109,7 +109,7 @@ impl LiteSVM {
     /// Creates the basic test environment.
     pub fn new() -> Self {
         LiteSVM::default()
-            .with_builtins()
+            .with_builtins(None)
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_spl_programs()
@@ -161,9 +161,10 @@ impl LiteSVM {
         self
     }
 
-    /// Includes the default builtins.
-    pub fn with_builtins(mut self) -> Self {
-        let mut feature_set = FeatureSet::all_enabled();
+    /// Change the default builtins.
+    pub fn with_builtins(mut self, feature_set: Option<FeatureSet>) -> Self {
+        let mut feature_set = feature_set.unwrap_or(FeatureSet::all_enabled());
+
 
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
