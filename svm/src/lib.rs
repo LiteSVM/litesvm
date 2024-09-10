@@ -207,13 +207,14 @@ impl LiteSVM {
         self
     }
 
-    /// Includes the spl_programs.
+    /// Includes the standard SPL programs.
     pub fn with_spl_programs(mut self) -> Self {
         load_spl_programs(&mut self);
         self
     }
 
     /// Changes the capacity of the transaction history.
+    /// Set this to 0 to disable transaction history and allow duplicate transactions.
     pub fn with_transaction_history(mut self, capacity: usize) -> Self {
         self.history.set_capacity(capacity);
         self
