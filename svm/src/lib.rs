@@ -117,19 +117,19 @@ impl LiteSVM {
             .with_blockhash_check(true)
     }
 
-    /// Changes the compute budget.
+    /// Sets the compute budget.
     pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
         self.compute_budget = Some(compute_budget);
         self
     }
 
-    /// Changes the sigverify.
+    /// Enables or disables sigverify.
     pub fn with_sigverify(mut self, sigverify: bool) -> Self {
         self.sigverify = sigverify;
         self
     }
 
-    /// Changes the blockhash check.
+    /// Enables or disables the blockhash check.
     pub fn with_blockhash_check(mut self, check: bool) -> Self {
         self.blockhash_check = check;
         self
@@ -161,7 +161,7 @@ impl LiteSVM {
         self
     }
 
-    /// Change the default builtins.
+    /// Changes the default builtins.
     pub fn with_builtins(mut self, feature_set: Option<FeatureSet>) -> Self {
         let mut feature_set = feature_set.unwrap_or(FeatureSet::all_enabled());
 
@@ -198,7 +198,7 @@ impl LiteSVM {
         self
     }
 
-    /// Changes the initial lamports in the airdrop account.
+    /// Changes the initial lamports in LiteSVM's airdrop account.
     pub fn with_lamports(mut self, lamports: u64) -> Self {
         self.accounts.add_account_no_checks(
             self.airdrop_kp.pubkey(),
@@ -312,7 +312,7 @@ impl LiteSVM {
             .unwrap();
     }
 
-    /// Adds a SBF program to the test environment from the file specified.
+    /// Adds an SBF program to the test environment from the file specified.
     pub fn add_program_from_file(
         &mut self,
         program_id: Pubkey,
@@ -323,7 +323,7 @@ impl LiteSVM {
         Ok(())
     }
 
-    /// Adds a SBF program to the test environment.
+    /// Adds am SBF program to the test environment.
     pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
@@ -807,7 +807,7 @@ impl LiteSVM {
         }
     }
 
-    /// Simulates a signed transaction.
+    /// Simulates a transaction.
     pub fn simulate_transaction(&self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
         let ExecutionResult {
             post_accounts: _,
