@@ -106,6 +106,7 @@ impl Default for LiteSVM {
 }
 
 impl LiteSVM {
+    /// Creates the basic test environment.
     pub fn new() -> Self {
         LiteSVM::default()
             .with_builtins()
@@ -116,21 +117,25 @@ impl LiteSVM {
             .with_blockhash_check(true)
     }
 
+    /// Changes the compute budget.
     pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
         self.compute_budget = Some(compute_budget);
         self
     }
 
+    /// Changes the sigverify.
     pub fn with_sigverify(mut self, sigverify: bool) -> Self {
         self.sigverify = sigverify;
         self
     }
 
+    /// Changes the blockhash check.
     pub fn with_blockhash_check(mut self, check: bool) -> Self {
         self.blockhash_check = check;
         self
     }
 
+    /// Includes the default sysvars.
     pub fn with_sysvars(mut self) -> Self {
         self.set_sysvar(&Clock::default());
         self.set_sysvar(&EpochRewards::default());
@@ -156,6 +161,7 @@ impl LiteSVM {
         self
     }
 
+    /// Includes the default builtins.
     pub fn with_builtins(mut self) -> Self {
         let mut feature_set = FeatureSet::all_enabled();
 
@@ -192,6 +198,7 @@ impl LiteSVM {
         self
     }
 
+    /// Changes the initial lamports in the airdrop account.
     pub fn with_lamports(mut self, lamports: u64) -> Self {
         self.accounts.add_account_no_checks(
             self.airdrop_kp.pubkey(),
@@ -200,16 +207,19 @@ impl LiteSVM {
         self
     }
 
+    /// Includes the spl_programs.
     pub fn with_spl_programs(mut self) -> Self {
         load_spl_programs(&mut self);
         self
     }
 
+    /// Changes the capacity of the transaction history.
     pub fn with_transaction_history(mut self, capacity: usize) -> Self {
         self.history.set_capacity(capacity);
         self
     }
 
+    /// Returns minimum balance required to make an account with specified data length rent exempt.
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
         1.max(
             self.accounts
@@ -220,22 +230,27 @@ impl LiteSVM {
         )
     }
 
+    /// Returns all information associated with the account of the provided pubkey.
     pub fn get_account(&self, pubkey: &Pubkey) -> Option<Account> {
         self.accounts.get_account(pubkey).map(Into::into)
     }
 
+    /// Sets all information associated with the account of the provided pubkey.
     pub fn set_account(&mut self, pubkey: Pubkey, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(pubkey, data.into())
     }
 
+    /// Gets the balance of the provided account pubkey.
     pub fn get_balance(&self, pubkey: &Pubkey) -> Option<u64> {
         self.accounts.get_account(pubkey).map(|x| x.lamports())
     }
 
+    /// Gets the latest blockhash.
     pub fn latest_blockhash(&self) -> Hash {
         self.latest_blockhash
     }
 
+    /// Sets the sysvar to the test environment.
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
         T: Sysvar + SysvarId,
@@ -244,6 +259,7 @@ impl LiteSVM {
         self.accounts.add_account(T::id(), account).unwrap();
     }
 
+    /// Gets a sysvar from the test environment.
     pub fn get_sysvar<T>(&self) -> T
     where
         T: Sysvar + SysvarId,
@@ -251,10 +267,12 @@ impl LiteSVM {
         bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
     }
 
+    /// Gets a transaction from the transaction history.
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
         self.history.get_transaction(signature)
     }
 
+    /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
         let payer = &self.airdrop_kp;
         let tx = VersionedTransaction::try_new(
@@ -274,6 +292,7 @@ impl LiteSVM {
         self.send_transaction(tx)
     }
 
+    /// Adds a builtin program to the test environment.
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
         let builtin = LoadedProgram::new_builtin(
             self.accounts
@@ -293,6 +312,7 @@ impl LiteSVM {
             .unwrap();
     }
 
+    /// Adds a SBF program to the test environment from the file specified.
     pub fn add_program_from_file(
         &mut self,
         program_id: Pubkey,
@@ -303,6 +323,7 @@ impl LiteSVM {
         Ok(())
     }
 
+    /// Adds a SBF program to the test environment.
     pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
@@ -744,6 +765,7 @@ impl LiteSVM {
         })
     }
 
+    /// Submits a signed transaction.
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
         let vtx: VersionedTransaction = tx.into();
         let ExecutionResult {
@@ -785,6 +807,7 @@ impl LiteSVM {
         }
     }
 
+    /// Simulates a signed transaction.
     pub fn simulate_transaction(&self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
         let ExecutionResult {
             post_accounts: _,
@@ -816,6 +839,7 @@ impl LiteSVM {
         }
     }
 
+    /// Expires the current blockhash.
     pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
         #[allow(deprecated)]
@@ -826,12 +850,14 @@ impl LiteSVM {
         )]));
     }
 
+    /// Warps the clock to the specified slot.
     pub fn warp_to_slot(&mut self, slot: u64) {
         let mut clock = self.get_sysvar::<Clock>();
         clock.slot = slot;
         self.set_sysvar(&clock);
     }
 
+    /// Gets the current compute budget.
     pub fn get_compute_budget(&self) -> Option<ComputeBudget> {
         self.compute_budget
     }
