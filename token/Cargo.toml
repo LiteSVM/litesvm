@@ -1,5 +1,6 @@
 [package]
 name = "litesvm-token"
+description = "Helpers for working with spl-token and LiteSVM"
 license.workspace = true
 version.workspace = true
 edition.workspace = true

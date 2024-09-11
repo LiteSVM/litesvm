@@ -1,5 +1,6 @@
 [package]
 name = "litesvm-loader"
+description = "Helpers for working with bpf_loader and LiteSVM"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
