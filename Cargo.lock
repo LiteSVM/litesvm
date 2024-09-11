@@ -2254,7 +2254,7 @@ checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 
 [[package]]
 name = "litesvm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bincode",
  "criterion",
@@ -2282,7 +2282,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-loader"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "litesvm",
  "solana-sdk",
@@ -2291,7 +2291,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-token"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "litesvm",
  "smallvec",
