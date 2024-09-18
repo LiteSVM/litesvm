@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["loader", "svm", "token"]
+members = ["loader", "plugin-manager", "svm", "token"]
 
 [workspace.package]
 version = "0.2.0"
@@ -10,11 +10,13 @@ repository = "https://github.com/LiteSVM/litesvm"
 rust-version = "1.75.0"
 
 [workspace.dependencies]
+agave-geyser-plugin-interface = "~1.18"
 bincode = "1.3"
 criterion = "0.5"
 indexmap = "2.2"
 itertools = "0.12"
 litesvm = { path = "svm", version = "0.2" }
+litesvm-plugin-manager = { path = "plugin-manager" }
 log = "0.4"
 serde = "1.0"
 smallvec = "1.13"

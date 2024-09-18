@@ -64,6 +64,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "agave-geyser-plugin-interface"
+version = "1.18.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "159450a0260efbdce138df759068a4ab7618d376d1ec377e2597d124a09bc657"
+dependencies = [
+ "log",
+ "solana-sdk",
+ "solana-transaction-status",
+ "thiserror",
+]
+
+[[package]]
 name = "ahash"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2260,6 +2272,7 @@ dependencies = [
  "criterion",
  "indexmap 2.5.0",
  "itertools 0.12.1",
+ "litesvm-plugin-manager",
  "log",
  "serde",
  "solana-address-lookup-table-program",
@@ -2287,6 +2300,13 @@ dependencies = [
  "litesvm",
  "solana-sdk",
  "test-log",
+]
+
+[[package]]
+name = "litesvm-plugin-manager"
+version = "0.2.0"
+dependencies = [
+ "agave-geyser-plugin-interface",
 ]
 
 [[package]]

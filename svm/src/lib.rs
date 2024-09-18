@@ -48,6 +48,8 @@ use utils::{
     construct_instructions_account,
     inner_instructions::inner_instructions_list_from_instruction_trace,
 };
+#[cfg(feature = "geyser-plugin")]
+use litesvm_plugin_manager::GeyserPluginManager;
 
 use crate::{
     accounts_db::AccountsDb,
@@ -86,6 +88,8 @@ pub struct LiteSVM {
     sigverify: bool,
     blockhash_check: bool,
     fee_structure: FeeStructure,
+    #[cfg(feature = "geyser-plugin")]
+    plugin_manager: GeyserPluginManager,
 }
 
 impl Default for LiteSVM {
@@ -101,6 +105,8 @@ impl Default for LiteSVM {
             sigverify: false,
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
+            #[cfg(feature = "geyser-plugin")]
+            plugin_manager: GeyserPluginManager::default(),
         }
     }
 }
@@ -216,6 +222,12 @@ impl LiteSVM {
     /// Changes the capacity of the transaction history.
     /// Set this to 0 to disable transaction history and allow duplicate transactions.
     pub fn with_transaction_history(mut self, capacity: usize) -> Self {
+        self.history.set_capacity(capacity);
+        self
+    }
+
+    #[cfg(feature = "geyser-plugin")]
+    pub fn with_geyser_plugin(mut self, capacity: usize) -> Self {
         self.history.set_capacity(capacity);
         self
     }

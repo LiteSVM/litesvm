@@ -1,0 +1,11 @@
+[package]
+name = "litesvm-plugin-manager"
+description = "The LiteSVM Geyser plugin manager."
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+agave-geyser-plugin-interface.workspace = true
