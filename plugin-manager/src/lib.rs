@@ -1,35 +1,35 @@
 use agave_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin;
+use solana_sdk::{
+    account::AccountSharedData, clock::Slot, pubkey::Pubkey, transaction::SanitizedTransaction,
+};
 
-#[derive(Default, Debug)]
-pub struct GeyserPluginManager {
-    pub plugin: Option<GeyserPlugin>,
+use crate::accounts_update_notifier::AccountsUpdateNotifier;
+
+mod accounts_update_notifier;
+
+#[derive(Default)]
+pub struct GeyserPluginService {
+    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 }
 
-impl GeyserPluginManager {
-    pub fn unload(&mut self) {
-        if let Some(mut plugin) = self.plugin {
-            plugin.on_unload();
+impl GeyserPluginService {
+    pub fn set_plugin(&mut self, plugin: Box<dyn GeyserPlugin>) {
+        if plugin.account_data_notifications_enabled() {
+            self.accounts_update_notifier = Some(AccountsUpdateNotifier::new(plugin));
         }
     }
 
-    pub fn account_data_notifications_enabled(&self) -> bool {
-        if let Some(plugin) = self.plugin {
-            plugin.account_data_notifications_enabled()
+    pub fn notify_account_update(
+        &self,
+        slot: Slot,
+        txn: &Option<&SanitizedTransaction>,
+        account: &AccountSharedData,
+        pubkey: &Pubkey,
+    ) {
+        if let Some(notifier) = self.accounts_update_notifier.as_ref() {
+            notifier.notify_account_update(
+                slot, account, txn, pubkey, 1, // NOTE: hardcoded write_version
+            );
         }
-        false
-    }
-
-    pub fn transaction_notifications_enabled(&self) -> bool {
-        if let Some(plugin) = self.plugin {
-            plugin.transaction_notifications_enabled()
-        }
-        false
-    }
-
-    pub fn entry_notifications_enabled(&self) -> bool {
-        if let Some(plugin) = self.plugin {
-            plugin.entry_notifications_enabled()
-        }
-        false
     }
 }

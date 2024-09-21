@@ -9,3 +9,5 @@ repository.workspace = true
 
 [dependencies]
 agave-geyser-plugin-interface.workspace = true
+log.workspace = true
+solana-sdk.workspace = true

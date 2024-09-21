@@ -1,4 +1,7 @@
+use agave_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin;
 use itertools::Itertools;
+#[cfg(feature = "geyser-plugin")]
+use litesvm_plugin_manager::GeyserPluginService;
 use log::error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
@@ -48,8 +51,6 @@ use utils::{
     construct_instructions_account,
     inner_instructions::inner_instructions_list_from_instruction_trace,
 };
-#[cfg(feature = "geyser-plugin")]
-use litesvm_plugin_manager::GeyserPluginManager;
 
 use crate::{
     accounts_db::AccountsDb,
@@ -89,7 +90,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     #[cfg(feature = "geyser-plugin")]
-    plugin_manager: GeyserPluginManager,
+    plugin_service: GeyserPluginService,
 }
 
 impl Default for LiteSVM {
@@ -106,7 +107,7 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             #[cfg(feature = "geyser-plugin")]
-            plugin_manager: GeyserPluginManager::default(),
+            plugin_service: GeyserPluginService::default(),
         }
     }
 }
@@ -226,9 +227,10 @@ impl LiteSVM {
         self
     }
 
+    /// Sets the Geyser plugin.
     #[cfg(feature = "geyser-plugin")]
-    pub fn with_geyser_plugin(mut self, capacity: usize) -> Self {
-        self.history.set_capacity(capacity);
+    pub fn with_geyser_plugin(mut self, plugin: Box<dyn GeyserPlugin>) -> Self {
+        self.plugin_service.set_plugin(plugin);
         self
     }
 
@@ -600,6 +602,12 @@ impl LiteSVM {
                     tx_result = Err(err);
                 };
 
+                #[cfg(feature = "geyser-plugin")]
+                if let Err(err) = self.notify_account_updates(tx, &context) {
+                    // tx_result = Err(err);
+                    //
+                };
+
                 (
                     tx_result,
                     accumulated_consume_units,
@@ -641,6 +649,36 @@ impl LiteSVM {
                         });
                     }
                 }
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "geyser-plugin")]
+    fn notify_account_updates(
+        &self,
+        tx: &SanitizedTransaction,
+        context: &TransactionContext,
+    ) -> Result<(), TransactionError> {
+        let slot = self
+            .accounts
+            .sysvar_cache
+            .get_clock()
+            .unwrap_or_default()
+            .slot;
+
+        for index in 0..tx.message().account_keys().len() {
+            if tx.message().is_writable(index) {
+                let account = context
+                    .get_account_at_index(index as IndexOfAccount)
+                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?
+                    .borrow();
+                let pubkey = context
+                    .get_key_of_account_at_index(index as IndexOfAccount)
+                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
+
+                self.plugin_service
+                    .notify_account_update(slot, &Some(tx), &account, pubkey);
             }
         }
         Ok(())

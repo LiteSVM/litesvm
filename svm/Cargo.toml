@@ -9,10 +9,12 @@ repository.workspace = true
 readme = "../README.md"
 
 [features]
+default = ["geyser-plugin"]
 internal-test = []
-geyser-plugin = ["dep:litesvm-plugin-manager"]
+geyser-plugin = ["dep:litesvm-plugin-manager", "dep:agave-geyser-plugin-interface"]
 
 [dependencies]
+agave-geyser-plugin-interface = { workspace = true, optional = true }
 bincode.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
