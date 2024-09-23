@@ -60,6 +60,10 @@ fn system_transfer() {
 
 The tests use some test programs you need to build first (Solana CLI >= 1.18.8 required):
 
-```cd test_programs && cargo build-sbf```
+`cd ./svm/test_programs && cargo build-sbf`
 
 Then just run `cargo test`.
+
+##### Testing Geyser Plugin
+
+`cd ./plugin-manager/test_plugins && cargo build`

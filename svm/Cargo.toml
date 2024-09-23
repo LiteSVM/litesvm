@@ -9,7 +9,6 @@ repository.workspace = true
 readme = "../README.md"
 
 [features]
-default = ["geyser-plugin"]
 internal-test = []
 geyser-plugin = ["dep:litesvm-plugin-manager", "dep:agave-geyser-plugin-interface"]
 

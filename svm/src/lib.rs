@@ -1,7 +1,4 @@
-use agave_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin;
 use itertools::Itertools;
-#[cfg(feature = "geyser-plugin")]
-use litesvm_plugin_manager::GeyserPluginService;
 use log::error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
@@ -50,6 +47,11 @@ use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 use utils::{
     construct_instructions_account,
     inner_instructions::inner_instructions_list_from_instruction_trace,
+};
+#[cfg(feature = "geyser-plugin")]
+use {
+    agave_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin,
+    litesvm_plugin_manager::GeyserPluginService,
 };
 
 use crate::{
@@ -603,9 +605,8 @@ impl LiteSVM {
                 };
 
                 #[cfg(feature = "geyser-plugin")]
-                if let Err(err) = self.notify_account_updates(tx, &context) {
-                    // tx_result = Err(err);
-                    //
+                if self.notify_account_updates(tx, &context).is_err() {
+                    // TODO: Handle error
                 };
 
                 (
