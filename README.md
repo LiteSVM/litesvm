@@ -66,4 +66,4 @@ Then just run `cargo test`.
 
 ##### Testing Geyser Plugin
 
-`cd ./plugin-manager/test_plugins && cargo build`
+`cargo test --features geyser-plugin`
