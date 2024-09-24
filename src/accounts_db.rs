@@ -4,7 +4,6 @@ use solana_program::{
     bpf_loader, bpf_loader_deprecated,
     bpf_loader_upgradeable::{self, UpgradeableLoaderState},
     clock::Clock,
-    instruction::InstructionError,
     loader_v4::{self, LoaderV4State},
     message::{
         v0::{LoadedAddresses, MessageAddressTableLookup},
@@ -78,7 +77,7 @@ impl AccountsDb {
         account: AccountSharedData,
     ) -> Result<(), LiteSVMError> {
         if account.executable() && pubkey != Pubkey::default() {
-            let loaded_program = self.load_program(&account)?;
+            let loaded_program = self.load_program(&account);
             self.programs_cache
                 .replenish(pubkey, Arc::new(loaded_program));
         } else {
@@ -185,10 +184,7 @@ impl AccountsDb {
         Ok(())
     }
 
-    fn load_program(
-        &self,
-        program_account: &AccountSharedData,
-    ) -> Result<LoadedProgram, InstructionError> {
+    fn load_program(&self, program_account: &AccountSharedData) -> LoadedProgram {
         let metrics = &mut LoadProgramMetrics::default();
 
         let owner = program_account.owner();
@@ -206,21 +202,19 @@ impl AccountsDb {
                 program_account.data().len(),
                 &mut LoadProgramMetrics::default(),
             )
-            .map_err(|_| InstructionError::InvalidAccountData)
+            .unwrap()
         } else if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
             }) = program_account.state()
             else {
-                error!(
+                panic!(
                     "Program account data does not deserialize to UpgradeableLoaderState::Program"
                 );
-                return Err(InstructionError::InvalidAccountData);
             };
-            let programdata_account = self.get_account(&programdata_address).ok_or_else(|| {
-                error!("Program data account {programdata_address} not found");
-                InstructionError::MissingAccount
-            })?;
+            let programdata_account = self.get_account(&programdata_address).unwrap_or_else(|| {
+                panic!("Program data account {programdata_address} not found");
+            });
             let program_data = programdata_account.data();
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
@@ -236,13 +230,11 @@ impl AccountsDb {
                         .data()
                         .len()
                         .saturating_add(program_data.len()),
-                    metrics).map_err(|_| {
-                        error!("Error encountered when calling LoadedProgram::new() for bpf_loader_upgradeable.");
-                        InstructionError::InvalidAccountData
-                    })
+                    metrics).unwrap_or_else(|_|
+                        panic!("Error encountered when calling LoadedProgram::new() for bpf_loader_upgradeable.")
+                    )
             } else {
-                error!("Index out of bounds using bpf_loader_upgradeable.");
-                Err(InstructionError::InvalidAccountData)
+                panic!("Index out of bounds using bpf_loader_upgradeable.");
             }
         } else if loader_v4::check_id(owner) {
             if let Some(elf_bytes) = program_account
@@ -259,17 +251,14 @@ impl AccountsDb {
                     program_account.data().len(),
                     metrics,
                 )
-                .map_err(|_| {
-                    error!("Error encountered when calling LoadedProgram::new() for loader_v4.");
-                    InstructionError::InvalidAccountData
+                .unwrap_or_else(|_| {
+                    panic!("Error encountered when calling LoadedProgram::new() for loader_v4.");
                 })
             } else {
-                error!("Index out of bounds using loader_v4.");
-                Err(InstructionError::InvalidAccountData)
+                panic!("Index out of bounds using loader_v4.");
             }
         } else {
-            error!("Owner does not match any expected loader.");
-            Err(InstructionError::IncorrectProgramId)
+            panic!("Owner does not match any expected loader.");
         }
     }
 
