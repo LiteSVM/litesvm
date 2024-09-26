@@ -605,8 +605,8 @@ impl LiteSVM {
                 };
 
                 #[cfg(feature = "geyser-plugin")]
-                if self.notify_account_updates(tx, &context).is_err() {
-                    // TODO: Handle error
+                if let Err(e) = self.notify_account_updates(tx, &context) {
+                    log::error!("Notify account update: {}", e);
                 };
 
                 (
