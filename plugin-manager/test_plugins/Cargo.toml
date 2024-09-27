@@ -1,0 +1,7 @@
+[workspace]
+members = ["dummy-plugin"]
+resolver = "2"
+
+[workspace.dependencies]
+agave-geyser-plugin-interface = "~1.18"
+solana-program = "~1.18"
