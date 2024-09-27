@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Change `owner` from Keypair to Pubkey in `create_ata` and `create_ata_idempotent` helpers ([#90](https://github.com/LiteSVM/litesvm/pull/90)).
+
 ## [0.2.0] - 2024-09-11
 
 ### Added
