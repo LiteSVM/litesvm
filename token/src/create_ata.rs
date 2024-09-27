@@ -31,8 +31,8 @@ impl<'a> CreateAssociatedTokenAccount<'a> {
     }
 
     /// Sets the owner of the account with single owner.
-    pub fn owner(mut self, owner: &'a Keypair) -> Self {
-        self.owner = Some(owner.pubkey());
+    pub fn owner(mut self, owner: &'a Pubkey) -> Self {
+        self.owner = Some(*owner);
         self
     }
 
