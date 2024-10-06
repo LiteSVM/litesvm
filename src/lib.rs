@@ -11,7 +11,7 @@ use solana_svm_transaction::instruction::SVMInstruction;
 use crate::error::LiteSVMError;
 use itertools::Itertools;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_loader_v4_program::create_program_runtime_environment_v2;
+use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v2;
 use solana_log_collector::LogCollector;
 #[allow(deprecated)]
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
