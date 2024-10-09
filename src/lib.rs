@@ -64,12 +64,12 @@ use crate::{
 };
 
 pub mod error;
+pub mod spl;
 pub mod types;
 
 mod accounts_db;
 mod builtin;
 mod history;
-mod spl;
 mod utils;
 
 // The test code doesn't actually get run because it's not
