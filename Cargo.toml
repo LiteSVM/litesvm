@@ -23,9 +23,7 @@ solana-bpf-loader-program = "2.0.13"
 solana-compute-budget = "2.0.13"
 solana-compute-budget-program = "2.0.13"
 solana-config-program = "2.0.13"
-solana-fee = "2.0.13"
 solana-loader-v4-program = "2.0.13"
-solana-log-collector = "2.0.13"
 solana-program = "2.0.13"
 solana-program-runtime = "2.0.13"
 solana-program-test = "2.0.13"
@@ -33,11 +31,9 @@ solana-runtime-transaction = "2.0.13"
 solana-sdk = "2.0.13"
 solana-stake-program = "2.0.13"
 solana-svm = "2.0.13"
-solana-svm-transaction = "2.0.13"
 solana-system-program = "2.0.13"
-solana-timings = "2.0.13"
 solana-vote-program = "2.0.13"
-spl-associated-token-account = "3.0"
+spl-associated-token-account-client = "1.0"
 spl-token = "6.0.0"
 spl-token-2022 = "5.0.2"
 test-log = "0.2"
@@ -58,26 +54,3 @@ codegen-units = 1
 
 [workspace.lints.clippy]
 result_large_err = "allow"
-
-[patch.crates-io]
-curve25519-dalek = { git = "https://github.com/anza-xyz/curve25519-dalek.git", rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464" }
-solana-address-lookup-table-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-bpf-loader-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-compute-budget = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-compute-budget-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-config-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-fee = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-loader-v4-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-log-collector = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-program-runtime = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-program-test = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-runtime-transaction = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-sdk = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-stake-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-svm = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-svm-transaction = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-system-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-timings = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-vote-program = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }
-solana-zk-token-sdk = { git = "https://github.com/OliverNChalk/agave", rev = "f5fa2ecbaacdbcbbf9ed691e049b2b1c391ad183" }

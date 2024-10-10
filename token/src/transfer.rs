@@ -87,7 +87,7 @@ impl<'a> Transfer<'a> {
         let source_pk = if let Some(source) = self.source {
             *source
         } else {
-            spl_associated_token_account::get_associated_token_address_with_program_id(
+            spl_associated_token_account_client::address::get_associated_token_address_with_program_id(
                 &authority,
                 self.mint,
                 token_program_id,

@@ -40,13 +40,21 @@ const RECENT_BLOCKHASHES_ID: Pubkey =
 fn handle_sysvar<T>(
     cache: &mut SysvarCache,
     err_variant: InvalidSysvarDataError,
-    bytes: &[u8],
+    account: &AccountSharedData,
+    mut accounts_clone: HashMap<Pubkey, AccountSharedData>,
+    address: Pubkey,
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar,
 {
-    let parsed: T = bincode::deserialize(bytes).map_err(|_| err_variant)?;
-    cache.set_sysvar_for_tests(&parsed);
+    accounts_clone.insert(address, account.clone());
+    cache.reset();
+    cache.fill_missing_entries(|pubkey, set_sysvar| {
+        if let Some(acc) = accounts_clone.get(pubkey) {
+            set_sysvar(acc.data())
+        }
+    });
+    let _parsed: T = bincode::deserialize(account.data()).map_err(|_| err_variant)?;
     Ok(())
 }
 
@@ -100,54 +108,85 @@ impl AccountsDb {
                 let parsed: Clock = bincode::deserialize(account.data())
                     .map_err(|_| InvalidSysvarDataError::Clock)?;
                 self.programs_cache.set_slot_for_tests(parsed.slot);
-                cache.set_sysvar_for_tests(&parsed);
+                let mut accounts_clone = self.inner.clone();
+                accounts_clone.insert(pubkey, account.clone());
+                cache.reset();
+                cache.fill_missing_entries(|pubkey, set_sysvar| {
+                    if let Some(acc) = accounts_clone.get(pubkey) {
+                        set_sysvar(acc.data())
+                    }
+                });
             }
             EPOCH_REWARDS_ID => {
                 handle_sysvar::<solana_sdk::epoch_rewards::EpochRewards>(
                     cache,
                     EpochRewards,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             EPOCH_SCHEDULE_ID => {
                 handle_sysvar::<solana_sdk::epoch_schedule::EpochSchedule>(
                     cache,
                     EpochSchedule,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             FEES_ID => {
-                handle_sysvar::<solana_sdk::sysvar::fees::Fees>(cache, Fees, account.data())?;
+                handle_sysvar::<solana_sdk::sysvar::fees::Fees>(
+                    cache,
+                    Fees,
+                    account,
+                    self.inner.clone(),
+                    pubkey,
+                )?;
             }
             LAST_RESTART_SLOT_ID => {
                 handle_sysvar::<solana_sdk::sysvar::last_restart_slot::LastRestartSlot>(
                     cache,
                     LastRestartSlot,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             RECENT_BLOCKHASHES_ID => {
                 handle_sysvar::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
                     cache,
                     RecentBlockhashes,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             RENT_ID => {
-                handle_sysvar::<solana_sdk::sysvar::rent::Rent>(cache, Rent, account.data())?;
+                handle_sysvar::<solana_sdk::rent::Rent>(
+                    cache,
+                    Rent,
+                    account,
+                    self.inner.clone(),
+                    pubkey,
+                )?;
             }
             SLOT_HASHES_ID => {
-                handle_sysvar::<solana_sdk::sysvar::slot_hashes::SlotHashes>(
+                handle_sysvar::<solana_sdk::slot_hashes::SlotHashes>(
                     cache,
                     SlotHashes,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar::<solana_sdk::sysvar::stake_history::StakeHistory>(
+                handle_sysvar::<solana_sdk::stake_history::StakeHistory>(
                     cache,
                     StakeHistory,
-                    account.data(),
+                    account,
+                    self.inner.clone(),
+                    pubkey,
                 )?;
             }
             _ => {}
