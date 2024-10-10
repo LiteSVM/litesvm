@@ -18,7 +18,7 @@ use solana_program::{
     },
 };
 use solana_program_runtime::{
-    loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
+    loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch},
     sysvar_cache::SysvarCache,
 };
 use solana_sdk::{
@@ -37,27 +37,23 @@ const FEES_ID: Pubkey = solana_program::pubkey!("SysvarFees111111111111111111111
 const RECENT_BLOCKHASHES_ID: Pubkey =
     solana_program::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
 
-fn handle_sysvar<F, T>(
+fn handle_sysvar<T>(
     cache: &mut SysvarCache,
-    method: F,
     err_variant: InvalidSysvarDataError,
     bytes: &[u8],
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar,
-    F: Fn(&mut SysvarCache, T),
 {
-    method(
-        cache,
-        bincode::deserialize::<T>(bytes).map_err(|_| err_variant)?,
-    );
+    let parsed: T = bincode::deserialize(bytes).map_err(|_| err_variant)?;
+    cache.set_sysvar_for_tests(&parsed);
     Ok(())
 }
 
 #[derive(Default)]
 pub(crate) struct AccountsDb {
     inner: HashMap<Pubkey, AccountSharedData>,
-    pub(crate) programs_cache: LoadedProgramsForTxBatch,
+    pub(crate) programs_cache: ProgramCacheForTxBatch,
     pub(crate) sysvar_cache: SysvarCache,
 }
 
@@ -104,58 +100,52 @@ impl AccountsDb {
                 let parsed: Clock = bincode::deserialize(account.data())
                     .map_err(|_| InvalidSysvarDataError::Clock)?;
                 self.programs_cache.set_slot_for_tests(parsed.slot);
-                cache.set_clock(parsed);
+                cache.set_sysvar_for_tests(&parsed);
             }
             EPOCH_REWARDS_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::epoch_rewards::EpochRewards>(
                     cache,
-                    SysvarCache::set_epoch_rewards,
                     EpochRewards,
                     account.data(),
                 )?;
             }
             EPOCH_SCHEDULE_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::epoch_schedule::EpochSchedule>(
                     cache,
-                    SysvarCache::set_epoch_schedule,
                     EpochSchedule,
                     account.data(),
                 )?;
             }
             FEES_ID => {
-                handle_sysvar(cache, SysvarCache::set_fees, Fees, account.data())?;
+                handle_sysvar::<solana_sdk::sysvar::fees::Fees>(cache, Fees, account.data())?;
             }
             LAST_RESTART_SLOT_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::sysvar::last_restart_slot::LastRestartSlot>(
                     cache,
-                    SysvarCache::set_last_restart_slot,
                     LastRestartSlot,
                     account.data(),
                 )?;
             }
             RECENT_BLOCKHASHES_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
                     cache,
-                    SysvarCache::set_recent_blockhashes,
                     RecentBlockhashes,
                     account.data(),
                 )?;
             }
             RENT_ID => {
-                handle_sysvar(cache, SysvarCache::set_rent, Rent, account.data())?;
+                handle_sysvar::<solana_sdk::sysvar::rent::Rent>(cache, Rent, account.data())?;
             }
             SLOT_HASHES_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::sysvar::slot_hashes::SlotHashes>(
                     cache,
-                    SysvarCache::set_slot_hashes,
                     SlotHashes,
                     account.data(),
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar(
+                handle_sysvar::<solana_sdk::sysvar::stake_history::StakeHistory>(
                     cache,
-                    SysvarCache::set_stake_history,
                     StakeHistory,
                     account.data(),
                 )?;
@@ -188,7 +178,7 @@ impl AccountsDb {
     fn load_program(
         &self,
         program_account: &AccountSharedData,
-    ) -> Result<LoadedProgram, InstructionError> {
+    ) -> Result<ProgramCacheEntry, InstructionError> {
         let metrics = &mut LoadProgramMetrics::default();
 
         let owner = program_account.owner();
@@ -196,12 +186,11 @@ impl AccountsDb {
         let slot = self.sysvar_cache.get_clock().unwrap().slot;
 
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
-            LoadedProgram::new(
+            ProgramCacheEntry::new(
                 owner,
                 self.programs_cache.environments.program_runtime_v1.clone(),
                 slot,
                 slot,
-                None,
                 program_account.data(),
                 program_account.data().len(),
                 &mut LoadProgramMetrics::default(),
@@ -225,19 +214,18 @@ impl AccountsDb {
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
             {
-                LoadedProgram::new(
+                ProgramCacheEntry::new(
                     owner,
                     program_runtime_v1,
                     slot,
                     slot,
-                    None,
                     programdata,
                     program_account
                         .data()
                         .len()
                         .saturating_add(program_data.len()),
                     metrics).map_err(|_| {
-                        error!("Error encountered when calling LoadedProgram::new() for bpf_loader_upgradeable.");
+                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable.");
                         InstructionError::InvalidAccountData
                     })
             } else {
@@ -249,12 +237,11 @@ impl AccountsDb {
                 .data()
                 .get(LoaderV4State::program_data_offset()..)
             {
-                LoadedProgram::new(
+                ProgramCacheEntry::new(
                     &loader_v4::id(),
                     program_runtime_v1,
                     slot,
                     slot,
-                    None,
                     elf_bytes,
                     program_account.data().len(),
                     metrics,
