@@ -54,7 +54,7 @@ fn load_upgradeable_buffer(
         )
         .unwrap(),
         Some(&payer_pk),
-        &[&payer_kp, &buffer_kp],
+        &[payer_kp, &buffer_kp],
         svm.latest_blockhash(),
     );
 

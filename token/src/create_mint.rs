@@ -97,7 +97,7 @@ impl<'a> CreateMint<'a> {
         let tx = Transaction::new_signed_with_payer(
             &[ix1, ix2],
             Some(&payer_pk),
-            &[&self.payer, &mint_kp],
+            &[self.payer, &mint_kp],
             block_hash,
         );
         self.svm.send_transaction(tx)?;

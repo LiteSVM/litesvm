@@ -96,7 +96,7 @@ impl<'a> CreateAccount<'a> {
         let tx = Transaction::new_signed_with_payer(
             &[ix1, ix2],
             Some(&payer_pk),
-            &[&self.payer, &account_kp],
+            &[self.payer, &account_kp],
             block_hash,
         );
         self.svm.send_transaction(tx)?;
