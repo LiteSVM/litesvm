@@ -15,9 +15,7 @@ token-2022 = ["spl-token-2022"]
 litesvm.workspace = true
 smallvec.workspace = true
 solana-sdk.workspace = true
-spl-associated-token-account = { workspace = true, features = [
-    "no-entrypoint",
-] }
+spl-associated-token-account-client = { workspace = true }
 spl-token = { workspace = true, optional = true, features = ["no-entrypoint"] }
 spl-token-2022 = { workspace = true, optional = true, features = [
     "no-entrypoint",

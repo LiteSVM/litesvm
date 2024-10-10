@@ -1,5 +1,5 @@
 use litesvm::LiteSVM;
-use solana_address_lookup_table_program::instruction::{create_lookup_table, extend_lookup_table};
+use solana_program::address_lookup_table::instruction::{create_lookup_table, extend_lookup_table};
 use solana_sdk::{
     message::Message, pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction,
 };

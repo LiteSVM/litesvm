@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use litesvm::LiteSVM;
 use solana_program::address_lookup_table::instruction::create_lookup_table;
-use solana_program::address_lookup_table_account::AddressLookupTableAccount;
+use solana_program::address_lookup_table::AddressLookupTableAccount;
 use solana_program::message::VersionedMessage;
 use solana_program::{
     address_lookup_table::instruction::extend_lookup_table,
@@ -20,7 +20,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-const NUM_GREETINGS: u8 = 255;
+const NUM_GREETINGS: u8 = 127;
 
 fn read_counter_program() -> Vec<u8> {
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

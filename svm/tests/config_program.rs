@@ -76,7 +76,7 @@ fn create_config_account(
         .send_transaction(Transaction::new_signed_with_payer(
             &instructions,
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, config_keypair],
             ctx.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -111,7 +111,7 @@ fn test_process_store_ok() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, &config_keypair],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -144,7 +144,7 @@ fn test_process_store_fail_instruction_data_too_large() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, &config_keypair],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -212,7 +212,7 @@ fn test_process_store_with_additional_signers() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0, &signer1],
+            &[payer, &config_keypair, &signer0, &signer1],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -257,7 +257,7 @@ fn test_process_store_bad_config_account() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &signer0],
+            &[payer, &signer0],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -291,7 +291,7 @@ fn test_process_store_with_bad_additional_signer() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &bad_signer],
+            &[payer, &config_keypair, &bad_signer],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -310,7 +310,7 @@ fn test_process_store_with_bad_additional_signer() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, &config_keypair],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -348,7 +348,7 @@ fn test_config_updates() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0, &signer1],
+            &[payer, &config_keypair, &signer0, &signer1],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -362,7 +362,7 @@ fn test_config_updates() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &signer0, &signer1],
+            &[payer, &signer0, &signer1],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -386,7 +386,7 @@ fn test_config_updates() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &signer0], // Missing signer1.
+            &[payer, &signer0], // Missing signer1.
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -408,7 +408,7 @@ fn test_config_updates() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &signer0, &signer2], // Incorrect signer1.
+            &[payer, &signer0, &signer2], // Incorrect signer1.
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -444,7 +444,7 @@ fn test_config_initialize_contains_duplicates_fails() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0],
+            &[payer, &config_keypair, &signer0],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -480,7 +480,7 @@ fn test_config_update_contains_duplicates_fails() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0, &signer1],
+            &[payer, &config_keypair, &signer0, &signer1],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -499,7 +499,7 @@ fn test_config_update_contains_duplicates_fails() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0],
+            &[payer, &config_keypair, &signer0],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -539,7 +539,7 @@ fn test_config_updates_requiring_config() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0],
+            &[payer, &config_keypair, &signer0],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -553,7 +553,7 @@ fn test_config_updates_requiring_config() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0],
+            &[payer, &config_keypair, &signer0],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -574,7 +574,7 @@ fn test_config_updates_requiring_config() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair], // Missing signer0.
+            &[payer, &config_keypair], // Missing signer0.
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -651,7 +651,7 @@ fn test_config_bad_owner() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair, &signer0],
+            &[payer, &config_keypair, &signer0],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
@@ -688,7 +688,7 @@ fn test_maximum_keys_input() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, &config_keypair],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -709,7 +709,7 @@ fn test_maximum_keys_input() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, &config_keypair],
             context.svm.latest_blockhash(),
         ))
         .unwrap();
@@ -724,7 +724,7 @@ fn test_maximum_keys_input() {
         .send_transaction(Transaction::new_signed_with_payer(
             &[instruction],
             Some(&payer.pubkey()),
-            &[&payer, &config_keypair],
+            &[payer, &config_keypair],
             context.svm.latest_blockhash(),
         ))
         .unwrap_err()
