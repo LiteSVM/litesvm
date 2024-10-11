@@ -50,6 +50,7 @@ use solana_sdk::{
 use solana_svm::message_processor::MessageProcessor;
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
+use types::SimulatedTransactionInfo;
 use utils::{
     construct_instructions_account,
     inner_instructions::inner_instructions_list_from_instruction_trace,
@@ -833,9 +834,12 @@ impl LiteSVM {
     }
 
     /// Simulates a transaction.
-    pub fn simulate_transaction(&self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
+    pub fn simulate_transaction(
+        &self,
+        tx: impl Into<VersionedTransaction>,
+    ) -> Result<SimulatedTransactionInfo, FailedTransactionMetadata> {
         let ExecutionResult {
-            post_accounts: _,
+            post_accounts,
             tx_result,
             signature,
             compute_units_consumed,
@@ -863,9 +867,12 @@ impl LiteSVM {
         };
 
         if let Err(tx_err) = tx_result {
-            TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta })
+            Err(FailedTransactionMetadata { err: tx_err, meta })
         } else {
-            TransactionResult::Ok(meta)
+            Ok(SimulatedTransactionInfo {
+                meta,
+                post_accounts,
+            })
         }
     }
 
