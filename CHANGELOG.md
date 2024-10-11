@@ -6,6 +6,10 @@
 
 - Make log_bytes_limit configurable [(#96)](https://github.com/LiteSVM/litesvm/pull/96)
 
+### Changed
+
+- Include `post_accounts` in `simulate_transaction` output ([#97](https://github.com/LiteSVM/litesvm/pull/97)).
+
 ## [0.2.1] - 2024-09-27
 
 ### Changed

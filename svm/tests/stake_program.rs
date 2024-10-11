@@ -175,6 +175,7 @@ fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
     let mut data = svm
         .simulate_transaction(transaction)
         .unwrap()
+        .meta
         .return_data
         .data;
     data.resize(8, 0);

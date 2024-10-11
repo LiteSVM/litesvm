@@ -20,6 +20,13 @@ pub struct TransactionMetadata {
     pub return_data: TransactionReturnData,
 }
 
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SimulatedTransactionInfo {
+    pub meta: TransactionMetadata,
+    pub post_accounts: Vec<(Pubkey, AccountSharedData)>,
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FailedTransactionMetadata {
