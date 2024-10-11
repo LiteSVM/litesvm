@@ -92,6 +92,7 @@ pub struct LiteSVM {
     sigverify: bool,
     blockhash_check: bool,
     fee_structure: FeeStructure,
+    log_bytes_limit: Option<usize>,
 }
 
 impl Default for LiteSVM {
@@ -107,6 +108,7 @@ impl Default for LiteSVM {
             sigverify: false,
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
+            log_bytes_limit: Some(10_000),
         }
     }
 }
@@ -223,6 +225,11 @@ impl LiteSVM {
     /// Set this to 0 to disable transaction history and allow duplicate transactions.
     pub fn with_transaction_history(mut self, capacity: usize) -> Self {
         self.history.set_capacity(capacity);
+        self
+    }
+
+    pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
+        self.log_bytes_limit = limit;
         self
     }
 
@@ -795,7 +802,13 @@ impl LiteSVM {
         };
 
         let meta = TransactionMetadata {
-            logs: self.log_collector.take().into_messages(),
+            logs: self
+                .log_collector
+                .replace(LogCollector {
+                    bytes_limit: self.log_bytes_limit,
+                    ..Default::default()
+                })
+                .into_messages(),
             inner_instructions,
             compute_units_consumed,
             return_data,
@@ -835,10 +848,15 @@ impl LiteSVM {
             self.execute_transaction_no_verify_readonly(tx.into())
         };
 
-        let logs = self.log_collector.take().into_messages();
         let meta = TransactionMetadata {
             signature,
-            logs,
+            logs: self
+                .log_collector
+                .replace(LogCollector {
+                    bytes_limit: self.log_bytes_limit,
+                    ..Default::default()
+                })
+                .into_messages(),
             inner_instructions,
             compute_units_consumed,
             return_data,
