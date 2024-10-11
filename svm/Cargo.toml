@@ -36,8 +36,6 @@ thiserror.workspace = true
 [dev-dependencies]
 criterion.workspace = true
 serde.workspace = true
-solana-compute-budget.workspace = true
-solana-config-program.workspace = true
 solana-program-test.workspace = true
 spl-token.workspace = true
 test-log.workspace = true
