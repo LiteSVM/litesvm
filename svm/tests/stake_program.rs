@@ -221,7 +221,7 @@ fn create_independent_stake_account_with_lockup(
     let transaction = Transaction::new_signed_with_payer(
         &instructions,
         Some(&payer.pubkey()),
-        &[&payer, &stake],
+        &[payer, &stake],
         svm.latest_blockhash(),
     );
 
@@ -712,7 +712,7 @@ fn test_stake_delegate() {
                 voter_pubkey: accounts.vote_account.pubkey(),
                 stake: minimum_delegation,
                 activation_epoch: clock.epoch,
-                deactivation_epoch: std::u64::MAX,
+                deactivation_epoch: u64::MAX,
                 ..Delegation::default()
             },
             credits_observed: vote_state_credits,

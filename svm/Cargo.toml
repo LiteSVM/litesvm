@@ -19,13 +19,16 @@ log.workspace = true
 serde = { workspace = true, optional = true }
 solana-address-lookup-table-program.workspace = true
 solana-bpf-loader-program.workspace = true
+solana-compute-budget.workspace = true
 solana-compute-budget-program.workspace = true
 solana-config-program.workspace = true
 solana-loader-v4-program.workspace = true
 solana-program-runtime.workspace = true
 solana-program.workspace = true
+solana-runtime-transaction.workspace = true
 solana-sdk.workspace = true
 solana-stake-program.workspace = true
+solana-svm.workspace = true
 solana-system-program.workspace = true
 solana-vote-program.workspace = true
 thiserror.workspace = true
@@ -33,7 +36,6 @@ thiserror.workspace = true
 [dev-dependencies]
 criterion.workspace = true
 serde.workspace = true
-solana-config-program.workspace = true
 solana-program-test.workspace = true
 spl-token.workspace = true
 test-log.workspace = true

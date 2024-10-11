@@ -1,16 +1,17 @@
 use itertools::Itertools;
 use log::error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
+use solana_compute_budget::{
+    compute_budget::ComputeBudget,
+    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
+};
 use solana_loader_v4_program::create_program_runtime_environment_v2;
 #[allow(deprecated)]
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
-    compute_budget::ComputeBudget,
-    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
-    invoke_context::BuiltinFunctionWithContext,
-    loaded_programs::{LoadProgramMetrics, LoadedProgram, LoadedProgramsForTxBatch},
+    invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
+    loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
     log_collector::LogCollector,
-    message_processor::MessageProcessor,
     timings::ExecuteTimings,
 };
 #[allow(deprecated)]
@@ -21,7 +22,10 @@ use solana_sdk::{
     clock::Clock,
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
-    feature_set::{include_loaded_accounts_data_size_in_fee_calculation, FeatureSet},
+    feature_set::{
+        include_loaded_accounts_data_size_in_fee_calculation, remove_rounding_in_fee_calculation,
+        FeatureSet,
+    },
     fee::FeeStructure,
     hash::Hash,
     inner_instruction::InnerInstructionsList,
@@ -32,6 +36,7 @@ use solana_sdk::{
     nonce_account,
     pubkey::Pubkey,
     rent::Rent,
+    reserved_account_keys::ReservedAccountKeys,
     signature::{Keypair, Signature},
     signer::Signer,
     slot_hashes::SlotHashes,
@@ -42,6 +47,7 @@ use solana_sdk::{
     transaction::{MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction},
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
+use solana_svm::message_processor::MessageProcessor;
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 use utils::{
@@ -167,7 +173,7 @@ impl LiteSVM {
 
         BUILTINS.iter().for_each(|builtint| {
             let loaded_program =
-                LoadedProgram::new_builtin(0, builtint.name.len(), builtint.entrypoint);
+                ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
             self.accounts
                 .programs_cache
                 .replenish(builtint.program_id, Arc::new(loaded_program));
@@ -295,7 +301,7 @@ impl LiteSVM {
 
     /// Adds a builtin program to the test environment.
     pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
-        let builtin = LoadedProgram::new_builtin(
+        let builtin = ProgramCacheEntry::new_builtin(
             self.accounts
                 .sysvar_cache
                 .get_clock()
@@ -367,7 +373,7 @@ impl LiteSVM {
         TransactionContext::new(
             accounts,
             self.get_sysvar(),
-            compute_budget.max_invoke_stack_height,
+            compute_budget.max_instruction_stack_depth,
             compute_budget.max_instruction_trace_length,
         )
     }
@@ -376,7 +382,13 @@ impl LiteSVM {
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        SanitizedTransaction::try_create(tx, MessageHash::Compute, Some(false), &self.accounts)
+        SanitizedTransaction::try_create(
+            tx,
+            MessageHash::Compute,
+            Some(false),
+            &self.accounts,
+            &ReservedAccountKeys::empty_key_set(),
+        )
     }
 
     fn sanitize_transaction_no_verify(
@@ -431,12 +443,7 @@ impl LiteSVM {
         });
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
-        let mut programs_modified_by_tx = LoadedProgramsForTxBatch::new(
-            self.accounts.sysvar_cache.get_clock().unwrap().slot,
-            self.accounts.programs_cache.environments.clone(),
-            None,
-            0,
-        );
+        let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
         let mut accumulated_consume_units = 0;
         let message = tx.message();
         let account_keys = message.account_keys();
@@ -452,6 +459,8 @@ impl LiteSVM {
             &compute_budget_limits.into(),
             self.feature_set
                 .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+            self.feature_set
+                .is_active(&remove_rounding_in_fee_calculation::id()),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -481,7 +490,9 @@ impl LiteSVM {
                             default_account
                         })
                     };
-                    if !validated_fee_payer && message.is_non_loader_key(i) {
+                    if !validated_fee_payer
+                        && (!message.is_invoked(i) || message.is_instruction_account(i))
+                    {
                         validate_fee_payer(
                             key,
                             &mut account,
@@ -537,30 +548,25 @@ impl LiteSVM {
                 if native_loader::check_id(owner_id) {
                     return Ok(account_indices);
                 }
-                account_indices.insert(
-                    0,
-                    if let Some(owner_index) = accounts
-                        .get(builtins_start_index..)
-                        .unwrap()
-                        .iter()
-                        .position(|(key, _)| key == owner_id)
-                    {
-                        builtins_start_index.saturating_add(owner_index) as u16
-                    } else {
-                        let owner_index = accounts.len() as u16;
-                        let owner_account = self.get_account(owner_id).unwrap();
-                        if !native_loader::check_id(owner_account.owner()) {
-                            error!("Owner account {owner_id} is not owned by the native loader program.");
-                            return Err(TransactionError::InvalidProgramForExecution)
-                        }
-                        if !owner_account.executable {
-                            error!("Owner account {owner_id} is not executable");
-                            return Err(TransactionError::InvalidProgramForExecution)
-                        }
-                        accounts.push((*owner_id, owner_account.into()));
-                        owner_index
-                    },
-                );
+                if !accounts
+                    .get(builtins_start_index..)
+                    .ok_or(TransactionError::ProgramAccountNotFound)?
+                    .iter()
+                    .any(|(key, _)| key == owner_id)
+                {
+                    let owner_account = self.get_account(owner_id).unwrap();
+                    if !native_loader::check_id(owner_account.owner()) {
+                        error!(
+                            "Owner account {owner_id} is not owned by the native loader program."
+                        );
+                        return Err(TransactionError::InvalidProgramForExecution);
+                    }
+                    if !owner_account.executable {
+                        error!("Owner account {owner_id} is not executable");
+                        return Err(TransactionError::InvalidProgramForExecution);
+                    }
+                    accounts.push((*owner_id, owner_account.into()));
+                }
                 Ok(account_indices)
             })
             .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
@@ -570,16 +576,21 @@ impl LiteSVM {
                 let mut tx_result = MessageProcessor::process_message(
                     tx.message(),
                     &program_indices,
-                    &mut context,
-                    Some(self.log_collector.clone()),
-                    &self.accounts.programs_cache,
-                    &mut programs_modified_by_tx,
-                    self.feature_set.clone(),
-                    compute_budget,
+                    &mut InvokeContext::new(
+                        &mut context,
+                        &mut program_cache_for_tx_batch,
+                        EnvironmentConfig::new(
+                            *blockhash,
+                            None,
+                            None,
+                            self.feature_set.clone(),
+                            0,
+                            &self.accounts.sysvar_cache,
+                        ),
+                        Some(self.log_collector.clone()),
+                        compute_budget,
+                    ),
                     &mut ExecuteTimings::default(),
-                    &self.accounts.sysvar_cache,
-                    *blockhash,
-                    0,
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
