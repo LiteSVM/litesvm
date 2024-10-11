@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Make log_bytes_limit configurable [(#96)](https://github.com/LiteSVM/litesvm/pull/96)
+
 ## [0.2.1] - 2024-09-27
 
 ### Changed
