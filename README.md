@@ -51,11 +51,11 @@ assert_eq!(from_account.unwrap().lamports, 4936);
 assert_eq!(to_account.unwrap().lamports, 64);
 ```
 
-### Development
+### Developing litesvm
 
 #### Run the tests
 
-The tests use some test programs you need to build first (Solana CLI >= 1.18.8 required):
+The tests in this repo use some test programs you need to build first (Solana CLI >= 1.18.8 required):
 
 ```cd test_programs && cargo build-sbf```
 
