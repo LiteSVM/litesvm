@@ -1,3 +1,4 @@
+#![doc = include_str!("../../README.md")]
 use itertools::Itertools;
 use log::error;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
@@ -74,13 +75,6 @@ mod builtin;
 mod history;
 mod spl;
 mod utils;
-
-// The test code doesn't actually get run because it's not
-// what doctest expects but at least it
-// compiles it so we'll see if there's a compile-time error.
-#[doc = include_str!("../../README.md")]
-#[cfg(doctest)]
-pub struct ReadmeDoctests;
 
 pub struct LiteSVM {
     accounts: AccountsDb,
