@@ -24,7 +24,7 @@ use solana_program_runtime::{
 use solana_sdk::{
     account::{AccountSharedData, ReadableAccount, WritableAccount},
     account_utils::StateMut,
-    nonce,
+    native_loader, nonce,
     pubkey::Pubkey,
     transaction::TransactionError,
 };
@@ -81,7 +81,10 @@ impl AccountsDb {
         pubkey: Pubkey,
         account: AccountSharedData,
     ) -> Result<(), LiteSVMError> {
-        if account.executable() && pubkey != Pubkey::default() {
+        if account.executable()
+            && pubkey != Pubkey::default()
+            && account.owner() != &native_loader::ID
+        {
             let loaded_program = self.load_program(&account)?;
             self.programs_cache
                 .replenish(pubkey, Arc::new(loaded_program));

@@ -1,6 +1,7 @@
 #![doc = include_str!("../../README.md")]
 use itertools::Itertools;
 use log::error;
+use precompiles::load_precompiles;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::{
     compute_budget::ComputeBudget,
@@ -21,7 +22,6 @@ use solana_sdk::{
     account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     bpf_loader,
     clock::Clock,
-    ed25519_program,
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
     feature_set::{
@@ -39,7 +39,6 @@ use solana_sdk::{
     pubkey::Pubkey,
     rent::Rent,
     reserved_account_keys::ReservedAccountKeys,
-    secp256k1_program,
     signature::{Keypair, Signature},
     signer::Signer,
     slot_hashes::SlotHashes,
@@ -75,6 +74,7 @@ pub mod types;
 mod accounts_db;
 mod builtin;
 mod history;
+mod precompiles;
 mod spl;
 mod utils;
 
@@ -117,6 +117,7 @@ impl LiteSVM {
             .with_builtins(None)
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
+            .with_precompiles()
             .with_spl_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
@@ -227,6 +228,11 @@ impl LiteSVM {
 
     pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
         self.log_bytes_limit = limit;
+        self
+    }
+
+    pub fn with_precompiles(mut self) -> Self {
+        load_precompiles(&mut self);
         self
     }
 
@@ -475,13 +481,6 @@ impl LiteSVM {
                 let mut account_found = true;
                 let account = if solana_sdk::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
-                } else if ed25519_program::check_id(key) || secp256k1_program::check_id(key) {
-                    let mut account = AccountSharedData::default();
-                    account.set_owner(native_loader::id());
-                    account.set_lamports(1);
-                    account.set_executable(true);
-
-                    account
                 } else {
                     let instruction_account = u8::try_from(i)
                         .map(|i| instruction_accounts.contains(&&i))

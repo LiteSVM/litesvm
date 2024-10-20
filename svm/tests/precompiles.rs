@@ -1,4 +1,3 @@
-use expect_test::expect;
 use litesvm::LiteSVM;
 use solana_sdk::{
     ed25519_instruction::{self, new_ed25519_instruction},
@@ -6,7 +5,7 @@ use solana_sdk::{
     secp256k1_instruction::{self, new_secp256k1_instruction},
     signature::Keypair,
     signer::Signer,
-    transaction::Transaction,
+    transaction::{Transaction, TransactionError},
 };
 
 #[test_log::test]
@@ -49,24 +48,10 @@ fn ed25519_precompile_err() {
     let res = svm.send_transaction(tx);
 
     // Assert - Transaction fails.
-    expect![[r#"
-        Err(
-            FailedTransactionMetadata {
-                err: InvalidAccountIndex,
-                meta: TransactionMetadata {
-                    signature: 1111111111111111111111111111111111111111111111111111111111111111,
-                    logs: [],
-                    inner_instructions: [],
-                    compute_units_consumed: 0,
-                    return_data: TransactionReturnData {
-                        program_id: 11111111111111111111111111111111,
-                        data: [],
-                    },
-                },
-            },
-        )
-    "#]]
-    .assert_debug_eq(&res);
+    assert_eq!(
+        res.err().map(|fail| fail.err),
+        Some(TransactionError::InvalidAccountIndex)
+    );
 }
 
 #[test_log::test]
@@ -109,22 +94,8 @@ fn secp256k1_precompile_err() {
     let res = svm.send_transaction(tx);
 
     // Assert - Transaction fails.
-    expect![[r#"
-        Err(
-            FailedTransactionMetadata {
-                err: InvalidAccountIndex,
-                meta: TransactionMetadata {
-                    signature: 1111111111111111111111111111111111111111111111111111111111111111,
-                    logs: [],
-                    inner_instructions: [],
-                    compute_units_consumed: 0,
-                    return_data: TransactionReturnData {
-                        program_id: 11111111111111111111111111111111,
-                        data: [],
-                    },
-                },
-            },
-        )
-    "#]]
-    .assert_debug_eq(&res);
+    assert_eq!(
+        res.err().map(|fail| fail.err),
+        Some(TransactionError::InvalidAccountIndex)
+    );
 }
