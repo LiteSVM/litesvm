@@ -1,6 +1,7 @@
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
-    ed25519_program, native_loader, secp256k1_program,
+    native_loader,
+    precompiles::get_precompiles,
 };
 
 use crate::LiteSVM;
@@ -11,8 +12,13 @@ pub(crate) fn load_precompiles(svm: &mut LiteSVM) {
     account.set_lamports(1);
     account.set_executable(true);
 
-    svm.set_account(ed25519_program::ID, account.clone().into())
-        .unwrap();
-    svm.set_account(secp256k1_program::ID, account.clone().into())
-        .unwrap();
+    for precompile in get_precompiles() {
+        if precompile
+            .feature
+            .map_or(false, |feature_id| svm.feature_set.is_active(&feature_id))
+        {
+            svm.set_account(precompile.program_id, account.clone().into())
+                .unwrap();
+        }
+    }
 }
