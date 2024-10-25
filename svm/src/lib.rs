@@ -117,7 +117,7 @@ impl LiteSVM {
             .with_builtins(None)
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
-            .with_precompiles()
+            .with_precompiles(None)
             .with_spl_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
@@ -231,8 +231,10 @@ impl LiteSVM {
         self
     }
 
-    pub fn with_precompiles(mut self) -> Self {
-        load_precompiles(&mut self);
+    pub fn with_precompiles(mut self, feature_set: Option<FeatureSet>) -> Self {
+        let feature_set = feature_set.unwrap_or_else(FeatureSet::all_enabled);
+        load_precompiles(&mut self, feature_set);
+
         self
     }
 
