@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+### Added
+
 - Add `LiteSVM::with_precompiles`.
 
 ## [0.3.0] - 2024-10-12
