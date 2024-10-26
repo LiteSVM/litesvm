@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
     feature_set::FeatureSet,
