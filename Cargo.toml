@@ -12,8 +12,10 @@ rust-version = "1.75.0"
 [workspace.dependencies]
 bincode = "1.3"
 criterion = "0.5"
+ed25519-dalek = "1.0.1"
 indexmap = "2.6"
 itertools = "0.12"
+libsecp256k1 = "0.6.0"
 litesvm = { path = "svm", version = "0.3" }
 log = "0.4"
 serde = "1.0"

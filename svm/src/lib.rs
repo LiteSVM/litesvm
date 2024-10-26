@@ -1,6 +1,7 @@
 #![doc = include_str!("../../README.md")]
 use itertools::Itertools;
 use log::error;
+use precompiles::load_precompiles;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::{
     compute_budget::ComputeBudget,
@@ -73,6 +74,7 @@ pub mod types;
 mod accounts_db;
 mod builtin;
 mod history;
+mod precompiles;
 mod spl;
 mod utils;
 
@@ -115,6 +117,7 @@ impl LiteSVM {
             .with_builtins(None)
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
+            .with_precompiles(None)
             .with_spl_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
@@ -225,6 +228,13 @@ impl LiteSVM {
 
     pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
         self.log_bytes_limit = limit;
+        self
+    }
+
+    pub fn with_precompiles(mut self, feature_set: Option<FeatureSet>) -> Self {
+        let feature_set = feature_set.unwrap_or_else(FeatureSet::all_enabled);
+        load_precompiles(&mut self, feature_set);
+
         self
     }
 

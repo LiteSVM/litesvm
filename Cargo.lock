@@ -2210,8 +2210,10 @@ version = "0.3.0"
 dependencies = [
  "bincode",
  "criterion",
+ "ed25519-dalek",
  "indexmap 2.6.0",
  "itertools 0.12.1",
+ "libsecp256k1",
  "log",
  "serde",
  "solana-address-lookup-table-program",
