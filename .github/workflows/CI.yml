@@ -34,7 +34,7 @@ jobs:
         run: sudo apt-get install protobuf-compiler
 
       - name: Build test programs
-        run: cd svm/test_programs && cargo build-sbf
+        run: cd crates/litesvm/test_programs && cargo build-sbf
 
       - name: Run tests
         run: cargo test
