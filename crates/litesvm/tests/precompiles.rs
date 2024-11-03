@@ -1,6 +1,7 @@
 use litesvm::LiteSVM;
 use solana_sdk::{
     ed25519_instruction::{self, new_ed25519_instruction},
+    instruction::InstructionError,
     message::Message,
     secp256k1_instruction::{self, new_secp256k1_instruction},
     signature::Keypair,
@@ -50,7 +51,10 @@ fn ed25519_precompile_err() {
     // Assert - Transaction fails.
     assert_eq!(
         res.err().map(|fail| fail.err),
-        Some(TransactionError::InvalidAccountIndex)
+        Some(TransactionError::InstructionError(
+            0,
+            InstructionError::Custom(2)
+        ))
     );
 }
 
@@ -96,6 +100,9 @@ fn secp256k1_precompile_err() {
     // Assert - Transaction fails.
     assert_eq!(
         res.err().map(|fail| fail.err),
-        Some(TransactionError::InvalidAccountIndex)
+        Some(TransactionError::InstructionError(
+            0,
+            InstructionError::Custom(2)
+        ))
     );
 }

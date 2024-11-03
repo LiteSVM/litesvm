@@ -3,19 +3,17 @@ use itertools::Itertools;
 use log::error;
 use precompiles::load_precompiles;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
-use solana_compute_budget::{
-    compute_budget::ComputeBudget,
-    compute_budget_processor::{process_compute_budget_instructions, ComputeBudgetLimits},
-};
-use solana_loader_v4_program::create_program_runtime_environment_v2;
+use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v2;
+use solana_compute_budget::compute_budget::ComputeBudget;
+use solana_compute_budget::compute_budget_limits::ComputeBudgetLimits;
+use solana_log_collector::LogCollector;
 #[allow(deprecated)]
 use solana_program::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use solana_program_runtime::{
     invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
     loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
-    log_collector::LogCollector,
-    timings::ExecuteTimings,
 };
+use solana_runtime_transaction::instructions_processor::process_compute_budget_instructions;
 #[allow(deprecated)]
 use solana_sdk::sysvar::recent_blockhashes::IterItem;
 use solana_sdk::{
@@ -24,10 +22,7 @@ use solana_sdk::{
     clock::Clock,
     epoch_rewards::EpochRewards,
     epoch_schedule::EpochSchedule,
-    feature_set::{
-        include_loaded_accounts_data_size_in_fee_calculation, remove_rounding_in_fee_calculation,
-        FeatureSet,
-    },
+    feature_set::{remove_rounding_in_fee_calculation, FeatureSet},
     fee::FeeStructure,
     hash::Hash,
     inner_instruction::InnerInstructionsList,
@@ -50,7 +45,9 @@ use solana_sdk::{
     transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
 };
 use solana_svm::message_processor::MessageProcessor;
+use solana_svm_transaction::svm_message::SVMMessage;
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
+use solana_timings::ExecuteTimings;
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 use types::SimulatedTransactionInfo;
 use utils::{
@@ -465,12 +462,10 @@ impl LiteSVM {
             .flat_map(|instruction| &instruction.accounts)
             .unique()
             .collect::<Vec<&u8>>();
-        let fee = self.fee_structure.calculate_fee(
+        let fee = solana_fee::calculate_fee(
             message,
             self.fee_structure.lamports_per_signature,
-            &compute_budget_limits.into(),
-            self.feature_set
-                .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+            0,
             self.feature_set
                 .is_active(&remove_rounding_in_fee_calculation::id()),
         );
@@ -1022,11 +1017,11 @@ fn execute_tx_helper(
 fn get_compute_budget_limits(
     sanitized_tx: &SanitizedTransaction,
 ) -> Result<ComputeBudgetLimits, ExecutionResult> {
-    let instructions = sanitized_tx.message().program_instructions_iter();
-    process_compute_budget_instructions(instructions).map_err(|e| ExecutionResult {
-        tx_result: Err(e),
-        ..Default::default()
-    })
+    process_compute_budget_instructions(SVMMessage::program_instructions_iter(sanitized_tx))
+        .map_err(|e| ExecutionResult {
+            tx_result: Err(e),
+            ..Default::default()
+        })
 }
 
 /// Lighter version of the one in the solana-svm crate.

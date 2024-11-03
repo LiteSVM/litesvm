@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Bump Solana crates to 2.1 [(#96)](https://github.com/LiteSVM/litesvm/pull/96).
+
 ### Added
 
 - Add `LiteSVM::with_precompiles`.
