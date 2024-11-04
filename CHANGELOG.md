@@ -10,6 +10,10 @@
 
 - Add `LiteSVM::with_precompiles`.
 
+### Fixed
+
+- Fix account executable in the `add_builtin` method ([#110](https://github.com/LiteSVM/litesvm/pull/110)).
+
 ## [0.3.0] - 2024-10-12
 
 ### Added
