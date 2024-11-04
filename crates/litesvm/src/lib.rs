@@ -323,9 +323,10 @@ impl LiteSVM {
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(builtin));
-        self.accounts
-            .add_account(program_id, AccountSharedData::new(0, 1, &bpf_loader::id()))
-            .unwrap();
+
+        let mut account = AccountSharedData::new(0, 1, &bpf_loader::id());
+        account.set_executable(true);
+        self.accounts.add_account(program_id, account).unwrap();
     }
 
     /// Adds an SBF program to the test environment from the file specified.
