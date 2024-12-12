@@ -2472,9 +2472,12 @@ dependencies = [
 name = "litesvm-node"
 version = "0.0.0"
 dependencies = [
+ "litesvm",
  "napi",
  "napi-build",
  "napi-derive",
+ "solana-compute-budget",
+ "solana-sdk",
 ]
 
 [[package]]
