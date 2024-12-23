@@ -465,6 +465,7 @@ impl LiteSVM {
             .collect::<Vec<&u8>>();
         let fee = solana_fee::calculate_fee(
             message,
+            false,
             self.fee_structure.lamports_per_signature,
             0,
             self.feature_set
