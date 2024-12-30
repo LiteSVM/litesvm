@@ -1,4 +1,3 @@
-#![doc = include_str!("../../../README.md")]
 use itertools::Itertools;
 use log::error;
 use precompiles::load_precompiles;

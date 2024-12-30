@@ -51,7 +51,7 @@ assert_eq!(from_account.unwrap().lamports, 4936);
 assert_eq!(to_account.unwrap().lamports, 64);
 ```
 
-### Developing litesvm
+### 🛠️ Developing litesvm
 
 #### Run the tests
 
