@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2024-12-30
+
 ### Changed
 
-- Bump Solana crates to 2.1 [(#96)](https://github.com/LiteSVM/litesvm/pull/96).
+- Bump Solana crates to 2.1 ([#96](https://github.com/LiteSVM/litesvm/pull/96)).
 
 ### Added
 
-- Add `LiteSVM::with_precompiles`.
+- Add `LiteSVM::with_precompiles` ([#102](https://github.com/LiteSVM/litesvm/pull/102)).
 
 ### Fixed
 
@@ -18,7 +20,7 @@
 
 ### Added
 
-- Make log_bytes_limit configurable [(#96)](https://github.com/LiteSVM/litesvm/pull/96).
+- Make log_bytes_limit configurable ([#96](https://github.com/LiteSVM/litesvm/pull/96)).
 
 ### Changed
 
@@ -59,7 +61,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/LiteSVM/litesvm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/LiteSVM/litesvm/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/LiteSVM/litesvm/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/LiteSVM/litesvm/compare/v0.1.0...v0.2.0
