@@ -27,11 +27,8 @@ jobs:
 
       - name: Install Solana CLI
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v1.18.8/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.6/install)"
           echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Install protobuf compiler # delete this once we get to solana 2.1
-        run: sudo apt-get install protobuf-compiler
 
       - name: Build test programs
         run: cd crates/litesvm/test_programs && cargo build-sbf
@@ -52,9 +49,6 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-
-      - name: Install protobuf compiler # delete this once we get to solana 2.1
-        run: sudo apt-get install protobuf-compiler
 
       - name: Cache cargo
         uses: actions/cache@v4
