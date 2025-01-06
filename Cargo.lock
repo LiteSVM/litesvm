@@ -2433,6 +2433,7 @@ dependencies = [
  "itertools 0.13.0",
  "libsecp256k1",
  "log",
+ "napi",
  "serde",
  "solana-address-lookup-table-program",
  "solana-bpf-loader-program",

@@ -10,12 +10,14 @@ readme = "../../README.md"
 
 [features]
 internal-test = []
+napi = ["dep:napi"]
 
 [dependencies]
 bincode.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
+napi = { workspace = true, features = ["napi4", "napi6"], optional = true }
 serde = { workspace = true, optional = true }
 solana-address-lookup-table-program.workspace = true
 solana-bpf-loader-program.workspace = true

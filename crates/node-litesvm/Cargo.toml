@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 litesvm = { workspace = true }
-napi = { version = "2.12.2", default-features = false, features = ["napi4", "napi6"] }
+napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive = "2.12.2"
 solana-compute-budget = { workspace = true }
 solana-sdk = { workspace = true }
