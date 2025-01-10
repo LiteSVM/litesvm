@@ -7,7 +7,8 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-litesvm = { workspace = true }
+bincode = { workspace = true }
+litesvm = { workspace = true, features = ["nodejs-internal"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive = "2.12.2"
 solana-compute-budget = { workspace = true }

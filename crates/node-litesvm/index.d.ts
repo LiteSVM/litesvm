@@ -5,29 +5,83 @@
 
 export declare class CompiledInstruction {
   constructor(programIdIndex: number, accounts: Uint8Array, data: Uint8Array)
-  get programIdIndex(): number
-  get accounts(): Uint8Array
-  get data(): Uint8Array
+  programIdIndex(): number
+  accounts(): Uint8Array
+  data(): Uint8Array
 }
-export declare class InnerInstruction { }
-export declare class TransactionMetadata { }
-export declare class FailedTransactionMetadata { }
+export declare class InnerInstruction {
+  instruction(): CompiledInstruction
+  stackHeight(): number
+}
+export declare class TransactionReturnData {
+  programId(): Uint8Array
+  data(): Uint8Array
+}
+export declare class FeatureSet {
+  static default(): FeatureSet
+  static allEnabled(): FeatureSet
+  isActive(featureId: Uint8Array): boolean
+  activatedSlot(featureId: Uint8Array): bigint | null
+}
+export declare class TransactionMetadata {
+  signature(): Uint8Array
+  logs(): Array<string>
+  innerInstructions(): Array<Array<InnerInstruction>>
+  computeUnitsConsumed(): bigint
+  returnData(): TransactionReturnData
+}
+export declare class FailedTransactionMetadata {
+  err(): string
+  meta(): TransactionMetadata
+}
+export declare class AddressAndAccount {
+  address: Uint8Array
+  account(): Account
+}
+export declare class SimulatedTransactionInfo {
+  meta(): TransactionMetadata
+  postAccounts(): Array<AddressAndAccount>
+}
 export declare class Account {
   constructor(lamports: bigint, data: Uint8Array, owner: Uint8Array, executable: boolean, rentEpoch: bigint)
-  get lamports(): bigint
-  get data(): Uint8Array
-  get owner(): Uint8Array
-  get executable(): boolean
-  get rentEpoch(): bigint
+  lamports(): bigint
+  data(): Uint8Array
+  owner(): Uint8Array
+  executable(): boolean
+  rentEpoch(): bigint
 }
 export type LiteSVM = LiteSvm
 export declare class LiteSvm {
   /** Creates the basic test environment. */
   constructor()
+  /**
+   * Changes the capacity of the transaction history.
+   * Set this to 0 to disable transaction history and allow duplicate transactions.
+   * Returns minimum balance required to make an account with specified data length rent exempt.
+   */
+  minimumBalanceForRentExemption(dataLen: bigint): bigint
+  /** Returns all information associated with the account of the provided pubkey. */
+  getAccount(pubkey: Uint8Array): Account | null
   /** Sets all information associated with the account of the provided pubkey. */
   setAccount(pubkey: Uint8Array, data: Account): void
   /** Gets the balance of the provided account pubkey. */
   getBalance(pubkey: Uint8Array): bigint | null
   /** Gets the latest blockhash. */
   latestBlockhash(): string
+  /** Gets a transaction from the transaction history. */
+  getTransaction(signature: Uint8Array): TransactionResult | null
+  /** Airdrops the account with the lamports specified. */
+  airdrop(pubkey: Uint8Array, lamports: bigint): TransactionResult
+  /** Adds am SBF program to the test environment from the file specified. */
+  addProgramFromFile(programId: Uint8Array, path: string): void
+  /** Adds am SBF program to the test environment. */
+  addProgram(programId: Uint8Array, programBytes: Uint8Array): void
+  sendLegacyTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata
+  sendVersionedTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata
+  simulateLegacyTransaction(txBytes: Uint8Array): SimulatedTransactionInfo | FailedTransactionMetadata
+  simulateVersionedTransaction(txBytes: Uint8Array): SimulatedTransactionInfo | FailedTransactionMetadata
+  /** Expires the current blockhash */
+  expireBlockhash(): void
+  /** Warps the clock to the specified slot */
+  warpToSlot(slot: bigint): void
 }

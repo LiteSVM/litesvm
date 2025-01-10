@@ -1,6 +1,8 @@
 use itertools::Itertools;
 use log::error;
 use precompiles::load_precompiles;
+#[cfg(feature = "nodejs-internal")]
+use qualifier_attr::qualifiers;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v2;
 use solana_compute_budget::compute_budget::ComputeBudget;
@@ -119,9 +121,14 @@ impl LiteSVM {
             .with_blockhash_check(true)
     }
 
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_compute_budget(&mut self, compute_budget: ComputeBudget) {
+        self.compute_budget = Some(compute_budget);
+    }
+
     /// Sets the compute budget.
     pub fn with_compute_budget(mut self, compute_budget: ComputeBudget) -> Self {
-        self.compute_budget = Some(compute_budget);
+        self.set_compute_budget(compute_budget);
         self
     }
 

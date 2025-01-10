@@ -19,6 +19,7 @@ libsecp256k1 = "0.6.0"
 litesvm = { path = "crates/litesvm", version = "0.4" }
 log = "0.4"
 napi = { version = "2.12.2", default-features = false }
+qualifier_attr = "0.2.2"
 serde = "1.0"
 smallvec = "1.13"
 solana-address-lookup-table-program = "2.1"
