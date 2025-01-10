@@ -132,20 +132,30 @@ impl LiteSVM {
         self
     }
 
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_sigverify(&mut self, sigverify: bool) {
+        self.sigverify = sigverify;
+    }
+
     /// Enables or disables sigverify.
     pub fn with_sigverify(mut self, sigverify: bool) -> Self {
-        self.sigverify = sigverify;
+        self.set_sigverify(sigverify);
         self
+    }
+
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_blockhash_check(&mut self, check: bool) {
+        self.blockhash_check = check;
     }
 
     /// Enables or disables the blockhash check.
     pub fn with_blockhash_check(mut self, check: bool) -> Self {
-        self.blockhash_check = check;
+        self.set_blockhash_check(check);
         self
     }
 
-    /// Includes the default sysvars.
-    pub fn with_sysvars(mut self) -> Self {
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_sysvars(&mut self) {
         self.set_sysvar(&Clock::default());
         self.set_sysvar(&EpochRewards::default());
         self.set_sysvar(&EpochSchedule::default());
@@ -167,11 +177,16 @@ impl LiteSVM {
         )]));
         self.set_sysvar(&SlotHistory::default());
         self.set_sysvar(&StakeHistory::default());
+    }
+
+    /// Includes the default sysvars.
+    pub fn with_sysvars(mut self) -> Self {
+        self.set_sysvars();
         self
     }
 
-    /// Changes the default builtins.
-    pub fn with_builtins(mut self, feature_set: Option<FeatureSet>) -> Self {
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_builtins(&mut self, feature_set: Option<FeatureSet>) {
         let mut feature_set = feature_set.unwrap_or(FeatureSet::all_enabled());
 
         BUILTINS.iter().for_each(|builtint| {
@@ -204,40 +219,69 @@ impl LiteSVM {
         self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
         self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
         self.feature_set = Arc::new(feature_set);
+    }
+
+    /// Changes the default builtins.
+    pub fn with_builtins(mut self, feature_set: Option<FeatureSet>) -> Self {
+        self.set_builtins(feature_set);
         self
     }
 
-    /// Changes the initial lamports in LiteSVM's airdrop account.
-    pub fn with_lamports(mut self, lamports: u64) -> Self {
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
             self.airdrop_kp.pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
         );
+    }
+
+    /// Changes the initial lamports in LiteSVM's airdrop account.
+    pub fn with_lamports(mut self, lamports: u64) -> Self {
+        self.set_lamports(lamports);
         self
+    }
+
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_spl_programs(&mut self) {
+        load_spl_programs(self);
     }
 
     /// Includes the standard SPL programs.
     pub fn with_spl_programs(mut self) -> Self {
-        load_spl_programs(&mut self);
+        self.set_spl_programs();
         self
+    }
+
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_transaction_history(&mut self, capacity: usize) {
+        self.history.set_capacity(capacity);
     }
 
     /// Changes the capacity of the transaction history.
     /// Set this to 0 to disable transaction history and allow duplicate transactions.
     pub fn with_transaction_history(mut self, capacity: usize) -> Self {
-        self.history.set_capacity(capacity);
+        self.set_transaction_history(capacity);
         self
+    }
+
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_log_bytes_limit(&mut self, limit: Option<usize>) {
+        self.log_bytes_limit = limit;
     }
 
     pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
-        self.log_bytes_limit = limit;
+        self.set_log_bytes_limit(limit);
         self
     }
 
-    pub fn with_precompiles(mut self, feature_set: Option<FeatureSet>) -> Self {
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_precompiles(&mut self, feature_set: Option<FeatureSet>) {
         let feature_set = feature_set.unwrap_or_else(FeatureSet::all_enabled);
-        load_precompiles(&mut self, feature_set);
+        load_precompiles(self, feature_set);
+    }
 
+    pub fn with_precompiles(mut self, feature_set: Option<FeatureSet>) -> Self {
+        self.set_precompiles(feature_set);
         self
     }
 

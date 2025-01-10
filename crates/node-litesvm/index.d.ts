@@ -54,11 +54,28 @@ export type LiteSVM = LiteSvm
 export declare class LiteSvm {
   /** Creates the basic test environment. */
   constructor()
+  /** Sets the compute budget. */
+  setComputeBudget(computeUnitLimit: bigint, log64Units: bigint, createProgramAddressUnits: bigint, invokeUnits: bigint, maxInstructionStackDepth: bigint, maxInstructionTraceLength: bigint, sha256BaseCost: bigint, sha256ByteCost: bigint, sha256MaxSlices: bigint, maxCallDepth: bigint, stackFrameSize: bigint, logPubkeyUnits: bigint, maxCpiInstructionSize: bigint, cpiBytesPerUnit: bigint, sysvarBaseCost: bigint, secp256K1RecoverCost: bigint, syscallBaseCost: bigint, curve25519EdwardsValidatePointCost: bigint, curve25519EdwardsAddCost: bigint, curve25519EdwardsSubtractCost: bigint, curve25519EdwardsMultiplyCost: bigint, curve25519EdwardsMsmBaseCost: bigint, curve25519EdwardsMsmIncrementalCost: bigint, curve25519RistrettoValidatePointCost: bigint, curve25519RistrettoAddCost: bigint, curve25519RistrettoSubtractCost: bigint, curve25519RistrettoMultiplyCost: bigint, curve25519RistrettoMsmBaseCost: bigint, curve25519RistrettoMsmIncrementalCost: bigint, heapSize: number, heapCost: bigint, memOpBaseCost: bigint, altBn128AdditionCost: bigint, altBn128MultiplicationCost: bigint, altBn128PairingOnePairCostFirst: bigint, altBn128PairingOnePairCostOther: bigint, bigModularExponentiationBaseCost: bigint, bigModularExponentiationCostDivisor: bigint, poseidonCostCoefficientA: bigint, poseidonCostCoefficientC: bigint, getRemainingComputeUnitsCost: bigint, altBn128G1Compress: bigint, altBn128G1Decompress: bigint, altBn128G2Compress: bigint, altBn128G2Decompress: bigint): void
+  /** Enables or disables sigverify */
+  setSigverify(sigverify: boolean): void
+  /** Enables or disables the blockhash check */
+  setBlockhashCheck(check: boolean): void
+  /** Includes the default sysvars */
+  setSysvars(): void
+  /** Changes the default builtins */
+  setBuiltins(featureSet?: Array<[Uint8Array, bigint]> | undefined | null): void
+  /** Changes the initial lamports in LiteSVM's airdrop account */
+  setLamports(lamports: bigint): void
+  /** Includes the standard SPL programs */
+  setSplPrograms(): void
   /**
    * Changes the capacity of the transaction history.
    * Set this to 0 to disable transaction history and allow duplicate transactions.
-   * Returns minimum balance required to make an account with specified data length rent exempt.
    */
+  setTransactionHistory(capacity: bigint): void
+  setLogBytesLimit(limit?: bigint | undefined | null): void
+  setPrecompiles(featureSet?: Array<[Uint8Array, bigint]> | undefined | null): void
+  /** Returns minimum balance required to make an account with specified data length rent exempt. */
   minimumBalanceForRentExemption(dataLen: bigint): bigint
   /** Returns all information associated with the account of the provided pubkey. */
   getAccount(pubkey: Uint8Array): Account | null
@@ -69,9 +86,9 @@ export declare class LiteSvm {
   /** Gets the latest blockhash. */
   latestBlockhash(): string
   /** Gets a transaction from the transaction history. */
-  getTransaction(signature: Uint8Array): TransactionResult | null
+  getTransaction(signature: Uint8Array): TransactionMetadata | FailedTransactionMetadata | null
   /** Airdrops the account with the lamports specified. */
-  airdrop(pubkey: Uint8Array, lamports: bigint): TransactionResult
+  airdrop(pubkey: Uint8Array, lamports: bigint): TransactionMetadata | FailedTransactionMetadata | null
   /** Adds am SBF program to the test environment from the file specified. */
   addProgramFromFile(programId: Uint8Array, path: string): void
   /** Adds am SBF program to the test environment. */

@@ -296,6 +296,18 @@ fn convert_sim_result(
     }
 }
 
+fn convert_feature_set(
+    active_features: Vec<(Uint8Array, BigInt)>,
+) -> solana_sdk::feature_set::FeatureSet {
+    let mut inner = solana_sdk::feature_set::FeatureSet::default();
+    for (raw_addr, raw_slot) in active_features {
+        let address = convert_pubkey(raw_addr);
+        let slot = raw_slot.get_u64().1;
+        inner.activate(&address, slot);
+    }
+    inner
+}
+
 #[napi]
 pub struct LiteSVM(LiteSVMOriginal);
 
@@ -425,47 +437,67 @@ impl LiteSVM {
         };
         self.0.set_compute_budget(inner);
     }
-    // /// Enables or disables sigverify
-    // pub fn with_sigverify(self, sigverify: bool) -> Self {
-    //     Self(self.0.with_sigverify(sigverify))
-    // }
-    // /// Enables or disables the blockhash check
-    // pub fn with_blockhash_check(self, check: bool) -> Self {
-    //     Self(self.0.with_blockhash_check(check))
-    // }
-    // /// Includes the default sysvars
-    // pub fn with_sysvars(self) -> Self {
-    //     Self(self.0.with_sysvars())
-    // }
 
-    // /// Changes the default builtins
-    // pub fn with_builtins(self, feature_set: Option<FeatureSet>) -> Self {
-    //     Self(self.0.with_builtins(feature_set.map(|x| x.into())))
-    // }
+    #[napi]
+    /// Enables or disables sigverify
+    pub fn set_sigverify(&mut self, sigverify: bool) {
+        self.0.set_sigverify(sigverify);
+    }
 
-    // /// Changes the initial lamports in LiteSVM's airdrop account
-    // pub fn with_lamports(self, lamports: u64) -> Self {
-    //     Self(self.0.with_lamports(lamports))
-    // }
+    #[napi]
+    /// Enables or disables the blockhash check
+    pub fn set_blockhash_check(&mut self, check: bool) {
+        self.0.set_blockhash_check(check);
+    }
 
-    // /// Includes the standard SPL programs
-    // pub fn with_spl_programs(self) -> Self {
-    //     Self(self.0.with_spl_programs())
-    // }
+    #[napi]
+    /// Includes the default sysvars
+    pub fn set_sysvars(&mut self) {
+        self.0.set_sysvars()
+    }
 
+    #[napi]
+    /// Changes the default builtins
+    pub fn set_builtins(&mut self, feature_set: Option<Vec<(Uint8Array, BigInt)>>) {
+        if let Some(active_features) = feature_set {
+            let inner = convert_feature_set(active_features);
+            self.0.set_builtins(Some(inner));
+        }
+    }
+
+    #[napi]
+    /// Changes the initial lamports in LiteSVM's airdrop account
+    pub fn set_lamports(&mut self, lamports: BigInt) {
+        self.0.set_lamports(lamports.get_u64().1)
+    }
+
+    #[napi]
+    /// Includes the standard SPL programs
+    pub fn set_spl_programs(&mut self) {
+        self.0.set_spl_programs();
+    }
+
+    #[napi]
     /// Changes the capacity of the transaction history.
     /// Set this to 0 to disable transaction history and allow duplicate transactions.
-    // pub fn with_transaction_history(self, capacity: usize) -> Self {
-    //     Self(self.0.with_transaction_history(capacity))
-    // }
+    pub fn set_transaction_history(&mut self, capacity: BigInt) {
+        self.0
+            .set_transaction_history(capacity.get_u64().1 as usize);
+    }
 
-    // pub fn with_log_bytes_limit(self, limit: Option<usize>) -> Self {
-    //     Self(self.0.with_log_bytes_limit(limit))
-    // }
+    #[napi]
+    pub fn set_log_bytes_limit(&mut self, limit: Option<BigInt>) {
+        self.0
+            .set_log_bytes_limit(limit.map(|x| x.get_u64().1 as usize));
+    }
 
-    // pub fn with_precompiles(self, feature_set: Option<FeatureSet>) -> Self {
-    //     Self(self.0.with_precompiles(feature_set.map(|x| x.into())))
-    // }
+    #[napi]
+    pub fn set_precompiles(&mut self, feature_set: Option<Vec<(Uint8Array, BigInt)>>) {
+        if let Some(active_features) = feature_set {
+            let inner = convert_feature_set(active_features);
+            self.0.set_precompiles(Some(inner));
+        }
+    }
 
     #[napi]
     /// Returns minimum balance required to make an account with specified data length rent exempt.
@@ -500,7 +532,7 @@ impl LiteSVM {
         self.0.latest_blockhash().to_string()
     }
 
-    #[napi]
+    #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
     /// Gets a transaction from the transaction history.
     pub fn get_transaction(&self, signature: Uint8Array) -> Option<TransactionResult> {
         self.0
@@ -508,7 +540,7 @@ impl LiteSVM {
             .map(|x| convert_transaction_result(x.clone()))
     }
 
-    #[napi]
+    #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: Uint8Array, lamports: BigInt) -> TransactionResult {
         convert_transaction_result(
