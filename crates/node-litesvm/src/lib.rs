@@ -309,14 +309,19 @@ fn convert_feature_set(
 }
 
 #[napi]
-pub struct LiteSVM(LiteSVMOriginal);
+pub struct LiteSvm(LiteSVMOriginal);
 
 #[napi]
-impl LiteSVM {
+impl LiteSvm {
     /// Creates the basic test environment.
     #[napi(constructor)]
     pub fn new() -> Self {
         Self(LiteSVMOriginal::new())
+    }
+
+    #[napi(factory, js_name = "default")]
+    pub fn new_default() -> Self {
+        Self(LiteSVMOriginal::default())
     }
 
     #[napi]

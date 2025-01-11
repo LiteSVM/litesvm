@@ -1,47 +1,75 @@
 {
-  "name": "litesvm",
-  "version": "0.0.0",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "napi": {
-    "name": "litesvm",
-    "triples": {
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-linux-android",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl",
-        "aarch64-pc-windows-msvc",
-        "armv7-unknown-linux-gnueabihf",
-        "armv7-unknown-linux-musleabihf",
-        "x86_64-unknown-linux-musl",
-        "x86_64-unknown-freebsd",
-        "i686-pc-windows-msvc",
-        "armv7-linux-androideabi",
-        "universal-apple-darwin",
-        "riscv64gc-unknown-linux-gnu"
-      ]
-    }
-  },
-  "license": "MIT",
-  "devDependencies": {
-    "@napi-rs/cli": "^2.18.4",
-    "ava": "^6.0.1"
-  },
-  "ava": {
-    "timeout": "3m"
-  },
-  "engines": {
-    "node": ">= 10"
-  },
-  "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
-    "test": "ava",
-    "universal": "napi universal",
-    "version": "napi version"
-  },
-  "packageManager": "yarn@4.5.3"
+	"name": "litesvm",
+	"version": "0.0.0",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist/"
+	],
+	"napi": {
+		"name": "litesvm",
+		"triples": {
+			"additional": [
+				"aarch64-apple-darwin",
+				"aarch64-linux-android",
+				"aarch64-unknown-linux-gnu",
+				"aarch64-unknown-linux-musl",
+				"aarch64-pc-windows-msvc",
+				"armv7-unknown-linux-gnueabihf",
+				"armv7-unknown-linux-musleabihf",
+				"x86_64-unknown-linux-musl",
+				"x86_64-unknown-freebsd",
+				"i686-pc-windows-msvc",
+				"armv7-linux-androideabi",
+				"universal-apple-darwin",
+				"riscv64gc-unknown-linux-gnu"
+			]
+		}
+	},
+	"license": "MIT",
+	"dependencies": {
+		"@solana/web3.js": "^1.68.0",
+		"bs58": "^4.0.1"
+	},
+	"devDependencies": {
+		"@napi-rs/cli": "^2.18.4",
+		"@solana/spl-token": "^0.3.7",
+		"@types/bs58": "^4.0.1",
+		"@types/jest": "^29.5.3",
+		"@types/markdown-it": "^14.1.0",
+		"@types/node-fetch": "^2.6.4",
+		"jest": "^29.6.1",
+		"markdown-it": "^14.1.0",
+		"markdown-it-include": "^2.0.0",
+		"rome": "^12.0.0",
+		"ts-jest": "^29.1.1",
+		"ts-node": "^10.9.1",
+		"typedoc": "^0.24.0",
+		"typedoc-plugin-markdown": "^3.15.3",
+		"typescript": "5.1.6",
+		"vuepress": "^1.9.9",
+		"vuepress-plugin-typedoc": "^0.12.1"
+	},
+	"engines": {
+		"node": ">= 10"
+	},
+	"scripts": {
+		"artifacts": "napi artifacts",
+		"build": "napi build --platform --release litesvm --dts internal.d.ts --js internal.js",
+		"build:debug": "napi build --platform litesvm",
+		"prepublishOnly": "napi prepublish -t npm",
+		"fmt": "yarn fmt:rust && yarn fmt:js",
+		"fmt:rust": "cargo fmt",
+		"fmt:js": "rome format --write litesvm/index.ts tests/ jest.config.ts tsconfig.json package.json",
+		"test": "jest",
+		"tsc": "tsc && cp litesvm/internal.d.ts dist/internal.d.ts",
+		"universal": "napi universal",
+		"version": "napi version",
+		"bumpPatch": "yarn version --no-git-tag-version --patch && cargo bump patch && napi version && cargo tree",
+		"bumpMinor": "yarn version --no-git-tag-version --minor && cargo bump minor && napi version && cargo tree",
+		"bumpMajor": "yarn version --no-git-tag-version --major && cargo bump major && napi version && cargo tree",
+		"docs:dev": "NODE_OPTIONS=--openssl-legacy-provider vuepress dev docs",
+		"docs:build": "NODE_OPTIONS=--openssl-legacy-provider vuepress build docs"
+	},
+	"packageManager": "yarn@4.5.3"
 }
