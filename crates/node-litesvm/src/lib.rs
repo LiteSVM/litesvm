@@ -336,6 +336,7 @@ pub struct LiteSvm(LiteSVMOriginal);
 #[napi]
 impl LiteSvm {
     /// Creates the basic test environment.
+    #[allow(clippy::new_without_default)]
     #[napi(constructor)]
     pub fn new() -> Self {
         Self(LiteSVMOriginal::new())
@@ -350,6 +351,7 @@ impl LiteSvm {
     /// Sets the compute budget.
     // napi-rs doesn't support passing custom structs as params,
     // so we have this ugly thing
+    #[allow(clippy::too_many_arguments)]
     pub fn set_compute_budget(
         &mut self,
         compute_unit_limit: BigInt,
