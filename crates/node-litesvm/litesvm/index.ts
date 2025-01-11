@@ -4,6 +4,7 @@ import {
 	TransactionMetadata,
 	FailedTransactionMetadata,
 	SimulatedTransactionInfo,
+	ComputeBudget,
 } from "./internal";
 export {
 	TransactionMetadata,
@@ -11,6 +12,7 @@ export {
 	SimulatedTransactionInfo,
 	TransactionReturnData,
 	InnerInstruction,
+	ComputeBudget,
 } from "./internal";
 import {
 	AccountInfo,
@@ -51,7 +53,57 @@ export class LiteSVM {
 	}
 	private inner: LiteSVMInner;
 
-	// withComputeBudget
+	withComputeBudget(budget: ComputeBudget): LiteSVM {
+		// napi-rs doesn't support passing custom structs as params
+		this.inner.setComputeBudget(
+			budget.computeUnitLimit,
+			budget.log64Units,
+			budget.createProgramAddressUnits,
+			budget.invokeUnits,
+			budget.maxInstructionStackDepth,
+			budget.maxInstructionTraceLength,
+			budget.sha256BaseCost,
+			budget.sha256ByteCost,
+			budget.sha256MaxSlices,
+			budget.maxCallDepth,
+			budget.stackFrameSize,
+			budget.logPubkeyUnits,
+			budget.maxCpiInstructionSize,
+			budget.cpiBytesPerUnit,
+			budget.sysvarBaseCost,
+			budget.secp256K1RecoverCost,
+			budget.syscallBaseCost,
+			budget.curve25519EdwardsValidatePointCost,
+			budget.curve25519EdwardsAddCost,
+			budget.curve25519EdwardsSubtractCost,
+			budget.curve25519EdwardsMultiplyCost,
+			budget.curve25519EdwardsMsmBaseCost,
+			budget.curve25519EdwardsMsmIncrementalCost,
+			budget.curve25519RistrettoValidatePointCost,
+			budget.curve25519RistrettoAddCost,
+			budget.curve25519RistrettoSubtractCost,
+			budget.curve25519RistrettoMultiplyCost,
+			budget.curve25519RistrettoMsmBaseCost,
+			budget.curve25519RistrettoMsmIncrementalCost,
+			budget.heapSize,
+			budget.heapCost,
+			budget.memOpBaseCost,
+			budget.altBn128AdditionCost,
+			budget.altBn128MultiplicationCost,
+			budget.altBn128PairingOnePairCostFirst,
+			budget.altBn128PairingOnePairCostOther,
+			budget.bigModularExponentiationBaseCost,
+			budget.bigModularExponentiationCostDivisor,
+			budget.poseidonCostCoefficientA,
+			budget.poseidonCostCoefficientC,
+			budget.getRemainingComputeUnitsCost,
+			budget.altBn128G1Compress,
+			budget.altBn128G1Decompress,
+			budget.altBn128G2Compress,
+			budget.altBn128G2Decompress,
+		);
+		return this;
+	}
 
 	withSigverify(sigverify: boolean): LiteSVM {
 		this.inner.setSigverify(sigverify);

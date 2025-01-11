@@ -310,8 +310,9 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
+const { ComputeBudget, CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
 
+module.exports.ComputeBudget = ComputeBudget
 module.exports.CompiledInstruction = CompiledInstruction
 module.exports.InnerInstruction = InnerInstruction
 module.exports.TransactionReturnData = TransactionReturnData

@@ -1,6 +1,7 @@
 #![deny(clippy::all)]
 use {
     bincode::deserialize,
+    compute_budget::ComputeBudget,
     litesvm::{
         error::LiteSVMError,
         types::{
@@ -12,7 +13,7 @@ use {
         LiteSVM as LiteSVMOriginal,
     },
     napi::bindgen_prelude::*,
-    solana_compute_budget::compute_budget::ComputeBudget,
+    solana_compute_budget::compute_budget::ComputeBudget as ComputeBudgetOriginal,
     solana_sdk::{
         account::Account as AccountOriginal,
         feature_set::FeatureSet as FeatureSetOriginal,
@@ -24,6 +25,7 @@ use {
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
 };
+mod compute_budget;
 
 #[macro_use]
 extern crate napi_derive;
@@ -376,7 +378,7 @@ impl LiteSvm {
         alt_bn128_g2_compress: BigInt,
         alt_bn128_g2_decompress: BigInt,
     ) {
-        let inner = ComputeBudget {
+        let inner = ComputeBudgetOriginal {
             compute_unit_limit: compute_unit_limit.get_u64().1,
             log_64_units: log_64_units.get_u64().1,
             create_program_address_units: create_program_address_units.get_u64().1,
@@ -612,5 +614,10 @@ impl LiteSvm {
     /// Warps the clock to the specified slot
     pub fn warp_to_slot(&mut self, slot: BigInt) {
         self.0.warp_to_slot(slot.get_u64().1)
+    }
+
+    #[napi]
+    pub fn get_compute_budget(&self) -> Option<ComputeBudget> {
+        self.0.get_compute_budget().map(ComputeBudget)
     }
 }
