@@ -115,6 +115,13 @@ export declare class FeatureSet {
   static allEnabled(): FeatureSet
   isActive(featureId: Uint8Array): boolean
   activatedSlot(featureId: Uint8Array): bigint | null
+  /** For internal use only. */
+  toInternal(): Array<ActiveFeatureInternal>
+}
+/** For internal use only */
+export declare class ActiveFeatureInternal {
+  address: Uint8Array
+  slot: bigint
 }
 export declare class TransactionMetadata {
   signature(): Uint8Array

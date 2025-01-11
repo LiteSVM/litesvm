@@ -5,8 +5,11 @@ import {
 	FailedTransactionMetadata,
 	SimulatedTransactionInfo,
 	ComputeBudget,
+	ActiveFeatureInternal,
+	FeatureSet,
 } from "./internal";
 export {
+	FeatureSet,
 	TransactionMetadata,
 	FailedTransactionMetadata,
 	SimulatedTransactionInfo,
@@ -44,6 +47,10 @@ function fromAccountInfo(acc: AccountInfoBytes): Account {
 		acc.executable,
 		BigInt(rentEpoch),
 	);
+}
+
+function convertFeature(internal: ActiveFeatureInternal): [Uint8Array, bigint] {
+	return [internal.address, internal.slot];
 }
 
 export class LiteSVM {
@@ -120,7 +127,15 @@ export class LiteSVM {
 		return this;
 	}
 
-	// withBuiltins
+	withBuiltins(featureSet?: FeatureSet): LiteSVM {
+		if (featureSet == null) {
+			this.inner.setBuiltins(null);
+		} else {
+			const converted = featureSet.toInternal().map(convertFeature);
+			this.inner.setBuiltins(converted);
+		}
+		return this;
+	}
 
 	withLamports(lamports: bigint): LiteSVM {
 		this.inner.setLamports(lamports);
@@ -142,7 +157,15 @@ export class LiteSVM {
 		return this;
 	}
 
-	// withPrecompiles
+	withPrecompiles(featureSet?: FeatureSet): LiteSVM {
+		if (featureSet == null) {
+			this.inner.setPrecompiles(null);
+		} else {
+			const converted = featureSet.toInternal().map(convertFeature);
+			this.inner.setPrecompiles(converted);
+		}
+		return this;
+	}
 
 	minimumBalanceForRentExemption(dataLen: bigint): bigint {
 		return this.inner.minimumBalanceForRentExemption(dataLen);

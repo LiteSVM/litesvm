@@ -107,6 +107,13 @@ impl TransactionReturnData {
 #[napi]
 pub struct FeatureSet(FeatureSetOriginal);
 
+/// For internal use only
+#[napi]
+pub struct ActiveFeatureInternal {
+    pub address: Uint8Array,
+    pub slot: BigInt,
+}
+
 #[napi]
 impl FeatureSet {
     #[napi(factory, js_name = "default")]
@@ -127,6 +134,19 @@ impl FeatureSet {
     #[napi]
     pub fn activated_slot(&self, feature_id: Uint8Array) -> Option<u64> {
         self.0.activated_slot(&convert_pubkey(feature_id))
+    }
+
+    /// For internal use only.
+    #[napi]
+    pub fn to_internal(&self) -> Vec<ActiveFeatureInternal> {
+        self.0
+            .active
+            .iter()
+            .map(|(addr, slot)| ActiveFeatureInternal {
+                address: Uint8Array::with_data_copied(addr),
+                slot: BigInt::from(*slot),
+            })
+            .collect()
     }
 }
 
