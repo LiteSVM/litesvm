@@ -1,8 +1,5 @@
 import { LiteSVM, AccountInfoBytes } from "litesvm";
-import {
-	PublicKey,
-	LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 test("set account", () => {
 	const svm = new LiteSVM();

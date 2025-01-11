@@ -1,19 +1,22 @@
 import {
 	Account,
 	LiteSvm as LiteSVMInner,
-	TransactionReturnData as TransactionReturnDataInner,
+	TransactionMetadata,
+	FailedTransactionMetadata,
+	SimulatedTransactionInfo,
+} from "./internal";
+export {
+	TransactionMetadata,
+	FailedTransactionMetadata,
+	SimulatedTransactionInfo,
+	TransactionReturnData,
+	InnerInstruction,
 } from "./internal";
 import {
 	AccountInfo,
-	Keypair,
 	PublicKey,
 	Transaction,
-	Blockhash,
-	TransactionSignature,
-	Message,
-	Commitment,
 	VersionedTransaction,
-	Cluster,
 } from "@solana/web3.js";
 
 export type AccountInfoBytes = AccountInfo<Uint8Array>;
@@ -48,6 +51,51 @@ export class LiteSVM {
 	}
 	private inner: LiteSVMInner;
 
+	// withComputeBudget
+
+	withSigverify(sigverify: boolean): LiteSVM {
+		this.inner.setSigverify(sigverify);
+		return this;
+	}
+
+	withBlockhashCheck(check: boolean): LiteSVM {
+		this.inner.setBlockhashCheck(check);
+		return this;
+	}
+
+	withSysvars(): LiteSVM {
+		this.inner.setSysvars();
+		return this;
+	}
+
+	// withBuiltins
+
+	withLamports(lamports: bigint): LiteSVM {
+		this.inner.setLamports(lamports);
+		return this;
+	}
+
+	withSplPrograms(): LiteSVM {
+		this.inner.setSplPrograms();
+		return this;
+	}
+
+	withTransactionHistory(capacity: bigint): LiteSVM {
+		this.inner.setTransactionHistory(capacity);
+		return this;
+	}
+
+	withLogBytesLimit(limit?: bigint): LiteSVM {
+		this.inner.setLogBytesLimit(limit);
+		return this;
+	}
+
+	// withPrecompiles
+
+	minimumBalanceForRentExemption(dataLen: bigint): bigint {
+		return this.inner.minimumBalanceForRentExemption(dataLen);
+	}
+
 	/**
 	 * Return the account at the given address.
 	 * If the account is not found, None is returned.
@@ -72,5 +120,66 @@ export class LiteSVM {
 	 */
 	setAccount(address: PublicKey, account: AccountInfoBytes) {
 		this.inner.setAccount(address.toBytes(), fromAccountInfo(account));
+	}
+
+	getBalance(address: PublicKey): bigint | null {
+		return this.inner.getBalance(address.toBytes());
+	}
+
+	latestBlockhash(): string {
+		return this.inner.latestBlockhash();
+	}
+
+	getTransaction(
+		signature: Uint8Array,
+	): TransactionMetadata | FailedTransactionMetadata | null {
+		return this.inner.getTransaction(signature);
+	}
+
+	airdrop(
+		address: PublicKey,
+		lamports: bigint,
+	): TransactionMetadata | FailedTransactionMetadata | null {
+		return this.inner.airdrop(address.toBytes(), lamports);
+	}
+
+	addProgramFromFile(programId: PublicKey, path: string) {
+		return this.inner.addProgramFromFile(programId.toBytes(), path);
+	}
+
+	addProgram(programId: PublicKey, programBytes: Uint8Array) {
+		return this.inner.addProgram(programId.toBytes(), programBytes);
+	}
+
+	sendTransaction(
+		tx: Transaction | VersionedTransaction,
+	): TransactionMetadata | FailedTransactionMetadata {
+		const serialized = tx.serialize();
+		const internal = this.inner;
+		if (tx instanceof Transaction) {
+			return internal.sendLegacyTransaction(serialized);
+		} else {
+			return internal.sendVersionedTransaction(serialized);
+		}
+	}
+
+	simulateTransaction(
+		tx: Transaction | VersionedTransaction,
+	): FailedTransactionMetadata | SimulatedTransactionInfo {
+		const serialized = tx.serialize();
+		const internal = this.inner;
+		if (tx instanceof Transaction) {
+			return internal.simulateLegacyTransaction(serialized);
+		} else {
+			return internal.simulateVersionedTransaction(serialized);
+		}
+	}
+
+	expireBlockhash() {
+		this.inner.expireBlockhash();
+	}
+
+	warpToSlot(slot: bigint) {
+		this.inner.warpToSlot(slot);
 	}
 }
