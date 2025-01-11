@@ -24,8 +24,10 @@ use {
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
+    transaction_error::{convert_transaction_error, TransactionError},
 };
 mod compute_budget;
+mod transaction_error;
 
 #[macro_use]
 extern crate napi_derive;
@@ -193,9 +195,11 @@ pub struct FailedTransactionMetadata(FailedTransactionMetadataOriginal);
 
 #[napi]
 impl FailedTransactionMetadata {
-    #[napi]
-    pub fn err(&self) -> String {
-        self.0.err.to_string()
+    #[napi(
+        ts_return_type = "TransactionErrorFieldless | TransactionErrorInstructionError | TransactionErrorDuplicateInstruction | TransactionErrorInsufficientFundsForRent | TransactionErrorProgramExecutionTemporarilyRestricted"
+    )]
+    pub fn err(&self) -> TransactionError {
+        convert_transaction_error(self.0.err.clone())
     }
 
     #[napi]

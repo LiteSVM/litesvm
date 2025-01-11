@@ -310,9 +310,17 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { ComputeBudget, CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, ActiveFeatureInternal, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
+const { ComputeBudget, InstructionErrorCustom, InstructionErrorBorshIo, InstructionErrorFieldless, TransactionErrorFieldless, TransactionErrorInstructionError, TransactionErrorDuplicateInstruction, TransactionErrorInsufficientFundsForRent, TransactionErrorProgramExecutionTemporarilyRestricted, CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, ActiveFeatureInternal, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
 
 module.exports.ComputeBudget = ComputeBudget
+module.exports.InstructionErrorCustom = InstructionErrorCustom
+module.exports.InstructionErrorBorshIo = InstructionErrorBorshIo
+module.exports.InstructionErrorFieldless = InstructionErrorFieldless
+module.exports.TransactionErrorFieldless = TransactionErrorFieldless
+module.exports.TransactionErrorInstructionError = TransactionErrorInstructionError
+module.exports.TransactionErrorDuplicateInstruction = TransactionErrorDuplicateInstruction
+module.exports.TransactionErrorInsufficientFundsForRent = TransactionErrorInsufficientFundsForRent
+module.exports.TransactionErrorProgramExecutionTemporarilyRestricted = TransactionErrorProgramExecutionTemporarilyRestricted
 module.exports.CompiledInstruction = CompiledInstruction
 module.exports.InnerInstruction = InnerInstruction
 module.exports.TransactionReturnData = TransactionReturnData
