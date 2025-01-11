@@ -54,6 +54,7 @@ debug = true
 [profile.release]
 lto = "fat"
 codegen-units = 1
+strip = "symbols"
 
 [profile.release.build-override]
 opt-level = 3
