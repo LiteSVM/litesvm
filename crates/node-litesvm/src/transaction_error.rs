@@ -311,13 +311,10 @@ pub struct TransactionErrorInstructionError {
 
 impl fmt::Debug for TransactionErrorInstructionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            TransactionErrorInstructionError { index, error } => f
-                .debug_struct("TransactionErrorInstructionError")
-                .field("index", &index)
-                .field("error", error)
-                .finish(),
-        }
+        f.debug_struct("TransactionErrorInstructionError")
+            .field("index", &self.index)
+            .field("error", &self.error)
+            .finish()
     }
 }
 
