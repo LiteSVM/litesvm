@@ -4,7 +4,7 @@ use {
 };
 
 /// Configuration of network rent.
-#[derive(Default)]
+#[derive(Default, Debug)]
 #[napi]
 pub struct Rent(pub(crate) RentOriginal);
 
@@ -22,6 +22,7 @@ impl Rent {
         })
     }
 
+    /// Initialize rent with the default Solana settings.
     #[napi(factory, js_name = "default")]
     pub fn new_default() -> Self {
         Self::default()
@@ -128,5 +129,10 @@ impl Rent {
         Self(RentOriginal::with_slots_per_epoch(
             slots_per_epoch.get_u64().1,
         ))
+    }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
     }
 }

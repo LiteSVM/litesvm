@@ -122,6 +122,7 @@ export declare class Clock {
   /** The approximate real world time of the current slot. */
   get unixTimestamp(): number
   set unixTimestamp(val: number)
+  toString(): string
 }
 export declare class ComputeBudget {
   constructor()
@@ -224,6 +225,7 @@ export declare class Rent {
    * @param burnPercent - The percentage of collected rent that is burned.
    */
   constructor(lamportsPerByteYear: bigint, exemptionThreshold: number, burnPercent: number)
+  /** Initialize rent with the default Solana settings. */
   static default(): Rent
   /** Rental rate in lamports/byte-year. */
   get lamportsPerByteYear(): bigint
@@ -285,6 +287,7 @@ export declare class Rent {
    * This is used for testing.
    */
   static withSlotsPerEpoch(slotsPerEpoch: bigint): Rent
+  toString(): string
 }
 export declare class InstructionErrorCustom {
   code: number
@@ -317,20 +320,24 @@ export declare class CompiledInstruction {
   programIdIndex(): number
   accounts(): Uint8Array
   data(): Uint8Array
+  toString(): string
 }
 export declare class InnerInstruction {
   instruction(): CompiledInstruction
   stackHeight(): number
+  toString(): string
 }
 export declare class TransactionReturnData {
   programId(): Uint8Array
   data(): Uint8Array
+  toString(): string
 }
 export declare class FeatureSet {
   constructor()
   static allEnabled(): FeatureSet
   isActive(featureId: Uint8Array): boolean
   activatedSlot(featureId: Uint8Array): bigint | null
+  toString(): string
 }
 export declare class TransactionMetadata {
   signature(): Uint8Array
@@ -352,6 +359,7 @@ export declare class AddressAndAccount {
 export declare class SimulatedTransactionInfo {
   meta(): TransactionMetadata
   postAccounts(): Array<AddressAndAccount>
+  toString(): string
 }
 export declare class Account {
   constructor(lamports: bigint, data: Uint8Array, owner: Uint8Array, executable: boolean, rentEpoch: bigint)
@@ -360,6 +368,7 @@ export declare class Account {
   owner(): Uint8Array
   executable(): boolean
   rentEpoch(): bigint
+  toString(): string
 }
 export declare class LiteSvm {
   /** Creates the basic test environment. */

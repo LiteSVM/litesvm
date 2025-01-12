@@ -3,6 +3,7 @@ use {napi::bindgen_prelude::*, solana_sdk::clock::Clock as ClockOriginal};
 /// A representation of network time.
 ///
 /// All members of `Clock` start from 0 upon network boot.
+#[derive(Debug)]
 #[napi]
 pub struct Clock(pub(crate) ClockOriginal);
 
@@ -83,5 +84,10 @@ impl Clock {
     #[napi(setter)]
     pub fn set_unix_timestamp(&mut self, val: i64) {
         self.0.unix_timestamp = val;
+    }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
     }
 }

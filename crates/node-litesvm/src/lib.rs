@@ -89,6 +89,11 @@ impl CompiledInstruction {
     pub fn data(&self) -> Uint8Array {
         Uint8Array::new(self.0.data.clone())
     }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -106,6 +111,11 @@ impl InnerInstruction {
     pub fn stack_height(&self) -> u8 {
         self.0.stack_height
     }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -122,6 +132,11 @@ impl TransactionReturnData {
     #[napi]
     pub fn data(&self) -> Uint8Array {
         Uint8Array::new(self.0.data.clone())
+    }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
     }
 }
 
@@ -150,6 +165,11 @@ impl FeatureSet {
     #[napi]
     pub fn activated_slot(&self, feature_id: Uint8Array) -> Option<u64> {
         self.0.activated_slot(&convert_pubkey(feature_id))
+    }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
     }
 }
 
@@ -257,6 +277,11 @@ impl SimulatedTransactionInfo {
             })
             .collect()
     }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -311,6 +336,11 @@ impl Account {
     #[napi]
     pub fn rent_epoch(&self) -> u64 {
         self.0.rent_epoch
+    }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
     }
 }
 
