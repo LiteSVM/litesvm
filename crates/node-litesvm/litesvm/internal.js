@@ -310,9 +310,11 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { ComputeBudget, Clock, EpochRewards, EpochSchedule, Rent, SlotHash, SlotHistoryCheck, SlotHistory, StakeHistoryEntry, StakeHistory, InstructionErrorCustom, InstructionErrorBorshIo, InstructionErrorFieldless, TransactionErrorFieldless, TransactionErrorInstructionError, TransactionErrorDuplicateInstruction, TransactionErrorInsufficientFundsForRent, TransactionErrorProgramExecutionTemporarilyRestricted, CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
+const { Account, ComputeBudget, FeatureSet, Clock, EpochRewards, EpochSchedule, Rent, SlotHash, SlotHistoryCheck, SlotHistory, StakeHistoryEntry, StakeHistory, InstructionErrorCustom, InstructionErrorBorshIo, InstructionErrorFieldless, TransactionErrorFieldless, TransactionErrorInstructionError, TransactionErrorDuplicateInstruction, TransactionErrorInsufficientFundsForRent, TransactionErrorProgramExecutionTemporarilyRestricted, CompiledInstruction, InnerInstruction, TransactionReturnData, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, LiteSvm } = nativeBinding
 
+module.exports.Account = Account
 module.exports.ComputeBudget = ComputeBudget
+module.exports.FeatureSet = FeatureSet
 module.exports.Clock = Clock
 module.exports.EpochRewards = EpochRewards
 module.exports.EpochSchedule = EpochSchedule
@@ -333,10 +335,8 @@ module.exports.TransactionErrorProgramExecutionTemporarilyRestricted = Transacti
 module.exports.CompiledInstruction = CompiledInstruction
 module.exports.InnerInstruction = InnerInstruction
 module.exports.TransactionReturnData = TransactionReturnData
-module.exports.FeatureSet = FeatureSet
 module.exports.TransactionMetadata = TransactionMetadata
 module.exports.FailedTransactionMetadata = FailedTransactionMetadata
 module.exports.AddressAndAccount = AddressAndAccount
 module.exports.SimulatedTransactionInfo = SimulatedTransactionInfo
-module.exports.Account = Account
 module.exports.LiteSvm = LiteSvm

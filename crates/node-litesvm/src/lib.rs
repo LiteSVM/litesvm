@@ -2,12 +2,17 @@
 #![allow(clippy::new_without_default)]
 use {
     crate::{
+        account::Account,
         compute_budget::ComputeBudget,
+        feature_set::FeatureSet,
         sysvar::{
             clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
             slot_hashes::SlotHash, slot_history::SlotHistory, stake_history::StakeHistory,
         },
-        transaction_error::{convert_transaction_error, TransactionError},
+        transaction_metadata::{
+            FailedTransactionMetadata, SimulatedTransactionInfo, TransactionMetadata,
+        },
+        util::{convert_pubkey, try_parse_hash},
     },
     bincode::deserialize,
     litesvm::{
@@ -15,21 +20,15 @@ use {
         types::{
             FailedTransactionMetadata as FailedTransactionMetadataOriginal,
             SimulatedTransactionInfo as SimulatedTransactionInfoOriginal,
-            TransactionMetadata as TransactionMetadataOriginal,
             TransactionResult as TransactionResultOriginal,
         },
         LiteSVM as LiteSVMOriginal,
     },
     napi::bindgen_prelude::*,
     solana_sdk::{
-        account::Account as AccountOriginal,
         clock::Clock as ClockOriginal,
         epoch_rewards::EpochRewards as EpochRewardsOriginal,
         epoch_schedule::EpochSchedule as EpochScheduleOriginal,
-        feature_set::FeatureSet as FeatureSetOriginal,
-        inner_instruction::InnerInstruction as InnerInstructionOriginal,
-        instruction::CompiledInstruction as CompiledInstructionOriginal,
-        pubkey::Pubkey,
         rent::Rent as RentOriginal,
         signature::Signature,
         slot_hashes::SlotHashes,
@@ -37,20 +36,18 @@ use {
         stake_history::StakeHistory as StakeHistoryOriginal,
         sysvar::last_restart_slot::LastRestartSlot,
         transaction::{Transaction, VersionedTransaction},
-        transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
-    sysvar::epoch_rewards::try_parse_hash,
 };
+mod account;
 mod compute_budget;
+mod feature_set;
 mod sysvar;
 mod transaction_error;
+mod transaction_metadata;
+mod util;
 
 #[macro_use]
 extern crate napi_derive;
-
-fn convert_pubkey(address: Uint8Array) -> Pubkey {
-    Pubkey::try_from(address.as_ref()).unwrap()
-}
 
 fn to_js_error(e: LiteSVMError, msg: &str) -> Error {
     Error::new(Status::GenericFailure, format!("{msg}: {e}"))
@@ -68,265 +65,6 @@ macro_rules! to_string_js {
         }
     };
 }
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct CompiledInstruction(CompiledInstructionOriginal);
-
-#[napi]
-impl CompiledInstruction {
-    #[napi(constructor)]
-    pub fn new(program_id_index: u8, accounts: Uint8Array, data: Uint8Array) -> Self {
-        Self(CompiledInstructionOriginal {
-            program_id_index,
-            accounts: accounts.to_vec(),
-            data: data.to_vec(),
-        })
-    }
-
-    #[napi]
-    pub fn program_id_index(&self) -> u8 {
-        self.0.program_id_index
-    }
-
-    #[napi]
-    pub fn accounts(&self) -> Uint8Array {
-        Uint8Array::new(self.0.accounts.clone())
-    }
-
-    #[napi]
-    pub fn data(&self) -> Uint8Array {
-        Uint8Array::new(self.0.data.clone())
-    }
-}
-
-to_string_js!(CompiledInstruction);
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct InnerInstruction(InnerInstructionOriginal);
-
-#[napi]
-impl InnerInstruction {
-    #[napi]
-    pub fn instruction(&self) -> CompiledInstruction {
-        CompiledInstruction(self.0.instruction.clone())
-    }
-
-    #[napi]
-    pub fn stack_height(&self) -> u8 {
-        self.0.stack_height
-    }
-}
-
-to_string_js!(InnerInstruction);
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct TransactionReturnData(TransactionReturnDataOriginal);
-
-#[napi]
-impl TransactionReturnData {
-    #[napi]
-    pub fn program_id(&self) -> Uint8Array {
-        Uint8Array::with_data_copied(self.0.program_id)
-    }
-
-    #[napi]
-    pub fn data(&self) -> Uint8Array {
-        Uint8Array::new(self.0.data.clone())
-    }
-}
-
-to_string_js!(TransactionReturnData);
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct FeatureSet(FeatureSetOriginal);
-
-#[napi]
-impl FeatureSet {
-    #[napi(constructor)]
-    pub fn new() -> Self {
-        Self(FeatureSetOriginal::default())
-    }
-
-    #[napi(factory)]
-    pub fn all_enabled() -> Self {
-        Self(FeatureSetOriginal::all_enabled())
-    }
-
-    #[napi]
-    pub fn is_active(&self, feature_id: Uint8Array) -> bool {
-        self.0.is_active(&convert_pubkey(feature_id))
-    }
-
-    #[napi]
-    pub fn activated_slot(&self, feature_id: Uint8Array) -> Option<u64> {
-        self.0.activated_slot(&convert_pubkey(feature_id))
-    }
-}
-
-to_string_js!(FeatureSet);
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct TransactionMetadata(TransactionMetadataOriginal);
-
-#[napi]
-impl TransactionMetadata {
-    #[napi]
-    pub fn signature(&self) -> Uint8Array {
-        Uint8Array::with_data_copied(self.0.signature)
-    }
-
-    #[napi]
-    pub fn logs(&self) -> Vec<String> {
-        self.0.logs.clone()
-    }
-
-    #[napi]
-    pub fn inner_instructions(&self) -> Vec<Vec<InnerInstruction>> {
-        self.0
-            .inner_instructions
-            .clone()
-            .into_iter()
-            .map(|outer| outer.into_iter().map(InnerInstruction).collect())
-            .collect()
-    }
-
-    #[napi]
-    pub fn compute_units_consumed(&self) -> u64 {
-        self.0.compute_units_consumed
-    }
-
-    #[napi]
-    pub fn return_data(&self) -> TransactionReturnData {
-        TransactionReturnData(self.0.return_data.clone())
-    }
-}
-
-to_string_js!(TransactionMetadata);
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct FailedTransactionMetadata(FailedTransactionMetadataOriginal);
-
-#[napi]
-impl FailedTransactionMetadata {
-    #[napi(
-        ts_return_type = "TransactionErrorFieldless | TransactionErrorInstructionError | TransactionErrorDuplicateInstruction | TransactionErrorInsufficientFundsForRent | TransactionErrorProgramExecutionTemporarilyRestricted"
-    )]
-    pub fn err(&self) -> TransactionError {
-        convert_transaction_error(self.0.err.clone())
-    }
-
-    #[napi]
-    pub fn meta(&self) -> TransactionMetadata {
-        TransactionMetadata(self.0.meta.clone())
-    }
-}
-
-to_string_js!(FailedTransactionMetadata);
-
-#[derive(Clone)]
-#[napi]
-pub struct AddressAndAccount {
-    pub address: Uint8Array,
-    account: Account,
-}
-
-#[napi]
-impl AddressAndAccount {
-    #[napi]
-    pub fn account(&self) -> Account {
-        self.account.clone()
-    }
-}
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct SimulatedTransactionInfo(SimulatedTransactionInfoOriginal);
-
-#[napi]
-impl SimulatedTransactionInfo {
-    #[napi]
-    pub fn meta(&self) -> TransactionMetadata {
-        TransactionMetadata(self.0.meta.clone())
-    }
-
-    #[napi]
-    pub fn post_accounts(&self) -> Vec<AddressAndAccount> {
-        self.0
-            .post_accounts
-            .clone()
-            .into_iter()
-            .map(|x| AddressAndAccount {
-                address: Uint8Array::with_data_copied(x.0),
-                account: Account(AccountOriginal::from(x.1)),
-            })
-            .collect()
-    }
-}
-
-to_string_js!(SimulatedTransactionInfo);
-
-#[derive(Debug, Clone)]
-#[napi]
-pub struct Account(AccountOriginal);
-
-impl AsRef<AccountOriginal> for Account {
-    fn as_ref(&self) -> &AccountOriginal {
-        &self.0
-    }
-}
-
-#[napi]
-impl Account {
-    #[napi(constructor)]
-    pub fn new(
-        lamports: BigInt,
-        data: Uint8Array,
-        owner: Uint8Array,
-        executable: bool,
-        rent_epoch: BigInt,
-    ) -> Self {
-        Self(AccountOriginal {
-            lamports: lamports.get_u64().1,
-            data: data.to_vec(),
-            owner: Pubkey::try_from(owner.as_ref()).unwrap(),
-            executable,
-            rent_epoch: rent_epoch.get_u64().1,
-        })
-    }
-
-    #[napi]
-    pub fn lamports(&self) -> u64 {
-        self.0.lamports
-    }
-
-    #[napi]
-    pub fn data(&self) -> Uint8Array {
-        Uint8Array::new(self.0.data.clone())
-    }
-
-    #[napi]
-    pub fn owner(&self) -> Uint8Array {
-        Uint8Array::new(self.0.owner.to_bytes().to_vec())
-    }
-
-    #[napi]
-    pub fn executable(&self) -> bool {
-        self.0.executable
-    }
-
-    #[napi]
-    pub fn rent_epoch(&self) -> u64 {
-        self.0.rent_epoch
-    }
-}
-
-to_string_js!(Account);
 
 pub type TransactionResult = Either<TransactionMetadata, FailedTransactionMetadata>;
 pub type SimulateResult = Either<SimulatedTransactionInfo, FailedTransactionMetadata>;

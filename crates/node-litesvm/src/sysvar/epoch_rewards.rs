@@ -1,22 +1,12 @@
 use {
-    napi::bindgen_prelude::*,
-    solana_sdk::{epoch_rewards::EpochRewards as EpochRewardsOriginal, hash::Hash},
-    std::str::FromStr,
+    crate::util::try_parse_hash, napi::bindgen_prelude::*,
+    solana_sdk::epoch_rewards::EpochRewards as EpochRewardsOriginal,
 };
 
 /// A type to hold data for the EpochRewards sysvar.
 #[derive(Debug)]
 #[napi]
 pub struct EpochRewards(pub(crate) EpochRewardsOriginal);
-
-pub(crate) fn try_parse_hash(raw: &str) -> Result<Hash> {
-    Hash::from_str(raw).map_err(|e| {
-        Error::new(
-            Status::GenericFailure,
-            format!("Failed to parse blockhash: {e}"),
-        )
-    })
-}
 
 #[napi]
 impl EpochRewards {

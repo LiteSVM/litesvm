@@ -99,6 +99,15 @@ export const enum TransactionErrorFieldless {
   UnbalancedTransaction = 32,
   ProgramCacheHitMaxLimit = 33
 }
+export declare class Account {
+  constructor(lamports: bigint, data: Uint8Array, owner: Uint8Array, executable: boolean, rentEpoch: bigint)
+  lamports(): bigint
+  data(): Uint8Array
+  owner(): Uint8Array
+  executable(): boolean
+  rentEpoch(): bigint
+  toString(): string
+}
 export declare class ComputeBudget {
   constructor()
   get computeUnitLimit(): bigint
@@ -191,6 +200,13 @@ export declare class ComputeBudget {
   get altBn128G2Compress(): bigint
   set altBn128G2Decompress(val: bigint)
   get altBn128G2Decompress(): bigint
+}
+export declare class FeatureSet {
+  constructor()
+  static allEnabled(): FeatureSet
+  isActive(featureId: Uint8Array): boolean
+  activatedSlot(featureId: Uint8Array): bigint | null
+  toString(): string
 }
 /**
  * A representation of network time.
@@ -469,13 +485,6 @@ export declare class TransactionReturnData {
   data(): Uint8Array
   toString(): string
 }
-export declare class FeatureSet {
-  constructor()
-  static allEnabled(): FeatureSet
-  isActive(featureId: Uint8Array): boolean
-  activatedSlot(featureId: Uint8Array): bigint | null
-  toString(): string
-}
 export declare class TransactionMetadata {
   signature(): Uint8Array
   logs(): Array<string>
@@ -496,15 +505,6 @@ export declare class AddressAndAccount {
 export declare class SimulatedTransactionInfo {
   meta(): TransactionMetadata
   postAccounts(): Array<AddressAndAccount>
-  toString(): string
-}
-export declare class Account {
-  constructor(lamports: bigint, data: Uint8Array, owner: Uint8Array, executable: boolean, rentEpoch: bigint)
-  lamports(): bigint
-  data(): Uint8Array
-  owner(): Uint8Array
-  executable(): boolean
-  rentEpoch(): bigint
   toString(): string
 }
 export declare class LiteSvm {
