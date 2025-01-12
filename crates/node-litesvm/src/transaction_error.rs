@@ -313,7 +313,14 @@ impl fmt::Debug for TransactionErrorInstructionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("TransactionErrorInstructionError")
             .field("index", &self.index)
-            .field("error", &self.error)
+            .field(
+                "error",
+                match &self.error {
+                    InstructionError::A(a) => a,
+                    InstructionError::B(b) => b,
+                    InstructionError::C(c) => c,
+                },
+            )
             .finish()
     }
 }
