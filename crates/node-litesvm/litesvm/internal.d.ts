@@ -217,6 +217,64 @@ export declare class Clock {
   set unixTimestamp(val: number)
   toString(): string
 }
+/**
+ * A type to hold data for the [`EpochRewards` sysvar][sv].
+ *
+ * [sv]: https://docs.solanalabs.com/runtime/sysvars#epochrewards
+ */
+export declare class EpochRewards {
+  /**
+   * @param distribution_starting_block_height - The starting block height of the rewards distribution in the current epoch
+   * @param num_partitions - Number of partitions in the rewards distribution in the current epoch
+   * @param parent_blockhash - The blockhash of the parent block of the first block in the epoch
+   * @param total_points - The total rewards points calculated for the current epoch
+   * @param total_rewards - The total rewards calculated for the current epoch
+   * @param distributed_rewards - The rewards currently distributed for the current epoch, in lamports
+   * @param active - Whether the rewards period (including calculation and distribution) is active
+   */
+  constructor(distributionStartingBlockHeight: bigint, numPartitions: bigint, parentBlockhash: string, totalPoints: bigint, totalRewards: bigint, distributedRewards: bigint, active: boolean)
+  /**
+   * The starting block height of the rewards distribution in the current
+   * epoch
+   */
+  get distributionStartingBlockHeight(): bigint
+  set distributionStartingBlockHeight(val: bigint)
+  /**
+   * Number of partitions in the rewards distribution in the current epoch,
+   * used to generate an EpochRewardsHasher
+   */
+  get numPartitions(): bigint
+  set numPartitions(val: bigint)
+  /**
+   * The blockhash of the parent block of the first block in the epoch, used
+   * to seed an EpochRewardsHasher
+   */
+  get parentBlockhash(): string
+  set parentBlockhash(val: string)
+  /**
+   * The total rewards points calculated for the current epoch, where points
+   * equals the sum of (delegated stake * credits observed) for all
+   * delegations
+   */
+  get totalPoints(): bigint
+  set totalPoints(val: bigint)
+  /**
+   * The total rewards calculated for the current epoch. This may be greater
+   * than the total `distributed_rewards` at the end of the rewards period,
+   * due to rounding and inability to deliver rewards smaller than 1 lamport.
+   */
+  get totalRewards(): bigint
+  set totalRewards(val: bigint)
+  /** The rewards currently distributed for the current epoch, in lamports */
+  get distributedRewards(): bigint
+  set distributedRewards(val: bigint)
+  /**
+   * Whether the rewards period (including calculation and distribution) is
+   * active
+   */
+  get active(): boolean
+  set active(val: boolean)
+}
 /** Configuration of network rent. */
 export declare class Rent {
   /**
@@ -428,4 +486,6 @@ export declare class LiteSvm {
   setClock(clock: Clock): void
   getRent(): Rent
   setRent(rent: Rent): void
+  getEpochRewards(): EpochRewards
+  setEpochRewards(rewards: EpochRewards): void
 }

@@ -1,8 +1,8 @@
 #![deny(clippy::all)]
 use {
     crate::{
-        sysvar::{clock::Clock, rent::Rent},
         compute_budget::ComputeBudget,
+        sysvar::{clock::Clock, epoch_rewards::EpochRewards, rent::Rent},
         transaction_error::{convert_transaction_error, TransactionError},
     },
     bincode::deserialize,
@@ -20,6 +20,7 @@ use {
     solana_sdk::{
         account::Account as AccountOriginal,
         clock::Clock as ClockOriginal,
+        epoch_rewards::EpochRewards as EpochRewardsOriginal,
         feature_set::FeatureSet as FeatureSetOriginal,
         inner_instruction::InnerInstruction as InnerInstructionOriginal,
         instruction::CompiledInstruction as CompiledInstructionOriginal,
@@ -571,5 +572,15 @@ impl LiteSvm {
     #[napi]
     pub fn set_rent(&mut self, rent: &Rent) {
         self.0.set_sysvar(&rent.0)
+    }
+
+    #[napi]
+    pub fn get_epoch_rewards(&self) -> EpochRewards {
+        EpochRewards(self.0.get_sysvar::<EpochRewardsOriginal>())
+    }
+
+    #[napi]
+    pub fn set_epoch_rewards(&mut self, rewards: &EpochRewards) {
+        self.0.set_sysvar(&rewards.0)
     }
 }
