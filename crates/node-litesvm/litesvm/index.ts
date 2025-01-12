@@ -1,24 +1,39 @@
 import {
 	Account,
-	LiteSvm as LiteSVMInner,
-	TransactionMetadata,
-	FailedTransactionMetadata,
-	SimulatedTransactionInfo as SimulatedTransactionInfoInner,
-	ComputeBudget,
-	FeatureSet,
-	Clock,
-	Rent,
 	AddressAndAccount,
+	Clock,
+	ComputeBudget,
+	EpochRewards,
+	EpochSchedule,
+	FailedTransactionMetadata,
+	FeatureSet,
+	SimulatedTransactionInfo as SimulatedTransactionInfoInner,
+	LiteSvm as LiteSVMInner,
+	Rent,
+	SlotHash,
+	SlotHistory,
+	SlotHistoryCheck,
+	StakeHistory,
+	StakeHistoryEntry,
+	TransactionMetadata,
 } from "./internal";
 export {
-	FeatureSet,
-	TransactionMetadata,
-	FailedTransactionMetadata,
-	TransactionReturnData,
-	InnerInstruction,
-	ComputeBudget,
+	Account,
 	Clock,
+	ComputeBudget,
+	EpochRewards,
+	EpochSchedule,
+	FailedTransactionMetadata,
+	FeatureSet,
+	InnerInstruction,
 	Rent,
+	SlotHash,
+	SlotHistory,
+	SlotHistoryCheck,
+	StakeHistory,
+	StakeHistoryEntry,
+	TransactionMetadata,
+	TransactionReturnData,
 } from "./internal";
 import {
 	AccountInfo,
@@ -231,7 +246,7 @@ export class LiteSVM {
 
 	/**
 	 * Overwrite the clock sysvar.
-	 * @param clock - The new clock object.
+	 * @param clock - The clock object.
 	 */
 	setClock(clock: Clock) {
 		this.inner.setClock(clock);
