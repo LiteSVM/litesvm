@@ -237,15 +237,15 @@ export class LiteSVM {
 		this.inner.setClock(clock);
 	}
 
-		/**
+	/**
 	 * Get the cluster rent.
 	 * @returns The rent object.
 	 */
-		getRent(): Rent {
-			return this.inner.getRent();
-		}
+	getRent(): Rent {
+		return this.inner.getRent();
+	}
 
-			/**
+	/**
 	 * Overwrite the rent sysvar.
 	 * @param rent - The new rent object.
 	 */
