@@ -1,23 +1,27 @@
 use {
-    napi::bindgen_prelude::{Either3, Either5},
-    solana_sdk::{
+    crate::to_string_js, core::fmt, napi::bindgen_prelude::{Either3, Either5}, solana_sdk::{
         instruction::InstructionError as InstructionErrorOriginal,
         transaction::TransactionError as TransactionErrorOriginal,
-    },
+    }
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[napi]
 pub struct InstructionErrorCustom {
     pub code: u32,
 }
 
-#[derive(Clone)]
+to_string_js!(InstructionErrorCustom);
+
+#[derive(Clone, Debug)]
 #[napi]
 pub struct InstructionErrorBorshIO {
     pub msg: String,
 }
 
+to_string_js!(InstructionErrorBorshIO);
+
+#[derive(Debug)]
 #[napi]
 pub enum InstructionErrorFieldless {
     GenericError,
@@ -74,8 +78,18 @@ pub enum InstructionErrorFieldless {
     BuiltinProgramsMustConsumeComputeUnits,
 }
 
+to_string_js!(InstructionErrorFieldless);
+
 pub type InstructionError =
     Either3<InstructionErrorFieldless, InstructionErrorCustom, InstructionErrorBorshIO>;
+
+// fn debug_instruction_error(err: InstructionError, f: &mut fmt::Formatter) -> fmt::Result {
+//     match err {
+//         InstructionError::A(fieldless) => write!(f, "{fieldless:?}"),
+//         InstructionError::B(custom) => write!(f, "{custom:?}"),
+//         InstructionError::C(borsh_err) => write!(f, "{borsh_err:?}"),
+//     }
+// }
 
 fn convert_instruction_error(e: InstructionErrorOriginal) -> InstructionError {
     match e {
@@ -244,6 +258,7 @@ fn convert_instruction_error(e: InstructionErrorOriginal) -> InstructionError {
     }
 }
 
+#[derive(Debug)]
 #[napi]
 pub enum TransactionErrorFieldless {
     AccountInUse,
@@ -282,11 +297,25 @@ pub enum TransactionErrorFieldless {
     ProgramCacheHitMaxLimit,
 }
 
+to_string_js!(TransactionErrorFieldless);
+
 #[derive(Clone)]
 #[napi]
 pub struct TransactionErrorInstructionError {
     pub index: u8,
     error: InstructionError,
+}
+
+impl fmt::Debug for TransactionErrorInstructionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TransactionErrorInstructionError { index, error } => f
+                .debug_struct("TransactionErrorInstructionError")
+                .field("index", &index)
+                .field("error", error)
+                .finish(),
+        }
+    }
 }
 
 #[napi]
@@ -297,22 +326,36 @@ impl TransactionErrorInstructionError {
     pub fn err(&self) -> InstructionError {
         self.error.clone()
     }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
+    }
 }
 
+#[derive(Debug)]
 #[napi]
 pub struct TransactionErrorDuplicateInstruction {
     pub index: u8,
 }
 
+to_string_js!(TransactionErrorDuplicateInstruction);
+
+#[derive(Debug)]
 #[napi]
 pub struct TransactionErrorInsufficientFundsForRent {
     pub account_index: u8,
 }
 
+to_string_js!(TransactionErrorInsufficientFundsForRent);
+
+#[derive(Debug)]
 #[napi]
 pub struct TransactionErrorProgramExecutionTemporarilyRestricted {
     pub account_index: u8,
 }
+
+to_string_js!(TransactionErrorProgramExecutionTemporarilyRestricted);
 
 pub type TransactionError = Either5<
     TransactionErrorFieldless,

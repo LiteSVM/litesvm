@@ -1,10 +1,7 @@
-import { LiteSVM, AccountInfoBytes, ComputeBudget } from "litesvm";
+import { LiteSVM, AccountInfoBytes } from "litesvm";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 test("set account", () => {
-	const computeBudget = new ComputeBudget();
-	computeBudget.computeUnitLimit = 1234n;
-	expect(computeBudget.computeUnitLimit).toBe(1234n);
 	const svm = new LiteSVM();
 	const address = new PublicKey("5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj");
 	const toSet: AccountInfoBytes = {

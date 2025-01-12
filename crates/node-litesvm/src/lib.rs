@@ -1,7 +1,11 @@
 #![deny(clippy::all)]
 use {
+    crate::{
+        clock::Clock,
+        compute_budget::ComputeBudget,
+        transaction_error::{convert_transaction_error, TransactionError},
+    },
     bincode::deserialize,
-    compute_budget::ComputeBudget,
     litesvm::{
         error::LiteSVMError,
         types::{
@@ -16,6 +20,7 @@ use {
     solana_compute_budget::compute_budget::ComputeBudget as ComputeBudgetOriginal,
     solana_sdk::{
         account::Account as AccountOriginal,
+        clock::Clock as ClockOriginal,
         feature_set::FeatureSet as FeatureSetOriginal,
         inner_instruction::InnerInstruction as InnerInstructionOriginal,
         instruction::CompiledInstruction as CompiledInstructionOriginal,
@@ -24,8 +29,8 @@ use {
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
-    transaction_error::{convert_transaction_error, TransactionError},
 };
+mod clock;
 mod compute_budget;
 mod transaction_error;
 
@@ -38,6 +43,19 @@ fn convert_pubkey(address: Uint8Array) -> Pubkey {
 
 fn to_js_error(e: LiteSVMError, msg: &str) -> Error {
     Error::new(Status::GenericFailure, format!("{msg}: {e}"))
+}
+
+#[macro_export]
+macro_rules! to_string_js {
+    ($name:ident) => {
+        #[napi]
+        impl $name {
+            #[napi(js_name = "toString")]
+            pub fn js_to_string(&self) -> String {
+                format!("{self:?}")
+            }
+        }
+    };
 }
 
 #[derive(Debug, Clone)]
@@ -187,6 +205,11 @@ impl TransactionMetadata {
     pub fn return_data(&self) -> TransactionReturnData {
         TransactionReturnData(self.0.return_data.clone())
     }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -205,6 +228,11 @@ impl FailedTransactionMetadata {
     #[napi]
     pub fn meta(&self) -> TransactionMetadata {
         TransactionMetadata(self.0.meta.clone())
+    }
+
+    #[napi(js_name = "toString")]
+    pub fn js_to_string(&self) -> String {
+        format!("{self:?}")
     }
 }
 
@@ -472,6 +500,11 @@ impl LiteSvm {
     }
 
     #[napi]
+    pub fn set_compute_budget2(&mut self, budget: &ComputeBudget) {
+        self.0.set_compute_budget(budget.0);
+    }
+
+    #[napi]
     /// Enables or disables sigverify
     pub fn set_sigverify(&mut self, sigverify: bool) {
         self.0.set_sigverify(sigverify);
@@ -645,5 +678,15 @@ impl LiteSvm {
     #[napi]
     pub fn get_compute_budget(&self) -> Option<ComputeBudget> {
         self.0.get_compute_budget().map(ComputeBudget)
+    }
+
+    #[napi]
+    pub fn get_clock(&self) -> Clock {
+        Clock(self.0.get_sysvar::<ClockOriginal>())
+    }
+
+    #[napi]
+    pub fn set_clock(&mut self, clock: &Clock) {
+        self.0.set_sysvar(&clock.0)
     }
 }

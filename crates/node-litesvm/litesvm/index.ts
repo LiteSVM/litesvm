@@ -3,19 +3,21 @@ import {
 	LiteSvm as LiteSVMInner,
 	TransactionMetadata,
 	FailedTransactionMetadata,
-	SimulatedTransactionInfo,
+	SimulatedTransactionInfo as SimulatedTransactionInfoInner,
 	ComputeBudget,
 	ActiveFeatureInternal,
 	FeatureSet,
+	Clock,
+	AddressAndAccount,
 } from "./internal";
 export {
 	FeatureSet,
 	TransactionMetadata,
 	FailedTransactionMetadata,
-	SimulatedTransactionInfo,
 	TransactionReturnData,
 	InnerInstruction,
 	ComputeBudget,
+	Clock,
 } from "./internal";
 import {
 	AccountInfo,
@@ -51,6 +53,23 @@ function fromAccountInfo(acc: AccountInfoBytes): Account {
 
 function convertFeature(internal: ActiveFeatureInternal): [Uint8Array, bigint] {
 	return [internal.address, internal.slot];
+}
+
+function convertAddressAndAccount(val: AddressAndAccount): [PublicKey, Account] {
+	return [new PublicKey(val.address), val.account()];
+}
+
+export class SimulatedTransactionInfo {
+	constructor(inner: SimulatedTransactionInfoInner) {
+		this.inner = inner;
+	}
+	private inner: SimulatedTransactionInfoInner;
+	meta(): TransactionMetadata {
+		return this.inner.meta();
+	}
+	postAccounts(): [PublicKey, Account][] {
+		return this.inner.postAccounts().map(convertAddressAndAccount);
+	}
 }
 
 export class LiteSVM {
@@ -243,11 +262,8 @@ export class LiteSVM {
 	): FailedTransactionMetadata | SimulatedTransactionInfo {
 		const serialized = tx.serialize();
 		const internal = this.inner;
-		if (tx instanceof Transaction) {
-			return internal.simulateLegacyTransaction(serialized);
-		} else {
-			return internal.simulateVersionedTransaction(serialized);
-		}
+		const inner = tx instanceof Transaction ? internal.simulateLegacyTransaction(serialized) : internal.simulateVersionedTransaction(serialized);
+		return inner instanceof FailedTransactionMetadata ? inner : new SimulatedTransactionInfo(inner);
 	}
 
 	expireBlockhash() {
@@ -256,5 +272,21 @@ export class LiteSVM {
 
 	warpToSlot(slot: bigint) {
 		this.inner.warpToSlot(slot);
+	}
+
+	/**
+	 * Get the cluster clock.
+	 * @returns the clock object.
+	 */
+	getClock(): Clock {
+		return this.inner.getClock();
+	}
+
+	/**
+	 * Overwrite the clock sysvar.
+	 * @param clock - The new clock object.
+	 */
+	setClock(clock: Clock) {
+		this.inner.setClock(clock);
 	}
 }

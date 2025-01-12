@@ -93,6 +93,36 @@ export const enum TransactionErrorFieldless {
   UnbalancedTransaction = 32,
   ProgramCacheHitMaxLimit = 33
 }
+/**
+ * A representation of network time.
+ *
+ * All members of `Clock` start from 0 upon network boot.
+ */
+export declare class Clock {
+  /**
+   * @param slot - The current Slot.
+   * @param epochStartTimestamp - The timestamp of the first `Slot` in this `Epoch`.
+   * @param epoch - The current epoch.
+   * @param leaderScheduleEpoch - The future Epoch for which the leader schedule has most recently been calculated.
+   * @param unixTimestamp - The approximate real world time of the current slot.
+   */
+  constructor(slot: bigint, epochStartTimestamp: bigint, epoch: bigint, leaderScheduleEpoch: bigint, unixTimestamp: bigint)
+  /** The current Slot. */
+  get slot(): bigint
+  set slot(val: bigint)
+  /** The current epoch. */
+  get epoch(): bigint
+  set epoch(val: bigint)
+  /** The timestamp of the first `Slot` in this `Epoch`. */
+  get epochStartTimestamp(): bigint
+  set epochStartTimestamp(val: number)
+  /** The future Epoch for which the leader schedule has most recently been calculated. */
+  get leaderScheduleEpoch(): bigint
+  set leaderScheduleEpoch(val: bigint)
+  /** The approximate real world time of the current slot. */
+  get unixTimestamp(): bigint
+  set unixTimestamp(val: number)
+}
 export declare class ComputeBudget {
   constructor()
   get computeUnitLimit(): bigint
@@ -239,10 +269,12 @@ export declare class TransactionMetadata {
   innerInstructions(): Array<Array<InnerInstruction>>
   computeUnitsConsumed(): bigint
   returnData(): TransactionReturnData
+  toString(): string
 }
 export declare class FailedTransactionMetadata {
   err(): TransactionErrorFieldless | TransactionErrorInstructionError | TransactionErrorDuplicateInstruction | TransactionErrorInsufficientFundsForRent | TransactionErrorProgramExecutionTemporarilyRestricted
   meta(): TransactionMetadata
+  toString(): string
 }
 export declare class AddressAndAccount {
   address: Uint8Array
@@ -266,6 +298,7 @@ export declare class LiteSvm {
   static default(): LiteSvm
   /** Sets the compute budget. */
   setComputeBudget(computeUnitLimit: bigint, log64Units: bigint, createProgramAddressUnits: bigint, invokeUnits: bigint, maxInstructionStackDepth: bigint, maxInstructionTraceLength: bigint, sha256BaseCost: bigint, sha256ByteCost: bigint, sha256MaxSlices: bigint, maxCallDepth: bigint, stackFrameSize: bigint, logPubkeyUnits: bigint, maxCpiInstructionSize: bigint, cpiBytesPerUnit: bigint, sysvarBaseCost: bigint, secp256K1RecoverCost: bigint, syscallBaseCost: bigint, curve25519EdwardsValidatePointCost: bigint, curve25519EdwardsAddCost: bigint, curve25519EdwardsSubtractCost: bigint, curve25519EdwardsMultiplyCost: bigint, curve25519EdwardsMsmBaseCost: bigint, curve25519EdwardsMsmIncrementalCost: bigint, curve25519RistrettoValidatePointCost: bigint, curve25519RistrettoAddCost: bigint, curve25519RistrettoSubtractCost: bigint, curve25519RistrettoMultiplyCost: bigint, curve25519RistrettoMsmBaseCost: bigint, curve25519RistrettoMsmIncrementalCost: bigint, heapSize: number, heapCost: bigint, memOpBaseCost: bigint, altBn128AdditionCost: bigint, altBn128MultiplicationCost: bigint, altBn128PairingOnePairCostFirst: bigint, altBn128PairingOnePairCostOther: bigint, bigModularExponentiationBaseCost: bigint, bigModularExponentiationCostDivisor: bigint, poseidonCostCoefficientA: bigint, poseidonCostCoefficientC: bigint, getRemainingComputeUnitsCost: bigint, altBn128G1Compress: bigint, altBn128G1Decompress: bigint, altBn128G2Compress: bigint, altBn128G2Decompress: bigint): void
+  setComputeBudget2(budget: ComputeBudget): void
   /** Enables or disables sigverify */
   setSigverify(sigverify: boolean): void
   /** Enables or disables the blockhash check */
@@ -312,4 +345,6 @@ export declare class LiteSvm {
   /** Warps the clock to the specified slot */
   warpToSlot(slot: bigint): void
   getComputeBudget(): ComputeBudget | null
+  getClock(): Clock
+  setClock(clock: Clock): void
 }
