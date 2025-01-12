@@ -4,7 +4,7 @@ use {
         compute_budget::ComputeBudget,
         sysvar::{
             clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
-            slot_hashes::SlotHash,
+            slot_hashes::SlotHash, slot_history::SlotHistory,
         },
         transaction_error::{convert_transaction_error, TransactionError},
     },
@@ -32,6 +32,7 @@ use {
         rent::Rent as RentOriginal,
         signature::Signature,
         slot_hashes::SlotHashes,
+        slot_history::SlotHistory as SlotHistoryOriginal,
         sysvar::last_restart_slot::LastRestartSlot,
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
@@ -636,5 +637,15 @@ impl LiteSvm {
         let converted = SlotHashes::from_iter(intermediate.into_iter());
         self.0.set_sysvar::<SlotHashes>(&converted);
         Ok(())
+    }
+
+    #[napi]
+    pub fn get_slot_history(&self) -> SlotHistory {
+        SlotHistory(self.0.get_sysvar::<SlotHistoryOriginal>())
+    }
+
+    #[napi]
+    pub fn set_slot_history(&mut self, history: &SlotHistory) {
+        self.0.set_sysvar::<SlotHistoryOriginal>(&history.0)
     }
 }

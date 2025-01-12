@@ -310,7 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { ComputeBudget, Clock, EpochRewards, EpochSchedule, Rent, SlotHash, InstructionErrorCustom, InstructionErrorBorshIo, InstructionErrorFieldless, TransactionErrorFieldless, TransactionErrorInstructionError, TransactionErrorDuplicateInstruction, TransactionErrorInsufficientFundsForRent, TransactionErrorProgramExecutionTemporarilyRestricted, CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
+const { ComputeBudget, Clock, EpochRewards, EpochSchedule, Rent, SlotHash, SlotHistoryCheck, SlotHistory, InstructionErrorCustom, InstructionErrorBorshIo, InstructionErrorFieldless, TransactionErrorFieldless, TransactionErrorInstructionError, TransactionErrorDuplicateInstruction, TransactionErrorInsufficientFundsForRent, TransactionErrorProgramExecutionTemporarilyRestricted, CompiledInstruction, InnerInstruction, TransactionReturnData, FeatureSet, TransactionMetadata, FailedTransactionMetadata, AddressAndAccount, SimulatedTransactionInfo, Account, LiteSvm } = nativeBinding
 
 module.exports.ComputeBudget = ComputeBudget
 module.exports.Clock = Clock
@@ -318,6 +318,8 @@ module.exports.EpochRewards = EpochRewards
 module.exports.EpochSchedule = EpochSchedule
 module.exports.Rent = Rent
 module.exports.SlotHash = SlotHash
+module.exports.SlotHistoryCheck = SlotHistoryCheck
+module.exports.SlotHistory = SlotHistory
 module.exports.InstructionErrorCustom = InstructionErrorCustom
 module.exports.InstructionErrorBorshIo = InstructionErrorBorshIo
 module.exports.InstructionErrorFieldless = InstructionErrorFieldless

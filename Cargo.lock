@@ -2474,6 +2474,7 @@ name = "litesvm-node"
 version = "0.0.0"
 dependencies = [
  "bincode",
+ "bv",
  "litesvm",
  "napi",
  "napi-build",

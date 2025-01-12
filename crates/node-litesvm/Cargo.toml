@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bincode = { workspace = true }
+bv = "0.11.1"
 litesvm = { workspace = true, features = ["nodejs-internal"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive = "2.12.2"
