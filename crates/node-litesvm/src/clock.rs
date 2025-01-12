@@ -16,17 +16,17 @@ impl Clock {
     #[napi(constructor)]
     pub fn new(
         slot: BigInt,
-        epoch_start_timestamp: BigInt,
+        epoch_start_timestamp: i64,
         epoch: BigInt,
         leader_schedule_epoch: BigInt,
-        unix_timestamp: BigInt,
+        unix_timestamp: i64,
     ) -> Self {
         Self(ClockOriginal {
             slot: slot.get_u64().1,
-            epoch_start_timestamp: epoch_start_timestamp.get_i64().0,
+            epoch_start_timestamp,
             epoch: epoch.get_u64().1,
             leader_schedule_epoch: leader_schedule_epoch.get_u64().1,
-            unix_timestamp: unix_timestamp.get_i64().0,
+            unix_timestamp,
         })
     }
 
@@ -54,8 +54,8 @@ impl Clock {
 
     /// The timestamp of the first `Slot` in this `Epoch`.
     #[napi(getter)]
-    pub fn epoch_start_timestamp(&self) -> BigInt {
-        BigInt::from(self.0.epoch_start_timestamp)
+    pub fn epoch_start_timestamp(&self) -> i64 {
+        self.0.epoch_start_timestamp
     }
 
     #[napi(setter)]
@@ -76,8 +76,8 @@ impl Clock {
 
     /// The approximate real world time of the current slot.
     #[napi(getter)]
-    pub fn unix_timestamp(&self) -> BigInt {
-        BigInt::from(self.0.unix_timestamp)
+    pub fn unix_timestamp(&self) -> i64 {
+        self.0.unix_timestamp
     }
 
     #[napi(setter)]

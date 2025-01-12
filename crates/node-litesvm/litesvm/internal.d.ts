@@ -106,7 +106,7 @@ export declare class Clock {
    * @param leaderScheduleEpoch - The future Epoch for which the leader schedule has most recently been calculated.
    * @param unixTimestamp - The approximate real world time of the current slot.
    */
-  constructor(slot: bigint, epochStartTimestamp: bigint, epoch: bigint, leaderScheduleEpoch: bigint, unixTimestamp: bigint)
+  constructor(slot: bigint, epochStartTimestamp: number, epoch: bigint, leaderScheduleEpoch: bigint, unixTimestamp: number)
   /** The current Slot. */
   get slot(): bigint
   set slot(val: bigint)
@@ -114,13 +114,13 @@ export declare class Clock {
   get epoch(): bigint
   set epoch(val: bigint)
   /** The timestamp of the first `Slot` in this `Epoch`. */
-  get epochStartTimestamp(): bigint
+  get epochStartTimestamp(): number
   set epochStartTimestamp(val: number)
   /** The future Epoch for which the leader schedule has most recently been calculated. */
   get leaderScheduleEpoch(): bigint
   set leaderScheduleEpoch(val: bigint)
   /** The approximate real world time of the current slot. */
-  get unixTimestamp(): bigint
+  get unixTimestamp(): number
   set unixTimestamp(val: number)
 }
 export declare class ComputeBudget {
