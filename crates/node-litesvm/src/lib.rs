@@ -1,10 +1,11 @@
 #![deny(clippy::all)]
+#![allow(clippy::new_without_default)]
 use {
     crate::{
         compute_budget::ComputeBudget,
         sysvar::{
             clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
-            slot_hashes::SlotHash, slot_history::SlotHistory,
+            slot_hashes::SlotHash, slot_history::SlotHistory, stake_history::StakeHistory,
         },
         transaction_error::{convert_transaction_error, TransactionError},
     },
@@ -33,6 +34,7 @@ use {
         signature::Signature,
         slot_hashes::SlotHashes,
         slot_history::SlotHistory as SlotHistoryOriginal,
+        stake_history::StakeHistory as StakeHistoryOriginal,
         sysvar::last_restart_slot::LastRestartSlot,
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
@@ -153,7 +155,6 @@ pub struct FeatureSet(FeatureSetOriginal);
 
 #[napi]
 impl FeatureSet {
-    #[allow(clippy::new_without_default)]
     #[napi(constructor)]
     pub fn new() -> Self {
         Self(FeatureSetOriginal::default())
@@ -376,7 +377,6 @@ pub struct LiteSvm(LiteSVMOriginal);
 #[napi]
 impl LiteSvm {
     /// Creates the basic test environment.
-    #[allow(clippy::new_without_default)]
     #[napi(constructor)]
     pub fn new() -> Self {
         Self(LiteSVMOriginal::new())
@@ -634,7 +634,7 @@ impl LiteSvm {
             let converted_hash = try_parse_hash(&h.hash)?;
             intermediate.push((h.slot.get_u64().1, converted_hash));
         }
-        let converted = SlotHashes::from_iter(intermediate.into_iter());
+        let converted = SlotHashes::from_iter(intermediate);
         self.0.set_sysvar::<SlotHashes>(&converted);
         Ok(())
     }
@@ -647,5 +647,15 @@ impl LiteSvm {
     #[napi]
     pub fn set_slot_history(&mut self, history: &SlotHistory) {
         self.0.set_sysvar::<SlotHistoryOriginal>(&history.0)
+    }
+
+    #[napi]
+    pub fn get_stake_history(&self) -> StakeHistory {
+        StakeHistory(self.0.get_sysvar::<StakeHistoryOriginal>())
+    }
+
+    #[napi]
+    pub fn set_stake_history(&mut self, history: &StakeHistory) {
+        self.0.set_sysvar::<StakeHistoryOriginal>(&history.0)
     }
 }

@@ -8,7 +8,6 @@ pub struct ComputeBudget(pub(crate) ComputeBudgetOriginal);
 
 #[napi]
 impl ComputeBudget {
-    #[allow(clippy::new_without_default)]
     #[napi(constructor)]
     pub fn new() -> Self {
         Self(ComputeBudgetOriginal::default())

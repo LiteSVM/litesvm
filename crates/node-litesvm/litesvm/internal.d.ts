@@ -402,6 +402,30 @@ export declare class SlotHistory {
   newest(): bigint
   toString(): string
 }
+export declare class StakeHistoryEntry {
+  /**
+   * @param effective - effective stake at this epoch
+   * @param activating - sum of portion of stakes not fully warmed up
+   * @param effective - requested to be cooled down, not fully deactivated yet
+   */
+  constructor(effective: bigint, activating: bigint, deactivating: bigint)
+  /** effective stake at this epoch */
+  get effective(): bigint
+  set effective(val: bigint)
+  /** sum of portion of stakes not fully warmed up */
+  get activating(): bigint
+  set activating(val: bigint)
+  /** requested to be cooled down, not fully deactivated yet */
+  get deactivating(): bigint
+  set deactivating(val: bigint)
+  toString(): string
+}
+/** A type to hold data for the StakeHistory sysvar. */
+export declare class StakeHistory {
+  constructor()
+  get(epoch: bigint): StakeHistoryEntry | null
+  add(epoch: bigint, entry: StakeHistoryEntry): void
+}
 export declare class InstructionErrorCustom {
   code: number
   toString(): string
@@ -548,4 +572,6 @@ export declare class LiteSvm {
   setSlotHashes(hashes: Array<SlotHash>): void
   getSlotHistory(): SlotHistory
   setSlotHistory(history: SlotHistory): void
+  getStakeHistory(): StakeHistory
+  setStakeHistory(history: StakeHistory): void
 }
