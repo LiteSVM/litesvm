@@ -1,4 +1,4 @@
-use {napi::bindgen_prelude::*, solana_sdk::clock::Clock as ClockOriginal};
+use {crate::to_string_js, napi::bindgen_prelude::*, solana_sdk::clock::Clock as ClockOriginal};
 
 /// A representation of network time.
 ///
@@ -85,9 +85,6 @@ impl Clock {
     pub fn set_unix_timestamp(&mut self, val: i64) {
         self.0.unix_timestamp = val;
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(Clock);

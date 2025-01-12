@@ -88,9 +88,6 @@ impl SlotHistory {
     pub fn newest(&self) -> u64 {
         self.0.newest()
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(SlotHistory);

@@ -1,4 +1,5 @@
 use {
+    crate::to_string_js,
     napi::bindgen_prelude::*,
     solana_sdk::rent::{Rent as RentOriginal, RentDue},
 };
@@ -145,9 +146,6 @@ impl Rent {
             slots_per_epoch.get_u64().1,
         ))
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(Rent);

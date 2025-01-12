@@ -326,12 +326,9 @@ impl TransactionErrorInstructionError {
     pub fn err(&self) -> InstructionError {
         self.error.clone()
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(TransactionErrorInstructionError);
 
 #[derive(Debug)]
 #[napi]

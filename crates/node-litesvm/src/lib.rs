@@ -98,12 +98,9 @@ impl CompiledInstruction {
     pub fn data(&self) -> Uint8Array {
         Uint8Array::new(self.0.data.clone())
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(CompiledInstruction);
 
 #[derive(Debug, Clone)]
 #[napi]
@@ -120,12 +117,9 @@ impl InnerInstruction {
     pub fn stack_height(&self) -> u8 {
         self.0.stack_height
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(InnerInstruction);
 
 #[derive(Debug, Clone)]
 #[napi]
@@ -142,12 +136,9 @@ impl TransactionReturnData {
     pub fn data(&self) -> Uint8Array {
         Uint8Array::new(self.0.data.clone())
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(TransactionReturnData);
 
 #[derive(Debug, Clone)]
 #[napi]
@@ -174,12 +165,9 @@ impl FeatureSet {
     pub fn activated_slot(&self, feature_id: Uint8Array) -> Option<u64> {
         self.0.activated_slot(&convert_pubkey(feature_id))
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(FeatureSet);
 
 #[derive(Debug, Clone)]
 #[napi]
@@ -216,12 +204,9 @@ impl TransactionMetadata {
     pub fn return_data(&self) -> TransactionReturnData {
         TransactionReturnData(self.0.return_data.clone())
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(TransactionMetadata);
 
 #[derive(Debug, Clone)]
 #[napi]
@@ -240,12 +225,9 @@ impl FailedTransactionMetadata {
     pub fn meta(&self) -> TransactionMetadata {
         TransactionMetadata(self.0.meta.clone())
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(FailedTransactionMetadata);
 
 #[derive(Clone)]
 #[napi]
@@ -285,12 +267,9 @@ impl SimulatedTransactionInfo {
             })
             .collect()
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(SimulatedTransactionInfo);
 
 #[derive(Debug, Clone)]
 #[napi]
@@ -345,12 +324,9 @@ impl Account {
     pub fn rent_epoch(&self) -> u64 {
         self.0.rent_epoch
     }
-
-    #[napi(js_name = "toString")]
-    pub fn js_to_string(&self) -> String {
-        format!("{self:?}")
-    }
 }
+
+to_string_js!(Account);
 
 pub type TransactionResult = Either<TransactionMetadata, FailedTransactionMetadata>;
 pub type SimulateResult = Either<SimulatedTransactionInfo, FailedTransactionMetadata>;
