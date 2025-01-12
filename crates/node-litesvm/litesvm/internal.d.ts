@@ -275,6 +275,38 @@ export declare class EpochRewards {
   get active(): boolean
   set active(val: boolean)
 }
+/** Configuration for epochs and slots. */
+export declare class EpochSchedule {
+  /**
+   * @param slots_per_epoch - The maximum number of slots in each epoch.
+   * @param leader_schedule_slot_offset - A number of slots before beginning of an epoch to calculate a leader schedule for that epoch.
+   * @param warmup - Whether epochs start short and grow.
+   * @param first_normal_epoch - The first epoch after the warmup period.
+   * @param first_normal_slot - The first slot after the warmup period.
+   */
+  constructor(slotsPerEpoch: bigint, leaderScheduleSlotOffset: bigint, warmup: boolean, firstNormalEpoch: bigint, firstNormalSlot: bigint)
+  /** The maximum number of slots in each epoch. */
+  get slotsPerEpoch(): bigint
+  /**
+   * A number of slots before beginning of an epoch to calculate
+   * a leader schedule for that epoch.
+   */
+  get leaderScheduleSlotOffset(): bigint
+  /** Whether epochs start short and grow. */
+  get warmup(): boolean
+  /**
+   * The first epoch after the warmup period.
+   *
+   * Basically: `log2(slots_per_epoch) - log2(MINIMUM_SLOTS_PER_EPOCH)`.
+   */
+  get firstNormalEpoch(): bigint
+  /**
+   * The first slot after the warmup period.
+   *
+   * Basically: `MINIMUM_SLOTS_PER_EPOCH * (2.pow(first_normal_epoch) - 1)`.
+   */
+  get firstNormalSlot(): bigint
+}
 /** Configuration of network rent. */
 export declare class Rent {
   /**
@@ -488,4 +520,6 @@ export declare class LiteSvm {
   setRent(rent: Rent): void
   getEpochRewards(): EpochRewards
   setEpochRewards(rewards: EpochRewards): void
+  getEpochSchedule(): EpochSchedule
+  setEpochSchedule(schedule: EpochSchedule): void
 }

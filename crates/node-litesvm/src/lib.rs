@@ -2,7 +2,9 @@
 use {
     crate::{
         compute_budget::ComputeBudget,
-        sysvar::{clock::Clock, epoch_rewards::EpochRewards, rent::Rent},
+        sysvar::{
+            clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
+        },
         transaction_error::{convert_transaction_error, TransactionError},
     },
     bincode::deserialize,
@@ -21,6 +23,7 @@ use {
         account::Account as AccountOriginal,
         clock::Clock as ClockOriginal,
         epoch_rewards::EpochRewards as EpochRewardsOriginal,
+        epoch_schedule::EpochSchedule as EpochScheduleOriginal,
         feature_set::FeatureSet as FeatureSetOriginal,
         inner_instruction::InnerInstruction as InnerInstructionOriginal,
         instruction::CompiledInstruction as CompiledInstructionOriginal,
@@ -582,5 +585,15 @@ impl LiteSvm {
     #[napi]
     pub fn set_epoch_rewards(&mut self, rewards: &EpochRewards) {
         self.0.set_sysvar(&rewards.0)
+    }
+
+    #[napi]
+    pub fn get_epoch_schedule(&self) -> EpochSchedule {
+        EpochSchedule(self.0.get_sysvar::<EpochScheduleOriginal>())
+    }
+
+    #[napi]
+    pub fn set_epoch_schedule(&mut self, schedule: &EpochSchedule) {
+        self.0.set_sysvar(&schedule.0)
     }
 }

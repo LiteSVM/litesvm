@@ -4,9 +4,7 @@ use {
     std::str::FromStr,
 };
 
-/// A type to hold data for the [`EpochRewards` sysvar][sv].
-///
-/// [sv]: https://docs.solanalabs.com/runtime/sysvars#epochrewards
+/// A type to hold data for the EpochRewards sysvar.
 #[derive(Debug)]
 #[napi]
 pub struct EpochRewards(pub(crate) EpochRewardsOriginal);
