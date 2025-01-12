@@ -217,11 +217,7 @@ export declare class Clock {
   set unixTimestamp(val: number)
   toString(): string
 }
-/**
- * A type to hold data for the [`EpochRewards` sysvar][sv].
- *
- * [sv]: https://docs.solanalabs.com/runtime/sysvars#epochrewards
- */
+/** A type to hold data for the EpochRewards sysvar. */
 export declare class EpochRewards {
   /**
    * @param distribution_starting_block_height - The starting block height of the rewards distribution in the current epoch
@@ -522,4 +518,6 @@ export declare class LiteSvm {
   setEpochRewards(rewards: EpochRewards): void
   getEpochSchedule(): EpochSchedule
   setEpochSchedule(schedule: EpochSchedule): void
+  getLastRestartSlot(): bigint
+  setLastRestartSlot(slot: bigint): void
 }

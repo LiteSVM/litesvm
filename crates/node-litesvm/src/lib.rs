@@ -30,6 +30,7 @@ use {
         pubkey::Pubkey,
         rent::Rent as RentOriginal,
         signature::Signature,
+        sysvar::last_restart_slot::LastRestartSlot,
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
@@ -595,5 +596,17 @@ impl LiteSvm {
     #[napi]
     pub fn set_epoch_schedule(&mut self, schedule: &EpochSchedule) {
         self.0.set_sysvar(&schedule.0)
+    }
+
+    #[napi]
+    pub fn get_last_restart_slot(&self) -> u64 {
+        self.0.get_sysvar::<LastRestartSlot>().last_restart_slot
+    }
+
+    #[napi]
+    pub fn set_last_restart_slot(&mut self, slot: BigInt) {
+        self.0.set_sysvar::<LastRestartSlot>(&LastRestartSlot {
+            last_restart_slot: slot.get_u64().1,
+        })
     }
 }
