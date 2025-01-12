@@ -11,7 +11,7 @@ export default {
 	}),
 	transform: {
 		"^.+\\.{ts|tsx}?$": [
-			"ts-jest",
+			"@swc/jest",
 			{
 				tsConfig: "tsconfig.json",
 			},

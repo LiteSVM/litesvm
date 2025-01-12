@@ -32,6 +32,8 @@
 	"devDependencies": {
 		"@napi-rs/cli": "^2.18.4",
 		"@solana/spl-token": "^0.3.7",
+		"@swc/core": "^1.10.7",
+		"@swc/jest": "^0.2.37",
 		"@types/bs58": "^4.0.1",
 		"@types/jest": "^29.5.3",
 		"@types/markdown-it": "^14.1.0",
