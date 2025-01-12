@@ -253,6 +253,54 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Get the EpochRewards sysvar.
+	 * @returns the EpochRewards object.
+	 */
+	getEpochRewards(): EpochRewards {
+		return this.inner.getEpochRewards();
+	}
+
+	/**
+	 * Overwrite the EpochRewards sysvar.
+	 * @param rewards - The EpochRewards object.
+	 */
+	setEpochRewards(rewards: EpochRewards) {
+		this.inner.setEpochRewards(rewards);
+	}
+
+	/**
+	 * Get the EpochSchedule sysvar.
+	 * @returns the EpochSchedule object.
+	 */
+	getEpochSchedule(): EpochSchedule {
+		return this.inner.getEpochSchedule();
+	}
+
+	/**
+	 * Overwrite the EpochSchedule sysvar.
+	 * @param schedule - The EpochSchedule object.
+	 */
+	setEpochSchedule(schedule: EpochSchedule) {
+		this.inner.setEpochSchedule(schedule);
+	}
+
+	/**
+	 * Get the last restart slot sysvar.
+	 * @returns the last restart slot.
+	 */
+	getLastRestartSlot(): bigint {
+		return this.inner.getLastRestartSlot();
+	}
+
+	/**
+	 * Overwrite the last restart slot sysvar.
+	 * @param slot - The last restart slot.
+	 */
+	setLastRestartSlot(slot: bigint) {
+		this.inner.setLastRestartSlot(slot);
+	}
+
+	/**
 	 * Get the cluster rent.
 	 * @returns The rent object.
 	 */
@@ -266,5 +314,53 @@ export class LiteSVM {
 	 */
 	setRent(rent: Rent) {
 		this.inner.setRent(rent);
+	}
+
+	/**
+	 * Get the SlotHashes sysvar.
+	 * @returns The SlotHash array.
+	 */
+	getSlotHashes(): SlotHash[] {
+		return this.inner.getSlotHashes();
+	}
+
+	/**
+	 * Overwrite the SlotHashes sysvar.
+	 * @param hashes - The SlotHash array.
+	 */
+	setSlotHashes(hashes: SlotHash[]) {
+		this.inner.setSlotHashes(hashes);
+	}
+
+	/**
+	 * Get the SlotHistory sysvar.
+	 * @returns The SlotHistory object.
+	 */
+	getSlotHistory(): SlotHistory {
+		return this.inner.getSlotHistory();
+	}
+
+	/**
+	 * Overwrite the SlotHistory sysvar.
+	 * @param history - The SlotHistory object
+	 */
+	setSlotHistory(history: SlotHistory) {
+		this.inner.setSlotHistory(history);
+	}
+
+	/**
+	 * Get the StakeHistory sysvar.
+	 * @returns The StakeHistory object.
+	 */
+	getStakeHistory(): StakeHistory {
+		return this.inner.getStakeHistory();
+	}
+
+	/**
+	 * Overwrite the StakeHistory sysvar.
+	 * @param history - The StakeHistory object
+	 */
+	setStakeHistory(history: StakeHistory) {
+		this.inner.setStakeHistory(history);
 	}
 }
