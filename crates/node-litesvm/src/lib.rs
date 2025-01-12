@@ -4,6 +4,7 @@ use {
         compute_budget::ComputeBudget,
         sysvar::{
             clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
+            slot_hashes::SlotHash,
         },
         transaction_error::{convert_transaction_error, TransactionError},
     },
@@ -30,10 +31,12 @@ use {
         pubkey::Pubkey,
         rent::Rent as RentOriginal,
         signature::Signature,
+        slot_hashes::SlotHashes,
         sysvar::last_restart_slot::LastRestartSlot,
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
+    sysvar::epoch_rewards::try_parse_hash,
 };
 mod compute_budget;
 mod sysvar;
@@ -608,5 +611,30 @@ impl LiteSvm {
         self.0.set_sysvar::<LastRestartSlot>(&LastRestartSlot {
             last_restart_slot: slot.get_u64().1,
         })
+    }
+
+    #[napi]
+    pub fn get_slot_hashes(&self) -> Vec<SlotHash> {
+        let fetched = self.0.get_sysvar::<SlotHashes>();
+        fetched
+            .slot_hashes()
+            .iter()
+            .map(|x| SlotHash {
+                slot: BigInt::from(x.0),
+                hash: x.1.to_string(),
+            })
+            .collect()
+    }
+
+    #[napi]
+    pub fn set_slot_hashes(&mut self, hashes: Vec<&SlotHash>) -> Result<()> {
+        let mut intermediate: Vec<(u64, solana_sdk::hash::Hash)> = Vec::with_capacity(hashes.len());
+        for h in hashes {
+            let converted_hash = try_parse_hash(&h.hash)?;
+            intermediate.push((h.slot.get_u64().1, converted_hash));
+        }
+        let converted = SlotHashes::from_iter(intermediate.into_iter());
+        self.0.set_sysvar::<SlotHashes>(&converted);
+        Ok(())
     }
 }

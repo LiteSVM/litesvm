@@ -9,7 +9,7 @@ use {
 #[napi]
 pub struct EpochRewards(pub(crate) EpochRewardsOriginal);
 
-fn try_parse_hash(raw: &str) -> Result<Hash> {
+pub(crate) fn try_parse_hash(raw: &str) -> Result<Hash> {
     Hash::from_str(raw).map_err(|e| {
         Error::new(
             Status::GenericFailure,

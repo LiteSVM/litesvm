@@ -378,6 +378,10 @@ export declare class Rent {
   static withSlotsPerEpoch(slotsPerEpoch: bigint): Rent
   toString(): string
 }
+export declare class SlotHash {
+  slot: bigint
+  hash: string
+}
 export declare class InstructionErrorCustom {
   code: number
   toString(): string
@@ -520,4 +524,6 @@ export declare class LiteSvm {
   setEpochSchedule(schedule: EpochSchedule): void
   getLastRestartSlot(): bigint
   setLastRestartSlot(slot: bigint): void
+  getSlotHashes(): Array<SlotHash>
+  setSlotHashes(hashes: Array<SlotHash>): void
 }
