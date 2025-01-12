@@ -93,37 +93,6 @@ export const enum TransactionErrorFieldless {
   UnbalancedTransaction = 32,
   ProgramCacheHitMaxLimit = 33
 }
-/**
- * A representation of network time.
- *
- * All members of `Clock` start from 0 upon network boot.
- */
-export declare class Clock {
-  /**
-   * @param slot - The current Slot.
-   * @param epochStartTimestamp - The timestamp of the first `Slot` in this `Epoch`.
-   * @param epoch - The current epoch.
-   * @param leaderScheduleEpoch - The future Epoch for which the leader schedule has most recently been calculated.
-   * @param unixTimestamp - The approximate real world time of the current slot.
-   */
-  constructor(slot: bigint, epochStartTimestamp: number, epoch: bigint, leaderScheduleEpoch: bigint, unixTimestamp: number)
-  /** The current Slot. */
-  get slot(): bigint
-  set slot(val: bigint)
-  /** The current epoch. */
-  get epoch(): bigint
-  set epoch(val: bigint)
-  /** The timestamp of the first `Slot` in this `Epoch`. */
-  get epochStartTimestamp(): number
-  set epochStartTimestamp(val: number)
-  /** The future Epoch for which the leader schedule has most recently been calculated. */
-  get leaderScheduleEpoch(): bigint
-  set leaderScheduleEpoch(val: bigint)
-  /** The approximate real world time of the current slot. */
-  get unixTimestamp(): number
-  set unixTimestamp(val: number)
-  toString(): string
-}
 export declare class ComputeBudget {
   constructor()
   get computeUnitLimit(): bigint
@@ -217,6 +186,37 @@ export declare class ComputeBudget {
   set altBn128G2Decompress(val: bigint)
   get altBn128G2Decompress(): bigint
 }
+/**
+ * A representation of network time.
+ *
+ * All members of `Clock` start from 0 upon network boot.
+ */
+export declare class Clock {
+  /**
+   * @param slot - The current Slot.
+   * @param epochStartTimestamp - The timestamp of the first `Slot` in this `Epoch`.
+   * @param epoch - The current epoch.
+   * @param leaderScheduleEpoch - The future Epoch for which the leader schedule has most recently been calculated.
+   * @param unixTimestamp - The approximate real world time of the current slot.
+   */
+  constructor(slot: bigint, epochStartTimestamp: number, epoch: bigint, leaderScheduleEpoch: bigint, unixTimestamp: number)
+  /** The current Slot. */
+  get slot(): bigint
+  set slot(val: bigint)
+  /** The current epoch. */
+  get epoch(): bigint
+  set epoch(val: bigint)
+  /** The timestamp of the first `Slot` in this `Epoch`. */
+  get epochStartTimestamp(): number
+  set epochStartTimestamp(val: number)
+  /** The future Epoch for which the leader schedule has most recently been calculated. */
+  get leaderScheduleEpoch(): bigint
+  set leaderScheduleEpoch(val: bigint)
+  /** The approximate real world time of the current slot. */
+  get unixTimestamp(): number
+  set unixTimestamp(val: number)
+  toString(): string
+}
 /** Configuration of network rent. */
 export declare class Rent {
   /**
@@ -229,10 +229,13 @@ export declare class Rent {
   static default(): Rent
   /** Rental rate in lamports/byte-year. */
   get lamportsPerByteYear(): bigint
+  set lamportsPerByteYear(val: bigint)
   /** Amount of time (in years) a balance must include rent for the account to be rent exempt. */
   get exemptionThreshold(): number
+  set exemptionThreshold(val: number)
   /** The percentage of collected rent that is burned. */
   get burnPercent(): number
+  set burnPercent(val: number)
   /**
    * Calculate how much rent to burn from the collected rent.
    *

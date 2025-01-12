@@ -1,9 +1,8 @@
 #![deny(clippy::all)]
 use {
     crate::{
-        clock::Clock,
+        sysvar::{clock::Clock, rent::Rent},
         compute_budget::ComputeBudget,
-        rent::Rent,
         transaction_error::{convert_transaction_error, TransactionError},
     },
     bincode::deserialize,
@@ -31,9 +30,8 @@ use {
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
     },
 };
-mod clock;
 mod compute_budget;
-mod rent;
+mod sysvar;
 mod transaction_error;
 
 #[macro_use]

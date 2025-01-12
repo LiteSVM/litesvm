@@ -34,16 +34,31 @@ impl Rent {
         self.0.lamports_per_byte_year
     }
 
+    #[napi(setter)]
+    pub fn set_lamports_per_byte_year(&mut self, val: BigInt) {
+        self.0.lamports_per_byte_year = val.get_u64().1;
+    }
+
     /// Amount of time (in years) a balance must include rent for the account to be rent exempt.
     #[napi(getter)]
     pub fn exemption_threshold(&self) -> f64 {
         self.0.exemption_threshold
     }
 
+    #[napi(setter)]
+    pub fn set_exemption_threshold(&mut self, val: f64) {
+        self.0.exemption_threshold = val;
+    }
+
     /// The percentage of collected rent that is burned.
     #[napi(getter)]
     pub fn burn_percent(&self) -> u8 {
         self.0.burn_percent
+    }
+
+    #[napi(setter)]
+    pub fn set_burn_percent(&mut self, val: u8) {
+        self.0.burn_percent = val;
     }
 
     /// Calculate how much rent to burn from the collected rent.
