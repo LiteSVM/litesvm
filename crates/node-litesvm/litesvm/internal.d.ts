@@ -218,23 +218,29 @@ export declare class ComputeBudget {
 }
 export declare class InstructionErrorCustom {
   code: number
+  toString(): string
 }
 export type InstructionErrorBorshIO = InstructionErrorBorshIo
 export declare class InstructionErrorBorshIo {
   msg: string
+  toString(): string
 }
 export declare class TransactionErrorInstructionError {
   index: number
   err(): InstructionErrorFieldless | InstructionErrorCustom | InstructionErrorBorshIO
+  toString(): string
 }
 export declare class TransactionErrorDuplicateInstruction {
   index: number
+  toString(): string
 }
 export declare class TransactionErrorInsufficientFundsForRent {
   accountIndex: number
+  toString(): string
 }
 export declare class TransactionErrorProgramExecutionTemporarilyRestricted {
   accountIndex: number
+  toString(): string
 }
 export declare class CompiledInstruction {
   constructor(programIdIndex: number, accounts: Uint8Array, data: Uint8Array)
@@ -296,9 +302,7 @@ export declare class LiteSvm {
   /** Creates the basic test environment. */
   constructor()
   static default(): LiteSvm
-  /** Sets the compute budget. */
-  setComputeBudget(computeUnitLimit: bigint, log64Units: bigint, createProgramAddressUnits: bigint, invokeUnits: bigint, maxInstructionStackDepth: bigint, maxInstructionTraceLength: bigint, sha256BaseCost: bigint, sha256ByteCost: bigint, sha256MaxSlices: bigint, maxCallDepth: bigint, stackFrameSize: bigint, logPubkeyUnits: bigint, maxCpiInstructionSize: bigint, cpiBytesPerUnit: bigint, sysvarBaseCost: bigint, secp256K1RecoverCost: bigint, syscallBaseCost: bigint, curve25519EdwardsValidatePointCost: bigint, curve25519EdwardsAddCost: bigint, curve25519EdwardsSubtractCost: bigint, curve25519EdwardsMultiplyCost: bigint, curve25519EdwardsMsmBaseCost: bigint, curve25519EdwardsMsmIncrementalCost: bigint, curve25519RistrettoValidatePointCost: bigint, curve25519RistrettoAddCost: bigint, curve25519RistrettoSubtractCost: bigint, curve25519RistrettoMultiplyCost: bigint, curve25519RistrettoMsmBaseCost: bigint, curve25519RistrettoMsmIncrementalCost: bigint, heapSize: number, heapCost: bigint, memOpBaseCost: bigint, altBn128AdditionCost: bigint, altBn128MultiplicationCost: bigint, altBn128PairingOnePairCostFirst: bigint, altBn128PairingOnePairCostOther: bigint, bigModularExponentiationBaseCost: bigint, bigModularExponentiationCostDivisor: bigint, poseidonCostCoefficientA: bigint, poseidonCostCoefficientC: bigint, getRemainingComputeUnitsCost: bigint, altBn128G1Compress: bigint, altBn128G1Decompress: bigint, altBn128G2Compress: bigint, altBn128G2Decompress: bigint): void
-  setComputeBudget2(budget: ComputeBudget): void
+  setComputeBudget(budget: ComputeBudget): void
   /** Enables or disables sigverify */
   setSigverify(sigverify: boolean): void
   /** Enables or disables the blockhash check */

@@ -17,7 +17,6 @@ use {
         LiteSVM as LiteSVMOriginal,
     },
     napi::bindgen_prelude::*,
-    solana_compute_budget::compute_budget::ComputeBudget as ComputeBudgetOriginal,
     solana_sdk::{
         account::Account as AccountOriginal,
         clock::Clock as ClockOriginal,
@@ -380,127 +379,7 @@ impl LiteSvm {
     }
 
     #[napi]
-    /// Sets the compute budget.
-    // napi-rs doesn't support passing custom structs as params,
-    // so we have this ugly thing
-    #[allow(clippy::too_many_arguments)]
-    pub fn set_compute_budget(
-        &mut self,
-        compute_unit_limit: BigInt,
-        log_64_units: BigInt,
-        create_program_address_units: BigInt,
-        invoke_units: BigInt,
-        max_instruction_stack_depth: BigInt,
-        max_instruction_trace_length: BigInt,
-        sha256_base_cost: BigInt,
-        sha256_byte_cost: BigInt,
-        sha256_max_slices: BigInt,
-        max_call_depth: BigInt,
-        stack_frame_size: BigInt,
-        log_pubkey_units: BigInt,
-        max_cpi_instruction_size: BigInt,
-        cpi_bytes_per_unit: BigInt,
-        sysvar_base_cost: BigInt,
-        secp256k1_recover_cost: BigInt,
-        syscall_base_cost: BigInt,
-        curve25519_edwards_validate_point_cost: BigInt,
-        curve25519_edwards_add_cost: BigInt,
-        curve25519_edwards_subtract_cost: BigInt,
-        curve25519_edwards_multiply_cost: BigInt,
-        curve25519_edwards_msm_base_cost: BigInt,
-        curve25519_edwards_msm_incremental_cost: BigInt,
-        curve25519_ristretto_validate_point_cost: BigInt,
-        curve25519_ristretto_add_cost: BigInt,
-        curve25519_ristretto_subtract_cost: BigInt,
-        curve25519_ristretto_multiply_cost: BigInt,
-        curve25519_ristretto_msm_base_cost: BigInt,
-        curve25519_ristretto_msm_incremental_cost: BigInt,
-        heap_size: u32,
-        heap_cost: BigInt,
-        mem_op_base_cost: BigInt,
-        alt_bn128_addition_cost: BigInt,
-        alt_bn128_multiplication_cost: BigInt,
-        alt_bn128_pairing_one_pair_cost_first: BigInt,
-        alt_bn128_pairing_one_pair_cost_other: BigInt,
-        big_modular_exponentiation_base_cost: BigInt,
-        big_modular_exponentiation_cost_divisor: BigInt,
-        poseidon_cost_coefficient_a: BigInt,
-        poseidon_cost_coefficient_c: BigInt,
-        get_remaining_compute_units_cost: BigInt,
-        alt_bn128_g1_compress: BigInt,
-        alt_bn128_g1_decompress: BigInt,
-        alt_bn128_g2_compress: BigInt,
-        alt_bn128_g2_decompress: BigInt,
-    ) {
-        let inner = ComputeBudgetOriginal {
-            compute_unit_limit: compute_unit_limit.get_u64().1,
-            log_64_units: log_64_units.get_u64().1,
-            create_program_address_units: create_program_address_units.get_u64().1,
-            invoke_units: invoke_units.get_u64().1,
-            max_instruction_stack_depth: usize::try_from(max_instruction_stack_depth.get_u64().1)
-                .unwrap(),
-            max_instruction_trace_length: usize::try_from(max_instruction_trace_length.get_u64().1)
-                .unwrap(),
-            sha256_base_cost: sha256_base_cost.get_u64().1,
-            sha256_byte_cost: sha256_byte_cost.get_u64().1,
-            sha256_max_slices: sha256_max_slices.get_u64().1,
-            max_call_depth: usize::try_from(max_call_depth.get_u64().1).unwrap(),
-            stack_frame_size: usize::try_from(stack_frame_size.get_u64().1).unwrap(),
-            log_pubkey_units: log_pubkey_units.get_u64().1,
-            max_cpi_instruction_size: usize::try_from(max_cpi_instruction_size.get_u64().1)
-                .unwrap(),
-            cpi_bytes_per_unit: cpi_bytes_per_unit.get_u64().1,
-            sysvar_base_cost: sysvar_base_cost.get_u64().1,
-            secp256k1_recover_cost: secp256k1_recover_cost.get_u64().1,
-            syscall_base_cost: syscall_base_cost.get_u64().1,
-            curve25519_edwards_validate_point_cost: curve25519_edwards_validate_point_cost
-                .get_u64()
-                .1,
-            curve25519_edwards_add_cost: curve25519_edwards_add_cost.get_u64().1,
-            curve25519_edwards_subtract_cost: curve25519_edwards_subtract_cost.get_u64().1,
-            curve25519_edwards_multiply_cost: curve25519_edwards_multiply_cost.get_u64().1,
-            curve25519_edwards_msm_base_cost: curve25519_edwards_msm_base_cost.get_u64().1,
-            curve25519_edwards_msm_incremental_cost: curve25519_edwards_msm_incremental_cost
-                .get_u64()
-                .1,
-            curve25519_ristretto_validate_point_cost: curve25519_ristretto_validate_point_cost
-                .get_u64()
-                .1,
-            curve25519_ristretto_add_cost: curve25519_ristretto_add_cost.get_u64().1,
-            curve25519_ristretto_subtract_cost: curve25519_ristretto_subtract_cost.get_u64().1,
-            curve25519_ristretto_multiply_cost: curve25519_ristretto_multiply_cost.get_u64().1,
-            curve25519_ristretto_msm_base_cost: curve25519_ristretto_msm_base_cost.get_u64().1,
-            curve25519_ristretto_msm_incremental_cost: curve25519_ristretto_msm_incremental_cost
-                .get_u64()
-                .1,
-            heap_size,
-            heap_cost: heap_cost.get_u64().1,
-            mem_op_base_cost: mem_op_base_cost.get_u64().1,
-            alt_bn128_addition_cost: alt_bn128_addition_cost.get_u64().1,
-            alt_bn128_multiplication_cost: alt_bn128_multiplication_cost.get_u64().1,
-            alt_bn128_pairing_one_pair_cost_first: alt_bn128_pairing_one_pair_cost_first
-                .get_u64()
-                .1,
-            alt_bn128_pairing_one_pair_cost_other: alt_bn128_pairing_one_pair_cost_other
-                .get_u64()
-                .1,
-            big_modular_exponentiation_base_cost: big_modular_exponentiation_base_cost.get_u64().1,
-            big_modular_exponentiation_cost_divisor: big_modular_exponentiation_cost_divisor
-                .get_u64()
-                .1,
-            poseidon_cost_coefficient_a: poseidon_cost_coefficient_a.get_u64().1,
-            poseidon_cost_coefficient_c: poseidon_cost_coefficient_c.get_u64().1,
-            get_remaining_compute_units_cost: get_remaining_compute_units_cost.get_u64().1,
-            alt_bn128_g1_compress: alt_bn128_g1_compress.get_u64().1,
-            alt_bn128_g1_decompress: alt_bn128_g1_decompress.get_u64().1,
-            alt_bn128_g2_compress: alt_bn128_g2_compress.get_u64().1,
-            alt_bn128_g2_decompress: alt_bn128_g2_decompress.get_u64().1,
-        };
-        self.0.set_compute_budget(inner);
-    }
-
-    #[napi]
-    pub fn set_compute_budget2(&mut self, budget: &ComputeBudget) {
+    pub fn set_compute_budget(&mut self, budget: &ComputeBudget) {
         self.0.set_compute_budget(budget.0);
     }
 
