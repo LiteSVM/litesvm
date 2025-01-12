@@ -126,17 +126,11 @@ impl TransactionReturnData {
 #[napi]
 pub struct FeatureSet(FeatureSetOriginal);
 
-/// For internal use only
-#[napi]
-pub struct ActiveFeatureInternal {
-    pub address: Uint8Array,
-    pub slot: BigInt,
-}
-
 #[napi]
 impl FeatureSet {
-    #[napi(factory, js_name = "default")]
-    pub fn new_default() -> Self {
+    #[allow(clippy::new_without_default)]
+    #[napi(constructor)]
+    pub fn new() -> Self {
         Self(FeatureSetOriginal::default())
     }
 
@@ -153,19 +147,6 @@ impl FeatureSet {
     #[napi]
     pub fn activated_slot(&self, feature_id: Uint8Array) -> Option<u64> {
         self.0.activated_slot(&convert_pubkey(feature_id))
-    }
-
-    /// For internal use only.
-    #[napi]
-    pub fn to_internal(&self) -> Vec<ActiveFeatureInternal> {
-        self.0
-            .active
-            .iter()
-            .map(|(addr, slot)| ActiveFeatureInternal {
-                address: Uint8Array::with_data_copied(addr),
-                slot: BigInt::from(*slot),
-            })
-            .collect()
     }
 }
 
@@ -349,18 +330,6 @@ fn convert_sim_result(
     }
 }
 
-fn convert_feature_set(
-    active_features: Vec<(Uint8Array, BigInt)>,
-) -> solana_sdk::feature_set::FeatureSet {
-    let mut inner = solana_sdk::feature_set::FeatureSet::default();
-    for (raw_addr, raw_slot) in active_features {
-        let address = convert_pubkey(raw_addr);
-        let slot = raw_slot.get_u64().1;
-        inner.activate(&address, slot);
-    }
-    inner
-}
-
 #[napi]
 pub struct LiteSvm(LiteSVMOriginal);
 
@@ -403,11 +372,8 @@ impl LiteSvm {
 
     #[napi]
     /// Changes the default builtins
-    pub fn set_builtins(&mut self, feature_set: Option<Vec<(Uint8Array, BigInt)>>) {
-        if let Some(active_features) = feature_set {
-            let inner = convert_feature_set(active_features);
-            self.0.set_builtins(Some(inner));
-        }
+    pub fn set_builtins(&mut self, feature_set: Option<&FeatureSet>) {
+        self.0.set_builtins(feature_set.map(|x| x.0.clone()));
     }
 
     #[napi]
@@ -437,11 +403,8 @@ impl LiteSvm {
     }
 
     #[napi]
-    pub fn set_precompiles(&mut self, feature_set: Option<Vec<(Uint8Array, BigInt)>>) {
-        if let Some(active_features) = feature_set {
-            let inner = convert_feature_set(active_features);
-            self.0.set_precompiles(Some(inner));
-        }
+    pub fn set_precompiles(&mut self, feature_set: Option<&FeatureSet>) {
+        self.0.set_precompiles(feature_set.map(|x| x.0.clone()));
     }
 
     #[napi]

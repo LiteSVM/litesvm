@@ -5,7 +5,6 @@ import {
 	FailedTransactionMetadata,
 	SimulatedTransactionInfo as SimulatedTransactionInfoInner,
 	ComputeBudget,
-	ActiveFeatureInternal,
 	FeatureSet,
 	Clock,
 	AddressAndAccount,
@@ -49,10 +48,6 @@ function fromAccountInfo(acc: AccountInfoBytes): Account {
 		acc.executable,
 		BigInt(rentEpoch),
 	);
-}
-
-function convertFeature(internal: ActiveFeatureInternal): [Uint8Array, bigint] {
-	return [internal.address, internal.slot];
 }
 
 function convertAddressAndAccount(
@@ -102,12 +97,7 @@ export class LiteSVM {
 	}
 
 	withBuiltins(featureSet?: FeatureSet): LiteSVM {
-		if (featureSet == null) {
-			this.inner.setBuiltins(null);
-		} else {
-			const converted = featureSet.toInternal().map(convertFeature);
-			this.inner.setBuiltins(converted);
-		}
+		this.inner.setBuiltins(featureSet);
 		return this;
 	}
 
@@ -132,12 +122,7 @@ export class LiteSVM {
 	}
 
 	withPrecompiles(featureSet?: FeatureSet): LiteSVM {
-		if (featureSet == null) {
-			this.inner.setPrecompiles(null);
-		} else {
-			const converted = featureSet.toInternal().map(convertFeature);
-			this.inner.setPrecompiles(converted);
-		}
+		this.inner.setPrecompiles(featureSet);
 		return this;
 	}
 
