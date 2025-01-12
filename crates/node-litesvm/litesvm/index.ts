@@ -7,6 +7,7 @@ import {
 	ComputeBudget,
 	FeatureSet,
 	Clock,
+	Rent,
 	AddressAndAccount,
 } from "./internal";
 export {
@@ -17,6 +18,7 @@ export {
 	InnerInstruction,
 	ComputeBudget,
 	Clock,
+	Rent,
 } from "./internal";
 import {
 	AccountInfo,
@@ -233,5 +235,21 @@ export class LiteSVM {
 	 */
 	setClock(clock: Clock) {
 		this.inner.setClock(clock);
+	}
+
+		/**
+	 * Get the cluster rent.
+	 * @returns The rent object.
+	 */
+		getRent(): Rent {
+			return this.inner.getRent();
+		}
+
+			/**
+	 * Overwrite the rent sysvar.
+	 * @param rent - The new rent object.
+	 */
+	setRent(rent: Rent) {
+		this.inner.setRent(rent);
 	}
 }

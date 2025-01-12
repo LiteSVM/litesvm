@@ -216,6 +216,76 @@ export declare class ComputeBudget {
   set altBn128G2Decompress(val: bigint)
   get altBn128G2Decompress(): bigint
 }
+/** Configuration of network rent. */
+export declare class Rent {
+  /**
+   * @param lamportsPerByteYear - Rental rate in lamports/byte-year.
+   * @param exemptionThreshold - Amount of time (in years) a balance must include rent for the account to be rent exempt.
+   * @param burnPercent - The percentage of collected rent that is burned.
+   */
+  constructor(lamportsPerByteYear: bigint, exemptionThreshold: number, burnPercent: number)
+  static default(): Rent
+  /** Rental rate in lamports/byte-year. */
+  get lamportsPerByteYear(): bigint
+  /** Amount of time (in years) a balance must include rent for the account to be rent exempt. */
+  get exemptionThreshold(): number
+  /** The percentage of collected rent that is burned. */
+  get burnPercent(): number
+  /**
+   * Calculate how much rent to burn from the collected rent.
+   *
+   * The first value returned is the amount burned. The second is the amount
+   * to distribute to validators.
+   *
+   * @param rentCollected: The amount of rent collected.
+   * @returns The amount burned and the amount to distribute to validators.
+   */
+  calculateBurn(rentCollected: bigint): unknown[]
+  /**
+   * Minimum balance due for rent-exemption of a given account data size.
+   *
+   * Note: a stripped-down version of this calculation is used in
+   * ``calculate_split_rent_exempt_reserve`` in the stake program. When this
+   * function is updated, eg. when making rent variable, the stake program
+   * will need to be refactored.
+   *
+   * @param dataLen - The account data size.
+   * @returns The minimum balance due.
+   */
+  minimumBalance(dataLen: bigint): bigint
+  /** Whether a given balance and data length would be exempt. */
+  isExempt(balance: bigint, dataLen: bigint): boolean
+  /**
+   * Rent due on account's data length with balance.
+   *
+   * @param balance - The account balance.
+   * @param dataLen - The account data length.
+   * @param yearsElapsed - Time elapsed in years.
+   * @returns The rent due.
+   */
+  due(balance: bigint, dataLen: bigint, yearsElapsed: number): bigint | null
+  /**
+   * Rent due for account that is known to be not exempt.
+   *
+   * @param dataLen - The account data length.
+   * @param yearsElapsed - Time elapsed in years.
+   * @returns The amount due.
+   */
+  dueAmount(dataLen: bigint, yearsElapsed: number): bigint
+  /**
+   * Creates a `Rent` that charges no lamports.
+   *
+   * This is used for testing.
+   *
+   */
+  static free(): Rent
+  /**
+   * Creates a `Rent` that is scaled based on the number of slots in an epoch.
+   *
+   * This is used for testing.
+   */
+  static withSlotsPerEpoch(slotsPerEpoch: bigint): Rent
+}
 export declare class InstructionErrorCustom {
   code: number
   toString(): string
@@ -344,4 +414,6 @@ export declare class LiteSvm {
   getComputeBudget(): ComputeBudget | null
   getClock(): Clock
   setClock(clock: Clock): void
+  getRent(): Rent
+  setRent(rent: Rent): void
 }

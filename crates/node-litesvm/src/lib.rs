@@ -3,6 +3,7 @@ use {
     crate::{
         clock::Clock,
         compute_budget::ComputeBudget,
+        rent::Rent,
         transaction_error::{convert_transaction_error, TransactionError},
     },
     bincode::deserialize,
@@ -24,6 +25,7 @@ use {
         inner_instruction::InnerInstruction as InnerInstructionOriginal,
         instruction::CompiledInstruction as CompiledInstructionOriginal,
         pubkey::Pubkey,
+        rent::Rent as RentOriginal,
         signature::Signature,
         transaction::{Transaction, VersionedTransaction},
         transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
@@ -31,6 +33,7 @@ use {
 };
 mod clock;
 mod compute_budget;
+mod rent;
 mod transaction_error;
 
 #[macro_use]
@@ -530,5 +533,15 @@ impl LiteSvm {
     #[napi]
     pub fn set_clock(&mut self, clock: &Clock) {
         self.0.set_sysvar(&clock.0)
+    }
+
+    #[napi]
+    pub fn get_rent(&self) -> Rent {
+        Rent(self.0.get_sysvar::<RentOriginal>())
+    }
+
+    #[napi]
+    pub fn set_rent(&mut self, rent: &Rent) {
+        self.0.set_sysvar(&rent.0)
     }
 }
