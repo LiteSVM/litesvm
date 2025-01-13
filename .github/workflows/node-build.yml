@@ -132,7 +132,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim 'cd crates/node-litesvm && yarn test'
+        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim bash -c 'cd crates/node-litesvm && yarn test'
   test-linux-x64-musl-binding:
     name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
     needs:
@@ -166,7 +166,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine 'cd crates/node-litesvm && yarn test'
+        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine bash -c 'cd crates/node-litesvm && yarn test'
   universal-macOS:
     name: Build universal macOS binary
     needs:
