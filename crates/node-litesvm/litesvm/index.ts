@@ -12,9 +12,7 @@ import {
 	Rent,
 	SlotHash,
 	SlotHistory,
-	SlotHistoryCheck,
 	StakeHistory,
-	StakeHistoryEntry,
 	TransactionMetadata,
 } from "./internal";
 export {
@@ -86,63 +84,133 @@ export class SimulatedTransactionInfo {
 	}
 }
 
+/**
+ * The main class in the litesvm library.
+ *
+ * Use this to send transactions, query accounts and configure the runtime.
+ */
 export class LiteSVM {
+	/** Create a new LiteSVM instance with standard functionality enabled */
 	constructor() {
 		const inner = new LiteSVMInner();
 		this.inner = inner;
 	}
 	private inner: LiteSVMInner;
 
+	/** Create a new LiteSVM instance with minimal functionality enabled */
+	static default(): LiteSVM {
+		const svm = new LiteSVM();
+		const inner = LiteSVMInner.default();
+		svm.inner = inner;
+		return svm;
+	}
+
+	/**
+	 * Set the compute budget
+	 * @param budget - The new compute budget
+	 * @returns The modified LiteSVM instance
+	 */
 	withComputeBudget(budget: ComputeBudget): LiteSVM {
 		this.inner.setComputeBudget(budget);
 		return this;
 	}
 
+	/**
+	 * Enable or disable sigverify
+	 * @param sigverify - if false, transaction signatures will not be checked.
+	 * @returns The modified LiteSVM instance
+	 */
 	withSigverify(sigverify: boolean): LiteSVM {
 		this.inner.setSigverify(sigverify);
 		return this;
 	}
 
+	/**
+	 * Enables or disables transaction blockhash checking.
+	 * @param check - If false, the blockhash check will be skipped
+	 * @returns The modified LiteSVM instance
+	 */
 	withBlockhashCheck(check: boolean): LiteSVM {
 		this.inner.setBlockhashCheck(check);
 		return this;
 	}
 
+	/**
+	 * Sets up the standard sysvars.
+	 * @returns The modified LiteSVM instance
+	 */
 	withSysvars(): LiteSVM {
 		this.inner.setSysvars();
 		return this;
 	}
 
+	/**
+	 * Adds the standard builtin programs.
+	 * @param featureSet if provided, decides what builtins to add based on what
+	 *  features are active
+	 * @returns The modified LiteSVM instance
+	 */
 	withBuiltins(featureSet?: FeatureSet): LiteSVM {
 		this.inner.setBuiltins(featureSet);
 		return this;
 	}
 
+	/**
+	 * Changes the initial lamports in LiteSVM's airdrop account.
+	 * @param lamports - The number of lamports to set in the airdrop account
+	 * @returns The modified LiteSVM instance
+	 */
 	withLamports(lamports: bigint): LiteSVM {
 		this.inner.setLamports(lamports);
 		return this;
 	}
 
+	/**
+	 * Adds the standard SPL programs.
+	 * @returns The modified LiteSVM instance
+	 */
 	withSplPrograms(): LiteSVM {
 		this.inner.setSplPrograms();
 		return this;
 	}
 
+	/**
+	 * Changes the capacity of the transaction history.
+	 * @param capacity - How many transactions to store in history.
+	 * Set this to 0 to disable transaction history and allow duplicate transactions.
+	 * @returns The modified LiteSVM instance
+	 */
 	withTransactionHistory(capacity: bigint): LiteSVM {
 		this.inner.setTransactionHistory(capacity);
 		return this;
 	}
 
+	/**
+	 * Set a limit for transaction logs, beyond which they will be truncated.
+	 * @param limit - The limit in bytes. If null, no limit is enforced.
+	 * @returns The modified LiteSVM instance
+	 */
 	withLogBytesLimit(limit?: bigint): LiteSVM {
 		this.inner.setLogBytesLimit(limit);
 		return this;
 	}
 
+	/**
+	 * Adds the standard precompiles.
+	 * @param featureSet if provided, decides what precompiles to add based on what
+	 *  features are active
+	 * @returns The modified LiteSVM instance
+	 */
 	withPrecompiles(featureSet?: FeatureSet): LiteSVM {
 		this.inner.setPrecompiles(featureSet);
 		return this;
 	}
 
+	/**
+	 * Calculates the minimum balance required to make an account with specified data length rent exempt.
+	 * @param dataLen - The number of bytes in the account.
+	 * @returns The required balance in lamports
+	 */
 	minimumBalanceForRentExemption(dataLen: bigint): bigint {
 		return this.inner.minimumBalanceForRentExemption(dataLen);
 	}
@@ -173,20 +241,41 @@ export class LiteSVM {
 		this.inner.setAccount(address.toBytes(), fromAccountInfo(account));
 	}
 
+	/**
+	 * Gets the balance of the provided account address.
+	 * @param address - The account address.
+	 * @returns The account's balance in lamports.
+	 */
 	getBalance(address: PublicKey): bigint | null {
 		return this.inner.getBalance(address.toBytes());
 	}
 
+	/**
+	 * Gets the latest blockhash.
+	 * Since LiteSVM doesn't have blocks, this is an arbitrary value controlled by LiteSVM
+	 * @returns The designated latest blockhash.
+	 */
 	latestBlockhash(): string {
 		return this.inner.latestBlockhash();
 	}
 
+	/**
+	 * Gets a transaction from the transaction history.
+	 * @param signature - The transaction signature bytes
+	 * @returns The transaction, if it is found in the history.
+	 */
 	getTransaction(
 		signature: Uint8Array,
 	): TransactionMetadata | FailedTransactionMetadata | null {
 		return this.inner.getTransaction(signature);
 	}
 
+	/**
+	 * Airdrops the lamport amount specified to the given address.
+	 * @param address The airdrop recipient.
+	 * @param lamports - The amount to airdrop.
+	 * @returns The transaction result.
+	 */
 	airdrop(
 		address: PublicKey,
 		lamports: bigint,
@@ -194,14 +283,29 @@ export class LiteSVM {
 		return this.inner.airdrop(address.toBytes(), lamports);
 	}
 
+	/**
+	 * Adds an SBF program to the test environment from the file specified.
+	 * @param programId - The program ID.
+	 * @param path - The path to the .so file.
+	 */
 	addProgramFromFile(programId: PublicKey, path: string) {
 		return this.inner.addProgramFromFile(programId.toBytes(), path);
 	}
 
+	/**
+	 * Adds am SBF program to the test environment.
+	 * @param programId - The program ID.
+	 * @param programBytes - The raw bytes of the compiled program.
+	 */
 	addProgram(programId: PublicKey, programBytes: Uint8Array) {
 		return this.inner.addProgram(programId.toBytes(), programBytes);
 	}
 
+	/**
+	 * Processes a transaction and returns the result.
+	 * @param tx - The transaction to send.
+	 * @returns TransactionMetadata if the transaction succeeds, else FailedTransactionMetadata
+	 */
 	sendTransaction(
 		tx: Transaction | VersionedTransaction,
 	): TransactionMetadata | FailedTransactionMetadata {
@@ -214,6 +318,11 @@ export class LiteSVM {
 		}
 	}
 
+	/**
+	 * Simulates a transaction
+	 * @param tx The transaction to simulate
+	 * @returns SimulatedTransactionInfo if simulation succeeds, else FailedTransactionMetadata
+	 */
 	simulateTransaction(
 		tx: Transaction | VersionedTransaction,
 	): FailedTransactionMetadata | SimulatedTransactionInfo {
@@ -228,10 +337,19 @@ export class LiteSVM {
 			: new SimulatedTransactionInfo(inner);
 	}
 
+	/**
+	 * Expires the current blockhash.
+	 * The return value of `latestBlockhash()` will be different after calling this.
+	 */
 	expireBlockhash() {
 		this.inner.expireBlockhash();
 	}
 
+	/**
+	 * Warps the clock to the specified slot. This is a convenience wrapper
+	 * around `setClock()`.
+	 * @param slot - The new slot.
+	 */
 	warpToSlot(slot: bigint) {
 		this.inner.warpToSlot(slot);
 	}
