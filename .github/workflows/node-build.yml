@@ -84,7 +84,7 @@ jobs:
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
-        run: corepack enable && yarn install
+        run: cd crates/node-litesvm && corepack enable && yarn install
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
@@ -122,7 +122,7 @@ jobs:
           cache: yarn
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
-        run: yarn install
+        run: cd crates/node-litesvm && yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
@@ -154,6 +154,7 @@ jobs:
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
         run: |
+          cd crates/node-litesvm
           yarn config set supportedArchitectures.libc "musl"
           yarn install
       - name: Download artifacts
@@ -181,7 +182,7 @@ jobs:
           cache: yarn
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
-        run: yarn install
+        run: cd crates/node-litesvm && yarn install
       - name: Download macOS x64 artifact
         uses: actions/download-artifact@v3
         with:
