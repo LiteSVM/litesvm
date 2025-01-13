@@ -62,6 +62,7 @@ jobs:
           node-version: 18
           check-latest: true
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -119,6 +120,7 @@ jobs:
           node-version: ${{ matrix.node }}
           check-latest: true
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
@@ -149,6 +151,7 @@ jobs:
           node-version: ${{ matrix.node }}
           check-latest: true
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
         run: |
           yarn config set supportedArchitectures.libc "musl"
@@ -176,6 +179,7 @@ jobs:
           node-version: 18
           check-latest: true
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
         run: yarn install
       - name: Download macOS x64 artifact
