@@ -43,7 +43,7 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust@sha256:10573060f07edd964f5de04a92d19f8228b396310a5c9c0df23ef69b1f566ab9
-            build: set -e && uname -a && apt-get install perl && cd crates/node-litesvm && yarn build && strip litesvm/*.node
+            build: set -e && cat /etc/*-release && apt-get install perl && cd crates/node-litesvm && yarn build && strip litesvm/*.node
           - host: macos-13
             target: aarch64-apple-darwin
             build: |
