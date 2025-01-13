@@ -187,12 +187,12 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bindings-x86_64-apple-darwin
-          path: artifacts
+          path: crates/node-litesvm/artifacts
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v3
         with:
           name: bindings-aarch64-apple-darwin
-          path: artifacts
+          path: crates/node-litesvm/artifacts
       - name: Combine binaries
         run: cd crates/node-litesvm && yarn universal
       - name: Test universal binary
