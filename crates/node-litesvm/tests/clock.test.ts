@@ -15,10 +15,7 @@ import {
 test("clock", () => {
 	const programId = PublicKey.unique();
 	const svm = new LiteSVM();
-	svm.addProgramFromFile(
-		programId,
-		"../litesvm/test_programs/target/deploy/litesvm_clock_example.so",
-	);
+	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
 	const payer = new Keypair();
 	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();

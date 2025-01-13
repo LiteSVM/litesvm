@@ -10,7 +10,7 @@ test("copy accounts from devnet", async () => {
 	const accountInfo = await connection.getAccountInfo(usdcMint);
 
 	const svm = new LiteSVM();
-    svm.setAccount(usdcMint, accountInfo);
+	svm.setAccount(usdcMint, accountInfo);
 	const rawAccount = svm.getAccount(usdcMint);
 	expect(rawAccount).not.toBeNull();
 });

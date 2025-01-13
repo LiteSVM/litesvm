@@ -24,10 +24,7 @@ export function helloworldProgram(
 		lamports: LAMPORTS_PER_SOL,
 		data: new Uint8Array([0, 0, 0, 0]),
 	});
-	svm.addProgramFromFile(
-		programId,
-		"../litesvm/test_programs/target/deploy/counter.so",
-	);
+	svm.addProgramFromFile(programId, "program_bytes/counter.so");
 	return [svm, programId, greetedPubkey];
 }
 
@@ -36,9 +33,7 @@ export function helloworldProgramViaSetAccount(
 ): [LiteSVM, PublicKey, PublicKey] {
 	const programId = PublicKey.unique();
 	const greetedPubkey = PublicKey.unique();
-	const programBytes = readFileSync(
-		"../litesvm/test_programs/target/deploy/counter.so",
-	);
+	const programBytes = readFileSync("program_bytes/counter.so");
 	let svm = new LiteSVM();
 	if (computeMaxUnits) {
 		const computeBudget = new ComputeBudget();
