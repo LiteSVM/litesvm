@@ -8,13 +8,16 @@ import {
 } from "@solana/spl-token";
 
 test("infinite usdc mint", () => {
+	console.log("in usdc mint test");
 	const owner = PublicKey.unique();
 	const usdcMint = new PublicKey(
 		"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
 	);
+	console.log("getting ata");
 	const ata = getAssociatedTokenAddressSync(usdcMint, owner, true);
 	const usdcToOwn = 1_000_000_000_000n;
 	const tokenAccData = Buffer.alloc(ACCOUNT_SIZE);
+	console.log("encoding account ayout");
 	AccountLayout.encode(
 		{
 			mint: usdcMint,
@@ -31,7 +34,9 @@ test("infinite usdc mint", () => {
 		},
 		tokenAccData,
 	);
+	console.log("initializing litesvm");
 	const svm = new LiteSVM();
+	console.log("calling setAccount");
 	svm.setAccount(ata, {
 		lamports: 1_000_000_000,
 		data: tokenAccData,
