@@ -84,7 +84,7 @@ jobs:
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
-        run: cd crates/node-litesvm && corepack enable && yarn install
+        run: sudo apt-get install perl && cd crates/node-litesvm && corepack enable && yarn install 
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
