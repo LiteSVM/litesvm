@@ -194,7 +194,7 @@ jobs:
           name: bindings-aarch64-apple-darwin
           path: artifacts
       - name: Combine binaries
-        run: yarn universal
+        run: cd crates/node-litesvm && yarn universal
       - name: Test universal binary
         run: cd crates/node-litesvm && cp litesvm.darwin-universal.node litesvm/ && yarn test
       - name: Upload artifact
