@@ -82,7 +82,7 @@ jobs:
       - name: debug target
         run: echo "${{ matrix.settings.target }}"
       - name: Install perl
-        if: ${{ matrix.settings.target }} == 'x86_64-unknown-linux-musl'
+        if: ${{ matrix.settings.target == 'x86_64-unknown-linux-musl' }}
         run: sudo apt-get install perl
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
