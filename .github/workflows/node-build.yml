@@ -79,12 +79,15 @@ jobs:
             .cargo-cache
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+      - name: Install perl
+        if: ${{ matrix.settings.target }} = 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install perl
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
-        run: sudo apt-get install perl && cd crates/node-litesvm && corepack enable && yarn install 
+        run: cd crates/node-litesvm && corepack enable && yarn install 
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
