@@ -16,7 +16,7 @@ litesvm = { workspace = true, features = ["nodejs-internal"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive = "2.12.2"
 solana-compute-budget = { workspace = true }
-solana-sdk = { workspace = true }
+solana-sdk = { workspace = true, features = ["openssl-vendored"] }
 
 [build-dependencies]
 napi-build = "2.0.1"
