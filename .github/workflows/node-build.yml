@@ -79,8 +79,6 @@ jobs:
             .cargo-cache
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
-      - name: debug target
-        run: echo "${{ matrix.settings.target }}"
       - name: Install perl
         if: ${{ matrix.settings.target == 'x86_64-unknown-linux-musl' }}
         run: sudo apt-get install perl
