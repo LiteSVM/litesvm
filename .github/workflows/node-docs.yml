@@ -1,0 +1,25 @@
+name: node-docs
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: cd crates/node-litesvm && corepack enable && yarn install
+
+      - name: Build documentation
+        run: cd crates/node-litesvm && yarn docs:build
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./crates/node-litesvm/docs/.vuepress/dist/
+          force_orphan: true

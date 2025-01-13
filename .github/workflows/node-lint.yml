@@ -1,0 +1,32 @@
+name: node-lint
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+      - node-litesvm/docs/**
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          check-latest: true
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: 1.68.0
+          components: clippy
+      - name: Install dependencies
+        run: cd crates/node-litesvm && corepack enable && yarn install
+      - name: Lint rust
+        run: cd crates/node-litesvm && yarn lint:rust
+      - name: Lint JS
+        run: cd crates/node-litesvm && yarn lint:js
