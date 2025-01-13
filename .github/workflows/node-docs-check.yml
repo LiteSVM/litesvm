@@ -1,0 +1,28 @@
+name: node-docs-check
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: cd crates/node-litesvm && corepack enable && yarn install
+
+      - name: Build documentation
+        run: cd crates/node-litesvm && yarn docs:build
