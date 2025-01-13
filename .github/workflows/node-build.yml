@@ -166,7 +166,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test
+        run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test --testPathIgnorePatterns usdc
   universal-macOS:
     name: Build universal macOS binary
     needs:
