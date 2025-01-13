@@ -43,7 +43,7 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust@sha256:10573060f07edd964f5de04a92d19f8228b396310a5c9c0df23ef69b1f566ab9
-            build: set -e && cd crates/node-litesvm && yarn build && strip litesvm/*.node
+            build: set -e && sudo apt-get install perl && cd crates/node-litesvm && yarn build && strip litesvm/*.node
           - host: macos-13
             target: aarch64-apple-darwin
             build: |
@@ -79,9 +79,6 @@ jobs:
             .cargo-cache
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
-      - name: Install perl
-        if: ${{ matrix.settings.target == 'x86_64-unknown-linux-musl' }}
-        run: sudo apt-get install perl
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
