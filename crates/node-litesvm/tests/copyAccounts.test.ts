@@ -8,7 +8,8 @@ test("copy accounts from devnet", async () => {
 	);
 	const connection = new Connection("https://api.devnet.solana.com");
 	const accountInfo = await connection.getAccountInfo(usdcMint);
-
+	// the rent epoch goes above 2**53 which breaks web3.js, so just set it to 0;
+	accountInfo.rentEpoch = 0;
 	const svm = new LiteSVM();
 	svm.setAccount(usdcMint, accountInfo);
 	const rawAccount = svm.getAccount(usdcMint);
