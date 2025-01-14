@@ -37,6 +37,7 @@ use {
         sysvar::last_restart_slot::LastRestartSlot,
         transaction::{Transaction, VersionedTransaction},
     },
+    util::{bigint_to_u64, bigint_to_usize},
 };
 mod account;
 mod compute_budget;
@@ -132,8 +133,8 @@ impl LiteSvm {
 
     #[napi]
     /// Changes the initial lamports in LiteSVM's airdrop account
-    pub fn set_lamports(&mut self, lamports: BigInt) {
-        self.0.set_lamports(lamports.get_u64().1)
+    pub fn set_lamports(&mut self, lamports: BigInt) -> Result<()> {
+        Ok(self.0.set_lamports(bigint_to_u64(&lamports)?))
     }
 
     #[napi]
@@ -145,15 +146,19 @@ impl LiteSvm {
     #[napi]
     /// Changes the capacity of the transaction history.
     /// Set this to 0 to disable transaction history and allow duplicate transactions.
-    pub fn set_transaction_history(&mut self, capacity: BigInt) {
-        self.0
-            .set_transaction_history(capacity.get_u64().1 as usize);
+    pub fn set_transaction_history(&mut self, capacity: BigInt) -> Result<()> {
+        Ok(self.0.set_transaction_history(bigint_to_usize(&capacity)?))
     }
 
     #[napi]
-    pub fn set_log_bytes_limit(&mut self, limit: Option<BigInt>) {
-        self.0
-            .set_log_bytes_limit(limit.map(|x| x.get_u64().1 as usize));
+    pub fn set_log_bytes_limit(&mut self, limit: Option<BigInt>) -> Result<()> {
+        Ok(match limit {
+            None => self.0.set_log_bytes_limit(None),
+            Some(x) => {
+                let converted = bigint_to_usize(&x)?;
+                self.0.set_log_bytes_limit(Some(converted))
+            }
+        })
     }
 
     #[napi]
@@ -163,9 +168,10 @@ impl LiteSvm {
 
     #[napi]
     /// Returns minimum balance required to make an account with specified data length rent exempt.
-    pub fn minimum_balance_for_rent_exemption(&self, data_len: BigInt) -> u64 {
-        self.0
-            .minimum_balance_for_rent_exemption(data_len.get_u64().1 as usize)
+    pub fn minimum_balance_for_rent_exemption(&self, data_len: BigInt) -> Result<u64> {
+        Ok(self
+            .0
+            .minimum_balance_for_rent_exemption(bigint_to_usize(&data_len)?))
     }
 
     #[napi]
@@ -204,11 +210,11 @@ impl LiteSvm {
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
     /// Airdrops the account with the lamports specified.
-    pub fn airdrop(&mut self, pubkey: Uint8Array, lamports: BigInt) -> TransactionResult {
-        convert_transaction_result(
-            self.0
-                .airdrop(&convert_pubkey(pubkey), lamports.get_u64().1),
-        )
+    pub fn airdrop(&mut self, pubkey: Uint8Array, lamports: BigInt) -> Result<TransactionResult> {
+        Ok(convert_transaction_result(self.0.airdrop(
+            &convert_pubkey(pubkey),
+            bigint_to_u64(&lamports)?,
+        )))
     }
 
     #[napi]
@@ -267,8 +273,8 @@ impl LiteSvm {
 
     #[napi]
     /// Warps the clock to the specified slot
-    pub fn warp_to_slot(&mut self, slot: BigInt) {
-        self.0.warp_to_slot(slot.get_u64().1)
+    pub fn warp_to_slot(&mut self, slot: BigInt) -> Result<()> {
+        Ok(self.0.warp_to_slot(bigint_to_u64(&slot)?))
     }
 
     #[napi]
@@ -322,10 +328,10 @@ impl LiteSvm {
     }
 
     #[napi]
-    pub fn set_last_restart_slot(&mut self, slot: BigInt) {
-        self.0.set_sysvar::<LastRestartSlot>(&LastRestartSlot {
-            last_restart_slot: slot.get_u64().1,
-        })
+    pub fn set_last_restart_slot(&mut self, slot: BigInt) -> Result<()> {
+        Ok(self.0.set_sysvar::<LastRestartSlot>(&LastRestartSlot {
+            last_restart_slot: bigint_to_u64(&slot)?,
+        }))
     }
 
     #[napi]
@@ -346,7 +352,7 @@ impl LiteSvm {
         let mut intermediate: Vec<(u64, solana_sdk::hash::Hash)> = Vec::with_capacity(hashes.len());
         for h in hashes {
             let converted_hash = try_parse_hash(&h.hash)?;
-            intermediate.push((h.slot.get_u64().1, converted_hash));
+            intermediate.push((bigint_to_u64(&h.slot)?, converted_hash));
         }
         let converted = SlotHashes::from_iter(intermediate);
         self.0.set_sysvar::<SlotHashes>(&converted);

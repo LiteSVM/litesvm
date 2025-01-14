@@ -1,5 +1,8 @@
 use {
-    crate::to_string_js,
+    crate::{
+        to_string_js,
+        util::{bigint_to_u64, bigint_to_usize},
+    },
     napi::bindgen_prelude::*,
     solana_sdk::rent::{Rent as RentOriginal, RentDue},
 };
@@ -15,12 +18,16 @@ impl Rent {
     /// @param exemptionThreshold - Amount of time (in years) a balance must include rent for the account to be rent exempt.
     /// @param burnPercent - The percentage of collected rent that is burned.
     #[napi(constructor)]
-    pub fn new(lamports_per_byte_year: BigInt, exemption_threshold: f64, burn_percent: u8) -> Self {
-        Self(RentOriginal {
-            lamports_per_byte_year: lamports_per_byte_year.get_u64().1,
+    pub fn new(
+        lamports_per_byte_year: BigInt,
+        exemption_threshold: f64,
+        burn_percent: u8,
+    ) -> Result<Self> {
+        Ok(Self(RentOriginal {
+            lamports_per_byte_year: bigint_to_u64(&lamports_per_byte_year)?,
             exemption_threshold,
             burn_percent,
-        })
+        }))
     }
 
     /// Initialize rent with the default Solana settings.
@@ -36,8 +43,8 @@ impl Rent {
     }
 
     #[napi(setter)]
-    pub fn set_lamports_per_byte_year(&mut self, val: BigInt) {
-        self.0.lamports_per_byte_year = val.get_u64().1;
+    pub fn set_lamports_per_byte_year(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.lamports_per_byte_year = bigint_to_u64(&val)?)
     }
 
     /// Amount of time (in years) a balance must include rent for the account to be rent exempt.
@@ -70,12 +77,12 @@ impl Rent {
     /// @param rentCollected: The amount of rent collected.
     /// @returns The amount burned and the amount to distribute to validators.
     #[napi]
-    pub fn calculate_burn(&self, env: Env, rent_collected: BigInt) -> Array {
+    pub fn calculate_burn(&self, env: Env, rent_collected: BigInt) -> Result<Array> {
         let mut arr = env.create_array(2).unwrap();
-        let res = self.0.calculate_burn(rent_collected.get_u64().1);
+        let res = self.0.calculate_burn(bigint_to_u64(&rent_collected)?);
         arr.insert(res.0).unwrap();
         arr.insert(res.1).unwrap();
-        arr
+        Ok(arr)
     }
 
     /// Minimum balance due for rent-exemption of a given account data size.
@@ -88,15 +95,16 @@ impl Rent {
     /// @param dataLen - The account data size.
     /// @returns The minimum balance due.
     #[napi]
-    pub fn minimum_balance(&self, data_len: BigInt) -> u64 {
-        self.0.minimum_balance(data_len.get_u64().1 as usize)
+    pub fn minimum_balance(&self, data_len: BigInt) -> Result<u64> {
+        Ok(self.0.minimum_balance(bigint_to_usize(&data_len)?))
     }
 
     /// Whether a given balance and data length would be exempt.
     #[napi]
-    pub fn is_exempt(&self, balance: BigInt, data_len: BigInt) -> bool {
-        self.0
-            .is_exempt(balance.get_u64().1, data_len.get_u64().1 as usize)
+    pub fn is_exempt(&self, balance: BigInt, data_len: BigInt) -> Result<bool> {
+        Ok(self
+            .0
+            .is_exempt(bigint_to_u64(&balance)?, bigint_to_usize(&data_len)?))
     }
 
     /// Rent due on account's data length with balance.
@@ -106,15 +114,22 @@ impl Rent {
     /// @param yearsElapsed - Time elapsed in years.
     /// @returns The rent due.
     #[napi]
-    pub fn due(&self, balance: BigInt, data_len: BigInt, years_elapsed: f64) -> Option<u64> {
-        match self.0.due(
-            balance.get_u64().1,
-            data_len.get_u64().1 as usize,
-            years_elapsed,
-        ) {
-            RentDue::Exempt => None,
-            RentDue::Paying(x) => Some(x),
-        }
+    pub fn due(
+        &self,
+        balance: BigInt,
+        data_len: BigInt,
+        years_elapsed: f64,
+    ) -> Result<Option<u64>> {
+        Ok(
+            match self.0.due(
+                bigint_to_u64(&balance)?,
+                bigint_to_usize(&data_len)?,
+                years_elapsed,
+            ) {
+                RentDue::Exempt => None,
+                RentDue::Paying(x) => Some(x),
+            },
+        )
     }
 
     /// Rent due for account that is known to be not exempt.
@@ -123,9 +138,10 @@ impl Rent {
     /// @param yearsElapsed - Time elapsed in years.
     /// @returns The amount due.
     #[napi]
-    pub fn due_amount(&self, data_len: BigInt, years_elapsed: f64) -> u64 {
-        self.0
-            .due_amount(data_len.get_u64().1 as usize, years_elapsed)
+    pub fn due_amount(&self, data_len: BigInt, years_elapsed: f64) -> Result<u64> {
+        Ok(self
+            .0
+            .due_amount(bigint_to_usize(&data_len)?, years_elapsed))
     }
 
     /// Creates a `Rent` that charges no lamports.
@@ -141,10 +157,10 @@ impl Rent {
     ///
     /// This is used for testing.
     #[napi(factory)]
-    pub fn with_slots_per_epoch(slots_per_epoch: BigInt) -> Self {
-        Self(RentOriginal::with_slots_per_epoch(
-            slots_per_epoch.get_u64().1,
-        ))
+    pub fn with_slots_per_epoch(slots_per_epoch: BigInt) -> Result<Self> {
+        Ok(Self(RentOriginal::with_slots_per_epoch(bigint_to_u64(
+            &slots_per_epoch,
+        )?)))
     }
 }
 

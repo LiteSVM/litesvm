@@ -1,5 +1,5 @@
 use {
-    crate::to_string_js,
+    crate::{to_string_js, util::bigint_to_u64},
     napi::bindgen_prelude::*,
     solana_sdk::{account::Account as AccountOriginal, pubkey::Pubkey},
 };
@@ -23,14 +23,14 @@ impl Account {
         owner: Uint8Array,
         executable: bool,
         rent_epoch: BigInt,
-    ) -> Self {
-        Self(AccountOriginal {
-            lamports: lamports.get_u64().1,
+    ) -> Result<Self> {
+        Ok(Self(AccountOriginal {
+            lamports: bigint_to_u64(&lamports)?,
             data: data.to_vec(),
             owner: Pubkey::try_from(owner.as_ref()).unwrap(),
             executable,
-            rent_epoch: rent_epoch.get_u64().1,
-        })
+            rent_epoch: bigint_to_u64(&rent_epoch)?,
+        }))
     }
 
     #[napi]

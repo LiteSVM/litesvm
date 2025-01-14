@@ -1,5 +1,6 @@
 use {
-    crate::util::try_parse_hash, napi::bindgen_prelude::*,
+    crate::util::{bigint_to_u128, bigint_to_u64, try_parse_hash},
+    napi::bindgen_prelude::*,
     solana_sdk::epoch_rewards::EpochRewards as EpochRewardsOriginal,
 };
 
@@ -29,12 +30,12 @@ impl EpochRewards {
     ) -> Result<Self> {
         let hash_parsed = try_parse_hash(&parent_blockhash)?;
         Ok(Self(EpochRewardsOriginal {
-            distribution_starting_block_height: distribution_starting_block_height.get_u64().1,
-            num_partitions: num_partitions.get_u64().1,
+            distribution_starting_block_height: bigint_to_u64(&distribution_starting_block_height)?,
+            num_partitions: bigint_to_u64(&num_partitions)?,
             parent_blockhash: hash_parsed,
-            total_points: total_points.get_u128().1,
-            total_rewards: total_rewards.get_u64().1,
-            distributed_rewards: distributed_rewards.get_u64().1,
+            total_points: bigint_to_u128(&total_points)?,
+            total_rewards: bigint_to_u64(&total_rewards)?,
+            distributed_rewards: bigint_to_u64(&distributed_rewards)?,
             active,
         }))
     }
@@ -47,8 +48,8 @@ impl EpochRewards {
     }
 
     #[napi(setter)]
-    pub fn set_distribution_starting_block_height(&mut self, val: BigInt) {
-        self.0.distribution_starting_block_height = val.get_u64().1;
+    pub fn set_distribution_starting_block_height(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.distribution_starting_block_height = bigint_to_u64(&val)?)
     }
 
     /// Number of partitions in the rewards distribution in the current epoch,
@@ -59,8 +60,8 @@ impl EpochRewards {
     }
 
     #[napi(setter)]
-    pub fn set_num_partitions(&mut self, val: BigInt) {
-        self.0.num_partitions = val.get_u64().1;
+    pub fn set_num_partitions(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.num_partitions = bigint_to_u64(&val)?)
     }
 
     /// The blockhash of the parent block of the first block in the epoch, used
@@ -86,8 +87,8 @@ impl EpochRewards {
     }
 
     #[napi(setter)]
-    pub fn set_total_points(&mut self, val: BigInt) {
-        self.0.total_points = val.get_u128().1;
+    pub fn set_total_points(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.total_points = bigint_to_u128(&val)?)
     }
 
     /// The total rewards calculated for the current epoch. This may be greater
@@ -99,8 +100,8 @@ impl EpochRewards {
     }
 
     #[napi(setter)]
-    pub fn set_total_rewards(&mut self, val: BigInt) {
-        self.0.total_rewards = val.get_u64().1;
+    pub fn set_total_rewards(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.total_rewards = bigint_to_u64(&val)?)
     }
 
     /// The rewards currently distributed for the current epoch, in lamports
@@ -110,8 +111,8 @@ impl EpochRewards {
     }
 
     #[napi(setter)]
-    pub fn set_distributed_rewards(&mut self, val: BigInt) {
-        self.0.distributed_rewards = val.get_u64().1;
+    pub fn set_distributed_rewards(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.distributed_rewards = bigint_to_u64(&val)?)
     }
 
     /// Whether the rewards period (including calculation and distribution) is

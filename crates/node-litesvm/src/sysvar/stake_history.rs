@@ -1,5 +1,5 @@
 use {
-    crate::to_string_js,
+    crate::{to_string_js, util::bigint_to_u64},
     napi::bindgen_prelude::*,
     solana_sdk::stake_history::{
         StakeHistory as StakeHistoryOriginal, StakeHistoryEntry as StakeHistoryEntryOriginal,
@@ -16,12 +16,12 @@ impl StakeHistoryEntry {
     /// @param activating - sum of portion of stakes not fully warmed up
     /// @param effective - requested to be cooled down, not fully deactivated yet
     #[napi(constructor)]
-    pub fn new(effective: BigInt, activating: BigInt, deactivating: BigInt) -> Self {
-        Self(StakeHistoryEntryOriginal {
-            effective: effective.get_u64().1,
-            activating: activating.get_u64().1,
-            deactivating: deactivating.get_u64().1,
-        })
+    pub fn new(effective: BigInt, activating: BigInt, deactivating: BigInt) -> Result<Self> {
+        Ok(Self(StakeHistoryEntryOriginal {
+            effective: bigint_to_u64(&effective)?,
+            activating: bigint_to_u64(&activating)?,
+            deactivating: bigint_to_u64(&deactivating)?,
+        }))
     }
 
     /// effective stake at this epoch
@@ -31,8 +31,8 @@ impl StakeHistoryEntry {
     }
 
     #[napi(setter)]
-    pub fn set_effective(&mut self, val: BigInt) {
-        self.0.effective = val.get_u64().1
+    pub fn set_effective(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.effective = bigint_to_u64(&val)?)
     }
 
     /// sum of portion of stakes not fully warmed up
@@ -42,8 +42,8 @@ impl StakeHistoryEntry {
     }
 
     #[napi(setter)]
-    pub fn set_activating(&mut self, val: BigInt) {
-        self.0.effective = val.get_u64().1
+    pub fn set_activating(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.effective = bigint_to_u64(&val)?)
     }
 
     /// requested to be cooled down, not fully deactivated yet
@@ -53,8 +53,8 @@ impl StakeHistoryEntry {
     }
 
     #[napi(setter)]
-    pub fn set_deactivating(&mut self, val: BigInt) {
-        self.0.effective = val.get_u64().1
+    pub fn set_deactivating(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.effective = bigint_to_u64(&val)?)
     }
 }
 
@@ -73,14 +73,15 @@ impl StakeHistory {
     }
 
     #[napi]
-    pub fn get(&self, epoch: BigInt) -> Option<StakeHistoryEntry> {
-        self.0
-            .get(epoch.get_u64().1)
-            .map(|x| StakeHistoryEntry(x.clone()))
+    pub fn get(&self, epoch: BigInt) -> Result<Option<StakeHistoryEntry>> {
+        Ok(self
+            .0
+            .get(bigint_to_u64(&epoch)?)
+            .map(|x| StakeHistoryEntry(x.clone())))
     }
 
     #[napi]
-    pub fn add(&mut self, epoch: BigInt, entry: &StakeHistoryEntry) {
-        self.0.add(epoch.get_u64().1, entry.clone().0);
+    pub fn add(&mut self, epoch: BigInt, entry: &StakeHistoryEntry) -> Result<()> {
+        Ok(self.0.add(bigint_to_u64(&epoch)?, entry.clone().0))
     }
 }

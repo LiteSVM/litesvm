@@ -1,4 +1,11 @@
-use {crate::to_string_js, napi::bindgen_prelude::*, solana_sdk::clock::Clock as ClockOriginal};
+use {
+    crate::{
+        to_string_js,
+        util::{bigint_to_i64, bigint_to_u64},
+    },
+    napi::bindgen_prelude::*,
+    solana_sdk::clock::Clock as ClockOriginal,
+};
 
 /// A representation of network time.
 ///
@@ -21,14 +28,14 @@ impl Clock {
         epoch: BigInt,
         leader_schedule_epoch: BigInt,
         unix_timestamp: BigInt,
-    ) -> Self {
-        Self(ClockOriginal {
-            slot: slot.get_u64().1,
-            epoch_start_timestamp: epoch_start_timestamp.get_i64().0,
-            epoch: epoch.get_u64().1,
-            leader_schedule_epoch: leader_schedule_epoch.get_u64().1,
-            unix_timestamp: unix_timestamp.get_i64().0,
-        })
+    ) -> Result<Self> {
+        Ok(Self(ClockOriginal {
+            slot: bigint_to_u64(&slot)?,
+            epoch_start_timestamp: bigint_to_i64(&epoch_start_timestamp)?,
+            epoch: bigint_to_u64(&epoch)?,
+            leader_schedule_epoch: bigint_to_u64(&leader_schedule_epoch)?,
+            unix_timestamp: bigint_to_i64(&unix_timestamp)?,
+        }))
     }
 
     /// The current Slot.
@@ -38,8 +45,8 @@ impl Clock {
     }
 
     #[napi(setter)]
-    pub fn set_slot(&mut self, val: BigInt) {
-        self.0.slot = val.get_u64().1;
+    pub fn set_slot(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.slot = bigint_to_u64(&val)?)
     }
 
     /// The current epoch.
@@ -49,8 +56,8 @@ impl Clock {
     }
 
     #[napi(setter)]
-    pub fn set_epoch(&mut self, val: BigInt) {
-        self.0.epoch = val.get_u64().1;
+    pub fn set_epoch(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.epoch = bigint_to_u64(&val)?)
     }
 
     /// The timestamp of the first `Slot` in this `Epoch`.
@@ -60,8 +67,8 @@ impl Clock {
     }
 
     #[napi(setter)]
-    pub fn set_epoch_start_timestamp(&mut self, val: BigInt) {
-        self.0.epoch_start_timestamp = val.get_i64().0;
+    pub fn set_epoch_start_timestamp(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.epoch_start_timestamp = bigint_to_i64(&val)?)
     }
 
     /// The future Epoch for which the leader schedule has most recently been calculated.
@@ -71,8 +78,8 @@ impl Clock {
     }
 
     #[napi(setter)]
-    pub fn set_leader_schedule_epoch(&mut self, val: BigInt) {
-        self.0.leader_schedule_epoch = val.get_u64().1;
+    pub fn set_leader_schedule_epoch(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.leader_schedule_epoch = bigint_to_u64(&val)?)
     }
 
     /// The approximate real world time of the current slot.
@@ -82,8 +89,8 @@ impl Clock {
     }
 
     #[napi(setter)]
-    pub fn set_unix_timestamp(&mut self, val: BigInt) {
-        self.0.unix_timestamp = val.get_i64().0;
+    pub fn set_unix_timestamp(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.unix_timestamp = bigint_to_i64(&val)?)
     }
 }
 

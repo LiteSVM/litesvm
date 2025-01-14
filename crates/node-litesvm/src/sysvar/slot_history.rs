@@ -1,5 +1,5 @@
 use {
-    crate::to_string_js,
+    crate::{to_string_js, util::bigint_to_u64},
     bv::BitVec,
     napi::bindgen_prelude::*,
     solana_sdk::slot_history::{Check, SlotHistory as SlotHistoryOriginal},
@@ -35,12 +35,12 @@ pub struct SlotHistory(pub(crate) SlotHistoryOriginal);
 #[napi]
 impl SlotHistory {
     #[napi(constructor)]
-    pub fn new(bits: BigUint64Array, next_slot: BigInt) -> Self {
+    pub fn new(bits: BigUint64Array, next_slot: BigInt) -> Result<Self> {
         let bits_converted: BitVec<u64> = BitVec::from(bits.to_vec());
-        Self(SlotHistoryOriginal {
+        Ok(Self(SlotHistoryOriginal {
             bits: bits_converted,
-            next_slot: next_slot.get_u64().1,
-        })
+            next_slot: bigint_to_u64(&next_slot)?,
+        }))
     }
 
     #[napi(factory, js_name = "default")]
@@ -65,18 +65,18 @@ impl SlotHistory {
     }
 
     #[napi(setter)]
-    pub fn set_next_slot(&mut self, slot: BigInt) {
-        self.0.next_slot = slot.get_u64().1;
+    pub fn set_next_slot(&mut self, slot: BigInt) -> Result<()> {
+        Ok(self.0.next_slot = bigint_to_u64(&slot)?)
     }
 
     #[napi]
-    pub fn add(&mut self, slot: BigInt) {
-        self.0.add(slot.get_u64().1)
+    pub fn add(&mut self, slot: BigInt) -> Result<()> {
+        Ok(self.0.add(bigint_to_u64(&slot)?))
     }
 
     #[napi]
-    pub fn check(&self, slot: BigInt) -> SlotHistoryCheck {
-        SlotHistoryCheck::from(self.0.check(slot.get_u64().1))
+    pub fn check(&self, slot: BigInt) -> Result<SlotHistoryCheck> {
+        Ok(SlotHistoryCheck::from(self.0.check(bigint_to_u64(&slot)?)))
     }
 
     #[napi]
