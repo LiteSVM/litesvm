@@ -9,7 +9,7 @@ export default {
 	moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
 		prefix: "<rootDir>/litesvm",
 	}),
-	// don't run copyAccounts tesst by default since devnet is flaky
+	// don't run copyAccounts test by default since devnet is flaky
 	testPathIgnorePatterns: [
 		"<rootDir>/tests/util.ts",
 		"<rootDir>/tests/copyAccounts.test.ts",
