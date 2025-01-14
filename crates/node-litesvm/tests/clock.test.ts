@@ -28,7 +28,7 @@ test("clock", () => {
 	tx.sign(payer);
 	// set the time to January 1st 2000
 	const initialClock = svm.getClock();
-	initialClock.unixTimestamp = 1735689600;
+	initialClock.unixTimestamp = 1735689600n;
 	svm.setClock(initialClock);
 	// this will fail because the contract wants it to be January 1970
 	const failed = svm.sendTransaction(tx);
@@ -39,7 +39,7 @@ test("clock", () => {
 	}
 	// so let's turn back time
 	const newClock = svm.getClock();
-	newClock.unixTimestamp = 50;
+	newClock.unixTimestamp = 50n;
 	svm.setClock(newClock);
 	const ixs2 = [
 		new TransactionInstruction({

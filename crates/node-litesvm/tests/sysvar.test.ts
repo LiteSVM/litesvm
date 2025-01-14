@@ -15,7 +15,7 @@ test("sysvar", () => {
 	expect(rentAfter.burnPercent).toBe(0);
 	const clockBefore = svm.getClock();
 	expect(clockBefore.epoch).toBe(0n);
-	const newClock = new Clock(1000n, 1, 100n, 3n, 4);
+	const newClock = new Clock(1000n, 1n, 100n, 3n, 4n);
 	svm.setClock(newClock);
 	const clockAfter = svm.getClock();
 	expect(clockAfter.epoch).toBe(newClock.epoch);
