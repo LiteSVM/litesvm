@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-#![allow(clippy::new_without_default)]
+#![allow(clippy::new_without_default, clippy::unit_arg)]
 use {
     crate::{
         account::Account,
