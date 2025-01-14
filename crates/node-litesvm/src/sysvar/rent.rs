@@ -76,13 +76,10 @@ impl Rent {
     ///
     /// @param rentCollected: The amount of rent collected.
     /// @returns The amount burned and the amount to distribute to validators.
-    #[napi]
-    pub fn calculate_burn(&self, env: Env, rent_collected: BigInt) -> Result<Array> {
-        let mut arr = env.create_array(2).unwrap();
+    #[napi(ts_return_type = "[bigint, bigint]")]
+    pub fn calculate_burn(&self, rent_collected: BigInt) -> Result<[u64; 2]> {
         let res = self.0.calculate_burn(bigint_to_u64(&rent_collected)?);
-        arr.insert(res.0).unwrap();
-        arr.insert(res.1).unwrap();
-        Ok(arr)
+        Ok([res.0, res.1])
     }
 
     /// Minimum balance due for rent-exemption of a given account data size.

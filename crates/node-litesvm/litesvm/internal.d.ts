@@ -353,7 +353,7 @@ export declare class Rent {
    * @param rentCollected: The amount of rent collected.
    * @returns The amount burned and the amount to distribute to validators.
    */
-  calculateBurn(rentCollected: bigint): unknown[]
+  calculateBurn(rentCollected: bigint): [bigint, bigint]
   /**
    * Minimum balance due for rent-exemption of a given account data size.
    *
