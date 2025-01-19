@@ -1,0 +1,11 @@
+[package]
+name = "litesvm-clock-example"
+version = "0.0.0"
+edition = "2021"
+include = ["/src"]
+
+[dependencies]
+solana-program.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
