@@ -784,7 +784,7 @@ impl LiteSVM {
         sanitized_tx: &SanitizedTransaction,
     ) -> Result<CheckAndProcessTransactionSuccess, ExecutionResult> {
         self.maybe_blockhash_check(sanitized_tx)?;
-        let compute_budget_limits = get_compute_budget_limits(sanitized_tx)?;
+        let compute_budget_limits = get_compute_budget_limits(sanitized_tx, &self.feature_set)?;
         self.maybe_history_check(sanitized_tx)?;
         let (result, compute_units_consumed, context, fee, payer_key) =
             self.process_transaction(sanitized_tx, compute_budget_limits);
@@ -1068,12 +1068,16 @@ fn execute_tx_helper(
 
 fn get_compute_budget_limits(
     sanitized_tx: &SanitizedTransaction,
+    feature_set: &FeatureSet,
 ) -> Result<ComputeBudgetLimits, ExecutionResult> {
-    process_compute_budget_instructions(SVMMessage::program_instructions_iter(sanitized_tx))
-        .map_err(|e| ExecutionResult {
-            tx_result: Err(e),
-            ..Default::default()
-        })
+    process_compute_budget_instructions(
+        SVMMessage::program_instructions_iter(sanitized_tx),
+        feature_set,
+    )
+    .map_err(|e| ExecutionResult {
+        tx_result: Err(e),
+        ..Default::default()
+    })
 }
 
 /// Lighter version of the one in the solana-svm crate.
