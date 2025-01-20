@@ -3,24 +3,19 @@
 	"version": "0.0.0",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"files": ["dist/"],
+	"files": [
+		"dist/"
+	],
 	"napi": {
 		"name": "litesvm",
 		"triples": {
+			"defaults": false,
 			"additional": [
+				"x86_64-apple-darwin",
+				"x86_64-unknown-linux-gnu",
 				"aarch64-apple-darwin",
-				"aarch64-linux-android",
-				"aarch64-unknown-linux-gnu",
-				"aarch64-unknown-linux-musl",
-				"aarch64-pc-windows-msvc",
-				"armv7-unknown-linux-gnueabihf",
-				"armv7-unknown-linux-musleabihf",
 				"x86_64-unknown-linux-musl",
-				"x86_64-unknown-freebsd",
-				"i686-pc-windows-msvc",
-				"armv7-linux-androideabi",
-				"universal-apple-darwin",
-				"riscv64gc-unknown-linux-gnu"
+				"universal-apple-darwin"
 			]
 		}
 	},
@@ -72,6 +67,5 @@
 		"bumpMajor": "yarn version --no-git-tag-version --major && cargo bump major && napi version && cargo tree",
 		"docs:dev": "NODE_OPTIONS=--openssl-legacy-provider vuepress dev docs",
 		"docs:build": "NODE_OPTIONS=--openssl-legacy-provider vuepress build docs"
-	},
-	"packageManager": "yarn@4.5.3"
+	}
 }
