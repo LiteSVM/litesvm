@@ -22,12 +22,12 @@ jobs:
       - name: Download all artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build.yml
+          workflow: node-build.yml
           path: crates/node-litesvm/artifacts
       - name: Move artifacts
         run: cd crates/node-litesvm/ && yarn artifacts
       - name: Compile Typescript
-        run: crates/node-litesvm/ && yarn tsc
+        run: cd crates/node-litesvm/ && yarn tsc
       - name: Publish
         run: |
             cd crates/node-litesvm/

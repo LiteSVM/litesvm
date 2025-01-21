@@ -1,26 +1,21 @@
 {
 	"name": "litesvm",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"files": ["dist/"],
+	"files": [
+		"dist/"
+	],
 	"napi": {
 		"name": "litesvm",
 		"triples": {
+			"defaults": false,
 			"additional": [
+				"x86_64-apple-darwin",
+				"x86_64-unknown-linux-gnu",
 				"aarch64-apple-darwin",
-				"aarch64-linux-android",
-				"aarch64-unknown-linux-gnu",
-				"aarch64-unknown-linux-musl",
-				"aarch64-pc-windows-msvc",
-				"armv7-unknown-linux-gnueabihf",
-				"armv7-unknown-linux-musleabihf",
 				"x86_64-unknown-linux-musl",
-				"x86_64-unknown-freebsd",
-				"i686-pc-windows-msvc",
-				"armv7-linux-androideabi",
-				"universal-apple-darwin",
-				"riscv64gc-unknown-linux-gnu"
+				"universal-apple-darwin"
 			]
 		}
 	},
@@ -67,12 +62,11 @@
 		"test": "jest",
 		"tsc": "tsc && cp litesvm/internal.d.ts dist/internal.d.ts",
 		"universal": "napi universal",
-		"version": "napi version",
-		"bumpPatch": "yarn version --no-git-tag-version --patch && cargo bump patch && napi version && cargo tree",
-		"bumpMinor": "yarn version --no-git-tag-version --minor && cargo bump minor && napi version && cargo tree",
-		"bumpMajor": "yarn version --no-git-tag-version --major && cargo bump major && napi version && cargo tree",
+		"cargoBump": "cargo set-version --package litesvm-node --bump",
+		"bumpPatch": "yarn version --no-git-tag-version --patch && napi version && cargo tree",
+		"bumpMinor": "yarn version --no-git-tag-version --minor && napi version && cargo tree",
+		"bumpMajor": "yarn version --no-git-tag-version --major && napi version && cargo tree",
 		"docs:dev": "NODE_OPTIONS=--openssl-legacy-provider vuepress dev docs",
 		"docs:build": "NODE_OPTIONS=--openssl-legacy-provider vuepress build docs"
-	},
-	"packageManager": "yarn@4.5.3"
+	}
 }
