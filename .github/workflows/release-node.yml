@@ -27,7 +27,7 @@ jobs:
       - name: Move artifacts
         run: cd crates/node-litesvm/ && yarn artifacts
       - name: Compile Typescript
-        run: crates/node-litesvm/ && yarn tsc
+        run: cd crates/node-litesvm/ && yarn tsc
       - name: Publish
         run: |
             cd crates/node-litesvm/
