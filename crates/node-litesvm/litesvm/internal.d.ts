@@ -305,25 +305,30 @@ export declare class EpochSchedule {
   constructor(slotsPerEpoch: bigint, leaderScheduleSlotOffset: bigint, warmup: boolean, firstNormalEpoch: bigint, firstNormalSlot: bigint)
   /** The maximum number of slots in each epoch. */
   get slotsPerEpoch(): bigint
+  set slotsPerEpoch(val: bigint)
   /**
    * A number of slots before beginning of an epoch to calculate
    * a leader schedule for that epoch.
    */
   get leaderScheduleSlotOffset(): bigint
+  set leaderScheduleSlotOffset(val: bigint)
   /** Whether epochs start short and grow. */
   get warmup(): boolean
+  set warmup(val: boolean)
   /**
    * The first epoch after the warmup period.
    *
    * Basically: `log2(slots_per_epoch) - log2(MINIMUM_SLOTS_PER_EPOCH)`.
    */
   get firstNormalEpoch(): bigint
+  set firstNormalEpoch(val: bigint)
   /**
    * The first slot after the warmup period.
    *
    * Basically: `MINIMUM_SLOTS_PER_EPOCH * (2.pow(first_normal_epoch) - 1)`.
    */
   get firstNormalSlot(): bigint
+  set firstNormalSlot(val: bigint)
 }
 /** Configuration of network rent. */
 export declare class Rent {
