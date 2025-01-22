@@ -57,6 +57,6 @@ assert_eq!(to_account.unwrap().lamports, 64);
 
 The tests in this repo use some test programs you need to build first (Solana CLI >= 1.18.8 required):
 
-```cd test_programs && cargo build-sbf```
+```cd crates/litesvm/test_programs && cargo build-sbf```
 
 Then just run `cargo test`.
