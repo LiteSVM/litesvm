@@ -1,5 +1,6 @@
 use {
-    napi::bindgen_prelude::*, solana_sdk::epoch_schedule::EpochSchedule as EpochScheduleOriginal,
+    crate::util::bigint_to_u64, napi::bindgen_prelude::*,
+    solana_sdk::epoch_schedule::EpochSchedule as EpochScheduleOriginal,
 };
 
 /// Configuration for epochs and slots.
@@ -21,20 +22,25 @@ impl EpochSchedule {
         warmup: bool,
         first_normal_epoch: BigInt,
         first_normal_slot: BigInt,
-    ) -> Self {
-        Self(EpochScheduleOriginal {
-            slots_per_epoch: slots_per_epoch.get_u64().1,
-            leader_schedule_slot_offset: leader_schedule_slot_offset.get_u64().1,
+    ) -> Result<Self> {
+        Ok(Self(EpochScheduleOriginal {
+            slots_per_epoch: bigint_to_u64(&slots_per_epoch)?,
+            leader_schedule_slot_offset: bigint_to_u64(&leader_schedule_slot_offset)?,
             warmup,
-            first_normal_epoch: first_normal_epoch.get_u64().1,
-            first_normal_slot: first_normal_slot.get_u64().1,
-        })
+            first_normal_epoch: bigint_to_u64(&first_normal_epoch)?,
+            first_normal_slot: bigint_to_u64(&first_normal_slot)?,
+        }))
     }
 
     /// The maximum number of slots in each epoch.
     #[napi(getter)]
     pub fn slots_per_epoch(&self) -> u64 {
         self.0.slots_per_epoch
+    }
+
+    #[napi(setter)]
+    pub fn set_slots_per_epoch(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.slots_per_epoch = bigint_to_u64(&val)?)
     }
 
     /// A number of slots before beginning of an epoch to calculate
@@ -44,10 +50,20 @@ impl EpochSchedule {
         self.0.leader_schedule_slot_offset
     }
 
+    #[napi(setter)]
+    pub fn set_leader_schedule_slot_offset(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.leader_schedule_slot_offset = bigint_to_u64(&val)?)
+    }
+
     /// Whether epochs start short and grow.
     #[napi(getter)]
     pub fn warmup(&self) -> bool {
         self.0.warmup
+    }
+
+    #[napi(setter)]
+    pub fn set_warmup(&mut self, val: bool) {
+        self.0.warmup = val;
     }
 
     /// The first epoch after the warmup period.
@@ -58,11 +74,21 @@ impl EpochSchedule {
         self.0.first_normal_epoch
     }
 
+    #[napi(setter)]
+    pub fn set_first_normal_epoch(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.first_normal_epoch = bigint_to_u64(&val)?)
+    }
+
     /// The first slot after the warmup period.
     ///
     /// Basically: `MINIMUM_SLOTS_PER_EPOCH * (2.pow(first_normal_epoch) - 1)`.
     #[napi(getter)]
     pub fn first_normal_slot(&self) -> u64 {
         self.0.first_normal_slot
+    }
+
+    #[napi(setter)]
+    pub fn set_first_normal_slot(&mut self, val: BigInt) -> Result<()> {
+        Ok(self.0.first_normal_slot = bigint_to_u64(&val)?)
     }
 }
