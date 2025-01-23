@@ -97,7 +97,7 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         shell: bash
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
           path: crates/node-litesvm/litesvm/litesvm.*.node
@@ -192,7 +192,7 @@ jobs:
       - name: Test universal binary
         run: cd crates/node-litesvm && cp litesvm.darwin-universal.node litesvm/ && yarn test
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bindings-universal-apple-darwin
           path: crates/node-litesvm/litesvm/litesvm.*.node
