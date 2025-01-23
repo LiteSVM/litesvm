@@ -9,7 +9,7 @@ use solana_sdk::{
     transaction_context::TransactionReturnData,
 };
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TransactionMetadata {
     #[cfg_attr(feature = "serde", serde(with = "crate::utils::serde_with_str"))]
@@ -20,14 +20,14 @@ pub struct TransactionMetadata {
     pub return_data: TransactionReturnData,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SimulatedTransactionInfo {
     pub meta: TransactionMetadata,
     pub post_accounts: Vec<(Pubkey, AccountSharedData)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FailedTransactionMetadata {
     pub err: TransactionError,
