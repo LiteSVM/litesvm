@@ -97,7 +97,7 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         shell: bash
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
           path: crates/node-litesvm/litesvm/litesvm.*.node
@@ -124,7 +124,7 @@ jobs:
       - name: Install dependencies
         run: cd crates/node-litesvm && yarn install
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-unknown-linux-gnu
           path: crates/node-litesvm/litesvm/
@@ -155,7 +155,7 @@ jobs:
           yarn config set supportedArchitectures.libc "musl"
           yarn install
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-unknown-linux-musl
           path: crates/node-litesvm/litesvm/
@@ -178,12 +178,12 @@ jobs:
       - name: Install dependencies
         run: cd crates/node-litesvm && yarn install
       - name: Download macOS x64 artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
           path: crates/node-litesvm/artifacts
       - name: Download macOS arm64 artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-apple-darwin
           path: crates/node-litesvm/artifacts
@@ -192,7 +192,7 @@ jobs:
       - name: Test universal binary
         run: cd crates/node-litesvm && cp litesvm.darwin-universal.node litesvm/ && yarn test
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bindings-universal-apple-darwin
           path: crates/node-litesvm/litesvm/litesvm.*.node
