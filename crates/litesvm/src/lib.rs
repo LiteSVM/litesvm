@@ -992,7 +992,7 @@ impl LiteSVM {
             .and_then(|nonce_account| {
                 nonce_account::verify_nonce_account(&nonce_account, message.recent_blockhash())
             })
-            .map_or(false, |nonce_data| {
+            .is_some_and(|nonce_data| {
                 message
                     .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
                     .any(|signer| signer == &nonce_data.authority)

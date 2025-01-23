@@ -209,7 +209,7 @@ impl AccountsDb {
         // need to add programdata accounts first if there are any
         itertools::partition(&mut accounts, |x| {
             x.1.owner() == &bpf_loader_upgradeable::id()
-                && x.1.data().first().map_or(false, |byte| *byte == 3)
+                && x.1.data().first().is_some_and(|byte| *byte == 3)
         });
         for (pubkey, acc) in accounts {
             self.add_account(pubkey, acc)?;
