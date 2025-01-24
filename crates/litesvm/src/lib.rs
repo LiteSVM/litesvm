@@ -1,3 +1,108 @@
+/*!
+<div align="center">
+    <img src="https://raw.githubusercontent.com/litesvm/litesvm/master/logo.jpeg" width="50%" height="50%">
+</div>
+
+---
+
+# LiteSVM
+
+[<img alt="github" src="https://img.shields.io/badge/github-LiteSVM/litesvm-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/LiteSVM/litesvm)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/litesvm.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/litesvm)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-litesvm-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/litesvm/latest/litesvm/)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/LiteSVM/litesvm/CI.yml?branch=master&style=for-the-badge" height="20">](https://github.com/LiteSVM/litesvm/actions?query=branch%3Amaster)
+
+## 📍 Overview
+
+`litesvm` is a fast and lightweight library for testing Solana programs. It works by creating an in-process Solana VM optimized for program developers. This makes it much faster to run and compile than alternatives like `solana-program-test` and `solana-test-validator`. In a further break from tradition, it has an ergonomic API with sane defaults and extensive configurability for those who want it.
+
+### 🤖 Minimal Example
+
+```rust
+use litesvm::LiteSVM;
+use solana_program::{message::Message, pubkey::Pubkey, system_instruction::transfer};
+use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
+
+let from_keypair = Keypair::new();
+let from = from_keypair.pubkey();
+let to = Pubkey::new_unique();
+
+let mut svm = LiteSVM::new();
+svm.airdrop(&from, 10_000).unwrap();
+
+let instruction = transfer(&from, &to, 64);
+let tx = Transaction::new(
+    &[&from_keypair],
+    Message::new(&[instruction], Some(&from)),
+    svm.latest_blockhash(),
+);
+let tx_res = svm.send_transaction(tx).unwrap();
+
+let from_account = svm.get_account(&from);
+let to_account = svm.get_account(&to);
+assert_eq!(from_account.unwrap().lamports, 4936);
+assert_eq!(to_account.unwrap().lamports, 64);
+```
+
+## Deploying Programs
+
+Most of the time we want to do more than just mess around with token transfers -
+we want to test our own programs.
+
+::: tip
+If you want to pull a Solana program from mainnet or devnet, use the `solana program dump` command from the Solana CLI.
+:::
+
+To add a compiled program to our tests we can use the `add_program_from_file` method.
+
+Here's an example using a [simple program](https://github.com/solana-labs/solana-program-library/tree/bd216c8103cd8eb9f5f32e742973e7afb52f3b81/examples/rust/logging)
+from the Solana Program Library that just does some logging:
+
+```rust
+use {
+    litesvm::LiteSVM,
+    solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_pubkey::{pubkey, Pubkey},
+    solana_sdk::{
+        message::{Message, VersionedMessage},
+        signer::{keypair::Keypair, Signer},
+        transaction::VersionedTransaction,
+    },
+};
+
+#[test]
+fn test_logging() {
+    let program_id = pubkey!("Logging111111111111111111111111111111111111");
+    let account_meta = AccountMeta {
+        pubkey: Pubkey::new_unique(),
+        is_signer: false,
+        is_writable: true,
+    };
+    let ix = Instruction {
+        program_id,
+        accounts: vec![account_meta],
+        data: vec![5, 10, 11, 12, 13, 14],
+    };
+    let mut svm = LiteSVM::new();
+    let payer = Keypair::new();
+    let compiled = include_bytes!("../../node-litesvm/program_bytes/spl_example_logging.so");
+    svm.add_program(program_id, compiled);
+    svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
+    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[payer]).unwrap();
+    // let's sim it first
+    let sim_res = svm.simulate_transaction(tx.clone()).unwrap();
+    let meta = svm.send_transaction(tx).unwrap();
+    assert_eq!(sim_res.meta, meta);
+    assert_eq!(meta.logs[1], "Program log: static string");
+    assert!(meta.compute_units_consumed < 10_000) // not being precise here in case it changes
+}
+
+```
+
+*/
+
 use itertools::Itertools;
 use log::error;
 use precompiles::load_precompiles;

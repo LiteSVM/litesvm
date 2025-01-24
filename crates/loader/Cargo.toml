@@ -12,6 +12,9 @@ litesvm.workspace = true
 solana-sdk.workspace = true
 
 [dev-dependencies]
+solana-instruction.workspace = true
+solana-keypair.workspace = true
+solana-pubkey.workspace = true
 test-log.workspace = true
 
 [lints]

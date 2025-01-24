@@ -2442,13 +2442,17 @@ dependencies = [
  "solana-compute-budget-program",
  "solana-config-program",
  "solana-fee",
+ "solana-instruction",
+ "solana-keypair",
  "solana-loader-v4-program",
  "solana-log-collector",
  "solana-program",
  "solana-program-runtime",
  "solana-program-test",
+ "solana-pubkey",
  "solana-runtime-transaction",
  "solana-sdk",
+ "solana-signer",
  "solana-stake-program",
  "solana-svm",
  "solana-svm-transaction",
@@ -2466,6 +2470,9 @@ name = "litesvm-loader"
 version = "0.5.0"
 dependencies = [
  "litesvm",
+ "solana-instruction",
+ "solana-keypair",
+ "solana-pubkey",
  "solana-sdk",
  "test-log",
 ]
@@ -4621,6 +4628,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-keypair"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19f40cb2c1abf12fd29f01081eb5214c7cee3109ad11731e4b28daa06d44e8e7"
+dependencies = [
+ "bs58",
+ "ed25519-dalek",
+ "rand 0.7.3",
+ "solana-pubkey",
+ "solana-seed-phrase",
+ "solana-signature",
+ "solana-signer",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "solana-last-restart-slot"
 version = "2.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5379,6 +5402,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "468aa43b7edb1f9b7b7b686d5c3aeb6630dc1708e86e31343499dd5c4d775183"
 
 [[package]]
+name = "solana-seed-phrase"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b66d7173f6c7ce9772019eea76774b68b624bbbf801cf7dcd83af8c9d146e62a"
+dependencies = [
+ "hmac 0.12.1",
+ "pbkdf2",
+ "sha2 0.10.8",
+]
+
+[[package]]
 name = "solana-send-transaction-service"
 version = "2.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5448,6 +5482,17 @@ dependencies = [
  "serde",
  "serde_derive",
  "solana-sanitize",
+]
+
+[[package]]
+name = "solana-signer"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "980d6e9eba8d219bc316c776542ecd66a4408c192609a47fe994bac16f553343"
+dependencies = [
+ "solana-pubkey",
+ "solana-signature",
+ "solana-transaction-error",
 ]
 
 [[package]]
