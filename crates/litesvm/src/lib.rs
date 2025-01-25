@@ -71,7 +71,6 @@ use {
     },
 };
 
-#[test]
 fn test_logging() {
     let program_id = pubkey!("Logging111111111111111111111111111111111111");
     let account_meta = AccountMeta {
@@ -123,7 +122,6 @@ use {
     },
 };
 
-#[test]
 fn test_set_clock() {
     let program_id = Pubkey::new_unique();
     let mut svm = LiteSVM::new();
@@ -191,7 +189,6 @@ use {
     },
 };
 
-#[test]
 fn test_infinite_usdc_mint() {
     let owner = Pubkey::new_unique();
     let usdc_mint = pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
