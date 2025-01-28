@@ -1,3 +1,256 @@
+/*!
+<div align="center">
+    <img src="https://raw.githubusercontent.com/litesvm/litesvm/master/logo.jpeg" width="50%" height="50%">
+</div>
+
+---
+
+# LiteSVM
+
+[<img alt="github" src="https://img.shields.io/badge/github-LiteSVM/litesvm-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/LiteSVM/litesvm)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/litesvm.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/litesvm)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-litesvm-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/litesvm/latest/litesvm/)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/LiteSVM/litesvm/CI.yml?branch=master&style=for-the-badge" height="20">](https://github.com/LiteSVM/litesvm/actions?query=branch%3Amaster)
+
+## 📍 Overview
+
+`litesvm` is a fast and lightweight library for testing Solana programs.
+It works by creating an in-process Solana VM optimized for program developers.
+This makes it much faster to run and compile than alternatives like `solana-program-test` and `solana-test-validator`.
+In a further break from tradition, it has an ergonomic API with sane defaults and extensive configurability for those who want it.
+
+### 🤖 Minimal Example
+
+```rust
+use litesvm::LiteSVM;
+use solana_program::{message::Message, pubkey::Pubkey, system_instruction::transfer};
+use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
+
+let from_keypair = Keypair::new();
+let from = from_keypair.pubkey();
+let to = Pubkey::new_unique();
+
+let mut svm = LiteSVM::new();
+svm.airdrop(&from, 10_000).unwrap();
+
+let instruction = transfer(&from, &to, 64);
+let tx = Transaction::new(
+    &[&from_keypair],
+    Message::new(&[instruction], Some(&from)),
+    svm.latest_blockhash(),
+);
+let tx_res = svm.send_transaction(tx).unwrap();
+
+let from_account = svm.get_account(&from);
+let to_account = svm.get_account(&to);
+assert_eq!(from_account.unwrap().lamports, 4936);
+assert_eq!(to_account.unwrap().lamports, 64);
+```
+
+## Deploying Programs
+
+Most of the time we want to do more than just mess around with token transfers -
+we want to test our own programs.
+
+**Tip**: if you want to pull a Solana program from mainnet or devnet, use the `solana program dump` command from the Solana CLI.
+
+To add a compiled program to our tests we can use [`.add_program_from_file`](LiteSVM::add_program_from_file).
+
+Here's an example using a [simple program](https://github.com/solana-labs/solana-program-library/tree/bd216c8103cd8eb9f5f32e742973e7afb52f3b81/examples/rust/logging)
+from the Solana Program Library that just does some logging:
+
+```rust
+use {
+    litesvm::LiteSVM,
+    solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_pubkey::{pubkey, Pubkey},
+    solana_sdk::{
+        message::{Message, VersionedMessage},
+        signer::{keypair::Keypair, Signer},
+        transaction::VersionedTransaction,
+    },
+};
+
+fn test_logging() {
+    let program_id = pubkey!("Logging111111111111111111111111111111111111");
+    let account_meta = AccountMeta {
+        pubkey: Pubkey::new_unique(),
+        is_signer: false,
+        is_writable: true,
+    };
+    let ix = Instruction {
+        program_id,
+        accounts: vec![account_meta],
+        data: vec![5, 10, 11, 12, 13, 14],
+    };
+    let mut svm = LiteSVM::new();
+    let payer = Keypair::new();
+    let bytes = include_bytes!("../../node-litesvm/program_bytes/spl_example_logging.so");
+    svm.add_program(program_id, bytes);
+    svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
+    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[payer]).unwrap();
+    // let's sim it first
+    let sim_res = svm.simulate_transaction(tx.clone()).unwrap();
+    let meta = svm.send_transaction(tx).unwrap();
+    assert_eq!(sim_res.meta, meta);
+    assert_eq!(meta.logs[1], "Program log: static string");
+    assert!(meta.compute_units_consumed < 10_000) // not being precise here in case it changes
+}
+
+```
+
+## Time travel
+
+Many programs rely on the `Clock` sysvar: for example, a mint that doesn't become available until after
+a certain time. With `litesvm` you can dynamically overwrite the `Clock` sysvar
+using [`svm.set_sysvar::<Clock>()`](LiteSVM::set_sysvar).
+Here's an example using a program that panics if `clock.unix_timestamp` is greater than 100
+(which is on January 1st 1970):
+
+```rust
+use {
+    litesvm::LiteSVM,
+    solana_clock::Clock,
+    solana_instruction::Instruction,
+    solana_pubkey::Pubkey,
+    solana_sdk::{
+        message::{Message, VersionedMessage},
+        signer::{keypair::Keypair, Signer},
+        transaction::VersionedTransaction,
+    },
+};
+
+fn test_set_clock() {
+    let program_id = Pubkey::new_unique();
+    let mut svm = LiteSVM::new();
+    let bytes = include_bytes!("../../node-litesvm/program_bytes/litesvm_clock_example.so");
+    svm.add_program(program_id, bytes);
+    let payer = Keypair::new();
+    let payer_address = payer.pubkey();
+    svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
+    let blockhash = svm.latest_blockhash();
+    let ixs = [Instruction {
+        program_id,
+        data: vec![],
+        accounts: vec![],
+    }];
+    let msg = Message::new_with_blockhash(&ixs, Some(&payer_address), &blockhash);
+    let versioned_msg = VersionedMessage::Legacy(msg);
+    let tx = VersionedTransaction::try_new(versioned_msg, &[&payer]).unwrap();
+    // set the time to January 1st 2000
+    let mut initial_clock = svm.get_sysvar::<Clock>();
+    initial_clock.unix_timestamp = 1735689600;
+    svm.set_sysvar::<Clock>(&initial_clock);
+    // this will fail because it's not January 1970 anymore
+    svm.send_transaction(tx).unwrap_err();
+    // so let's turn back time
+    let mut clock = svm.get_sysvar::<Clock>();
+    clock.unix_timestamp = 50;
+    svm.set_sysvar::<Clock>(&clock);
+    let ixs2 = [Instruction {
+        program_id,
+        data: vec![1], // unused, this is just to dedup the transaction
+        accounts: vec![],
+    }];
+    let msg2 = Message::new_with_blockhash(&ixs2, Some(&payer_address), &blockhash);
+    let versioned_msg2 = VersionedMessage::Legacy(msg2);
+    let tx2 = VersionedTransaction::try_new(versioned_msg2, &[&payer]).unwrap();
+    // now the transaction goes through
+    svm.send_transaction(tx2).unwrap();
+}
+
+```
+
+See also: [`warp_to_slot`](LiteSVM::warp_to_slot), which lets you jump to a future slot.
+
+## Writing arbitrary accounts
+
+LiteSVM lets you write any account data you want, regardless of
+whether the account state would even be possible.
+
+Here's an example where we give an account a bunch of USDC,
+even though we don't have the USDC mint keypair. This is
+convenient for testing because it means we don't have to
+work with fake USDC in our tests:
+
+```rust
+use {
+    litesvm::LiteSVM,
+    solana_account::Account,
+    solana_program_option::COption,
+    solana_program_pack::Pack,
+    solana_pubkey::{pubkey, Pubkey},
+    spl_associated_token_account_client::address::get_associated_token_address,
+    spl_token::{
+        state::{Account as TokenAccount, AccountState},
+        ID as TOKEN_PROGRAM_ID,
+    },
+};
+
+fn test_infinite_usdc_mint() {
+    let owner = Pubkey::new_unique();
+    let usdc_mint = pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    let ata = get_associated_token_address(&owner, &usdc_mint);
+    let usdc_to_own = 1_000_000_000_000;
+    let token_acc = TokenAccount {
+        mint: usdc_mint,
+        owner: owner,
+        amount: usdc_to_own,
+        delegate: COption::None,
+        state: AccountState::Initialized,
+        is_native: COption::None,
+        delegated_amount: 0,
+        close_authority: COption::None,
+    };
+    let mut svm = LiteSVM::new();
+    let mut token_acc_bytes = [0u8; TokenAccount::LEN];
+    TokenAccount::pack(token_acc, &mut token_acc_bytes).unwrap();
+    svm.set_account(
+        ata,
+        Account {
+            lamports: 1_000_000_000,
+            data: token_acc_bytes.to_vec(),
+            owner: TOKEN_PROGRAM_ID,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+    let raw_account = svm.get_account(&ata).unwrap();
+    assert_eq!(
+        TokenAccount::unpack(&raw_account.data).unwrap().amount,
+        usdc_to_own
+    )
+}
+
+```
+
+## Copying Accounts from a live environment
+
+If you want to copy accounts from mainnet or devnet, you can use the `solana account` command in the Solana CLI to save account data to a file.
+
+## Other features
+
+Other things you can do with `litesvm` include:
+
+* Changing the max compute units and other compute budget behaviour using [`.with_compute_budget`](LiteSVM::with_compute_budget).
+* Disable transaction signature checking using [`.with_sigverify(false)`](LiteSVM::with_sigverify).
+* Find previous transactions using [`.get_transaction`](`LiteSVM::get_transaction`).
+
+## When should I use `solana-test-validator`?
+
+While `litesvm` is faster and more convenient, it is also less like a real RPC node.
+So `solana-test-validator` is still useful when you need to call RPC methods that LiteSVM
+doesn't support, or when you want to test something that depends on real-life validator behaviour
+rather than just testing your program and client code.
+
+In general though it is recommended to use `litesvm` wherever possible, as it will make your life
+much easier.
+
+*/
+
 use itertools::Itertools;
 use log::error;
 use precompiles::load_precompiles;
