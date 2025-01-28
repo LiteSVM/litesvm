@@ -52,6 +52,7 @@ use solana_timings::ExecuteTimings;
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 use types::SimulatedTransactionInfo;
 use utils::{
+    compute_tracker::ComputeTracker,
     construct_instructions_account,
     inner_instructions::inner_instructions_list_from_instruction_trace,
 };
@@ -83,6 +84,7 @@ pub struct LiteSVM {
     latest_blockhash: Hash,
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
+    compute_tracker: ComputeTracker,
     sigverify: bool,
     blockhash_check: bool,
     fee_structure: FeeStructure,
@@ -98,6 +100,7 @@ impl Default for LiteSVM {
             latest_blockhash: create_blockhash(b"genesis"),
             history: TransactionHistory::new(),
             compute_budget: None,
+            compute_tracker: ComputeTracker::new(),
             sigverify: false,
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
@@ -741,6 +744,10 @@ impl LiteSVM {
             Ok(value) => value,
             Err(value) => return value,
         };
+
+        // Record compute units for this transaction
+        self.compute_tracker.record_transaction(compute_units_consumed);
+
         if let Some(ctx) = context {
             let tx_result = self.check_tx_result(result, payer_key, fee);
             execution_result_if_context(sanitized_tx, ctx, tx_result, compute_units_consumed)
@@ -1026,6 +1033,16 @@ impl LiteSVM {
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
+    }
+
+    /// Gets the compute tracker statistics
+    pub fn get_compute_stats(&self) -> &ComputeTracker {
+        &self.compute_tracker
+    }
+
+    /// Resets the compute tracker
+    pub fn reset_compute_tracker(&mut self) {
+        self.compute_tracker.reset();
     }
 }
 

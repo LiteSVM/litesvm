@@ -5,6 +5,7 @@ use solana_sdk::{
     sysvar::{self, instructions::construct_instructions_data},
 };
 
+pub mod compute_tracker;
 pub mod inner_instructions;
 pub mod rent;
 #[cfg(feature = "serde")]

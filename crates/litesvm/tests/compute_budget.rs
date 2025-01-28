@@ -70,3 +70,60 @@ fn test_set_compute_unit_limit() {
         TransactionError::InstructionError(0, InstructionError::ComputationalBudgetExceeded)
     );
 }
+
+#[test_log::test]
+fn test_compute_tracker() {
+    let mut svm = LiteSVM::new();
+    let from_keypair = Keypair::new();
+    let from = from_keypair.pubkey();
+    let to = Pubkey::new_unique();
+
+    // Airdrop some funds
+    svm.airdrop(&from, 1_000_000).unwrap();
+
+    // Initial state should be zero
+    let stats = svm.get_compute_stats();
+    assert_eq!(stats.total_compute_units(), 150);
+    assert_eq!(stats.transaction_count(), 1);
+    assert_eq!(stats.min_compute_units(), 150);
+    assert_eq!(stats.max_compute_units(), 150);
+    assert_eq!(stats.average_compute_units(), 150.0);
+
+    // Send a transfer transaction
+    let instruction = transfer(&from, &to, 100);
+    let tx = Transaction::new(
+        &[&from_keypair],
+        Message::new(&[instruction], Some(&from)),
+        svm.latest_blockhash(),
+    );
+    svm.send_transaction(tx).unwrap();
+
+    // Check compute units were tracked
+    let stats = svm.get_compute_stats();
+    assert!(stats.total_compute_units() > 0);
+    assert_eq!(stats.transaction_count(), 2);
+    assert!(stats.min_compute_units() > 0);
+    assert!(stats.max_compute_units() > 0);
+    assert!(stats.average_compute_units() > 0.0);
+
+    // Send another transaction
+    let tx = Transaction::new(
+        &[&from_keypair],
+        Message::new(&[transfer(&from, &to, 50)], Some(&from)),
+        svm.latest_blockhash(),
+    );
+    svm.send_transaction(tx).unwrap();
+
+    // Check stats were updated
+    let stats = svm.get_compute_stats();
+    assert_eq!(stats.transaction_count(), 3);
+    
+    // Test reset
+    svm.reset_compute_tracker();
+    let stats = svm.get_compute_stats();
+    assert_eq!(stats.total_compute_units(), 0);
+    assert_eq!(stats.transaction_count(), 0);
+    assert_eq!(stats.min_compute_units(), 0);
+    assert_eq!(stats.max_compute_units(), 0);
+    assert_eq!(stats.average_compute_units(), 0.0);
+}
