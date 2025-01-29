@@ -2443,6 +2443,7 @@ dependencies = [
  "solana-compute-budget",
  "solana-compute-budget-program",
  "solana-config-program",
+ "solana-feature-set",
  "solana-fee",
  "solana-instruction",
  "solana-keypair",
@@ -2456,6 +2457,7 @@ dependencies = [
  "solana-pubkey",
  "solana-runtime-transaction",
  "solana-sdk",
+ "solana-sdk-ids",
  "solana-signer",
  "solana-stake-program",
  "solana-svm",
@@ -2463,6 +2465,9 @@ dependencies = [
  "solana-system-program",
  "solana-timings",
  "solana-vote-program",
+ "solana-zk-elgamal-proof-program",
+ "solana-zk-token-proof-program",
+ "solana-zk-token-sdk",
  "spl-associated-token-account-client",
  "spl-token 7.0.0",
  "test-log",
@@ -5360,6 +5365,15 @@ dependencies = [
  "solana-transaction-error",
  "thiserror 1.0.69",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "solana-sdk-ids"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fd3718f21f667ce3f721a2fd1716d31d4292db4f81d7162adaddd7a7cb28ebe"
+dependencies = [
+ "solana-pubkey",
 ]
 
 [[package]]

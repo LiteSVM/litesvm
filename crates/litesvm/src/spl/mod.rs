@@ -9,7 +9,7 @@ pub fn load_spl_programs(svm: &mut LiteSVM) {
     );
     svm.add_program(
         pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
-        include_bytes!("programs/spl_token_2022-1.0.0.so"),
+        include_bytes!("programs/spl_token_2022-5.0.2.so"),
     );
     svm.add_program(
         pubkey!("Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo"),
