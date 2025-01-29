@@ -329,9 +329,10 @@ mod precompiles;
 mod spl;
 mod utils;
 
+#[derive(Clone)]
 pub struct LiteSVM {
     accounts: AccountsDb,
-    airdrop_kp: Keypair,
+    airdrop_kp: [u8; 64],
     feature_set: Arc<FeatureSet>,
     latest_blockhash: Hash,
     history: TransactionHistory,
@@ -346,7 +347,7 @@ impl Default for LiteSVM {
     fn default() -> Self {
         Self {
             accounts: Default::default(),
-            airdrop_kp: Keypair::new(),
+            airdrop_kp: Keypair::new().to_bytes(),
             feature_set: Default::default(),
             latest_blockhash: create_blockhash(b"genesis"),
             history: TransactionHistory::new(),
@@ -481,7 +482,7 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
-            self.airdrop_kp.pubkey(),
+            Keypair::from_bytes(&self.airdrop_kp).unwrap().pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
         );
     }
@@ -591,7 +592,7 @@ impl LiteSVM {
 
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
-        let payer = &self.airdrop_kp;
+        let payer = Keypair::from_bytes(&self.airdrop_kp).unwrap();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[system_instruction::transfer(

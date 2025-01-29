@@ -58,7 +58,7 @@ where
     Ok(())
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct AccountsDb {
     inner: HashMap<Pubkey, AccountSharedData>,
     pub(crate) programs_cache: ProgramCacheForTxBatch,
