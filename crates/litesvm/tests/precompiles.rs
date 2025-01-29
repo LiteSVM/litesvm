@@ -40,7 +40,7 @@ fn ed25519_precompile_err() {
 
     // Act - Produce an invalid ed25519 instruction.
     let mut ix = new_ed25519_instruction(&kp_dalek, b"hello world");
-    ix.data[ed25519_instruction::DATA_START + 32] += 1;
+    ix.data[ed25519_instruction::DATA_START + 32] = 0;
     let tx = Transaction::new(
         &[&kp],
         Message::new(&[ix], Some(&kp.pubkey())),
