@@ -25,13 +25,13 @@ fn get_importance(program_source: &str, program_log: &str) -> Importance {
         || log.contains("fail: ")
         || log.contains("fail ")
     {
-        return Importance::Error;
+        Importance::Error
     } else if log.contains("signer privilege escalated") {
-        return Importance::High;
+        Importance::High
     } else if program_source == PROGRAM_LOG {
-        return Importance::VeryHigh;
+        Importance::VeryHigh
     } else {
-        return Importance::Low;
+        Importance::Low
     }
 }
 
