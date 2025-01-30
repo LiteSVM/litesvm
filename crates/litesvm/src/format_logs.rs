@@ -86,6 +86,8 @@ pub(crate) fn format_logs(logs: &[String]) -> String {
 mod tests {
     use super::*;
 
+    // Examples:
+    //
     // ["Program 11111111111111111111111111111111 invoke [1]", "Program 11111111111111111111111111111111 failed: Computational budget exceeded"]
     // ["Program 11111111111111111111111111111111 invoke [1]", "Program 11111111111111111111111111111111 success"]
     // ["Program 11111111111111111111111111111111 invoke [1]", "Program 11111111111111111111111111111111 success", "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]", "Program log: Instruction: InitializeMint2", "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2779 of 202850 compute units", "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success"]
