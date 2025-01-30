@@ -324,6 +324,7 @@ pub mod types;
 
 mod accounts_db;
 mod builtin;
+mod format_logs;
 mod history;
 mod precompiles;
 mod spl;
