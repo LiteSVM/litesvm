@@ -309,8 +309,12 @@ export class LiteSVM {
 	sendTransaction(
 		tx: Transaction | VersionedTransaction,
 	): TransactionMetadata | FailedTransactionMetadata {
-		const serialized = tx.serialize();
 		const internal = this.inner;
+		const serialized = tx.serialize({
+			requireAllSignatures: true,
+			verifySignatures: internal.getSigverify(),
+		});
+
 		if (tx instanceof Transaction) {
 			return internal.sendLegacyTransaction(serialized);
 		} else {

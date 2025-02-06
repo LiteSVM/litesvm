@@ -1225,6 +1225,10 @@ impl LiteSVM {
         self.compute_budget
     }
 
+    pub fn get_sigverify(&self) -> bool {
+        self.sigverify
+    }
+
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
         self.feature_set.clone()

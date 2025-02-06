@@ -281,6 +281,11 @@ impl LiteSvm {
     pub fn get_compute_budget(&self) -> Option<ComputeBudget> {
         self.0.get_compute_budget().map(ComputeBudget)
     }
+    
+    #[napi]
+    pub fn get_sigverify(&mut self) -> bool {
+        self.0.get_sigverify()
+    }
 
     #[napi]
     pub fn get_clock(&self) -> Clock {

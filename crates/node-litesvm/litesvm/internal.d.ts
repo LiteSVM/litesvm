@@ -563,6 +563,7 @@ export declare class LiteSvm {
   /** Warps the clock to the specified slot */
   warpToSlot(slot: bigint): void
   getComputeBudget(): ComputeBudget | null
+  getSigverify(): boolean
   getClock(): Clock
   setClock(clock: Clock): void
   getRent(): Rent
