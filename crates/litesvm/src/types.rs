@@ -9,6 +9,8 @@ use solana_sdk::{
     transaction_context::TransactionReturnData,
 };
 
+use crate::format_logs::format_logs;
+
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TransactionMetadata {
@@ -18,6 +20,12 @@ pub struct TransactionMetadata {
     pub inner_instructions: InnerInstructionsList,
     pub compute_units_consumed: u64,
     pub return_data: TransactionReturnData,
+}
+
+impl TransactionMetadata {
+    pub fn pretty_logs(&self) -> String {
+        format_logs(&self.logs)
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
