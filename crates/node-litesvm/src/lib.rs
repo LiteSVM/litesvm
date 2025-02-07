@@ -283,7 +283,7 @@ impl LiteSvm {
     }
 
     #[napi]
-    pub fn get_sigverify(&mut self) -> bool {
+    pub fn get_sigverify(&self) -> bool {
         self.0.get_sigverify()
     }
 
