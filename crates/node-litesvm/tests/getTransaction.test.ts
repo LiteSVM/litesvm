@@ -30,6 +30,6 @@ test("hello world", () => {
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	expect(greetedAccountAfter).not.toBeNull();
 	expect(greetedAccountAfter?.data).toEqual(new Uint8Array([1, 0, 0, 0]));
-    const fetched = svm.getTransaction(tx.signature);
-    expect(fetched).toBeInstanceOf(TransactionMetadata);
+	const fetched = svm.getTransaction(tx.signature);
+	expect(fetched).toBeInstanceOf(TransactionMetadata);
 });
