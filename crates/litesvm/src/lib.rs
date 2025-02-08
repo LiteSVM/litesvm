@@ -586,9 +586,17 @@ impl LiteSVM {
         bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
     }
 
-    /// Gets a transaction from the transaction history.
+    /// Gets a transaction result from the transaction history.
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
         self.history.get_transaction(signature)
+    }
+
+    /// Gets a transaction and its result from the transaction history.
+    pub fn get_full_transaction(
+        &self,
+        signature: &Signature,
+    ) -> Option<&(VersionedTransaction, TransactionResult)> {
+        self.history.get_full_transaction(signature)
     }
 
     /// Airdrops the account with the lamports specified.
@@ -1126,9 +1134,9 @@ impl LiteSVM {
             return_data,
             included,
         } = if self.sigverify {
-            self.execute_transaction(vtx, log_collector.clone())
+            self.execute_transaction(vtx.clone(), log_collector.clone())
         } else {
-            self.execute_transaction_no_verify(vtx, log_collector.clone())
+            self.execute_transaction_no_verify(vtx.clone(), log_collector.clone())
         };
         let Ok(logs) = Rc::try_unwrap(log_collector).map(|lc| lc.into_inner().messages) else {
             unreachable!("Log collector should not be used after send_transaction returns")
@@ -1144,12 +1152,13 @@ impl LiteSVM {
         if let Err(tx_err) = tx_result {
             let err = TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta });
             if included {
-                self.history.add_new_transaction(signature, err.clone());
+                self.history
+                    .add_new_transaction(signature, vtx, err.clone());
             }
             err
         } else {
             self.history
-                .add_new_transaction(signature, Ok(meta.clone()));
+                .add_new_transaction(signature, vtx, Ok(meta.clone()));
             self.accounts
                 .sync_accounts(post_accounts)
                 .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");
