@@ -283,6 +283,11 @@ impl LiteSvm {
     }
 
     #[napi]
+    pub fn get_sigverify(&self) -> bool {
+        self.0.get_sigverify()
+    }
+
+    #[napi]
     pub fn get_clock(&self) -> Clock {
         Clock(self.0.get_sysvar::<ClockOriginal>())
     }

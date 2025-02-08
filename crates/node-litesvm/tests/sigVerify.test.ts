@@ -2,17 +2,19 @@ import {
 	LAMPORTS_PER_SOL,
 	Transaction,
 	TransactionInstruction,
-	Keypair,
+	PublicKey,
 } from "@solana/web3.js";
-import { helloworldProgram, getLamports } from "./util";
-import { TransactionMetadata } from "internal";
+import { helloworldProgram } from "./util";
 
-test("hello world", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const lamports = getLamports(svm, greetedPubkey);
-	expect(lamports === LAMPORTS_PER_SOL);
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
+test("test sigverify", () => {
+	let [svm, programId, greetedPubkey] = helloworldProgram();
+	svm = svm.withSigverify(false);
+	const payerPubkey = new PublicKey(12345);
+	const fakeSigner = {
+		publicKey: payerPubkey,
+		secretKey: new Uint8Array(32),
+	}; // note that the secretKey & publicKey do not match
+	svm.airdrop(payerPubkey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	expect(greetedAccountBefore).not.toBeNull();
@@ -25,11 +27,9 @@ test("hello world", () => {
 	const tx = new Transaction();
 	tx.recentBlockhash = blockhash;
 	tx.add(ix);
-	tx.sign(payer);
+	tx.sign(fakeSigner);
 	svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	expect(greetedAccountAfter).not.toBeNull();
 	expect(greetedAccountAfter?.data).toEqual(new Uint8Array([1, 0, 0, 0]));
-	const fetched = svm.getTransaction(tx.signature);
-	expect(fetched).toBeInstanceOf(TransactionMetadata);
 });
