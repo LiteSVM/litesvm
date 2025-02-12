@@ -695,13 +695,17 @@ impl LiteSVM {
         &self,
         tx: VersionedTransaction,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        SanitizedTransaction::try_create(
+        let res = SanitizedTransaction::try_create(
             tx,
             MessageHash::Compute,
             Some(false),
             &self.accounts,
             &ReservedAccountKeys::empty_key_set(),
-        )
+        );
+        res.map_err(|e| {
+            log::error!("Transaction sanitization failed");
+            e
+        })
     }
 
     fn sanitize_transaction_no_verify(
