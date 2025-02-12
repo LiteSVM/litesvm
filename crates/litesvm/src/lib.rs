@@ -703,7 +703,7 @@ impl LiteSVM {
             &ReservedAccountKeys::empty_key_set(),
         );
         res.map_err(|e| {
-            log::error!("Transaction sanitization failed: {:?}", e);
+            log::error!("Transaction sanitization failed");
             e
         })
     }
