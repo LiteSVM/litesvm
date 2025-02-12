@@ -1,9 +1,9 @@
 use crate::types::TransactionResult;
 use indexmap::IndexMap;
-use solana_sdk::signature::Signature;
+use solana_sdk::{signature::Signature, transaction::VersionedTransaction};
 
 #[derive(Clone)]
-pub struct TransactionHistory(IndexMap<Signature, TransactionResult>);
+pub struct TransactionHistory(IndexMap<Signature, (VersionedTransaction, TransactionResult)>);
 
 impl TransactionHistory {
     pub fn new() -> Self {
@@ -19,16 +19,28 @@ impl TransactionHistory {
     }
 
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
+        self.0.get(signature).map(|(_tx, res)| res)
+    }
+
+    pub fn get_full_transaction(
+        &self,
+        signature: &Signature,
+    ) -> Option<&(VersionedTransaction, TransactionResult)> {
         self.0.get(signature)
     }
 
-    pub fn add_new_transaction(&mut self, signature: Signature, result: TransactionResult) {
+    pub fn add_new_transaction(
+        &mut self,
+        signature: Signature,
+        transaction: VersionedTransaction,
+        result: TransactionResult,
+    ) {
         let capacity = self.0.capacity();
         if capacity != 0 {
             if self.0.len() == capacity {
                 self.0.shift_remove_index(0);
             }
-            self.0.insert(signature, result);
+            self.0.insert(signature, (transaction, result));
         }
     }
 
