@@ -1,7 +1,7 @@
 use {
     crate::{to_string_js, util::bigint_to_u64},
     napi::bindgen_prelude::*,
-    solana_sdk::stake_history::{
+    solana_stake_history::{
         StakeHistory as StakeHistoryOriginal, StakeHistoryEntry as StakeHistoryEntryOriginal,
     },
 };

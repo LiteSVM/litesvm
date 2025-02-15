@@ -2,12 +2,13 @@
 #![allow(clippy::new_without_default, clippy::unit_arg)]
 use {
     crate::{
-        account::Account,
-        compute_budget::ComputeBudget,
-        feature_set::FeatureSet,
-        sysvar::{
-            clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
-            slot_hashes::SlotHash, slot_history::SlotHistory, stake_history::StakeHistory,
+        solana_account::Account,
+        solana_compute_budget::ComputeBudget,
+        solana_feature_set::FeatureSet,
+        solana_sysvar::{
+            solana_clock::Clock, solana_epoch_rewards::EpochRewards,
+            solana_epoch_schedule::EpochSchedule, solana_rent::Rent, solana_slot_hashes::SlotHash,
+            solana_slot_history::SlotHistory, solana_stake_history::StakeHistory,
         },
         transaction_metadata::{
             FailedTransactionMetadata, SimulatedTransactionInfo, TransactionMetadata,
@@ -25,18 +26,16 @@ use {
         LiteSVM as LiteSVMOriginal,
     },
     napi::bindgen_prelude::*,
-    solana_sdk::{
-        clock::Clock as ClockOriginal,
-        epoch_rewards::EpochRewards as EpochRewardsOriginal,
-        epoch_schedule::EpochSchedule as EpochScheduleOriginal,
-        rent::Rent as RentOriginal,
-        signature::Signature,
-        slot_hashes::SlotHashes,
-        slot_history::SlotHistory as SlotHistoryOriginal,
-        stake_history::StakeHistory as StakeHistoryOriginal,
-        sysvar::last_restart_slot::LastRestartSlot,
-        transaction::{Transaction, VersionedTransaction},
-    },
+    solana_clock::Clock as ClockOriginal,
+    solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
+    solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
+    solana_rent::Rent as RentOriginal,
+    solana_signature::Signature,
+    solana_slot_hashes::SlotHashes,
+    solana_slot_history::SlotHistory as SlotHistoryOriginal,
+    solana_stake_history::StakeHistory as StakeHistoryOriginal,
+    solana_sysvar::last_restart_slot::LastRestartSlot,
+    solana_transaction::{Transaction, VersionedTransaction},
     util::{bigint_to_u64, bigint_to_usize},
 };
 mod account;
@@ -354,7 +353,7 @@ impl LiteSvm {
 
     #[napi]
     pub fn set_slot_hashes(&mut self, hashes: Vec<&SlotHash>) -> Result<()> {
-        let mut intermediate: Vec<(u64, solana_sdk::hash::Hash)> = Vec::with_capacity(hashes.len());
+        let mut intermediate: Vec<(u64, solana_hash::Hash)> = Vec::with_capacity(hashes.len());
         for h in hashes {
             let converted_hash = try_parse_hash(&h.hash)?;
             intermediate.push((bigint_to_u64(&h.slot)?, converted_hash));

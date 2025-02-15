@@ -9,7 +9,6 @@ rust-version.workspace = true
 
 [dependencies]
 litesvm.workspace = true
-solana-sdk.workspace = true
 
 [dev-dependencies]
 solana-instruction.workspace = true

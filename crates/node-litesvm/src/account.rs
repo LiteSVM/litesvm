@@ -1,7 +1,8 @@
 use {
     crate::{to_string_js, util::bigint_to_u64},
     napi::bindgen_prelude::*,
-    solana_sdk::{account::Account as AccountOriginal, pubkey::Pubkey},
+    solana_account::Account as AccountOriginal,
+    solana_pubkey::Pubkey,
 };
 
 #[derive(Debug, Clone)]

@@ -3,15 +3,14 @@ use {
     bincode::{deserialize, serialized_size},
     litesvm::LiteSVM,
     serde::{Deserialize, Serialize},
+    solana_account::{Account, ReadableAccount},
     solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState},
-    solana_sdk::{
-        account::{Account, ReadableAccount},
-        instruction::{AccountMeta, InstructionError},
-        pubkey::Pubkey,
-        rent::Rent,
-        signature::{Keypair, Signer},
-        transaction::{Transaction, TransactionError},
-    },
+    solana_instruction::{AccountMeta, InstructionError},
+    solana_pubkey::Pubkey,
+    solana_rent::Rent,
+    solana_signature::{Keypair, Signer},
+    solana_transaction::Transaction,
+    solana_transaction_error::TransactionError,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]

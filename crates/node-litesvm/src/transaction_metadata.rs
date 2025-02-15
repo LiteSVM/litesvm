@@ -10,12 +10,10 @@ use {
         TransactionMetadata as TransactionMetadataOriginal,
     },
     napi::bindgen_prelude::*,
-    solana_sdk::{
-        account::Account as AccountOriginal,
-        inner_instruction::InnerInstruction as InnerInstructionOriginal,
-        instruction::CompiledInstruction as CompiledInstructionOriginal,
-        transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
-    },
+    solana_account::Account as AccountOriginal,
+    solana_inner_instruction::InnerInstruction as InnerInstructionOriginal,
+    solana_instruction::CompiledInstruction as CompiledInstructionOriginal,
+    solana_transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
 };
 
 #[derive(Debug, Clone)]

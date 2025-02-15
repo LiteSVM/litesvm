@@ -1,13 +1,13 @@
 use litesvm::LiteSVM;
 use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_program::{
-    instruction::InstructionError, message::Message, pubkey::Pubkey, system_instruction::transfer,
+use {
+    solana_compute_budget::ComputeBudgetInstruction, solana_keypair::Keypair,
+    solana_signer::Signer, solana_transaction::Transaction,
+    solana_transaction_error::TransactionError,
 };
-use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction,
-    signature::Keypair,
-    signer::Signer,
-    transaction::{Transaction, TransactionError},
+use {
+    solana_instruction::error::InstructionError, solana_message::Message, solana_pubkey::Pubkey,
+    solana_system_interface::instruction::transfer,
 };
 
 #[test_log::test]

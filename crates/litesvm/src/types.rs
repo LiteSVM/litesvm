@@ -1,12 +1,12 @@
-use solana_sdk::{
-    account::AccountSharedData,
-    inner_instruction::InnerInstructionsList,
-    instruction::InstructionError,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    signature::Signature,
-    transaction::{Result, TransactionError},
-    transaction_context::TransactionReturnData,
+use {
+    solana_account::AccountSharedData,
+    solana_inner_instruction::InnerInstructionsList,
+    solana_instruction::InstructionError,
+    solana_program_error::ProgramError,
+    solana_pubkey::Pubkey,
+    solana_signature::Signature,
+    solana_transaction_context::TransactionReturnData,
+    solana_transaction_error::{TransactionError, TransactionResult as Result},
 };
 
 use crate::format_logs::format_logs;

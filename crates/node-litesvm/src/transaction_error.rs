@@ -2,10 +2,8 @@ use {
     crate::to_string_js,
     core::fmt,
     napi::bindgen_prelude::{Either3, Either5},
-    solana_sdk::{
-        instruction::InstructionError as InstructionErrorOriginal,
-        transaction::TransactionError as TransactionErrorOriginal,
-    },
+    solana_instruction::error::InstructionError as InstructionErrorOriginal,
+    solana_transaction_error::TransactionError as TransactionErrorOriginal,
 };
 
 #[derive(Clone, Debug)]

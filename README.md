@@ -27,8 +27,12 @@ cargo add --dev litesvm
 
 ```rust
 use litesvm::LiteSVM;
-use solana_program::{message::Message, pubkey::Pubkey, system_instruction::transfer};
-use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
+use solana_keypair::Keypair;
+use solana_message::Message;
+use solana_pubkey::Pubkey;
+use solana_signer::Signer;
+use solana_system_interface::instruction::transfer;
+use solana_transaction::Transaction;
 
 let from_keypair = Keypair::new();
 let from = from_keypair.pubkey();

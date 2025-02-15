@@ -1,6 +1,8 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
 use spl_associated_token_account_client::instruction::create_associated_token_account_idempotent;
+use {
+    pubkey::Pubkey, solana_keypair::Keypair, solana_signer::Signer, solana_transaction::Transaction,
+};
 
 use super::TOKEN_ID;
 

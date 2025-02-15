@@ -1,10 +1,10 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{
-    bpf_loader_upgradeable::{self, UpgradeableLoaderState},
-    pubkey::Pubkey,
-    signature::Keypair,
-    signer::Signer,
-    transaction::Transaction,
+use {
+    solana_keypair::Keypair,
+    solana_loader_v3_interface::{self, UpgradeableLoaderState},
+    solana_pubkey::Pubkey,
+    solana_signer::Signer,
+    solana_transaction::Transaction,
 };
 
 const CHUNK_SIZE: usize = 512;

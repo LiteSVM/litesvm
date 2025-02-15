@@ -4,7 +4,7 @@ use {
         util::{bigint_to_i64, bigint_to_u64},
     },
     napi::bindgen_prelude::*,
-    solana_sdk::clock::Clock as ClockOriginal,
+    solana_clock::Clock as ClockOriginal,
 };
 
 /// A representation of network time.

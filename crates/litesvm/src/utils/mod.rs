@@ -1,8 +1,9 @@
-use solana_sdk::{
-    account::{Account, AccountSharedData},
-    hash::{Hash, Hasher},
-    message::SanitizedMessage,
-    sysvar::{self, instructions::construct_instructions_data},
+use {
+    solana_account::{Account, AccountSharedData},
+    solana_hash::{Hash, Hasher},
+    solana_message::SanitizedMessage,
+    solana_sdk_ids::sysvar,
+    solana_sysvar::instructions::construct_instructions_data,
 };
 
 pub mod inner_instructions;
@@ -20,7 +21,7 @@ pub fn create_blockhash(bytes: &[u8]) -> Hash {
 pub fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedData {
     AccountSharedData::from(Account {
         data: construct_instructions_data(&message.decompile_instructions()),
-        owner: sysvar::id(),
+        owner: solana_sysvar::id(),
         ..Account::default()
     })
 }

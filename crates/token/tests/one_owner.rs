@@ -2,14 +2,14 @@ use litesvm::LiteSVM;
 use litesvm_token::{
     get_spl_account,
     spl_token::{
-        instruction::AuthorityType,
+        solana_instruction::AuthorityType,
         state::{Account, Mint},
     },
     Approve, ApproveChecked, Burn, BurnChecked, CloseAccount, CreateAccount,
     CreateAssociatedTokenAccount, CreateMint, MintTo, MintToChecked, Revoke, SetAuthority,
     Transfer, TransferChecked,
 };
-use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
+use {solana_keypair::Keypair, solana_native_token::LAMPORTS_PER_SOL, solana_signer::Signer};
 
 #[test]
 fn test() {
