@@ -2522,7 +2522,10 @@ dependencies = [
  "litesvm",
  "solana-instruction",
  "solana-keypair",
+ "solana-loader-v3-interface",
  "solana-pubkey",
+ "solana-signer",
+ "solana-transaction",
  "test-log",
 ]
 

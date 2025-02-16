@@ -1,7 +1,7 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use {
     solana_keypair::Keypair,
-    solana_loader_v3_interface::{self, UpgradeableLoaderState},
+    solana_loader_v3_interface::{instruction as bpf_loader_upgradeable, state::UpgradeableLoaderState},
     solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
@@ -93,6 +93,7 @@ pub fn deploy_upgradeable_program(
     let buffer_pk = load_upgradeable_buffer(svm, payer_kp, program_bytes)?;
 
     let lamports = svm.minimum_balance_for_rent_exemption(program_bytes.len());
+    #[allow(deprecated)]
     let tx = Transaction::new_signed_with_payer(
         &bpf_loader_upgradeable::deploy_with_max_program_len(
             &payer_pk,
