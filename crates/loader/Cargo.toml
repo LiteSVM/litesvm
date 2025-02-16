@@ -17,6 +17,7 @@ solana-signer.workspace = true
 solana-transaction.workspace = true
 
 [dev-dependencies]
+solana-message.workspace = true
 test-log.workspace = true
 
 [lints]

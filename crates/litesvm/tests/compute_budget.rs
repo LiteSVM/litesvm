@@ -1,7 +1,7 @@
 use litesvm::LiteSVM;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use {
-    solana_compute_budget::ComputeBudgetInstruction, solana_keypair::Keypair,
+    solana_compute_budget_interface::ComputeBudgetInstruction, solana_keypair::Keypair,
     solana_signer::Signer, solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
 };

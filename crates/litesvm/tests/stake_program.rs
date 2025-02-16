@@ -1,24 +1,23 @@
 // ported from https://github.com/solana-program/stake-program/blob/master/tests/tests.rs
 
 use {
-    entrypoint::ProgramResult,
     litesvm::LiteSVM,
     solana_account::Account,
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
     solana_instruction::Instruction,
-    solana_program_error::ProgramError,
+    solana_keypair::Keypair,
+    solana_program_error::{ProgramError, ProgramResult},
     solana_pubkey::Pubkey,
     solana_sdk_ids::system_program,
-    solana_signature::{Keypair, Signer},
-    solana_signer::signers::Signers,
+    solana_signer::{Signer, signers::Signers},
     solana_stake_interface::{
         self as stake,
         instruction::{self as ixn, LockupArgs},
         state::{Authorized, Delegation, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
     },
     solana_system_interface::instruction as system_instruction,
-    solana_sysvar::{clock::Clock, solana_rent::Rent},
+    solana_clock::Clock, solana_rent::Rent,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
     solana_vote_program::{
@@ -214,7 +213,7 @@ fn create_independent_stake_account_with_lockup(
             &stake.pubkey(),
             lamports,
             std::mem::size_of::<stake::state::StakeStateV2>() as u64,
-            &solana_sdk_ids::stake::program::id(),
+            &solana_sdk_ids::stake::id(),
         ),
         stake::instruction::initialize(&stake.pubkey(), authorized, lockup),
     ];
@@ -249,7 +248,7 @@ fn create_blank_stake_account_from_keypair(
             &stake.pubkey(),
             lamports,
             StakeStateV2::size_of() as u64,
-            &solana_sdk_ids::stake::program::id(),
+            &solana_sdk_ids::stake::id(),
         )],
         Some(&payer.pubkey()),
         &[&payer, &stake],
@@ -480,7 +479,7 @@ fn test_stake_initialize() {
     let account = Account {
         lamports: rent_exempt_reserve / 2,
         data: vec![0; StakeStateV2::size_of()],
-        owner: solana_sdk_ids::stake::program::id(),
+        owner: solana_sdk_ids::stake::id(),
         executable: false,
         rent_epoch: 1000,
     };
@@ -501,7 +500,7 @@ fn test_stake_initialize() {
         &stake,
         rent_exempt_reserve * 2,
         StakeStateV2::size_of() as u64 + 1,
-        &solana_sdk_ids::stake::program::id(),
+        &solana_sdk_ids::stake::id(),
     );
     process_instruction(&mut svm, &instruction, &vec![&stake_keypair], &payer).unwrap();
 
@@ -517,7 +516,7 @@ fn test_stake_initialize() {
         &stake,
         rent_exempt_reserve,
         StakeStateV2::size_of() as u64 - 1,
-        &solana_sdk_ids::stake::program::id(),
+        &solana_sdk_ids::stake::id(),
     );
     process_instruction(&mut svm, &instruction, &vec![&stake_keypair], &payer).unwrap();
 
@@ -784,7 +783,7 @@ fn test_stake_delegate() {
         data: bincode::serialize(&StakeStateV2::RewardsPool)
             .unwrap()
             .to_vec(),
-        owner: solana_sdk_ids::stake::program::id(),
+        owner: solana_sdk_ids::stake::id(),
         executable: false,
         rent_epoch: u64::MAX,
     };

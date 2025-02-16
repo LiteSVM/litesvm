@@ -1,7 +1,7 @@
 use litesvm::LiteSVM;
 use {
     solana_ed25519_program::{self as ed25519_instruction, new_ed25519_instruction},
-    solana_instruction::InstructionError,
+    solana_instruction::error::InstructionError,
     solana_keypair::Keypair,
     solana_message::Message,
     solana_secp256k1_program::{self as secp256k1_instruction, new_secp256k1_instruction},

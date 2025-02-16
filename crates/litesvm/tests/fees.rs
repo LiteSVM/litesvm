@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use litesvm::LiteSVM;
 use {
-    solana_instruction::{Instruction, InstructionError},
+    solana_instruction::{Instruction, error::InstructionError},
     solana_keypair::Keypair,
     solana_pubkey::pubkey,
     solana_rent::Rent,

@@ -3,8 +3,8 @@ use {
     solana_account::{state_traits::StateMut, ReadableAccount},
     solana_keypair::Keypair,
     solana_nonce::{
-        state::{Data, Versions},
-        State as NonceState,
+        state::{Data, State as NonceState},
+        versions::Versions,
     },
     solana_rent::Rent,
     solana_signer::Signer,

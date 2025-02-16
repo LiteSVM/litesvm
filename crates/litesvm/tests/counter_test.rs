@@ -5,7 +5,8 @@ use solana_address_lookup_table_interface::instruction::{
     create_lookup_table, extend_lookup_table,
 };
 use solana_message::VersionedMessage;
-use solana_transaction::{TransactionError, VersionedTransaction};
+use solana_transaction::versioned::VersionedTransaction;
+use solana_transaction_error::TransactionError;
 use {
     solana_account::Account, solana_keypair::Keypair, solana_pubkey::pubkey,
     solana_signature::Signature, solana_signer::Signer, solana_transaction::Transaction,
