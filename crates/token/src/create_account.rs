@@ -1,12 +1,12 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 #[cfg(not(feature = "token-2022"))]
-use solana_program_pack::Pack;
+use solana_sdk::program_pack::Pack;
+use solana_sdk::{
+    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
+    transaction::Transaction,
+};
 #[cfg(feature = "token-2022")]
 use spl_token_2022::extension::ExtensionType;
-use {
-    solana_keypair::Keypair, solana_pubkey::Pubkey, solana_signer::Signer,
-    solana_transaction::Transaction,
-};
 
 use super::{
     spl_token::{instruction::initialize_account3, state::Account},
@@ -77,7 +77,7 @@ impl<'a> CreateAccount<'a> {
         let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let payer_pk = self.payer.pubkey();
 
-        let ix1 = solana_system_interface::instruction::create_account(
+        let ix1 = system_instruction::create_account(
             &payer_pk,
             &account_pk,
             lamports,

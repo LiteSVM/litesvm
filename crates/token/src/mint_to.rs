@@ -1,9 +1,8 @@
 use super::{get_multisig_signers, spl_token::instruction::mint_to, TOKEN_ID};
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use smallvec::{smallvec, SmallVec};
-use {
-    solana_keypair::Keypair, solana_pubkey::Pubkey, solana_signer::signers::Signers,
-    solana_signer::Signer, solana_transaction::Transaction,
+use solana_sdk::{
+    pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
 };
 
 /// ### Description
