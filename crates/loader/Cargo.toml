@@ -11,7 +11,7 @@ rust-version.workspace = true
 litesvm.workspace = true
 solana-instruction.workspace = true
 solana-keypair.workspace = true
-solana-loader-v3-interface = { workspace = true, features = ["bincode"]}
+solana-loader-v3-interface = { workspace = true, features = ["bincode"] }
 solana-pubkey.workspace = true
 solana-signer.workspace = true
 solana-transaction.workspace = true
