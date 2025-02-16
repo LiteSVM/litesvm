@@ -5,7 +5,7 @@ use {
     serde::{Deserialize, Serialize},
     solana_account::{Account, ReadableAccount},
     solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState},
-    solana_instruction::{AccountMeta, error::InstructionError},
+    solana_instruction::{error::InstructionError, AccountMeta},
     solana_keypair::Keypair,
     solana_pubkey::Pubkey,
     solana_rent::Rent,

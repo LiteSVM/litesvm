@@ -492,6 +492,5 @@ pub(crate) fn convert_transaction_error(w: TransactionErrorOriginal) -> Transact
         TransactionErrorOriginal::CommitCancelled => {
             TransactionError::A(TransactionErrorFieldless::CommitCancelled)
         }
-
     }
 }

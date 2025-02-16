@@ -1,9 +1,11 @@
 use {
-    solana_account::{Account, AccountSharedData, InheritableAccountFields, DUMMY_INHERITABLE_ACCOUNT_FIELDS},
+    solana_account::{
+        Account, AccountSharedData, InheritableAccountFields, DUMMY_INHERITABLE_ACCOUNT_FIELDS,
+    },
     solana_hash::Hash,
+    solana_instructions_sysvar::construct_instructions_data,
     solana_message::SanitizedMessage,
     solana_sha256_hasher::Hasher,
-    solana_instructions_sysvar::construct_instructions_data,
 };
 
 pub mod inner_instructions;
@@ -25,7 +27,6 @@ pub fn construct_instructions_account(message: &SanitizedMessage) -> AccountShar
         ..Account::default()
     })
 }
-
 
 pub(crate) fn create_loadable_account_with_fields(
     name: &str,

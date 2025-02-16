@@ -1,7 +1,7 @@
 use {
-    solana_message::inner_instruction::{InnerInstruction, InnerInstructionsList},
     solana_instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
     solana_message::compiled_instruction::CompiledInstruction,
+    solana_message::inner_instruction::{InnerInstruction, InnerInstructionsList},
     solana_transaction_context::TransactionContext,
 };
 

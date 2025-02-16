@@ -1,7 +1,9 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use {
     solana_keypair::Keypair,
-    solana_loader_v3_interface::{instruction as bpf_loader_upgradeable, state::UpgradeableLoaderState},
+    solana_loader_v3_interface::{
+        instruction as bpf_loader_upgradeable, state::UpgradeableLoaderState,
+    },
     solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
