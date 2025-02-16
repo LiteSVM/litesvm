@@ -296,6 +296,7 @@ pub enum TransactionErrorFieldless {
     InvalidLoadedAccountsDataSizeLimit,
     UnbalancedTransaction,
     ProgramCacheHitMaxLimit,
+    CommitCancelled,
 }
 
 to_string_js!(TransactionErrorFieldless);
@@ -488,5 +489,9 @@ pub(crate) fn convert_transaction_error(w: TransactionErrorOriginal) -> Transact
         TransactionErrorOriginal::ProgramCacheHitMaxLimit => {
             TransactionError::A(TransactionErrorFieldless::ProgramCacheHitMaxLimit)
         }
+        TransactionErrorOriginal::CommitCancelled => {
+            TransactionError::A(TransactionErrorFieldless::CommitCancelled)
+        }
+
     }
 }

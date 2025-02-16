@@ -60,7 +60,7 @@ pub(crate) static BUILTINS: &[BuiltinPrototype] = &[
     },
     BuiltinPrototype {
         feature_id: None,
-        program_id: solana_address_lookup_table::program::id(),
+        program_id: solana_sdk_ids::address_lookup_table::id(),
         name: "address_lookup_table_program",
         entrypoint: solana_address_lookup_table_program::processor::Entrypoint::vm,
     },

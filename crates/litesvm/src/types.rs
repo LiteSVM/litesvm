@@ -1,7 +1,7 @@
 use {
     solana_account::AccountSharedData,
-    solana_inner_instruction::InnerInstructionsList,
-    solana_instruction::InstructionError,
+    solana_message::inner_instruction::InnerInstructionsList,
+    solana_instruction::error::InstructionError,
     solana_program_error::ProgramError,
     solana_pubkey::Pubkey,
     solana_signature::Signature,

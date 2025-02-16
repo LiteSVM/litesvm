@@ -1,4 +1,4 @@
-use solana_instruction::InstructionError;
+use solana_instruction::error::InstructionError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

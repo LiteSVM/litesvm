@@ -267,8 +267,7 @@ use solana_program_runtime::{
     invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
     loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
 };
-use solana_runtime_transaction::instructions_processor::process_compute_budget_instructions;
-use solana_svm::message_processor::MessageProcessor;
+use solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions;
 use solana_svm_transaction::svm_message::SVMMessage;
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 #[allow(deprecated)]
@@ -287,13 +286,13 @@ use {
     solana_clock::Clock,
     solana_epoch_rewards::EpochRewards,
     solana_epoch_schedule::EpochSchedule,
-    solana_feature_set::{remove_rounding_in_fee_calculation, FeatureSet},
-    solana_fee::FeeStructure,
+    solana_feature_set::FeatureSet,
+    solana_fee_structure::FeeStructure,
     solana_hash::Hash,
     solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
     solana_message::{
-        solana_inner_instruction::InnerInstructionsList, Message, SanitizedMessage,
+        inner_instruction::InnerInstructionsList, Message, SanitizedMessage,
         VersionedMessage,
     },
     solana_native_token::LAMPORTS_PER_SOL,
@@ -306,13 +305,14 @@ use {
     solana_signer::Signer,
     solana_slot_hashes::SlotHashes,
     solana_slot_history::SlotHistory,
-    solana_stake_history::StakeHistory,
+    solana_stake_interface::stake_history::StakeHistory,
     solana_sysvar::Sysvar,
     solana_sysvar_id::SysvarId,
     solana_transaction::{
-        MessageHash, SanitizedTransaction, TransactionError, VersionedTransaction,
+        sanitized::{MessageHash, SanitizedTransaction}, versioned::VersionedTransaction,
     },
     solana_transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
+    solana_transaction_error::TransactionError,
 };
 
 use crate::{
@@ -320,9 +320,10 @@ use crate::{
     builtin::BUILTINS,
     error::LiteSVMError,
     history::TransactionHistory,
+    message_processor::process_message,
     spl::load_spl_programs,
     types::{ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult},
-    utils::{create_blockhash, solana_rent::RentState},
+    utils::{create_blockhash, rent::RentState},
 };
 
 pub mod error;
@@ -332,6 +333,7 @@ mod accounts_db;
 mod builtin;
 mod format_logs;
 mod history;
+mod message_processor;
 mod precompiles;
 mod spl;
 mod utils;
@@ -456,7 +458,7 @@ impl LiteSVM {
                 .replenish(builtint.program_id, Arc::new(loaded_program));
             self.accounts.add_builtin_account(
                 builtint.program_id,
-                native_loader::create_loadable_account_for_test(builtint.name),
+                crate::utils::create_loadable_account_for_test(builtint.name),
             );
 
             if let Some(feature_id) = builtint.feature_id {
@@ -783,8 +785,7 @@ impl LiteSVM {
             false,
             self.fee_structure.lamports_per_signature,
             0,
-            self.feature_set
-                .is_active(&remove_rounding_in_fee_calculation::id()),
+            solana_fee::FeeFeatures::from(self.feature_set.as_ref()),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -793,7 +794,7 @@ impl LiteSVM {
             .enumerate()
             .map(|(i, key)| {
                 let mut account_found = true;
-                let account = if solana_sysvar::instructions::check_id(key) {
+                let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
                 } else {
                     let instruction_account = u8::try_from(i)
@@ -832,7 +833,7 @@ impl LiteSVM {
 
                 Ok((*key, account))
             })
-            .collect::<solana_transaction::Result<Vec<_>>>();
+            .collect::<solana_transaction_error::TransactionResult<Vec<_>>>();
         let mut accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
@@ -897,7 +898,7 @@ impl LiteSVM {
         match maybe_program_indices {
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(compute_budget, accounts);
-                let mut tx_result = MessageProcessor::process_message(
+                let mut tx_result = process_message(
                     tx.message(),
                     &program_indices,
                     &mut InvokeContext::new(
@@ -905,10 +906,10 @@ impl LiteSVM {
                         &mut program_cache_for_tx_batch,
                         EnvironmentConfig::new(
                             *blockhash,
-                            None,
-                            None,
-                            self.feature_set.clone(),
+                            self.fee_structure.lamports_per_signature,
                             0,
+                            &|_| 0,
+                            self.feature_set.clone(),
                             &self.accounts.sysvar_cache,
                         ),
                         Some(log_collector),
@@ -1256,7 +1257,7 @@ impl LiteSVM {
     fn check_transaction_age_inner(
         &self,
         tx: &SanitizedTransaction,
-    ) -> solana_transaction::Result<()> {
+    ) -> solana_transaction_error::TransactionResult<()> {
         let recent_blockhash = tx.message().recent_blockhash();
         if recent_blockhash == &self.latest_blockhash
             || self.check_transaction_for_nonce(
@@ -1385,7 +1386,7 @@ fn validate_fee_payer(
     payer_index: IndexOfAccount,
     rent: &Rent,
     fee: u64,
-) -> solana_transaction::Result<()> {
+) -> solana_transaction_error::TransactionResult<()> {
     if payer_account.lamports() == 0 {
         error!("Payer account {payer_address} not found.");
         return Err(TransactionError::AccountNotFound);
@@ -1399,7 +1400,7 @@ fn validate_fee_payer(
         SystemAccountKind::Nonce => {
             // Should we ever allow a fees charge to zero a nonce account's
             // balance. The state MUST be set to uninitialized in that case
-            rent.minimum_balance(solana_nonce::State::size())
+            rent.minimum_balance(solana_nonce::state::State::size())
         }
     };
 
@@ -1435,8 +1436,8 @@ fn check_rent_state_with_account(
     post_rent_state: &RentState,
     address: &Pubkey,
     account_index: IndexOfAccount,
-) -> solana_transaction::Result<()> {
-    if !solana_incinerator::check_id(address)
+) -> solana_transaction_error::TransactionResult<()> {
+    if !solana_sdk_ids::incinerator::check_id(address)
         && !post_rent_state.transition_allowed_from(pre_rent_state)
     {
         let account_index = account_index as u8;

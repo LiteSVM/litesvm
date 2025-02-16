@@ -2,13 +2,13 @@
 #![allow(clippy::new_without_default, clippy::unit_arg)]
 use {
     crate::{
-        solana_account::Account,
-        solana_compute_budget::ComputeBudget,
-        solana_feature_set::FeatureSet,
-        solana_sysvar::{
-            solana_clock::Clock, solana_epoch_rewards::EpochRewards,
-            solana_epoch_schedule::EpochSchedule, solana_rent::Rent, solana_slot_hashes::SlotHash,
-            solana_slot_history::SlotHistory, solana_stake_history::StakeHistory,
+        account::Account,
+        compute_budget::ComputeBudget,
+        feature_set::FeatureSet,
+        sysvar::{
+            clock::Clock, epoch_rewards::EpochRewards,
+            epoch_schedule::EpochSchedule, rent::Rent, slot_hashes::SlotHash,
+            slot_history::SlotHistory, stake_history::StakeHistory,
         },
         transaction_metadata::{
             FailedTransactionMetadata, SimulatedTransactionInfo, TransactionMetadata,
@@ -33,9 +33,9 @@ use {
     solana_signature::Signature,
     solana_slot_hashes::SlotHashes,
     solana_slot_history::SlotHistory as SlotHistoryOriginal,
-    solana_stake_history::StakeHistory as StakeHistoryOriginal,
-    solana_sysvar::last_restart_slot::LastRestartSlot,
-    solana_transaction::{Transaction, VersionedTransaction},
+    solana_stake_interface::stake_history::StakeHistory as StakeHistoryOriginal,
+    solana_last_restart_slot::LastRestartSlot,
+    solana_transaction::{Transaction, versioned::VersionedTransaction},
     util::{bigint_to_u64, bigint_to_usize},
 };
 mod account;
