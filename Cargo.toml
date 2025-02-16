@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
-exclude = ["node-litesvm/tests/clock-example", "token"]
+exclude = ["crates/node-litesvm/tests/clock-example", "crates/token"]
 
 [workspace.package]
 version = "0.5.0"
