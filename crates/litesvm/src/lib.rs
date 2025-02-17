@@ -23,7 +23,7 @@ In a further break from tradition, it has an ergonomic API with sane defaults an
 
 ```rust
 use litesvm::LiteSVM;
-use solana_message::Message
+use solana_message::Message;
 use solana_pubkey::Pubkey;
 use solana_system_interface::instruction::transfer;
 use solana_keypair::Keypair;
@@ -71,7 +71,7 @@ use {
     solana_pubkey::{pubkey, Pubkey},
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
-    solana_transaction::VersionedTransaction,
+    solana_transaction::versioned::VersionedTransaction,
 };
 
 fn test_logging() {
@@ -117,11 +117,11 @@ use {
     litesvm::LiteSVM,
     solana_clock::Clock,
     solana_instruction::Instruction,
-    use solana_keypair::Keypair,
+    solana_keypair::Keypair,
     solana_message::{Message, VersionedMessage},
     solana_pubkey::Pubkey,
     solana_signer::Signer,
-    solana_transaction::VersionedTransaction,
+    solana_transaction::versioned::VersionedTransaction,
 };
 
 fn test_set_clock() {
