@@ -2527,7 +2527,6 @@ dependencies = [
  "solana-instruction",
  "solana-keypair",
  "solana-loader-v3-interface",
- "solana-loader-v4-interface",
  "solana-message",
  "solana-pubkey",
  "solana-signer",
