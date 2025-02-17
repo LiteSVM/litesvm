@@ -1,6 +1,7 @@
 use litesvm::LiteSVM;
 use litesvm_loader::{deploy_upgradeable_program, set_upgrade_authority};
 use {
+    solana_feature_set::FeatureSet,
     solana_instruction::{account_meta::AccountMeta, Instruction},
     solana_keypair::Keypair,
     solana_message::Message,
@@ -43,7 +44,13 @@ fn hello_world_with_store() {
 
 #[test_log::test]
 fn hello_world_with_deploy_upgradeable() {
-    let mut svm = LiteSVM::new();
+    let mut feature_set = FeatureSet::all_enabled();
+    // need to deactivate the disable_new_loader_v3_deployments feature
+    feature_set.deactivate(&solana_feature_set::disable_new_loader_v3_deployments::id());
+    let mut svm = LiteSVM::default()
+        .with_builtins(Some(feature_set))
+        .with_lamports(1_000_000_000_000_000)
+        .with_sysvars();
 
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();

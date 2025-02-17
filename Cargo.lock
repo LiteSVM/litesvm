@@ -2523,9 +2523,11 @@ name = "litesvm-loader"
 version = "0.5.0"
 dependencies = [
  "litesvm",
+ "solana-feature-set",
  "solana-instruction",
  "solana-keypair",
  "solana-loader-v3-interface",
+ "solana-loader-v4-interface",
  "solana-message",
  "solana-pubkey",
  "solana-signer",

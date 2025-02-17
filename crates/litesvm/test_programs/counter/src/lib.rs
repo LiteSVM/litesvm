@@ -1,9 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use {
     solana_account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
     solana_msg::msg,
-    solana_program_error::ProgramError,
+    solana_program_error::{ProgramError, ProgramResult},
     solana_pubkey::{declare_id, Pubkey},
 };
 
