@@ -97,7 +97,8 @@ export const enum TransactionErrorFieldless {
   ResanitizationNeeded = 30,
   InvalidLoadedAccountsDataSizeLimit = 31,
   UnbalancedTransaction = 32,
-  ProgramCacheHitMaxLimit = 33
+  ProgramCacheHitMaxLimit = 33,
+  CommitCancelled = 34
 }
 export declare class Account {
   constructor(lamports: bigint, data: Uint8Array, owner: Uint8Array, executable: boolean, rentEpoch: bigint)

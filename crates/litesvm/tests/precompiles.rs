@@ -1,12 +1,13 @@
 use litesvm::LiteSVM;
-use solana_sdk::{
-    ed25519_instruction::{self, new_ed25519_instruction},
-    instruction::InstructionError,
-    message::Message,
-    secp256k1_instruction::{self, new_secp256k1_instruction},
-    signature::Keypair,
-    signer::Signer,
-    transaction::{Transaction, TransactionError},
+use {
+    solana_ed25519_program::{self as ed25519_instruction, new_ed25519_instruction},
+    solana_instruction::error::InstructionError,
+    solana_keypair::Keypair,
+    solana_message::Message,
+    solana_secp256k1_program::{self as secp256k1_instruction, new_secp256k1_instruction},
+    solana_signer::Signer,
+    solana_transaction::Transaction,
+    solana_transaction_error::TransactionError,
 };
 
 #[test_log::test]

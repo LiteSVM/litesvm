@@ -1,11 +1,12 @@
-use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    pubkey::Pubkey,
-    sysvar::{clock::Clock, Sysvar},
+use {
+    solana_account_info::AccountInfo,
+    solana_clock::Clock,
+    solana_program_error::ProgramResult,
+    solana_pubkey::Pubkey,
+    solana_sysvar::Sysvar,
 };
 
-solana_program::entrypoint!(process_instruction);
+solana_program_entrypoint::entrypoint!(process_instruction);
 #[allow(clippy::unnecessary_wraps)]
 pub fn process_instruction(
     _program_id: &Pubkey,

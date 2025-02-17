@@ -2,13 +2,13 @@ use std::path::PathBuf;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use litesvm::LiteSVM;
-use solana_program::{
-    instruction::{AccountMeta, Instruction},
-    pubkey::Pubkey,
+use {
+    solana_account::Account, solana_keypair::Keypair, solana_message::Message, solana_rent::Rent,
+    solana_signer::Signer, solana_transaction::Transaction,
 };
-use solana_sdk::{
-    account::Account, message::Message, rent::Rent, signature::Keypair, signer::Signer,
-    transaction::Transaction,
+use {
+    solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_pubkey::Pubkey,
 };
 
 const NUM_GREETINGS: u8 = 255;
@@ -17,7 +17,7 @@ fn make_tx(
     program_id: Pubkey,
     counter_address: Pubkey,
     payer_pk: &Pubkey,
-    blockhash: solana_program::hash::Hash,
+    blockhash: solana_hash::Hash,
     payer_kp: &Keypair,
     deduper: u8,
 ) -> Transaction {
@@ -112,7 +112,7 @@ async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
     assert_eq!(fetched, NUM_GREETINGS);
 }
 
-fn counter_acc(program_id: Pubkey) -> solana_sdk::account::Account {
+fn counter_acc(program_id: Pubkey) -> solana_account::Account {
     Account {
         lamports: 5,
         data: vec![0_u8; std::mem::size_of::<u32>()],
@@ -133,7 +133,7 @@ fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::P
         Account {
             lamports: Rent::default().minimum_balance(bytes.len()).max(1),
             data: bytes.to_vec(),
-            owner: solana_sdk::bpf_loader::id(),
+            owner: solana_sdk_ids::bpf_loader::id(),
             executable: true,
             rent_epoch: 0,
         },

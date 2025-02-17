@@ -1,9 +1,9 @@
 // This program just returns an error.
 
-use solana_program::entrypoint;
-use solana_program::{
-    account_info::AccountInfo, declare_id, entrypoint::ProgramResult, program_error::ProgramError,
-    pubkey::Pubkey,
+use solana_program_entrypoint::entrypoint;
+use {
+    solana_account_info::AccountInfo, solana_program_error::{ProgramError, ProgramResult},
+    solana_pubkey::{declare_id, Pubkey},
 };
 
 declare_id!("HvrRMSshMx3itvsyWDnWg2E3cy5h57iMaR7oVxSZJDSA");

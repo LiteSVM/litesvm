@@ -2,7 +2,7 @@ use {
     crate::{to_string_js, util::bigint_to_u64},
     bv::BitVec,
     napi::bindgen_prelude::*,
-    solana_sdk::slot_history::{Check, SlotHistory as SlotHistoryOriginal},
+    solana_slot_history::{Check, SlotHistory as SlotHistoryOriginal},
 };
 
 #[derive(Debug)]

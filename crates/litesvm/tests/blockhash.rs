@@ -1,17 +1,19 @@
 use litesvm::LiteSVM;
-use solana_program::{message::Message, pubkey::Pubkey, system_instruction::transfer};
-use solana_sdk::{
-    account::ReadableAccount,
-    account_utils::StateMut,
-    nonce::{
-        state::{Data, Versions},
-        State as NonceState,
+use {
+    solana_account::{state_traits::StateMut, ReadableAccount},
+    solana_keypair::Keypair,
+    solana_nonce::{
+        state::{Data, State as NonceState},
+        versions::Versions,
     },
-    rent::Rent,
-    signature::Keypair,
-    signer::Signer,
-    system_instruction::advance_nonce_account,
-    transaction::{Transaction, TransactionError},
+    solana_rent::Rent,
+    solana_signer::Signer,
+    solana_system_interface::instruction::advance_nonce_account,
+    solana_transaction::Transaction,
+    solana_transaction_error::TransactionError,
+};
+use {
+    solana_message::Message, solana_pubkey::Pubkey, solana_system_interface::instruction::transfer,
 };
 
 fn data_from_state(state: &NonceState) -> &Data {
@@ -44,7 +46,7 @@ fn test_invalid_blockhash() {
     let tx = Transaction::new(
         &[&from_keypair],
         Message::new(&[instruction], Some(&from)),
-        solana_sdk::hash::Hash::new_unique(),
+        solana_hash::Hash::new_unique(),
     );
     let tx_res = svm.send_transaction(tx);
 
@@ -61,7 +63,7 @@ fn test_durable_nonce() {
     let mut svm = LiteSVM::new();
 
     svm.airdrop(&from, 1_000_000_000).unwrap();
-    let create_nonce_ixns = solana_program::system_instruction::create_nonce_account(
+    let create_nonce_ixns = solana_system_interface::instruction::create_nonce_account(
         &from,
         &nonce_kp.pubkey(),
         &from,

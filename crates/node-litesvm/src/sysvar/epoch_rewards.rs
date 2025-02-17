@@ -1,7 +1,7 @@
 use {
     crate::util::{bigint_to_u128, bigint_to_u64, try_parse_hash},
     napi::bindgen_prelude::*,
-    solana_sdk::epoch_rewards::EpochRewards as EpochRewardsOriginal,
+    solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
 };
 
 /// A type to hold data for the EpochRewards sysvar.

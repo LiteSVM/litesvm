@@ -1,8 +1,8 @@
-use solana_sdk::{
-    account::{AccountSharedData, WritableAccount},
-    feature_set::FeatureSet,
-    native_loader,
-    precompiles::get_precompiles,
+use {
+    solana_account::{AccountSharedData, WritableAccount},
+    solana_feature_set::FeatureSet,
+    solana_precompiles::get_precompiles,
+    solana_sdk_ids::native_loader,
 };
 
 use crate::LiteSVM;

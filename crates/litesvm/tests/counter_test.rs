@@ -1,23 +1,21 @@
 use std::path::PathBuf;
 
 use litesvm::LiteSVM;
-use solana_program::address_lookup_table::instruction::create_lookup_table;
-use solana_program::address_lookup_table::AddressLookupTableAccount;
-use solana_program::message::VersionedMessage;
-use solana_program::{
-    address_lookup_table::instruction::extend_lookup_table,
-    instruction::{AccountMeta, Instruction},
-    message::{v0::Message as MessageV0, Message},
-    pubkey::Pubkey,
-    rent::Rent,
+use solana_address_lookup_table_interface::instruction::{
+    create_lookup_table, extend_lookup_table,
 };
-use solana_sdk::transaction::{TransactionError, VersionedTransaction};
-use solana_sdk::{
-    account::Account,
-    pubkey,
-    signature::{Keypair, Signature},
-    signer::Signer,
-    transaction::Transaction,
+use solana_message::VersionedMessage;
+use solana_transaction::versioned::VersionedTransaction;
+use solana_transaction_error::TransactionError;
+use {
+    solana_account::Account, solana_keypair::Keypair, solana_pubkey::pubkey,
+    solana_signature::Signature, solana_signer::Signer, solana_transaction::Transaction,
+};
+use {
+    solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_message::{v0::Message as MessageV0, AddressLookupTableAccount, Message},
+    solana_pubkey::Pubkey,
+    solana_rent::Rent,
 };
 
 const NUM_GREETINGS: u8 = 127;
@@ -73,7 +71,7 @@ fn make_tx(
     program_id: Pubkey,
     counter_address: Pubkey,
     payer_pk: &Pubkey,
-    blockhash: solana_program::hash::Hash,
+    blockhash: solana_hash::Hash,
     payer_kp: &Keypair,
     deduper: u8,
 ) -> Transaction {
@@ -95,14 +93,14 @@ fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::P
         Account {
             lamports: Rent::default().minimum_balance(bytes.len()).max(1),
             data: bytes.to_vec(),
-            owner: solana_sdk::bpf_loader::id(),
+            owner: solana_sdk_ids::bpf_loader::id(),
             executable: true,
             rent_epoch: 0,
         },
     );
 }
 
-fn counter_acc(program_id: Pubkey) -> solana_sdk::account::Account {
+fn counter_acc(program_id: Pubkey) -> solana_account::Account {
     Account {
         lamports: 5,
         data: vec![0_u8; std::mem::size_of::<u32>()],
@@ -171,7 +169,7 @@ fn make_tx_wrong_signature(
     program_id: Pubkey,
     counter_address: Pubkey,
     payer_pk: &Pubkey,
-    blockhash: solana_program::hash::Hash,
+    blockhash: solana_hash::Hash,
     payer_kp: &Keypair,
 ) -> Transaction {
     let msg = Message::new_with_blockhash(

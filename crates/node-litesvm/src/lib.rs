@@ -25,18 +25,16 @@ use {
         LiteSVM as LiteSVMOriginal,
     },
     napi::bindgen_prelude::*,
-    solana_sdk::{
-        clock::Clock as ClockOriginal,
-        epoch_rewards::EpochRewards as EpochRewardsOriginal,
-        epoch_schedule::EpochSchedule as EpochScheduleOriginal,
-        rent::Rent as RentOriginal,
-        signature::Signature,
-        slot_hashes::SlotHashes,
-        slot_history::SlotHistory as SlotHistoryOriginal,
-        stake_history::StakeHistory as StakeHistoryOriginal,
-        sysvar::last_restart_slot::LastRestartSlot,
-        transaction::{Transaction, VersionedTransaction},
-    },
+    solana_clock::Clock as ClockOriginal,
+    solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
+    solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
+    solana_last_restart_slot::LastRestartSlot,
+    solana_rent::Rent as RentOriginal,
+    solana_signature::Signature,
+    solana_slot_hashes::SlotHashes,
+    solana_slot_history::SlotHistory as SlotHistoryOriginal,
+    solana_stake_interface::stake_history::StakeHistory as StakeHistoryOriginal,
+    solana_transaction::{versioned::VersionedTransaction, Transaction},
     util::{bigint_to_u64, bigint_to_usize},
 };
 mod account;
@@ -354,7 +352,7 @@ impl LiteSvm {
 
     #[napi]
     pub fn set_slot_hashes(&mut self, hashes: Vec<&SlotHash>) -> Result<()> {
-        let mut intermediate: Vec<(u64, solana_sdk::hash::Hash)> = Vec::with_capacity(hashes.len());
+        let mut intermediate: Vec<(u64, solana_hash::Hash)> = Vec::with_capacity(hashes.len());
         for h in hashes {
             let converted_hash = try_parse_hash(&h.hash)?;
             intermediate.push((bigint_to_u64(&h.slot)?, converted_hash));

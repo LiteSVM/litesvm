@@ -1,7 +1,8 @@
-use solana_sdk::{
-    inner_instruction::{InnerInstruction, InnerInstructionsList},
-    instruction::{CompiledInstruction, TRANSACTION_LEVEL_STACK_HEIGHT},
-    transaction_context::TransactionContext,
+use {
+    solana_instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
+    solana_message::compiled_instruction::CompiledInstruction,
+    solana_message::inner_instruction::{InnerInstruction, InnerInstructionsList},
+    solana_transaction_context::TransactionContext,
 };
 
 /// Pulled verbatim from `solana-svm` crate, `transaction_processor.rs`

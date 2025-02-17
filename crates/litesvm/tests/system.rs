@@ -1,10 +1,10 @@
 use litesvm::LiteSVM;
-use solana_program::{
-    message::Message,
-    pubkey::Pubkey,
-    system_instruction::{create_account, transfer},
+use {solana_keypair::Keypair, solana_signer::Signer, solana_transaction::Transaction};
+use {
+    solana_message::Message,
+    solana_pubkey::Pubkey,
+    solana_system_interface::instruction::{create_account, transfer},
 };
-use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
 #[test_log::test]
 fn system_transfer() {
@@ -50,7 +50,7 @@ fn system_create_account() {
         &new_account.pubkey(),
         rent_amount,
         space as u64,
-        &solana_program::system_program::id(),
+        &solana_sdk_ids::system_program::id(),
     );
     let tx = Transaction::new(
         &[&from_keypair, &new_account],
@@ -63,5 +63,5 @@ fn system_create_account() {
 
     assert_eq!(account.lamports, rent_amount);
     assert_eq!(account.data.len(), space);
-    assert_eq!(account.owner, solana_program::system_program::id());
+    assert_eq!(account.owner, solana_sdk_ids::system_program::id());
 }

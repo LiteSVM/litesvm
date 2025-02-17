@@ -1,6 +1,6 @@
 use crate::types::TransactionResult;
 use indexmap::IndexMap;
-use solana_sdk::signature::Signature;
+use solana_signature::Signature;
 
 #[derive(Clone)]
 pub struct TransactionHistory(IndexMap<Signature, TransactionResult>);

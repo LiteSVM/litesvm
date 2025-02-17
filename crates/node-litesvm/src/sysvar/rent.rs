@@ -4,7 +4,7 @@ use {
         util::{bigint_to_u64, bigint_to_usize},
     },
     napi::bindgen_prelude::*,
-    solana_sdk::rent::{Rent as RentOriginal, RentDue},
+    solana_rent::{Rent as RentOriginal, RentDue},
 };
 
 /// Configuration of network rent.

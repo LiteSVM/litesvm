@@ -1,6 +1,6 @@
-use solana_sdk::{
-    account::{AccountSharedData, ReadableAccount},
-    rent::Rent,
+use {
+    solana_account::{AccountSharedData, ReadableAccount},
+    solana_rent::Rent,
 };
 
 //this code is taken from https://github.com/solana-labs/solana/blob/master/runtime/src/accounts/account_rent_state.rs
@@ -56,7 +56,7 @@ impl RentState {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, solana_sdk::pubkey::Pubkey};
+    use {super::*, solana_pubkey::Pubkey};
 
     #[test]
     fn test_from_account() {

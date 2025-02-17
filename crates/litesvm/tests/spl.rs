@@ -1,7 +1,7 @@
 use litesvm::LiteSVM;
-use solana_sdk::{
-    program_pack::Pack, rent::Rent, signature::Keypair, signer::Signer, system_instruction,
-    transaction::Transaction,
+use {
+    solana_keypair::Keypair, solana_program_pack::Pack, solana_rent::Rent, solana_signer::Signer,
+    solana_transaction::Transaction,
 };
 
 #[test]
@@ -15,7 +15,7 @@ fn spl_token() {
 
     svm.airdrop(&payer_pk, 1000000000).unwrap();
 
-    let create_acc_ins = system_instruction::create_account(
+    let create_acc_ins = solana_system_interface::instruction::create_account(
         &payer_pk,
         &mint_pk,
         svm.minimum_balance_for_rent_exemption(mint_len),
