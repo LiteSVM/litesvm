@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade Solana crates to 2.2.0 ([#138](https://github.com/LiteSVM/litesvm/pull/138)).
+
 ## [0.5.0] - 2025-01-23
 
 ### Added
