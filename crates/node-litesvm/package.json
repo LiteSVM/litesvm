@@ -57,7 +57,7 @@
 		"lint": "yarn lint:rust && yarn lint:js",
 		"lint:rust": "cargo clippy",
 		"lint:js": "rome check litesvm/index.ts tests/ jest.config.ts tsconfig.json package.json",
-		"test": "jest",
+		"test": "free -m && jest",
 		"tsc": "tsc && cp litesvm/internal.d.ts dist/internal.d.ts",
 		"universal": "napi universal",
 		"cargoBump": "cargo set-version --package litesvm-node --bump",
