@@ -39,7 +39,7 @@ jobs:
           RUST_BACKTRACE: 1
       
       - name: Run SPL tests
-        run: cargo test --features token-2022
+        run: cd crates/token && cargo test --features token-2022
         env:
           RUST_BACKTRACE: 1
 
