@@ -16,5 +16,5 @@ borsh.workspace = true
 solana-account-info.workspace = true
 solana-msg.workspace = true
 solana-program-entrypoint.workspace = true
-solana-program-error.workspace = true
+solana-program-error = { workspace = true, features = ["borsh"] }
 solana-pubkey.workspace = true
