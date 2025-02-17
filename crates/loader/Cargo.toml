@@ -8,7 +8,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-litesvm = { workspace = true, features = ["internal-test"] }
+litesvm = { workspace = true }
 solana-feature-set.workspace = true
 solana-instruction.workspace = true
 solana-keypair.workspace = true
