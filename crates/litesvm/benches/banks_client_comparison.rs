@@ -2,14 +2,14 @@ use std::{path::PathBuf, sync::Arc};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use litesvm::LiteSVM;
-use solana_program::{
-    instruction::{AccountMeta, Instruction},
-    pubkey::Pubkey,
-    rent::Rent,
+use {
+    solana_account::Account, solana_feature_set::FeatureSet, solana_keypair::Keypair,
+    solana_message::Message, solana_signer::Signer, solana_transaction::Transaction,
 };
-use solana_sdk::{
-    account::Account, feature_set::FeatureSet, message::Message, signature::Keypair,
-    signer::Signer, transaction::Transaction,
+use {
+    solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_pubkey::Pubkey,
+    solana_rent::Rent,
 };
 
 fn read_counter_program() -> Vec<u8> {
@@ -24,7 +24,7 @@ fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::P
         Account {
             lamports: Rent::default().minimum_balance(bytes.len()).max(1),
             data: bytes.to_vec(),
-            owner: solana_sdk::bpf_loader::id(),
+            owner: solana_sdk_ids::bpf_loader::id(),
             executable: true,
             rent_epoch: 0,
         },
@@ -37,7 +37,7 @@ fn make_tx(
     program_id: Pubkey,
     counter_address: Pubkey,
     payer_pk: &Pubkey,
-    blockhash: solana_program::hash::Hash,
+    blockhash: solana_hash::Hash,
     payer_kp: &Keypair,
     deduper: u8,
 ) -> Transaction {
@@ -136,7 +136,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-fn counter_acc(program_id: Pubkey) -> solana_sdk::account::Account {
+fn counter_acc(program_id: Pubkey) -> solana_account::Account {
     Account {
         lamports: 5,
         data: vec![0_u8; std::mem::size_of::<u32>()],

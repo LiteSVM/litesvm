@@ -1,6 +1,6 @@
 use {
     crate::util::bigint_to_u64, napi::bindgen_prelude::*,
-    solana_sdk::epoch_schedule::EpochSchedule as EpochScheduleOriginal,
+    solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
 };
 
 /// Configuration for epochs and slots.

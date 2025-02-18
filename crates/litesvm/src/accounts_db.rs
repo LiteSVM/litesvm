@@ -1,41 +1,44 @@
 use log::error;
-use solana_program::{
-    address_lookup_table::{self, error::AddressLookupError, state::AddressLookupTable},
-    bpf_loader, bpf_loader_deprecated,
-    bpf_loader_upgradeable::{self, UpgradeableLoaderState},
-    clock::Clock,
-    instruction::InstructionError,
-    loader_v4::{self, LoaderV4State},
-    message::{
-        v0::{LoadedAddresses, MessageAddressTableLookup},
-        AddressLoader, AddressLoaderError,
-    },
-    sysvar::{
-        clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
-        epoch_schedule::ID as EPOCH_SCHEDULE_ID, last_restart_slot::ID as LAST_RESTART_SLOT_ID,
-        rent::ID as RENT_ID, slot_hashes::ID as SLOT_HASHES_ID,
-        stake_history::ID as STAKE_HISTORY_ID, Sysvar,
-    },
-};
 use solana_program_runtime::{
     loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch},
     sysvar_cache::SysvarCache,
 };
-use solana_sdk::{
-    account::{AccountSharedData, ReadableAccount, WritableAccount},
-    account_utils::StateMut,
-    native_loader, nonce,
-    pubkey::Pubkey,
-    transaction::TransactionError,
-};
 use solana_system_program::{get_system_account_kind, SystemAccountKind};
 use std::{collections::HashMap, sync::Arc};
+use {
+    solana_account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
+    solana_nonce as nonce,
+    solana_pubkey::Pubkey,
+    solana_sdk_ids::native_loader,
+    solana_transaction_error::TransactionError,
+};
+use {
+    solana_address_lookup_table_interface::{error::AddressLookupError, state::AddressLookupTable},
+    solana_clock::Clock,
+    solana_instruction::error::InstructionError,
+    solana_loader_v3_interface::state::UpgradeableLoaderState,
+    solana_loader_v4_interface::state::LoaderV4State,
+    solana_message::{
+        v0::{LoadedAddresses, MessageAddressTableLookup},
+        AddressLoader, AddressLoaderError,
+    },
+    solana_sdk_ids::{
+        bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, loader_v4,
+        sysvar::{
+            clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
+            epoch_schedule::ID as EPOCH_SCHEDULE_ID, last_restart_slot::ID as LAST_RESTART_SLOT_ID,
+            rent::ID as RENT_ID, slot_hashes::ID as SLOT_HASHES_ID,
+            stake_history::ID as STAKE_HISTORY_ID,
+        },
+    },
+    solana_sysvar::Sysvar,
+};
 
 use crate::error::{InvalidSysvarDataError, LiteSVMError};
 
-const FEES_ID: Pubkey = solana_program::pubkey!("SysvarFees111111111111111111111111111111111");
+const FEES_ID: Pubkey = solana_pubkey::pubkey!("SysvarFees111111111111111111111111111111111");
 const RECENT_BLOCKHASHES_ID: Pubkey =
-    solana_program::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
+    solana_pubkey::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
 
 fn handle_sysvar<T>(
     cache: &mut SysvarCache,
@@ -121,7 +124,7 @@ impl AccountsDb {
                 });
             }
             EPOCH_REWARDS_ID => {
-                handle_sysvar::<solana_sdk::epoch_rewards::EpochRewards>(
+                handle_sysvar::<solana_epoch_rewards::EpochRewards>(
                     cache,
                     EpochRewards,
                     account,
@@ -130,7 +133,7 @@ impl AccountsDb {
                 )?;
             }
             EPOCH_SCHEDULE_ID => {
-                handle_sysvar::<solana_sdk::epoch_schedule::EpochSchedule>(
+                handle_sysvar::<solana_epoch_schedule::EpochSchedule>(
                     cache,
                     EpochSchedule,
                     account,
@@ -139,7 +142,7 @@ impl AccountsDb {
                 )?;
             }
             FEES_ID => {
-                handle_sysvar::<solana_sdk::sysvar::fees::Fees>(
+                handle_sysvar::<solana_sysvar::fees::Fees>(
                     cache,
                     Fees,
                     account,
@@ -148,7 +151,7 @@ impl AccountsDb {
                 )?;
             }
             LAST_RESTART_SLOT_ID => {
-                handle_sysvar::<solana_sdk::sysvar::last_restart_slot::LastRestartSlot>(
+                handle_sysvar::<solana_sysvar::last_restart_slot::LastRestartSlot>(
                     cache,
                     LastRestartSlot,
                     account,
@@ -157,7 +160,7 @@ impl AccountsDb {
                 )?;
             }
             RECENT_BLOCKHASHES_ID => {
-                handle_sysvar::<solana_sdk::sysvar::recent_blockhashes::RecentBlockhashes>(
+                handle_sysvar::<solana_sysvar::recent_blockhashes::RecentBlockhashes>(
                     cache,
                     RecentBlockhashes,
                     account,
@@ -166,7 +169,7 @@ impl AccountsDb {
                 )?;
             }
             RENT_ID => {
-                handle_sysvar::<solana_sdk::rent::Rent>(
+                handle_sysvar::<solana_rent::Rent>(
                     cache,
                     Rent,
                     account,
@@ -175,7 +178,7 @@ impl AccountsDb {
                 )?;
             }
             SLOT_HASHES_ID => {
-                handle_sysvar::<solana_sdk::slot_hashes::SlotHashes>(
+                handle_sysvar::<solana_slot_hashes::SlotHashes>(
                     cache,
                     SlotHashes,
                     account,
@@ -184,7 +187,7 @@ impl AccountsDb {
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar::<solana_sdk::stake_history::StakeHistory>(
+                handle_sysvar::<solana_sysvar::stake_history::StakeHistory>(
                     cache,
                     StakeHistory,
                     account,
@@ -310,7 +313,7 @@ impl AccountsDb {
             .get_account(&address_table_lookup.account_key)
             .ok_or(AddressLookupError::LookupTableAccountNotFound)?;
 
-        if table_account.owner() == &address_lookup_table::program::id() {
+        if table_account.owner() == &solana_sdk_ids::address_lookup_table::id() {
             let slot_hashes = self.sysvar_cache.get_slot_hashes().unwrap();
             let current_slot = self.sysvar_cache.get_clock().unwrap().slot;
             let lookup_table = AddressLookupTable::deserialize(table_account.data())
@@ -337,7 +340,7 @@ impl AccountsDb {
         &mut self,
         pubkey: &Pubkey,
         lamports: u64,
-    ) -> solana_sdk::transaction::Result<()> {
+    ) -> solana_transaction_error::TransactionResult<()> {
         match self.inner.get_mut(pubkey) {
             Some(account) => {
                 let min_balance = match get_system_account_kind(account) {
@@ -345,7 +348,7 @@ impl AccountsDb {
                         .sysvar_cache
                         .get_rent()
                         .unwrap()
-                        .minimum_balance(nonce::State::size()),
+                        .minimum_balance(nonce::state::State::size()),
                     _ => 0,
                 };
 

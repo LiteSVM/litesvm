@@ -15,8 +15,27 @@ bv = "0.11.1"
 litesvm = { workspace = true, features = ["nodejs-internal"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive = "2.12.2"
+solana-account = { workspace = true }
+solana-clock = { workspace = true }
 solana-compute-budget = { workspace = true }
-solana-sdk = { workspace = true, features = ["openssl-vendored"] }
+solana-epoch-rewards = { workspace = true }
+solana-epoch-schedule = { workspace = true }
+solana-feature-set = { workspace = true }
+solana-hash = { workspace = true }
+solana-instruction = { workspace = true }
+solana-last-restart-slot = { workspace = true }
+solana-message = { workspace = true }
+solana-precompiles = { workspace = true, features = ["openssl-vendored"]}
+solana-pubkey = { workspace = true }
+solana-rent = { workspace = true }
+solana-signature = { workspace = true }
+solana-slot-hashes = { workspace = true }
+solana-slot-history = { workspace = true }
+solana-stake-interface = { workspace = true }
+solana-sysvar = { workspace = true }
+solana-transaction = { workspace = true }
+solana-transaction-context = { workspace = true }
+solana-transaction-error = { workspace = true }
 
 [build-dependencies]
 napi-build = "2.0.1"

@@ -8,13 +8,17 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-litesvm.workspace = true
-solana-sdk.workspace = true
-
-[dev-dependencies]
+litesvm = { workspace = true }
+solana-feature-set.workspace = true
 solana-instruction.workspace = true
 solana-keypair.workspace = true
+solana-loader-v3-interface = { workspace = true, features = ["bincode"] }
 solana-pubkey.workspace = true
+solana-signer.workspace = true
+solana-transaction.workspace = true
+
+[dev-dependencies]
+solana-message.workspace = true
 test-log.workspace = true
 
 [lints]

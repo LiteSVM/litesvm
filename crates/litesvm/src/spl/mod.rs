@@ -1,4 +1,4 @@
-use solana_sdk::pubkey;
+use solana_pubkey::pubkey;
 
 use crate::LiteSVM;
 
