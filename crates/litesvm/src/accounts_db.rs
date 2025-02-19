@@ -240,7 +240,10 @@ impl AccountsDb {
                 program_account.data().len(),
                 &mut LoadProgramMetrics::default(),
             )
-            .map_err(|_| InstructionError::InvalidAccountData)
+            .map_err(|e| {
+                error!("Failed to load program: {e:?}");
+                InstructionError::InvalidAccountData
+            })
         } else if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
