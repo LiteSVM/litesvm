@@ -272,8 +272,8 @@ impl AccountsDb {
                         .data()
                         .len()
                         .saturating_add(program_data.len()),
-                    metrics).map_err(|_| {
-                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable.");
+                    metrics).map_err(|e| {
+                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable: {e:?}");
                         InstructionError::InvalidAccountData
                     })
             } else {
