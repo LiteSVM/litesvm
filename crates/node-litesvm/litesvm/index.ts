@@ -145,13 +145,21 @@ export class LiteSVM {
 	}
 
 	/**
-	 * Adds the standard builtin programs.
-	 * @param featureSet if provided, decides what builtins to add based on what
-	 *  features are active
+	 * Set the FeatureSet used by the VM instance.
+	 * @param featureSet The FeatureSet to use.
 	 * @returns The modified LiteSVM instance
 	 */
-	withBuiltins(featureSet?: FeatureSet): LiteSVM {
-		this.inner.setBuiltins(featureSet);
+	withFeatureSet(featureSet: FeatureSet): LiteSVM {
+		this.inner.setFeatureSet(featureSet);
+		return this;
+	}
+
+	/**
+	 * Adds the standard builtin programs. Use `withFeatureSet` beforehand to change change what builtins are added.
+	 * @returns The modified LiteSVM instance
+	 */
+	withBuiltins(): LiteSVM {
+		this.inner.setBuiltins();
 		return this;
 	}
 
@@ -196,13 +204,11 @@ export class LiteSVM {
 	}
 
 	/**
-	 * Adds the standard precompiles.
-	 * @param featureSet if provided, decides what precompiles to add based on what
-	 *  features are active
+	 * Adds the standard precompiles. Use `withFeatureSet` beforehand to change change what builtins are added.
 	 * @returns The modified LiteSVM instance
 	 */
-	withPrecompiles(featureSet?: FeatureSet): LiteSVM {
-		this.inner.setPrecompiles(featureSet);
+	withPrecompiles(): LiteSVM {
+		this.inner.setPrecompiles();
 		return this;
 	}
 

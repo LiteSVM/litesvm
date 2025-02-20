@@ -125,8 +125,14 @@ impl LiteSvm {
 
     #[napi]
     /// Changes the default builtins
-    pub fn set_builtins(&mut self, feature_set: Option<&FeatureSet>) {
-        self.0.set_builtins(feature_set.map(|x| x.0.clone()));
+    pub fn set_feature_set(&mut self, feature_set: &FeatureSet) {
+        self.0.set_feature_set(feature_set.0.clone());
+    }
+
+    #[napi]
+    /// Changes the default builtins
+    pub fn set_builtins(&mut self) {
+        self.0.set_builtins();
     }
 
     #[napi]
@@ -160,8 +166,8 @@ impl LiteSvm {
     }
 
     #[napi]
-    pub fn set_precompiles(&mut self, feature_set: Option<&FeatureSet>) {
-        self.0.set_precompiles(feature_set.map(|x| x.0.clone()));
+    pub fn set_precompiles(&mut self) {
+        self.0.set_precompiles();
     }
 
     #[napi]
