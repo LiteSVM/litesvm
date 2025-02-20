@@ -240,7 +240,10 @@ impl AccountsDb {
                 program_account.data().len(),
                 &mut LoadProgramMetrics::default(),
             )
-            .map_err(|_| InstructionError::InvalidAccountData)
+            .map_err(|e| {
+                error!("Failed to load program: {e:?}");
+                InstructionError::InvalidAccountData
+            })
         } else if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
@@ -269,8 +272,8 @@ impl AccountsDb {
                         .data()
                         .len()
                         .saturating_add(program_data.len()),
-                    metrics).map_err(|_| {
-                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable.");
+                    metrics).map_err(|e| {
+                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable: {e:?}");
                         InstructionError::InvalidAccountData
                     })
             } else {
