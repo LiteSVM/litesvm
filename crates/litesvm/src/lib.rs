@@ -493,7 +493,7 @@ impl LiteSVM {
     }
 
     /// Changes the default builtins.
-    // 
+    //
     // Use `with_feature_set` beforehand to change change what builtins are added.
     pub fn with_builtins(mut self) -> Self {
         self.set_builtins();
@@ -553,7 +553,7 @@ impl LiteSVM {
     }
 
     /// Adds the standard precompiles to the VM.
-    // 
+    //
     // Use `with_feature_set` beforehand to change change what precompiles are added.
     pub fn with_precompiles(mut self) -> Self {
         self.set_precompiles();
