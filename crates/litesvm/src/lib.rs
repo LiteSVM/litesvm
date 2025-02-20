@@ -342,7 +342,7 @@ mod utils;
 pub struct LiteSVM {
     accounts: AccountsDb,
     airdrop_kp: [u8; 64],
-    feature_set: Arc<FeatureSet>,
+    feature_set: FeatureSet,
     latest_blockhash: Hash,
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
@@ -479,7 +479,7 @@ impl LiteSVM {
 
         self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
         self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
-        self.feature_set = Arc::new(feature_set);
+        self.feature_set = feature_set;
     }
 
     /// Changes the default builtins.
@@ -785,7 +785,7 @@ impl LiteSVM {
             false,
             self.fee_structure.lamports_per_signature,
             0,
-            solana_fee::FeeFeatures::from(self.feature_set.as_ref()),
+            solana_fee::FeeFeatures::from(&self.feature_set),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -909,7 +909,7 @@ impl LiteSVM {
                             self.fee_structure.lamports_per_signature,
                             0,
                             &|_| 0,
-                            self.feature_set.clone(),
+                            Arc::new(self.feature_set.clone()),
                             &self.accounts.sysvar_cache,
                         ),
                         Some(log_collector),
