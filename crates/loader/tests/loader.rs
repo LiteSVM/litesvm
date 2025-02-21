@@ -48,7 +48,8 @@ fn hello_world_with_deploy_upgradeable() {
     // need to deactivate the disable_new_loader_v3_deployments feature
     feature_set.deactivate(&solana_feature_set::disable_new_loader_v3_deployments::id());
     let mut svm = LiteSVM::default()
-        .with_builtins(Some(feature_set))
+        .with_feature_set(feature_set)
+        .with_builtins()
         .with_lamports(1_000_000_000_000_000)
         .with_sysvars();
 

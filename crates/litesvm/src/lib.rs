@@ -342,7 +342,7 @@ mod utils;
 pub struct LiteSVM {
     accounts: AccountsDb,
     airdrop_kp: [u8; 64],
-    feature_set: Arc<FeatureSet>,
+    feature_set: FeatureSet,
     latest_blockhash: Hash,
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
@@ -373,10 +373,11 @@ impl LiteSVM {
     /// Creates the basic test environment.
     pub fn new() -> Self {
         LiteSVM::default()
-            .with_builtins(None)
+            .with_feature_set(FeatureSet::all_enabled())
+            .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
-            .with_precompiles(None)
+            .with_precompiles()
             .with_spl_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
@@ -446,28 +447,38 @@ impl LiteSVM {
         self
     }
 
+    /// Set the FeatureSet used by the VM instance.
+    pub fn with_feature_set(mut self, feature_set: FeatureSet) -> Self {
+        self.set_feature_set(feature_set);
+        self
+    }
+
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
-    fn set_builtins(&mut self, feature_set: Option<FeatureSet>) {
-        let mut feature_set = feature_set.unwrap_or(FeatureSet::all_enabled());
+    fn set_feature_set(&mut self, feature_set: FeatureSet) {
+        self.feature_set = feature_set;
+    }
 
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_builtins(&mut self) {
         BUILTINS.iter().for_each(|builtint| {
-            let loaded_program =
-                ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
-            self.accounts
-                .programs_cache
-                .replenish(builtint.program_id, Arc::new(loaded_program));
-            self.accounts.add_builtin_account(
-                builtint.program_id,
-                crate::utils::create_loadable_account_for_test(builtint.name),
-            );
-
-            if let Some(feature_id) = builtint.feature_id {
-                feature_set.activate(&feature_id, 0);
+            if builtint
+                .feature_id
+                .map_or(true, |x| self.feature_set.is_active(&x))
+            {
+                let loaded_program =
+                    ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
+                self.accounts
+                    .programs_cache
+                    .replenish(builtint.program_id, Arc::new(loaded_program));
+                self.accounts.add_builtin_account(
+                    builtint.program_id,
+                    crate::utils::create_loadable_account_for_test(builtint.name),
+                );
             }
         });
 
         let program_runtime_v1 = create_program_runtime_environment_v1(
-            &feature_set,
+            &self.feature_set,
             &ComputeBudget::default(),
             false,
             true,
@@ -479,12 +490,13 @@ impl LiteSVM {
 
         self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
         self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
-        self.feature_set = Arc::new(feature_set);
     }
 
     /// Changes the default builtins.
-    pub fn with_builtins(mut self, feature_set: Option<FeatureSet>) -> Self {
-        self.set_builtins(feature_set);
+    //
+    // Use `with_feature_set` beforehand to change change what builtins are added.
+    pub fn with_builtins(mut self) -> Self {
+        self.set_builtins();
         self
     }
 
@@ -536,13 +548,15 @@ impl LiteSVM {
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
-    fn set_precompiles(&mut self, feature_set: Option<FeatureSet>) {
-        let feature_set = feature_set.unwrap_or_else(FeatureSet::all_enabled);
-        load_precompiles(self, feature_set);
+    fn set_precompiles(&mut self) {
+        load_precompiles(self);
     }
 
-    pub fn with_precompiles(mut self, feature_set: Option<FeatureSet>) -> Self {
-        self.set_precompiles(feature_set);
+    /// Adds the standard precompiles to the VM.
+    //
+    // Use `with_feature_set` beforehand to change change what precompiles are added.
+    pub fn with_precompiles(mut self) -> Self {
+        self.set_precompiles();
         self
     }
 
@@ -785,7 +799,7 @@ impl LiteSVM {
             false,
             self.fee_structure.lamports_per_signature,
             0,
-            solana_fee::FeeFeatures::from(self.feature_set.as_ref()),
+            solana_fee::FeeFeatures::from(&self.feature_set),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -909,7 +923,7 @@ impl LiteSVM {
                             self.fee_structure.lamports_per_signature,
                             0,
                             &|_| 0,
-                            self.feature_set.clone(),
+                            Arc::new(self.feature_set.clone()),
                             &self.accounts.sysvar_cache,
                         ),
                         Some(log_collector),

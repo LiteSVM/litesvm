@@ -5,6 +5,7 @@
 ### Changed
 
 - Upgrade Solana crates to 2.2.0 ([#138](https://github.com/LiteSVM/litesvm/pull/138)).
+- Consolidate feature set management into a `with_feature_set` method and remove the `feature_set` param from `with_builtins` and `with_precompiles` ([#141](https://github.com/LiteSVM/litesvm/pull/141)).
 
 ## [0.5.0] - 2025-01-23
 

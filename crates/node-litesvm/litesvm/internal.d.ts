@@ -525,7 +525,9 @@ export declare class LiteSvm {
   /** Includes the default sysvars */
   setSysvars(): void
   /** Changes the default builtins */
-  setBuiltins(featureSet?: FeatureSet | undefined | null): void
+  setFeatureSet(featureSet: FeatureSet): void
+  /** Changes the default builtins */
+  setBuiltins(): void
   /** Changes the initial lamports in LiteSVM's airdrop account */
   setLamports(lamports: bigint): void
   /** Includes the standard SPL programs */
@@ -536,7 +538,7 @@ export declare class LiteSvm {
    */
   setTransactionHistory(capacity: bigint): void
   setLogBytesLimit(limit?: bigint | undefined | null): void
-  setPrecompiles(featureSet?: FeatureSet | undefined | null): void
+  setPrecompiles(): void
   /** Returns minimum balance required to make an account with specified data length rent exempt. */
   minimumBalanceForRentExemption(dataLen: bigint): bigint
   /** Returns all information associated with the account of the provided pubkey. */
