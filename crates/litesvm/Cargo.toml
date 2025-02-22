@@ -13,6 +13,7 @@ internal-test = []
 nodejs-internal = ["dep:qualifier_attr"]
 
 [dependencies]
+solana-epoch-rewards.workspace = true
 ansi_term.workspace = true
 bincode.workspace = true
 indexmap.workspace = true
@@ -29,7 +30,6 @@ solana-compute-budget.workspace = true
 solana-compute-budget-instruction.workspace = true
 solana-compute-budget-program.workspace = true
 solana-config-program.workspace = true
-solana-epoch-rewards.workspace = true
 solana-epoch-schedule.workspace = true
 solana-feature-set.workspace = true
 solana-fee.workspace = true
@@ -72,6 +72,9 @@ solana-transaction = { workspace = true, features = ["precompiles", "verify"] }
 solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
 solana-vote-program.workspace = true
+solana-zk-elgamal-proof-program.workspace = true
+solana-zk-token-proof-program.workspace = true
+solana-zk-token-sdk.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
