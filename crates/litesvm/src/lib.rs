@@ -260,6 +260,7 @@ use precompiles::load_precompiles;
 use qualifier_attr::qualifiers;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v2;
+use solana_builtins::BUILTINS;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_compute_budget::compute_budget_limits::ComputeBudgetLimits;
 use solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions;
@@ -317,7 +318,6 @@ use {
 
 use crate::{
     accounts_db::AccountsDb,
-    builtin::BUILTINS,
     error::LiteSVMError,
     history::TransactionHistory,
     message_processor::process_message,
@@ -330,7 +330,6 @@ pub mod error;
 pub mod types;
 
 mod accounts_db;
-mod builtin;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -462,7 +461,7 @@ impl LiteSVM {
     fn set_builtins(&mut self) {
         BUILTINS.iter().for_each(|builtint| {
             if builtint
-                .feature_id
+                .enable_feature_id
                 .map_or(true, |x| self.feature_set.is_active(&x))
             {
                 let loaded_program =

@@ -2457,6 +2457,7 @@ dependencies = [
  "solana-address-lookup-table-interface",
  "solana-address-lookup-table-program",
  "solana-bpf-loader-program",
+ "solana-builtins",
  "solana-clock",
  "solana-compute-budget",
  "solana-compute-budget-instruction",

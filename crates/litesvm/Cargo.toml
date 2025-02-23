@@ -25,6 +25,7 @@ solana-account.workspace = true
 solana-address-lookup-table-interface.workspace = true
 solana-address-lookup-table-program.workspace = true
 solana-bpf-loader-program.workspace = true
+solana-builtins.workspace = true
 solana-clock.workspace = true
 solana-compute-budget.workspace = true
 solana-compute-budget-instruction.workspace = true
