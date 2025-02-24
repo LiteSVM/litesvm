@@ -6,6 +6,7 @@
 
 - Upgrade Solana crates to 2.2.0 ([#138](https://github.com/LiteSVM/litesvm/pull/138)).
 - Consolidate feature set management into a `with_feature_set` method and remove the `feature_set` param from `with_builtins` and `with_precompiles` ([#141](https://github.com/LiteSVM/litesvm/pull/141)).
+- Update builtins and downgrade `spl-token-2022` to `v5.0.2` to match mainnet version ([#130](https://github.com/LiteSVM/litesvm/pull/130)).
 
 ## [0.5.0] - 2025-01-23
 
