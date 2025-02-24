@@ -1,19 +1,18 @@
-use litesvm::LiteSVM;
 use {
+    litesvm::LiteSVM,
     solana_account::{state_traits::StateMut, ReadableAccount},
     solana_keypair::Keypair,
+    solana_message::Message,
     solana_nonce::{
         state::{Data, State as NonceState},
         versions::Versions,
     },
+    solana_pubkey::Pubkey,
     solana_rent::Rent,
     solana_signer::Signer,
-    solana_system_interface::instruction::advance_nonce_account,
+    solana_system_interface::instruction::{advance_nonce_account, transfer},
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
-};
-use {
-    solana_message::Message, solana_pubkey::Pubkey, solana_system_interface::instruction::transfer,
 };
 
 fn data_from_state(state: &NonceState) -> &Data {

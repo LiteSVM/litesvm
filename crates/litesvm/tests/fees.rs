@@ -1,17 +1,15 @@
-use std::path::PathBuf;
-
-use litesvm::LiteSVM;
 use {
+    litesvm::LiteSVM,
     solana_instruction::{error::InstructionError, Instruction},
     solana_keypair::Keypair,
-    solana_pubkey::pubkey,
+    solana_message::Message,
+    solana_pubkey::{pubkey, Pubkey},
     solana_rent::Rent,
     solana_signer::Signer,
+    solana_system_interface::instruction::transfer,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
-};
-use {
-    solana_message::Message, solana_pubkey::Pubkey, solana_system_interface::instruction::transfer,
+    std::path::PathBuf,
 };
 
 #[test_log::test]

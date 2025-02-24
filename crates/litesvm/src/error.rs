@@ -1,5 +1,4 @@
-use solana_instruction::error::InstructionError;
-use thiserror::Error;
+use {solana_instruction::error::InstructionError, thiserror::Error};
 
 #[derive(Error, Debug)]
 pub enum InvalidSysvarDataError {
