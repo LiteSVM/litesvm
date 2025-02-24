@@ -1,6 +1,4 @@
-use std::fmt::Write;
-
-use ansi_term::Colour;
+use {ansi_term::Colour, std::fmt::Write};
 
 const PROGRAM_LOG: &str = "Program log:";
 

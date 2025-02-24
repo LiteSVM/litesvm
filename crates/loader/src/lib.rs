@@ -1,5 +1,5 @@
-use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 use {
+    litesvm::{types::FailedTransactionMetadata, LiteSVM},
     solana_keypair::Keypair,
     solana_loader_v3_interface::{
         instruction as bpf_loader_upgradeable, state::UpgradeableLoaderState,

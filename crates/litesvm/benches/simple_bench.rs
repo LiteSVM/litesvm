@@ -1,14 +1,14 @@
-use std::path::PathBuf;
-
-use criterion::{criterion_group, criterion_main, Criterion};
-use litesvm::LiteSVM;
 use {
-    solana_account::Account, solana_keypair::Keypair, solana_message::Message,
-    solana_signer::Signer, solana_transaction::Transaction,
-};
-use {
+    criterion::{criterion_group, criterion_main, Criterion},
+    litesvm::LiteSVM,
+    solana_account::Account,
     solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_keypair::Keypair,
+    solana_message::Message,
     solana_pubkey::Pubkey,
+    solana_signer::Signer,
+    solana_transaction::Transaction,
+    std::path::PathBuf,
 };
 
 fn read_counter_program() -> Vec<u8> {

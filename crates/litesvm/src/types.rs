@@ -1,4 +1,5 @@
 use {
+    crate::format_logs::format_logs,
     solana_account::AccountSharedData,
     solana_instruction::error::InstructionError,
     solana_message::inner_instruction::InnerInstructionsList,
@@ -8,8 +9,6 @@ use {
     solana_transaction_context::TransactionReturnData,
     solana_transaction_error::{TransactionError, TransactionResult as Result},
 };
-
-use crate::format_logs::format_logs;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

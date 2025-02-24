@@ -11,8 +11,10 @@ use {
     },
     napi::bindgen_prelude::*,
     solana_account::Account as AccountOriginal,
-    solana_message::compiled_instruction::CompiledInstruction as CompiledInstructionOriginal,
-    solana_message::inner_instruction::InnerInstruction as InnerInstructionOriginal,
+    solana_message::{
+        compiled_instruction::CompiledInstruction as CompiledInstructionOriginal,
+        inner_instruction::InnerInstruction as InnerInstructionOriginal,
+    },
     solana_transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
 };
 

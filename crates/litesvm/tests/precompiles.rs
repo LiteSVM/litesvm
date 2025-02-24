@@ -1,5 +1,5 @@
-use litesvm::LiteSVM;
 use {
+    litesvm::LiteSVM,
     solana_ed25519_program::{self as ed25519_instruction, new_ed25519_instruction},
     solana_instruction::error::InstructionError,
     solana_keypair::Keypair,

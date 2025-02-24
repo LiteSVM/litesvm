@@ -60,8 +60,14 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           
+      - name: Rustup install nightly
+        run: rustup toolchain install nightly
+        
+      - name: Rustup install rustfmt
+        run: rustup component add rustfmt --toolchain nightly
+
       - name: Run cargo fmt
-        run: cargo fmt --all -- --check
+        run: cargo +nightly fmt --all -- --check
 
       - name: Run cargo clippy
         run: cargo clippy --all-targets -- -D warnings

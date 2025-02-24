@@ -1,7 +1,6 @@
-use litesvm::LiteSVM;
 use {
-    solana_keypair::Keypair, solana_program_pack::Pack, solana_rent::Rent, solana_signer::Signer,
-    solana_transaction::Transaction,
+    litesvm::LiteSVM, solana_keypair::Keypair, solana_program_pack::Pack, solana_rent::Rent,
+    solana_signer::Signer, solana_transaction::Transaction,
 };
 
 #[test]

@@ -1,15 +1,16 @@
-use std::{path::PathBuf, sync::Arc};
-
-use criterion::{criterion_group, criterion_main, Criterion};
-use litesvm::LiteSVM;
 use {
-    solana_account::Account, solana_feature_set::FeatureSet, solana_keypair::Keypair,
-    solana_message::Message, solana_signer::Signer, solana_transaction::Transaction,
-};
-use {
+    criterion::{criterion_group, criterion_main, Criterion},
+    litesvm::LiteSVM,
+    solana_account::Account,
+    solana_feature_set::FeatureSet,
     solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_keypair::Keypair,
+    solana_message::Message,
     solana_pubkey::Pubkey,
     solana_rent::Rent,
+    solana_signer::Signer,
+    solana_transaction::Transaction,
+    std::{path::PathBuf, sync::Arc},
 };
 
 fn read_counter_program() -> Vec<u8> {
