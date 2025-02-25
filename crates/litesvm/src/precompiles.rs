@@ -1,10 +1,9 @@
 use {
+    crate::LiteSVM,
     solana_account::{AccountSharedData, WritableAccount},
     solana_precompiles::get_precompiles,
     solana_sdk_ids::native_loader,
 };
-
-use crate::LiteSVM;
 
 pub(crate) fn load_precompiles(svm: &mut LiteSVM) {
     let mut account = AccountSharedData::default();

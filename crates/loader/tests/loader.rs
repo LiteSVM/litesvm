@@ -1,6 +1,7 @@
-use litesvm::LiteSVM;
-use litesvm_loader::{deploy_upgradeable_program, set_upgrade_authority};
 use {
+    crate::programs_bytes::HELLO_WORLD_BYTES,
+    litesvm::LiteSVM,
+    litesvm_loader::{deploy_upgradeable_program, set_upgrade_authority},
     solana_feature_set::FeatureSet,
     solana_instruction::{account_meta::AccountMeta, Instruction},
     solana_keypair::Keypair,
@@ -8,8 +9,6 @@ use {
     solana_signer::Signer,
     solana_transaction::Transaction,
 };
-
-use crate::programs_bytes::HELLO_WORLD_BYTES;
 
 mod programs_bytes;
 

@@ -1,6 +1,4 @@
-use solana_pubkey::pubkey;
-
-use crate::LiteSVM;
+use {crate::LiteSVM, solana_pubkey::pubkey};
 
 pub fn load_spl_programs(svm: &mut LiteSVM) {
     svm.add_program(
