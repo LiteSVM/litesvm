@@ -497,6 +497,7 @@ export declare class TransactionMetadata {
   innerInstructions(): Array<Array<InnerInstruction>>
   computeUnitsConsumed(): bigint
   returnData(): TransactionReturnData
+  prettyLogs(): string
   toString(): string
 }
 export declare class FailedTransactionMetadata {
