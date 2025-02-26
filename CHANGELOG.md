@@ -2,10 +2,17 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-02-26
+
+### Added
+
+- Add `pretty_logs` method to `TransactionMetadata` ([#134](https://github.com/LiteSVM/litesvm/pull/134)).
+- Add error logging when loading a program ([#141](https://github.com/LiteSVM/litesvm/pull/141)).
+
 ### Changed
 
 - Upgrade Solana crates to 2.2.0 ([#138](https://github.com/LiteSVM/litesvm/pull/138)).
-- Consolidate feature set management into a `with_feature_set` method and remove the `feature_set` param from `with_builtins` and `with_precompiles` ([#141](https://github.com/LiteSVM/litesvm/pull/141)).
+- Consolidate feature set management into a `with_feature_set` method and remove the `feature_set` param from `with_builtins` and `with_precompiles` ([#142](https://github.com/LiteSVM/litesvm/pull/142)).
 - Update builtins and downgrade `spl-token-2022` to `v5.0.2` to match mainnet version ([#130](https://github.com/LiteSVM/litesvm/pull/130)).
 
 ## [0.5.0] - 2025-01-23
@@ -81,7 +88,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/LiteSVM/litesvm/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/LiteSVM/litesvm/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/LiteSVM/litesvm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/LiteSVM/litesvm/compare/v0.2.1...v0.3.0

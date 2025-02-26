@@ -27,7 +27,6 @@ solana-builtins.workspace = true
 solana-clock.workspace = true
 solana-compute-budget.workspace = true
 solana-compute-budget-instruction.workspace = true
-solana-compute-budget-program.workspace = true
 solana-config-program.workspace = true
 solana-epoch-rewards.workspace = true
 solana-epoch-schedule.workspace = true
