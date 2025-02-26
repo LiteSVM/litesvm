@@ -1,7 +1,8 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{
-    program_pack::Pack, pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
-    transaction::Transaction,
+use {
+    solana_keypair::Keypair, solana_program_pack::Pack, solana_pubkey::Pubkey,
+    solana_signer::Signer, solana_system_interface::instruction::create_account,
+    solana_transaction::Transaction,
 };
 
 use super::{
@@ -51,7 +52,7 @@ impl<'a> CreateMultisig<'a> {
         let multisig_kp = self.multisig_kp.unwrap_or(Keypair::new());
         let multisig_pk = multisig_kp.pubkey();
 
-        let ix1 = system_instruction::create_account(
+        let ix1 = create_account(
             &self.payer.pubkey(),
             &multisig_pk,
             self.svm.minimum_balance_for_rent_exemption(multisig_len),

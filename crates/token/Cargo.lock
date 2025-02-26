@@ -1557,7 +1557,6 @@ version = "0.5.0"
 dependencies = [
  "litesvm",
  "smallvec",
- "solana-sdk",
  "spl-associated-token-account-client",
  "spl-token",
  "spl-token-2022",
