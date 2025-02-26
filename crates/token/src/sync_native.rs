@@ -1,7 +1,11 @@
-use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
-
-use super::{spl_token::instruction::sync_native, TOKEN_ID};
+use {
+    super::{spl_token::instruction::sync_native, TOKEN_ID},
+    litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_keypair::Keypair,
+    solana_pubkey::Pubkey,
+    solana_signer::Signer,
+    solana_transaction::Transaction,
+};
 
 /// ### Description
 /// Builder for the [`sync_native`] instruction.
