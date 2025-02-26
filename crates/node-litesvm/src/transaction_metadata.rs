@@ -124,6 +124,11 @@ impl TransactionMetadata {
     pub fn return_data(&self) -> TransactionReturnData {
         TransactionReturnData(self.0.return_data.clone())
     }
+
+    #[napi]
+    pub fn pretty_logs(&self) -> String {
+        self.0.pretty_logs()
+    }
 }
 
 to_string_js!(TransactionMetadata);
