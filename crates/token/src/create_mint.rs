@@ -1,12 +1,12 @@
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
 #[cfg(not(feature = "token-2022"))]
-use solana_sdk::program_pack::Pack;
-use solana_sdk::{
-    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction::create_account,
-    transaction::Transaction,
-};
+use solana_program_pack::Pack;
 #[cfg(feature = "token-2022")]
 use spl_token_2022::extension::ExtensionType;
+use {
+    solana_keypair::Keypair, solana_pubkey::Pubkey, solana_signer::Signer,
+    solana_system_interface::instruction::create_account, solana_transaction::Transaction,
+};
 
 use super::{
     spl_token::{instruction::initialize_mint2, state::Mint},

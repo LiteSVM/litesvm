@@ -49,10 +49,10 @@ pub use spl_token_2022 as spl_token;
 pub use spl_token;
 
 use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{
-    program_pack::{IsInitialized, Pack},
-    pubkey::Pubkey,
-    transaction::TransactionError,
+use {
+    solana_program_pack::{IsInitialized, Pack},
+    solana_pubkey::Pubkey,
+    solana_transaction_error::TransactionError,
 };
 
 pub const TOKEN_ID: Pubkey = spl_token::ID;

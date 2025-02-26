@@ -8,7 +8,7 @@ use litesvm_token::{
     Approve, ApproveChecked, Burn, BurnChecked, CloseAccount, CreateAccount, CreateMint,
     CreateMultisig, MintTo, MintToChecked, Revoke, SetAuthority, Transfer, TransferChecked,
 };
-use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
+use {solana_keypair::Keypair, solana_native_token::LAMPORTS_PER_SOL, solana_signer::Signer};
 
 #[test]
 fn test() {
