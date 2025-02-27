@@ -33,6 +33,7 @@
 		"@types/jest": "^29.5.3",
 		"@types/markdown-it": "^14.1.0",
 		"@types/node-fetch": "^2.6.4",
+		"bigint-buffer": "^1.1.5",
 		"jest": "^29.6.1",
 		"markdown-it": "^14.1.0",
 		"markdown-it-include": "^2.0.0",
@@ -51,7 +52,7 @@
 	"scripts": {
 		"artifacts": "napi artifacts",
 		"build": "napi build --platform --release litesvm --dts internal.d.ts --js internal.js",
-		"build:debug": "napi build --platform litesvm",
+		"build:debug": "napi build --platform litesvm --dts internal.d.ts --js internal.js",
 		"prepublishOnly": "napi prepublish -t npm",
 		"fmt": "yarn fmt:rust && yarn fmt:js",
 		"fmt:rust": "cargo fmt",
