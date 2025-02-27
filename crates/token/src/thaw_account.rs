@@ -1,10 +1,12 @@
-use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use smallvec::{smallvec, SmallVec};
-use solana_sdk::{
-    pubkey::Pubkey, signature::Keypair, signer::Signer, signers::Signers, transaction::Transaction,
+use {
+    super::{get_multisig_signers, spl_token::instruction::thaw_account, TOKEN_ID},
+    litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    smallvec::{smallvec, SmallVec},
+    solana_keypair::Keypair,
+    solana_pubkey::Pubkey,
+    solana_signer::{signers::Signers, Signer},
+    solana_transaction::Transaction,
 };
-
-use super::{get_multisig_signers, spl_token::instruction::thaw_account, TOKEN_ID};
 
 /// ### Description
 /// Builder for the [`thaw_account`] instruction.

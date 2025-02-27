@@ -1,6 +1,11 @@
-use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction};
-use spl_token_2022::instruction::create_native_mint;
+use {
+    litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_keypair::Keypair,
+    solana_pubkey::Pubkey,
+    solana_signer::Signer,
+    solana_transaction::Transaction,
+    spl_token_2022::instruction::create_native_mint,
+};
 
 /// ### Description
 /// Builder for the [`create_native_mint`] instruction.

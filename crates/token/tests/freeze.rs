@@ -1,10 +1,14 @@
-use litesvm::LiteSVM;
-use litesvm_token::{
-    get_spl_account,
-    spl_token::state::{Account, Mint},
-    CreateAssociatedTokenAccountIdempotent, CreateMint, FreezeAccount, ThawAccount,
+use {
+    litesvm::LiteSVM,
+    litesvm_token::{
+        get_spl_account,
+        spl_token::state::{Account, Mint},
+        CreateAssociatedTokenAccountIdempotent, CreateMint, FreezeAccount, ThawAccount,
+    },
+    solana_keypair::Keypair,
+    solana_native_token::LAMPORTS_PER_SOL,
+    solana_signer::Signer,
 };
-use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
 
 #[test]
 fn test() {
