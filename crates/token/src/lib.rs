@@ -20,39 +20,23 @@ mod thaw_account;
 mod transfer;
 mod transfer_checked;
 
-pub use approve::*;
-pub use approve_checked::*;
-pub use burn::*;
-pub use burn_checked::*;
-pub use close_account::*;
-pub use create_account::*;
-pub use create_ata::*;
-pub use create_ata_idempotent::*;
-pub use create_mint::*;
-pub use create_multisig::*;
 #[cfg(feature = "token-2022")]
 pub use create_native_mint::*;
-pub use freeze_account::*;
-pub use mint_to::*;
-pub use mint_to_checked::*;
-pub use revoke::*;
-pub use set_authority::*;
-pub use sync_native::*;
-pub use thaw_account::*;
-pub use transfer::*;
-pub use transfer_checked::*;
-
-#[cfg(feature = "token-2022")]
-pub use spl_token_2022 as spl_token;
-
 #[cfg(not(feature = "token-2022"))]
 pub use spl_token;
-
-use litesvm::{types::FailedTransactionMetadata, LiteSVM};
-use solana_sdk::{
-    program_pack::{IsInitialized, Pack},
-    pubkey::Pubkey,
-    transaction::TransactionError,
+#[cfg(feature = "token-2022")]
+pub use spl_token_2022 as spl_token;
+pub use {
+    approve::*, approve_checked::*, burn::*, burn_checked::*, close_account::*, create_account::*,
+    create_ata::*, create_ata_idempotent::*, create_mint::*, create_multisig::*, freeze_account::*,
+    mint_to::*, mint_to_checked::*, revoke::*, set_authority::*, sync_native::*, thaw_account::*,
+    transfer::*, transfer_checked::*,
+};
+use {
+    litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_program_pack::{IsInitialized, Pack},
+    solana_pubkey::Pubkey,
+    solana_transaction_error::TransactionError,
 };
 
 pub const TOKEN_ID: Pubkey = spl_token::ID;
