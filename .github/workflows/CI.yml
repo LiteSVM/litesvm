@@ -19,9 +19,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Rustup install
-        uses: dtolnay/rust-toolchain
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Solana CLI
         run: |
