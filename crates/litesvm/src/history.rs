@@ -11,8 +11,9 @@ impl TransactionHistory {
     pub fn set_capacity(&mut self, new_cap: usize) {
         if new_cap == 0 {
             self.0.clear();
-            self.0.shrink_to(0);
-        } else if new_cap <= self.0.capacity() {
+        }
+
+        if new_cap <= self.0.capacity() {
             self.0.shrink_to(new_cap)
         } else {
             self.0.reserve(new_cap - self.0.capacity())
@@ -34,7 +35,6 @@ impl TransactionHistory {
     }
 
     pub fn check_transaction(&self, signature: &Signature) -> bool {
-        println!("capacity: {}", self.0.capacity());
         self.0.capacity() != 0 && self.0.contains_key(signature)
     }
 }
