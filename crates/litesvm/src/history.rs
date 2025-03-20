@@ -35,6 +35,6 @@ impl TransactionHistory {
     }
 
     pub fn check_transaction(&self, signature: &Signature) -> bool {
-        self.0.capacity() != 0 && self.0.contains_key(signature)
+        self.0.contains_key(signature)
     }
 }
