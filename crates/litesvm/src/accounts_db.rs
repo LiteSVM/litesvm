@@ -229,7 +229,7 @@ impl AccountsDb {
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
             ProgramCacheEntry::new(
                 owner,
-                self.programs_cache.environments.program_runtime_v1.clone(),
+                program_runtime_v1,
                 slot,
                 slot,
                 program_account.data(),
