@@ -1,9 +1,7 @@
-use litesvm::LiteSVM;
-use solana_keypair::Keypair;
-use solana_pubkey::Pubkey;
-use solana_signer::Signer;
-use solana_system_interface::instruction::transfer;
-use solana_transaction::Transaction;
+use {
+    litesvm::LiteSVM, solana_keypair::Keypair, solana_pubkey::Pubkey, solana_signer::Signer,
+    solana_system_interface::instruction::transfer, solana_transaction::Transaction,
+};
 
 #[test]
 fn test_tx_history_base_case() {
@@ -63,7 +61,6 @@ fn test_tx_history_disable_later() {
     let tx2 = Transaction::new_with_payer(&[instruction], Some(&from));
     let result2 = svm.send_transaction(tx2.clone());
 
-    println!("result2: {:?}", result2);
     assert!(!result2.is_err(), "Second transaction should succeed");
 
     // Get should not panic
