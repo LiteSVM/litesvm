@@ -30,7 +30,7 @@ fn test_tx_history_base_case() {
     let tx2 = Transaction::new_with_payer(&[instruction], Some(&from));
     let result2 = svm.send_transaction(tx2);
 
-    assert!(!result2.is_err(), "Second transaction should succeed");
+    assert!(result2.is_ok(), "Second transaction should succeed");
 }
 
 /// Setting the transaction history to 0 at any time should disable transaction history
@@ -61,7 +61,7 @@ fn test_tx_history_disable_later() {
     let tx2 = Transaction::new_with_payer(&[instruction], Some(&from));
     let result2 = svm.send_transaction(tx2.clone());
 
-    assert!(!result2.is_err(), "Second transaction should succeed");
+    assert!(result2.is_ok(), "Second transaction should succeed");
 
     // Get should not panic
     let result = svm.get_transaction(&tx2.signatures[0]);
