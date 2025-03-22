@@ -483,7 +483,7 @@ impl LiteSVM {
             &self.feature_set,
             &ComputeBudget::default(),
             false,
-            true,
+            false,
         )
         .unwrap();
 
