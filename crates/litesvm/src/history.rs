@@ -10,7 +10,8 @@ impl TransactionHistory {
 
     pub fn set_capacity(&mut self, new_cap: usize) {
         if new_cap <= self.0.capacity() {
-            self.0.shrink_to(new_cap)
+            self.0.truncate(new_cap);
+            self.0.shrink_to_fit();
         } else {
             self.0.reserve(new_cap - self.0.capacity())
         }
