@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-03-31
+
+### Fixed
+
+- Remove needless clone ([#161](https://github.com/LiteSVM/litesvm/pull/161)).
+- Disable runtime environment v1 debug features ([#162](https://github.com/LiteSVM/litesvm/pull/162)).
+- Fix transaction history truncation ([#163](https://github.com/LiteSVM/litesvm/pull/163)).
+- Constrain `solana-program-runtime` to >=2.2,<=2.2.4 ([#165](https://github.com/LiteSVM/litesvm/pull/165)).
+
 ## [0.6.0] - 2025-02-26
 
 ### Added
@@ -88,7 +97,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/LiteSVM/litesvm/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/LiteSVM/litesvm/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/LiteSVM/litesvm/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/LiteSVM/litesvm/compare/v0.3.0...v0.4.0
