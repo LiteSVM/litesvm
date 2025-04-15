@@ -340,6 +340,20 @@ mod precompiles;
 mod spl;
 mod utils;
 
+/// Holds a snapshot of the LiteSVM state.
+#[derive(Clone)]
+pub struct LiteSVMSnapshot {
+    accounts: AccountsDb,
+    feature_set: FeatureSet,
+    latest_blockhash: Hash,
+    history: TransactionHistory,
+    compute_budget: Option<ComputeBudget>,
+    sigverify: bool,
+    blockhash_check: bool,
+    fee_structure: FeeStructure,
+    log_bytes_limit: Option<usize>,
+}
+
 #[derive(Clone)]
 pub struct LiteSVM {
     accounts: AccountsDb,
@@ -352,6 +366,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    snapshot: Option<LiteSVMSnapshot>,
 }
 
 impl Default for LiteSVM {
@@ -367,6 +382,7 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            snapshot: None,
         }
     }
 }
@@ -1259,7 +1275,7 @@ impl LiteSVM {
 
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
-        self.feature_set.clone()
+        Arc::new(self.feature_set.clone())
     }
 
     fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
@@ -1316,6 +1332,40 @@ impl LiteSVM {
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
+    }
+
+    /// Creates a snapshot of the current SVM state.
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    pub fn snapshot(&mut self) {
+        self.snapshot = Some(LiteSVMSnapshot {
+            accounts: self.accounts.clone(),
+            feature_set: self.feature_set.clone(),
+            latest_blockhash: self.latest_blockhash, // Hash is Copy
+            history: self.history.clone(),
+            compute_budget: self.compute_budget,
+            sigverify: self.sigverify,
+            blockhash_check: self.blockhash_check,
+            fee_structure: self.fee_structure.clone(),
+            log_bytes_limit: self.log_bytes_limit,
+        })
+    }
+
+    /// Reverts the SVM state to a previously created snapshot.
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    pub fn revert(&mut self) {
+        let Some(snapshot) = self.snapshot.clone() else {
+          return;
+        };
+
+        self.accounts = snapshot.accounts;
+        self.feature_set = snapshot.feature_set;
+        self.latest_blockhash = snapshot.latest_blockhash;
+        self.history = snapshot.history;
+        self.compute_budget = snapshot.compute_budget;
+        self.sigverify = snapshot.sigverify;
+        self.blockhash_check = snapshot.blockhash_check;
+        self.fee_structure = snapshot.fee_structure;
+        self.log_bytes_limit = snapshot.log_bytes_limit;
     }
 }
 

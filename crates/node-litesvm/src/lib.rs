@@ -387,4 +387,14 @@ impl LiteSvm {
     pub fn set_stake_history(&mut self, history: &StakeHistory) {
         self.0.set_sysvar::<StakeHistoryOriginal>(&history.0)
     }
+
+    #[napi]
+    pub fn snapshot(&mut self)  {
+        self.0.snapshot();
+    }
+
+    #[napi]
+    pub fn revert(&mut self) {
+        self.0.revert();
+    }
 }

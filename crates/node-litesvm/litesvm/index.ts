@@ -494,4 +494,19 @@ export class LiteSVM {
 	setStakeHistory(history: StakeHistory) {
 		this.inner.setStakeHistory(history);
 	}
+
+	/**
+	 * Makes a snapshot of the LiteSVM state
+	 */
+	snapshot() {
+		this.inner.snapshot();
+	}
+
+	/**
+	 * Reverts LiteSVM state to previously made snapshot.
+	 * If there is no snapshot does nothing.
+	 */
+	revert() {
+		this.inner.revert();
+	}
 }

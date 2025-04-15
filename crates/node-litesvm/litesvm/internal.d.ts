@@ -584,4 +584,6 @@ export declare class LiteSvm {
   setSlotHistory(history: SlotHistory): void
   getStakeHistory(): StakeHistory
   setStakeHistory(history: StakeHistory): void
+  snapshot(): void
+  revert(): void
 }
