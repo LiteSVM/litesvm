@@ -1292,7 +1292,7 @@ impl LiteSVM {
         tx: &SanitizedTransaction,
     ) -> solana_transaction_error::TransactionResult<()> {
         let recent_blockhash = tx.message().recent_blockhash();
-        if recent_blockhash == &self.latest_blockhash
+        if self.check_blockhash_is_recent(recent_blockhash)
             || self.check_transaction_for_nonce(
                 tx,
                 &DurableNonce::from_blockhash(&self.latest_blockhash),
@@ -1307,6 +1307,13 @@ impl LiteSVM {
             );
             Err(TransactionError::BlockhashNotFound)
         }
+    }
+
+    fn check_blockhash_is_recent(&self, recent_blockhash: &Hash) -> bool {
+        #[allow(deprecated)]
+        self.get_sysvar::<RecentBlockhashes>()
+            .iter()
+            .any(|entry| entry.blockhash == *recent_blockhash)
     }
 
     fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
