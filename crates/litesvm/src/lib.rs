@@ -255,6 +255,7 @@ much easier.
 
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
+use solana_clock::MAX_RECENT_BLOCKHASHES;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
@@ -1234,11 +1235,27 @@ impl LiteSVM {
     pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
         #[allow(deprecated)]
-        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
-            0,
-            &self.latest_blockhash,
-            self.fee_structure.lamports_per_signature,
-        )]));
+        {
+            let blockhashes = self.get_sysvar::<RecentBlockhashes>();
+            let mut entries = vec![];
+            entries.push(IterItem(
+                0,
+                &self.latest_blockhash,
+                self.fee_structure.lamports_per_signature,
+            ));
+            for (i, entry) in blockhashes.iter().enumerate() {
+                if i == MAX_RECENT_BLOCKHASHES - 1 {
+                    break;
+                }
+                entries.push(IterItem(
+                    i as u64 + 1,
+                    &entry.blockhash,
+                    entry.fee_calculator.lamports_per_signature,
+                ));
+            }
+
+            self.set_sysvar(&RecentBlockhashes::from_iter(entries));
+        }
     }
 
     /// Warps the clock to the specified slot.
