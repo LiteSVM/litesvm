@@ -255,7 +255,6 @@ much easier.
 
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
-use solana_clock::MAX_RECENT_BLOCKHASHES;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
@@ -280,7 +279,7 @@ use {
         create_program_runtime_environment_v1, create_program_runtime_environment_v2,
     },
     solana_builtins::BUILTINS,
-    solana_clock::Clock,
+    solana_clock::{Clock, MAX_RECENT_BLOCKHASHES},
     solana_compute_budget::{
         compute_budget::ComputeBudget, compute_budget_limits::ComputeBudgetLimits,
     },
