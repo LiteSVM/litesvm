@@ -1237,7 +1237,8 @@ impl LiteSVM {
         #[allow(deprecated)]
         {
             let blockhashes = self.get_sysvar::<RecentBlockhashes>();
-            let mut entries = vec![];
+            let max_entries_len = blockhashes.len().min(MAX_RECENT_BLOCKHASHES);
+            let mut entries = Vec::with_capacity(max_entries_len);
             entries.push(IterItem(
                 0,
                 &self.latest_blockhash,
