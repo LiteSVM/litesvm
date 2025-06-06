@@ -372,6 +372,10 @@ impl Default for LiteSVM {
 }
 
 impl LiteSVM {
+    pub fn get_all_accounts(&self) -> Vec<(String, Vec<u8>)> {
+        self.accounts.get_all_accounts()
+    }
+
     /// Creates the basic test environment.
     pub fn new() -> Self {
         LiteSVM::default()

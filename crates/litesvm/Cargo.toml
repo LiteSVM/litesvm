@@ -70,6 +70,7 @@ solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
 solana-vote-program.workspace = true
 thiserror.workspace = true
+deadpool-redis = { workspace = true }
 
 [dev-dependencies]
 criterion.workspace = true

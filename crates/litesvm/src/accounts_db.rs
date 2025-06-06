@@ -65,6 +65,13 @@ pub(crate) struct AccountsDb {
 }
 
 impl AccountsDb {
+    pub(crate) fn get_all_accounts(&self) -> Vec<(String, Vec<u8>)> {
+        self.inner
+            .iter()
+            .map(|(pubkey, account)| (pubkey.to_string(), bincode::serialize(account).unwrap()))
+            .collect()
+    }
+
     pub(crate) fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
         self.inner.get(pubkey).map(|acc| acc.to_owned())
     }

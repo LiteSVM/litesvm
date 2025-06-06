@@ -1,37 +1,82 @@
 use {
+    deadpool_redis::redis::pipe,
     litesvm::LiteSVM,
+    solana_hash::Hash,
     solana_keypair::Keypair,
-    solana_message::Message,
+    solana_message::{v0, Message, VersionedMessage},
+    solana_native_token::LAMPORTS_PER_SOL,
     solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_system_interface::instruction::{create_account, transfer},
-    solana_transaction::Transaction,
+    solana_transaction::{versioned::VersionedTransaction, Transaction},
 };
 
 #[test_log::test]
 fn system_transfer() {
-    let from_keypair = Keypair::new();
-    let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let redis_urls = vec![
+        "redis://default:@127.0.0.1:6379".to_string(),
+        "redis://default:@127.0.0.1:6380".to_string(),
+        "redis://default:@127.0.0.1:6381".to_string(),
+        "redis://default:@127.0.0.1:6382".to_string(),
+        "redis://default:@127.0.0.1:6383".to_string(),
+        "redis://default:@127.0.0.1:6384".to_string(),
+    ];
+    use deadpool_redis::cluster::{Config, Runtime};
+    let cfg = Config::from_urls(redis_urls);
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
+    let mut svm = LiteSVM::new()
+        .with_sigverify(true)
+        .with_lamports(1e9 as u64 * LAMPORTS_PER_SOL)
+        .with_transaction_history(0)
+        .with_blockhash_check(false);
 
-    let mut svm = LiteSVM::new();
-    let expected_fee = 5000;
-    svm.airdrop(&from, 100 + expected_fee).unwrap();
+    let count = 1e6 as u64; // 1 billion lamports
+    let mut txs = Vec::with_capacity(count as usize);
+    for _ in 0..count {
+        let from_keypair = Keypair::new();
+        let from = from_keypair.pubkey();
+        let to = Pubkey::new_unique();
+        svm.airdrop(&from, 1 * LAMPORTS_PER_SOL).unwrap();
+        let instruction = transfer(&from, &to, 64);
+        let message =
+            v0::Message::try_compile(&from, &[instruction], &[], Hash::new_unique()).unwrap();
+        let versioned_message = VersionedMessage::V0(message);
 
-    let instruction = transfer(&from, &to, 64);
-    let tx = Transaction::new(
-        &[&from_keypair],
-        Message::new(&[instruction], Some(&from)),
-        svm.latest_blockhash(),
+        let versioned_tx =
+            VersionedTransaction::try_new(versioned_message, &[from_keypair]).unwrap();
+        txs.push(versioned_tx);
+    }
+    let now = std::time::Instant::now();
+    for tx in txs {
+        svm.send_transaction(tx).unwrap();
+    }
+
+    // Flush all accounts to Redis
+    let all_accounts: Vec<(String, Vec<u8>)> = svm.get_all_accounts();
+    let mut pipeline = pipe();
+    let mut counter = 0;
+    let mut payload = 0;
+    for (pubkey, account) in all_accounts.iter() {
+        pipeline.set(format!("{{1}}:{pubkey}"), account);
+        counter += 1;
+        payload += account.len();
+    }
+    println!(
+        "Total accounts: {}, counter: {counter}, total payload: {payload} bytes",
+        all_accounts.len()
     );
-    let tx_res = svm.send_transaction(tx);
+    tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async move {
+            let mut conn = pool.get().await.unwrap();
+            pipeline.query_async::<()>(&mut conn).await.unwrap();
+        });
 
-    let from_account = svm.get_account(&from);
-    let to_account = svm.get_account(&to);
-
-    assert!(tx_res.is_ok());
-    assert_eq!(from_account.unwrap().lamports, 36);
-    assert_eq!(to_account.unwrap().lamports, 64);
+    let elapsed = now.elapsed();
+    println!(
+        "Elapsed time for 1M transfers: {:?} tx per second",
+        count as f64 / elapsed.as_secs_f64()
+    );
 }
 
 #[test_log::test]

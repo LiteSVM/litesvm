@@ -89,6 +89,7 @@ spl-token-2022 = "7.0.0"
 test-log = "0.2"
 thiserror = "2.0"
 tokio = "1.35"
+deadpool-redis = { version = "0.21", features = ["cluster"] }
 
 [profile.bench]
 debug = true

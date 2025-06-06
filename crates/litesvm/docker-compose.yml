@@ -1,0 +1,72 @@
+x-redis-cluster-base: &redis-cluster-base
+ image: docker.io/bitnami/redis-cluster:7.2
+ network_mode: host
+
+services:
+ redis-cluster-0:
+  container_name: redis-cluster-0
+  <<: *redis-cluster-base
+  environment:
+   - "ALLOW_EMPTY_PASSWORD=yes"
+   - "REDIS_NODES=127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384"
+   - "REDIS_CLUSTER_DYNAMIC_IPS=no"
+   - "REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1"
+   - "REDIS_PORT_NUMBER=6379"
+
+ redis-cluster-1:
+  container_name: redis-cluster-1
+  <<: *redis-cluster-base
+  environment:
+   - "ALLOW_EMPTY_PASSWORD=yes"
+   - "REDIS_NODES=127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384"
+   - "REDIS_CLUSTER_DYNAMIC_IPS=no"
+   - "REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1"
+   - "REDIS_PORT_NUMBER=6380"
+
+ redis-cluster-2:
+  container_name: redis-cluster-2
+  <<: *redis-cluster-base
+  environment:
+   - "ALLOW_EMPTY_PASSWORD=yes"
+   - "REDIS_NODES=127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384"
+   - "REDIS_CLUSTER_DYNAMIC_IPS=no"
+   - "REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1"
+   - "REDIS_PORT_NUMBER=6381"
+
+ redis-cluster-3:
+  container_name: redis-cluster-3
+  <<: *redis-cluster-base
+  environment:
+   - "ALLOW_EMPTY_PASSWORD=yes"
+   - "REDIS_NODES=127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384"
+   - "REDIS_CLUSTER_DYNAMIC_IPS=no"
+   - "REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1"
+   - "REDIS_PORT_NUMBER=6382"
+
+ redis-cluster-4:
+  container_name: redis-cluster-4
+  <<: *redis-cluster-base
+  environment:
+   - "ALLOW_EMPTY_PASSWORD=yes"
+   - "REDIS_NODES=127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384"
+   - "REDIS_CLUSTER_DYNAMIC_IPS=no"
+   - "REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1"
+   - "REDIS_PORT_NUMBER=6383"
+
+ redis-cluster-5:
+  container_name: redis-cluster-5
+  <<: *redis-cluster-base
+  depends_on:
+   - redis-cluster-0
+   - redis-cluster-1
+   - redis-cluster-2
+   - redis-cluster-3
+   - redis-cluster-4
+  environment:
+   - "ALLOW_EMPTY_PASSWORD=yes"
+   - "REDIS_NODES=127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384"
+   - "REDIS_CLUSTER_DYNAMIC_IPS=no"
+   - "REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1"
+   - "REDIS_PORT_NUMBER=6384"
+   - "REDIS_CLUSTER_REPLICAS=1"
+   - "REDIS_CLUSTER_CREATOR=yes"
