@@ -13,6 +13,7 @@ internal-test = []
 nodejs-internal = ["dep:qualifier_attr"]
 
 [dependencies]
+agave-reserved-account-keys.workspace = true
 ansi_term.workspace = true
 bincode.workspace = true
 indexmap.workspace = true
@@ -51,7 +52,6 @@ solana-program-error.workspace = true
 solana-program-runtime.workspace = true
 solana-pubkey.workspace = true
 solana-rent.workspace = true
-solana-reserved-account-keys.workspace = true
 solana-sdk-ids.workspace = true
 solana-sha256-hasher.workspace = true
 solana-signature.workspace = true

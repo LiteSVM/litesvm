@@ -25,7 +25,7 @@ solana-hash = { workspace = true }
 solana-instruction = { workspace = true }
 solana-last-restart-slot = { workspace = true }
 solana-message = { workspace = true }
-solana-precompiles = { workspace = true, features = ["openssl-vendored"]}
+solana-precompiles = { workspace = true, features = ["openssl-vendored"] }
 solana-pubkey = { workspace = true }
 solana-rent = { workspace = true }
 solana-signature = { workspace = true }

@@ -22,7 +22,7 @@ fn test_tx_history_base_case() {
 
     // First transaction - should succeed
     // Note: unsigned transactions use default (the same) signatures
-    let tx1 = Transaction::new_with_payer(&[instruction.clone()], Some(&from));
+    let tx1 = Transaction::new_with_payer(std::slice::from_ref(&instruction), Some(&from));
     let result1 = svm.send_transaction(tx1);
     assert!(result1.is_ok(), "First transaction should succeed");
 
@@ -51,7 +51,7 @@ fn test_tx_history_disable_later() {
     let instruction = transfer(&from, &to, 100);
 
     // Note: unsigned transactions use default (the same) signatures as the airdrop
-    let tx1 = Transaction::new_with_payer(&[instruction.clone()], Some(&from));
+    let tx1 = Transaction::new_with_payer(std::slice::from_ref(&instruction), Some(&from));
     let result1 = svm.send_transaction(tx1);
     assert!(result1.is_ok(), "First transaction should succeed");
 

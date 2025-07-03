@@ -268,7 +268,7 @@ fn process_instruction<T: Signers + ?Sized>(
     payer: &Keypair,
 ) -> ProgramResult {
     let mut transaction =
-        Transaction::new_with_payer(&[instruction.clone()], Some(&payer.pubkey()));
+        Transaction::new_with_payer(std::slice::from_ref(instruction), Some(&payer.pubkey()));
 
     transaction.partial_sign(&[&payer], svm.latest_blockhash());
     transaction.sign(additional_signers, svm.latest_blockhash());
@@ -282,7 +282,7 @@ fn process_instruction<T: Signers + ?Sized>(
                 TransactionError::InsufficientFundsForRent { .. } => {
                     Err(ProgramError::InsufficientFunds)
                 }
-                _ => panic!("couldnt convert {:?} to ProgramError", e),
+                _ => panic!("couldnt convert {e:?} to ProgramError"),
             }
         }
     }

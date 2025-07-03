@@ -23,7 +23,7 @@ jobs:
 
       - name: Install Solana CLI
         run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.10/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v2.2.18/install)"
           echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Build test programs
@@ -33,7 +33,7 @@ jobs:
         run: cargo test
         env:
           RUST_BACKTRACE: 1
-      
+
       - name: Run SPL tests
         run: cd crates/token && cargo test --features token-2022
         env:
@@ -48,10 +48,10 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
-          
+
       - name: Rustup install nightly
         uses: dtolnay/rust-toolchain@nightly
-        
+
       - name: Rustup install rustfmt
         run: rustup component add rustfmt --toolchain nightly
 

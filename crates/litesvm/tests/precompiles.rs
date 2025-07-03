@@ -1,11 +1,12 @@
 use {
+    ed25519_dalek::ed25519::signature::Signer,
     litesvm::LiteSVM,
-    solana_ed25519_program::{self as ed25519_instruction, new_ed25519_instruction},
+    solana_ed25519_program::{self as ed25519_instruction, new_ed25519_instruction_with_signature},
     solana_instruction::error::InstructionError,
     solana_keypair::Keypair,
     solana_message::Message,
     solana_secp256k1_program::{self as secp256k1_instruction, new_secp256k1_instruction},
-    solana_signer::Signer,
+    solana_signer::Signer as SolanaSigner,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
 };
@@ -19,7 +20,13 @@ fn ed25519_precompile_ok() {
     svm.airdrop(&kp.pubkey(), 10u64.pow(9)).unwrap();
 
     // Act - Produce a valid ed25519 instruction.
-    let ix = new_ed25519_instruction(&kp_dalek, b"hello world");
+    let message = b"hello world";
+    let signature = kp_dalek.sign(message);
+    let ix = new_ed25519_instruction_with_signature(
+        message,
+        &signature.to_bytes(),
+        kp.pubkey().as_array(),
+    );
     let tx = Transaction::new(
         &[&kp],
         Message::new(&[ix], Some(&kp.pubkey())),
@@ -40,7 +47,13 @@ fn ed25519_precompile_err() {
     svm.airdrop(&kp.pubkey(), 10u64.pow(9)).unwrap();
 
     // Act - Produce an invalid ed25519 instruction.
-    let mut ix = new_ed25519_instruction(&kp_dalek, b"hello world");
+    let message = b"hello world";
+    let signature = kp_dalek.sign(message);
+    let mut ix = new_ed25519_instruction_with_signature(
+        message,
+        &signature.to_bytes(),
+        kp.pubkey().as_array(),
+    );
     ix.data[ed25519_instruction::DATA_START + 32] = 0;
     let tx = Transaction::new(
         &[&kp],
