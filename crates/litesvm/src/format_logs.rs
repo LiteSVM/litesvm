@@ -64,7 +64,7 @@ fn format_line(line: &str) -> String {
     let log = if ["", PROGRAM_LOG].contains(&program_source) {
         program_log.to_string()
     } else {
-        format!("{} {}", program_source, program_log)
+        format!("{program_source} {program_log}")
     };
     colourise(importance, &log)
 }
@@ -74,7 +74,7 @@ pub(crate) fn format_logs(logs: &[String]) -> String {
     for line in logs {
         if !line.is_empty() {
             let formatted = format_line(line);
-            writeln!(&mut out, "{}", formatted).unwrap();
+            writeln!(&mut out, "{formatted}").unwrap();
         }
     }
     out
@@ -102,7 +102,7 @@ mod tests {
         );
         let line = "Program log: static string";
         let formatted = format_line(line);
-        eprintln!("{}", formatted);
+        eprintln!("{formatted}");
         assert_eq!(formatted, "\u{1b}[32mstatic string\u{1b}[0m");
     }
 
