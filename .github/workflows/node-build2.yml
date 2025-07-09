@@ -39,7 +39,7 @@ jobs:
           cache-dependency-path: crates/node-litesvm/yarn.lock
 
       - name: Install
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy, rustfmt
 
@@ -79,7 +79,7 @@ jobs:
           cache: yarn
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
