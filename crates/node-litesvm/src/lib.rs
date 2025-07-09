@@ -37,6 +37,10 @@ use {
     solana_transaction::{versioned::VersionedTransaction, Transaction},
     util::{bigint_to_u64, bigint_to_usize},
 };
+use std::alloc::{Layout, set_alloc_error_hook};
+set_alloc_error_hook(|layout: Layout| {
+    eprintln!("OOM: wanted {} bytes - check limits", layout.size());
+});
 mod account;
 mod compute_budget;
 mod feature_set;
