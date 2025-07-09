@@ -196,4 +196,4 @@ jobs:
           name: bindings-x86_64-unknown-linux-musl
           path: crates/node-litesvm/litesvm/
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test --testPathIgnorePatterns usdc copy
+        run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test
