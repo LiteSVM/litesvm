@@ -5,7 +5,7 @@ pub struct TransactionHistory(IndexMap<Signature, TransactionResult>);
 
 impl TransactionHistory {
     pub fn new() -> Self {
-        TransactionHistory(IndexMap::with_capacity(500))
+        TransactionHistory(IndexMap::with_capacity(32))
     }
 
     pub fn set_capacity(&mut self, new_cap: usize) {
