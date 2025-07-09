@@ -217,13 +217,6 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        if: ${{ contains(matrix.target, 'armv7') }}
-        with:
-          platforms: all
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        if: ${{ contains(matrix.target, 'armv7') }}
       - name: Test bindings
         uses: addnab/docker-run-action@v3
         with:
