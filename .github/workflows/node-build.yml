@@ -201,4 +201,4 @@ jobs:
     name: Show ram
     runs-on: ubuntu-latest
     steps:
-      - run: grep -E 'MemTotal|MemAvailable' /proc/meminfo
+      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim grep -E 'MemTotal|MemAvailable' /proc/meminfo
