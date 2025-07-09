@@ -217,3 +217,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: cat /proc/self/cgroup
+        working-directory: /home
