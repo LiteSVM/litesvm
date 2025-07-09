@@ -197,3 +197,8 @@ jobs:
           path: crates/node-litesvm/litesvm/
       - name: Test bindings # this container has about 11.9 GiB free memory
         run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test
+  mem-info:
+    name: mem info
+    runs-on: ubuntu-latest
+    steps:
+      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim cat /sys/fs/cgroup/memory.max; cat /sys/fs/cgroup/memory/memory.limit_in_bytes; ulimit -a
