@@ -20,6 +20,10 @@ on:
       - '**/*.gitignore'
       - .editorconfig
       - crates/node-litesvm/docs/**
+
+defaults:
+  run:
+    working-directory: crates/node-litesvm
 jobs:
   lint:
     name: Lint
@@ -32,6 +36,7 @@ jobs:
         with:
           node-version: 22
           cache: 'yarn'
+          cache-dependency-path: crates/node-litesvm/yarn.lock
 
       - name: Install
         uses: dtolnay/rust-toolchain@stable
@@ -75,6 +80,7 @@ jobs:
         with:
           node-version: 22
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -145,6 +151,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: yarn
           architecture: ${{ matrix.settings.architecture }}
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
@@ -178,6 +185,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Output docker params
         id: docker
         run: |
