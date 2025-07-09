@@ -20,7 +20,10 @@ test("many instructions", () => {
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(greetedAccountBefore?.data, new Uint8Array([0, 0, 0, 0]));
+	assert.deepStrictEqual(
+		greetedAccountBefore?.data,
+		new Uint8Array([0, 0, 0, 0]),
+	);
 	const numIxs = 64;
 	const ixs = Array(numIxs).fill(ix);
 	const tx = new Transaction();
@@ -30,5 +33,8 @@ test("many instructions", () => {
 	svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(greetedAccountAfter?.data, new Uint8Array([64, 0, 0, 0]));
+	assert.deepStrictEqual(
+		greetedAccountAfter?.data,
+		new Uint8Array([64, 0, 0, 0]),
+	);
 });

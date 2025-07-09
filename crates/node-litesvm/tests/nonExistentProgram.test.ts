@@ -25,7 +25,10 @@ test("non-existent program", () => {
 	const res = svm.sendTransaction(tx);
 	if (res instanceof FailedTransactionMetadata) {
 		const err = res.err();
-		assert.strictEqual(err, TransactionErrorFieldless.InvalidProgramForExecution);
+		assert.strictEqual(
+			err,
+			TransactionErrorFieldless.InvalidProgramForExecution,
+		);
 	} else {
 		throw new Error("Expected transaction failure");
 	}

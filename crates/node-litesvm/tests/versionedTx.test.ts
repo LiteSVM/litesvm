@@ -30,5 +30,8 @@ test("versioned tx", () => {
 	const res = svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(greetedAccountAfter?.data, new Uint8Array([1, 0, 0, 0]));
+	assert.deepStrictEqual(
+		greetedAccountAfter?.data,
+		new Uint8Array([1, 0, 0, 0]),
+	);
 });

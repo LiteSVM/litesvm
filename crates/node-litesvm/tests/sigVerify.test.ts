@@ -20,7 +20,10 @@ test("test sigverify", () => {
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(greetedAccountBefore?.data, new Uint8Array([0, 0, 0, 0]));
+	assert.deepStrictEqual(
+		greetedAccountBefore?.data,
+		new Uint8Array([0, 0, 0, 0]),
+	);
 	const ix = new TransactionInstruction({
 		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
 		programId,
@@ -33,5 +36,8 @@ test("test sigverify", () => {
 	svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(greetedAccountAfter?.data, new Uint8Array([1, 0, 0, 0]));
+	assert.deepStrictEqual(
+		greetedAccountAfter?.data,
+		new Uint8Array([1, 0, 0, 0]),
+	);
 });
