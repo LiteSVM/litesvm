@@ -211,7 +211,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Install libjemalloc2
-        run: apt-get install libjemalloc2
+        run: sudo apt-get install libjemalloc2
       - name: Test bindings
         run: yarn test
   mem-info:
