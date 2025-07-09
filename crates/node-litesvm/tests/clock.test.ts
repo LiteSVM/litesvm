@@ -1,5 +1,6 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import {
-	Clock,
 	FailedTransactionMetadata,
 	LiteSVM,
 	TransactionMetadata,
@@ -33,7 +34,7 @@ test("clock", () => {
 	// this will fail because the contract wants it to be January 1970
 	const failed = svm.sendTransaction(tx);
 	if (failed instanceof FailedTransactionMetadata) {
-		expect(failed.err().toString()).toContain("ProgramFailedToComplete");
+		assert.ok(failed.err().toString().includes("ProgramFailedToComplete"));
 	} else {
 		throw new Error("Expected transaction failure here");
 	}
@@ -54,5 +55,5 @@ test("clock", () => {
 	tx2.sign(payer);
 	// now the transaction goes through
 	const success = svm.sendTransaction(tx2);
-	expect(success).toBeInstanceOf(TransactionMetadata);
+	assert.ok(success instanceof TransactionMetadata);
 });

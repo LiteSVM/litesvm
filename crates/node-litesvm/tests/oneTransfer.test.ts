@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
 import {
 	PublicKey,
@@ -27,5 +29,5 @@ test("one transfer", () => {
 	tx.sign(payer);
 	svm.sendTransaction(tx);
 	const balanceAfter = svm.getBalance(receiver);
-	expect(balanceAfter).toBe(transferLamports);
+	assert.strictEqual(balanceAfter, transferLamports);
 });

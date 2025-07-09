@@ -1,5 +1,7 @@
-import { LiteSVM } from "litesvm";
-import { PublicKey } from "@solana/web3.js";
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { LiteSVM, AccountInfoBytes } from "litesvm";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
 	getAssociatedTokenAddressSync,
 	AccountLayout,
@@ -39,8 +41,8 @@ test("infinite usdc mint", () => {
 		executable: false,
 	});
 	const rawAccount = svm.getAccount(ata);
-	expect(rawAccount).not.toBeNull();
+	assert.notStrictEqual(rawAccount, null);
 	const rawAccountData = rawAccount?.data;
 	const decoded = AccountLayout.decode(rawAccountData);
-	expect(decoded.amount).toBe(usdcToOwn);
+	assert.strictEqual(decoded.amount, usdcToOwn);
 });
