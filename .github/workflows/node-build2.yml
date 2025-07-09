@@ -121,9 +121,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: |
-            ${{ env.APP_NAME }}.*.node
-            ${{ env.APP_NAME }}.*.wasm
+          path: crates/node-litesvm/litesvm/litesvm.*.node
           if-no-files-found: error
   test-macOS-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
