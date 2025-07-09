@@ -13,7 +13,26 @@ import {
 	TransactionInstruction,
 } from "@solana/web3.js";
 
+const fs = require('fs');
+
+
 test("clock", () => {
+	// grab the "0::<path>" line
+	const line = fs.readFileSync('/proc/self/cgroup', 'utf8')
+		.split('\n')
+		.find((l: string) => l.startsWith('0::'));
+
+	if (line) {
+		const cgPath = line.slice(3);        // strip the "0::"
+		console.log('cgroup path:', cgPath);
+
+		const read = (p: string) => fs.readFileSync(p, 'utf8').trim();
+		console.log('memory.max =', read(`/sys/fs/cgroup${cgPath}/memory.max`));
+
+		try {                                // memory.high is optional
+			console.log('memory.high =', read(`/sys/fs/cgroup${cgPath}/memory.high`));
+		} catch (_) { }
+	}
 	const programId = PublicKey.unique();
 	const svm = new LiteSVM();
 	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
