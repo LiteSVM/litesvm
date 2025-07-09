@@ -11,5 +11,3 @@ yarn.lock
 .yarn
 __test__
 renovate.json
-dist/tests
-dist/litesvm/litesvm.*.node
