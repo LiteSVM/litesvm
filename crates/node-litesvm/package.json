@@ -57,7 +57,7 @@
 		"lint": "yarn lint:rust && yarn lint:js",
 		"lint:rust": "cargo clippy",
 		"lint:js": "rome check litesvm/index.ts tests/ tsconfig.json package.json",
-		"test": "node --max-old-space-size=4096 -r ts-node/register -r tsconfig-paths/register --test --test-concurrency=1 tests/*.test.ts",
+		"test": "node --trace-gc --max-old-space-size=4096 -r ts-node/register -r tsconfig-paths/register --test --test-concurrency=1 tests/*.test.ts",
 		"test:js": "yarn tsc && node --test --test-concurrency=1 dist/tests/**/*.test.js",
 		"tsc": "tsc --build && cp litesvm/internal.d.ts dist/internal.d.ts && cp litesvm/litesvm.*.node dist/litesvm",
 		"universal": "napi universal",
