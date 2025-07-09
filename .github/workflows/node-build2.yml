@@ -162,6 +162,7 @@ jobs:
         shell: bash
       - name: Test bindings
         run: yarn test
+        working-directory: crates/node-litesvm
   test-linux-binding:
     name: Test ${{ matrix.target }} - node@${{ matrix.node }}
     needs:
