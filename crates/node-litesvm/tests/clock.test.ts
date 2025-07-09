@@ -26,7 +26,7 @@ test("clock", () => {
 		  `external=${(m.external/1048576).toFixed(1)} MB`,
 		  '   avail=', (v8.getHeapStatistics().total_available_size/1048576).toFixed(1), 'MB'
 		);
-	  }, 50);
+	  }, 10);
 	const programId = PublicKey.unique();
 	const svm = new LiteSVM();
 	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
