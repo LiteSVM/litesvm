@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LiteSVM, AccountInfoBytes } from "litesvm";
-import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LiteSVM } from "litesvm";
+import { PublicKey } from "@solana/web3.js";
 import {
 	getAssociatedTokenAddressSync,
 	AccountLayout,
