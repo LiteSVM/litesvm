@@ -57,7 +57,7 @@
 		"lint": "yarn lint:rust && yarn lint:js",
 		"lint:rust": "cargo clippy",
 		"lint:js": "rome check litesvm/index.ts tests/ tsconfig.json package.json",
-		"test": "free -h && node -r ts-node/register -r tsconfig-paths/register --test --test-concurrency=1 tests/*.test.ts",
+		"test": "cat /sys/fs/cgroup/memory/memory.limit_in_bytes && free -h && node -r ts-node/register -r tsconfig-paths/register --test --test-concurrency=1 tests/*.test.ts",
 		"tsc": "tsc --build && cp litesvm/internal.d.ts dist/internal.d.ts",
 		"universal": "napi universal",
 		"cargoBump": "cargo set-version --package litesvm-node --bump",
