@@ -212,3 +212,8 @@ jobs:
         shell: bash
       - name: Test bindings
         run: yarn test
+  mem-info:
+    name: mem info
+    runs-on: ubuntu-latest
+    steps:
+      - run: cat /proc/self/cgroup
