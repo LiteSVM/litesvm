@@ -201,4 +201,4 @@ jobs:
     name: mem info
     runs-on: ubuntu-latest
     steps:
-      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim cat /proc/self/limits | grep -E 'DATA|AS'; cat /sys/fs/cgroup/memory.high; cat /sys/fs/cgroup/memory.swap.max; sysctl vm.overcommit_memory
+      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim cat /proc/self/limits; echo 'checking memory.high'; cat /sys/fs/cgroup/memory.high; echo 'checking swap.max'; cat /sys/fs/cgroup/memory.swap.max; echo 'calling sysctl'; sysctl vm.overcommit_memory
