@@ -15,5 +15,5 @@
 		},
 		"resolveJsonModule": true
 	},
-	"include": ["./litesvm/**/*"]
+	"include": ["litesvm/**/*", "tests/**/*"]
 }
