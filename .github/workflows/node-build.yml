@@ -201,4 +201,4 @@ jobs:
     name: mem info
     runs-on: ubuntu-latest
     steps:
-      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim cat /sys/fs/cgroup/memory.max; cat /sys/fs/cgroup/memory/memory.limit_in_bytes; ulimit -a
+      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim ulimit -a
