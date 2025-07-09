@@ -156,7 +156,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: crates/node-litesvm/lutesvm
+          path: crates/node-litesvm/litesvm
       - name: List packages
         run: ls -R .
         shell: bash
@@ -213,7 +213,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.target }}
-          path: crates/node-litesvm/lutesvm
+          path: crates/node-litesvm/litesvm
       - name: List packages
         run: ls -R .
         shell: bash
