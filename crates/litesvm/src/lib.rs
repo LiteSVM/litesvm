@@ -1140,6 +1140,10 @@ impl LiteSVM {
 
     /// Submits a signed transaction.
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
+        use std::alloc::{Layout, set_alloc_error_hook};
+        set_alloc_error_hook(|layout: Layout| {
+            eprintln!("OOM: wanted {} bytes - check limits", layout.size());
+        });
         let log_collector = LogCollector {
             bytes_limit: self.log_bytes_limit,
             ..Default::default()
