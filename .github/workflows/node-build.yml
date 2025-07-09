@@ -197,3 +197,8 @@ jobs:
           path: crates/node-litesvm/litesvm/
       - name: Test bindings
         run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test
+  show-ram:
+    name: Show ram
+    runs-on: ubuntu-latest
+    steps:
+      - run: grep -E 'MemTotal|MemAvailable' /proc/meminfo
