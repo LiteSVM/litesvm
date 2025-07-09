@@ -164,7 +164,7 @@ jobs:
         with:
           name: bindings-x86_64-unknown-linux-gnu
           path: crates/node-litesvm/litesvm/
-      - name: Test bindings
+      - name: Test bindings # this container has about 15.6 GiB free memory
         run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-slim yarn test
   test-linux-x64-musl-binding:
     name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
@@ -195,10 +195,5 @@ jobs:
         with:
           name: bindings-x86_64-unknown-linux-musl
           path: crates/node-litesvm/litesvm/
-      - name: Test bindings
+      - name: Test bindings # this container has about 11.9 GiB free memory
         run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:${{ matrix.node }}-alpine yarn test
-  show-ram:
-    name: Show ram
-    runs-on: ubuntu-latest
-    steps:
-      - run: docker run --rm -v $(pwd):/build -w /build/crates/node-litesvm node:18-slim grep -E 'MemTotal|MemAvailable' /proc/meminfo
