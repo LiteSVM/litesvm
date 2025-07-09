@@ -13,26 +13,20 @@ import {
 	TransactionInstruction,
 } from "@solana/web3.js";
 
-const fs = require('fs');
+const v8  = require('v8');
 
 
 test("clock", () => {
-	// grab the "0::<path>" line
-	const line = fs.readFileSync('/proc/self/cgroup', 'utf8')
-		.split('\n')
-		.find((l: string) => l.startsWith('0::'));
 
-	if (line) {
-		const cgPath = line.slice(3);        // strip the "0::"
-		console.log('cgroup path:', cgPath);
-
-		const read = (p: string) => fs.readFileSync(p, 'utf8').trim();
-		console.log('memory.max =', read(`/sys/fs/cgroup${cgPath}/memory.max`));
-
-		try {                                // memory.high is optional
-			console.log('memory.high =', read(`/sys/fs/cgroup${cgPath}/memory.high`));
-		} catch (_) { }
-	}
+	setInterval(() => {
+		const m = process.memoryUsage();
+		console.log(
+		  `rss=${(m.rss/1048576).toFixed(1)} MB  ` +
+		  `heapUsed=${(m.heapUsed/1048576).toFixed(1)} MB  ` +
+		  `external=${(m.external/1048576).toFixed(1)} MB`,
+		  '   avail=', (v8.getHeapStatistics().total_available_size/1048576).toFixed(1), 'MB'
+		);
+	  }, 50);
 	const programId = PublicKey.unique();
 	const svm = new LiteSVM();
 	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
