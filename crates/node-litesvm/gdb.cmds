@@ -1,6 +1,0 @@
-set pagination off
-set confirm off
-catch throw std::bad_alloc
-run
-bt full
-quit
