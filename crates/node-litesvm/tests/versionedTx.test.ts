@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import {
 	PublicKey,
 	LAMPORTS_PER_SOL,
@@ -27,6 +29,9 @@ test("versioned tx", () => {
 	tx.sign([payer]);
 	const res = svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
-	expect(greetedAccountAfter).not.toBeNull();
-	expect(greetedAccountAfter?.data).toEqual(new Uint8Array([1, 0, 0, 0]));
+	assert.notStrictEqual(greetedAccountAfter, null);
+	assert.deepStrictEqual(
+		greetedAccountAfter?.data,
+		new Uint8Array([1, 0, 0, 0]),
+	);
 });

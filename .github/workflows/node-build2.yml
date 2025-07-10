@@ -1,0 +1,226 @@
+name: CI2
+env:
+  DEBUG: napi:*
+  APP_NAME: litesvm
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+      - crates/node-litesvm/docs/**
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+      - crates/node-litesvm/docs/**
+
+defaults:
+  run:
+    working-directory: crates/node-litesvm
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          cache-dependency-path: crates/node-litesvm/yarn.lock
+
+      - name: Install
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Oxlint
+        run: yarn lint
+
+      - name: Cargo fmt
+        run: cargo fmt -- --check
+
+      - name: Clippy
+        run: cargo clippy
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            build: yarn build --target x86_64-apple-darwin
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            build: yarn build --target x86_64-unknown-linux-gnu
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            build: yarn build --target aarch64-apple-darwin
+    name: stable - ${{ matrix.settings.target }} - node@22
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
+      - name: Install
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: stable
+          targets: ${{ matrix.settings.target }}
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            ~/.napi-rs
+            .cargo-cache
+            target/
+          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+      - uses: goto-bus-stop/setup-zig@v2
+        if: ${{ contains(matrix.settings.target, 'musl') }}
+        with:
+          version: 0.14.1
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@v2
+        if: ${{ contains(matrix.settings.target, 'musl') }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tool: cargo-zigbuild
+      - name: Setup toolchain
+        run: ${{ matrix.settings.setup }}
+        if: ${{ matrix.settings.setup }}
+        shell: bash
+      - name: Install dependencies
+        run: yarn install
+      - name: Build
+        run: ${{ matrix.settings.build }}
+        shell: bash
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: crates/node-litesvm/litesvm/litesvm.*.node
+          if-no-files-found: error
+  test-macOS-binding:
+    name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            architecture: arm64
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            architecture: x64
+        node:
+          - '20'
+          - '22'
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+          architecture: ${{ matrix.settings.architecture }}
+          cache-dependency-path: crates/node-litesvm/yarn.lock
+      - name: Install dependencies
+        run: yarn install
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: crates/node-litesvm/litesvm
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Test bindings
+        run: yarn test
+        working-directory: crates/node-litesvm
+  test-linux-binding:
+    name: Test ${{ matrix.target }} - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+        node:
+          - '20'
+          - '22'
+    runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
+      - name: Install dependencies
+        run: yarn install
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-${{ matrix.target }}
+          path: crates/node-litesvm/litesvm
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Install gdb
+        run: sudo apt-get update && sudo apt-get install -y gdb
+      - name: Run node tests and keep core dump
+        id: tests
+        shell: bash
+        run: |
+          # enable core dumps
+          ulimit -c unlimited
+          echo '/tmp/core.%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+
+          # run the tests (let the job continue even on SIGABRT)
+          set +e
+          node --max-old-space-size=4096 \
+              -r ts-node/register -r tsconfig-paths/register \
+              --test --test-concurrency=1 tests/*.test.ts
+          STATUS=$?
+
+          # generate back-traces for every core file we find
+          NODE_BIN=$(node -p 'process.execPath')
+          for c in /tmp/core.*; do
+            [ -e "$c" ] || continue
+            gdb --batch -ex 'thread apply all bt full' -ex quit \
+                "$NODE_BIN" "$c" > "backtrace-${c##*/}.txt"
+          done
+
+          exit $STATUS
+        continue-on-error: true   # let later steps run even on SIGABRT
+      - name: Upload core file
+        if: always()                       # run this step regardless of previous result
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdb-backtraces-${{ matrix.target }}
+          path: backtrace-*.txt

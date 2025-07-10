@@ -14,7 +14,7 @@ bincode = { workspace = true }
 bv = "0.11.1"
 litesvm = { workspace = true, features = ["nodejs-internal"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
-napi-derive = "2.12.2"
+napi-derive = "3.0.0-beta"
 solana-account = { workspace = true }
 solana-clock = { workspace = true }
 solana-compute-budget = { workspace = true }

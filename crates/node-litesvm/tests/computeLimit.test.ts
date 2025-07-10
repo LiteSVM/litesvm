@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { FailedTransactionMetadata } from "litesvm";
 import {
 	LAMPORTS_PER_SOL,
@@ -19,15 +21,18 @@ test("compute limit", () => {
 	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	expect(greetedAccountBefore).not.toBeNull();
-	expect(greetedAccountBefore?.data).toEqual(new Uint8Array([0, 0, 0, 0]));
+	assert.notStrictEqual(greetedAccountBefore, null);
+	assert.deepStrictEqual(
+		greetedAccountBefore.data,
+		new Uint8Array([0, 0, 0, 0]),
+	);
 	const tx = new Transaction();
 	tx.recentBlockhash = blockhash;
 	tx.add(ix);
 	tx.sign(payer);
 	const res = svm.sendTransaction(tx);
 	if (res instanceof FailedTransactionMetadata) {
-		expect(res.err()).toBe(TransactionErrorFieldless.AccountNotFound);
+		assert.strictEqual(res.err(), TransactionErrorFieldless.AccountNotFound);
 	} else {
 		throw new Error("Expected transaction failure");
 	}

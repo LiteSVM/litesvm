@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM, FailedTransactionMetadata } from "litesvm";
 import {
 	PublicKey,
@@ -23,7 +25,10 @@ test("non-existent program", () => {
 	const res = svm.sendTransaction(tx);
 	if (res instanceof FailedTransactionMetadata) {
 		const err = res.err();
-		expect(err).toBe(TransactionErrorFieldless.InvalidProgramForExecution);
+		assert.strictEqual(
+			err,
+			TransactionErrorFieldless.InvalidProgramForExecution,
+		);
 	} else {
 		throw new Error("Expected transaction failure");
 	}

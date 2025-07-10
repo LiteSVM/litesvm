@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM, AccountInfoBytes } from "litesvm";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -12,5 +14,5 @@ test("set account", () => {
 	};
 	svm.setAccount(address, toSet);
 	const fetched = svm.getAccount(address);
-	expect(fetched.data).toStrictEqual(new Uint8Array([0, 1]));
+	assert.deepStrictEqual(fetched.data, new Uint8Array([0, 1]));
 });

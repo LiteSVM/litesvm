@@ -22,7 +22,7 @@ pub struct InstructionErrorBorshIO {
 
 to_string_js!(InstructionErrorBorshIO);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[napi]
 pub enum InstructionErrorFieldless {
     GenericError,

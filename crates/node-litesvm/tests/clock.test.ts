@@ -1,9 +1,13 @@
+console.log("In clock module");
+import { test } from "node:test";
+import assert from "node:assert/strict";
+console.log("Doing litesvm imports");
 import {
-	Clock,
 	FailedTransactionMetadata,
 	LiteSVM,
 	TransactionMetadata,
 } from "litesvm";
+console.log("Doing web3.js imports");
 import {
 	Keypair,
 	LAMPORTS_PER_SOL,
@@ -13,9 +17,13 @@ import {
 } from "@solana/web3.js";
 
 test("clock", () => {
+	console.log("Running clock test");
 	const programId = PublicKey.unique();
+	console.log("Calling new LiteSVM()");
 	const svm = new LiteSVM();
+	console.log("Calling addProgramFromFile");
 	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
+	console.log("Calling new Keypair");
 	const payer = new Keypair();
 	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
@@ -33,7 +41,7 @@ test("clock", () => {
 	// this will fail because the contract wants it to be January 1970
 	const failed = svm.sendTransaction(tx);
 	if (failed instanceof FailedTransactionMetadata) {
-		expect(failed.err().toString()).toContain("ProgramFailedToComplete");
+		assert.ok(failed.err().toString().includes("ProgramFailedToComplete"));
 	} else {
 		throw new Error("Expected transaction failure here");
 	}
@@ -54,5 +62,6 @@ test("clock", () => {
 	tx2.sign(payer);
 	// now the transaction goes through
 	const success = svm.sendTransaction(tx2);
-	expect(success).toBeInstanceOf(TransactionMetadata);
+	assert.ok(success instanceof TransactionMetadata);
+	console.log("Finished clock test");
 });

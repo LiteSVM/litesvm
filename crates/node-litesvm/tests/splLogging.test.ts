@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM, TransactionMetadata } from "litesvm";
 import {
 	Keypair,
@@ -30,8 +32,8 @@ test("spl logging", () => {
 	const simRes = svm.simulateTransaction(tx);
 	const sendRes = svm.sendTransaction(tx);
 	if (sendRes instanceof TransactionMetadata) {
-		expect(simRes.meta().logs()).toEqual(sendRes.logs());
-		expect(sendRes.logs()[1]).toBe("Program log: static string");
+		assert.deepStrictEqual(simRes.meta().logs(), sendRes.logs());
+		assert.strictEqual(sendRes.logs()[1], "Program log: static string");
 	} else {
 		throw new Error("Unexpected tx failure");
 	}

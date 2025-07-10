@@ -14,10 +14,11 @@ and `bankrun` (reasonably fast and powerful, but inherits a lot of warts from `s
 ## Minimal example
 
 This example just transfers lamports from Alice to Bob without loading
-any programs of our own. It uses the [jest](https://jestjs.io/)
-test runner but you can use any test runner you like.
+any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
 
 ```ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
 import {
 	PublicKey,
@@ -47,7 +48,7 @@ test("one transfer", () => {
 	tx.sign(payer);
 	svm.sendTransaction(tx);
 	const balanceAfter = svm.getBalance(receiver);
-	expect(balanceAfter).toBe(transferLamports);
+	assert.strictEqual(balanceAfter, transferLamports);
 });
 ```
 Note: by default the `LiteSVM` instance includes some core programs such as

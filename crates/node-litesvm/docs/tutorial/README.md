@@ -50,7 +50,7 @@ If you want to copy accounts from mainnet or devnet, you can use the `solana acc
 Or, if you want to pull live data every time you test, you can do this with a few lines of code. Here's a simple example that pulls account data from devnet
 and passes it to LiteSVM:
 
-<<< @/tests/copyAccounts.test.ts
+<<< @/no-ci-tests/copyAccounts.test.ts
 
 ## Other features
 
