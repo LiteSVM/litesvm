@@ -1,10 +1,13 @@
+console.log("In clock module");
 import { test } from "node:test";
 import assert from "node:assert/strict";
+console.log("Doing litesvm imports");
 import {
 	FailedTransactionMetadata,
 	LiteSVM,
 	TransactionMetadata,
 } from "litesvm";
+console.log("Doing web3.js imports");
 import {
 	Keypair,
 	LAMPORTS_PER_SOL,
