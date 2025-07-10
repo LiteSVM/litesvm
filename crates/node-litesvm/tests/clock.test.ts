@@ -60,4 +60,5 @@ test("clock", () => {
 	// now the transaction goes through
 	const success = svm.sendTransaction(tx2);
 	assert.ok(success instanceof TransactionMetadata);
+	console.log("Finished clock test");
 });
