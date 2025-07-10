@@ -191,6 +191,8 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
+      - name: Install gdb
+        run: sudo apt-get update && sudo apt-get install -y gdb
       - name: Test bindings
         run: yarn test
       - name: Upload gdb.log
