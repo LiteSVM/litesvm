@@ -193,8 +193,8 @@ jobs:
         shell: bash
       - name: Test bindings
         run: |
+          g++ -shared -fPIC -o liblognew.so lognew.cpp
           yarn test
-          grep -A1 ENOMEM tmp.log
   mem-info:
     name: mem info
     runs-on: ubuntu-latest
