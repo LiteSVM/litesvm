@@ -197,29 +197,30 @@ jobs:
         id: tests
         shell: bash
         run: |
-          # allow unlimited-size core files
+          # 1) unlimited core-file size for this shell *and its children*
           ulimit -c unlimited
 
-          # run the tests (exit status is preserved)
+          # 2) write cores as files in the workspace, not through systemd-coredump
+          echo 'core.%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+
+          # 3) run the tests (capture exit so the script continues)
           set +e
           node --max-old-space-size=4096 \
               -r ts-node/register -r tsconfig-paths/register \
               --test --test-concurrency=1 tests/*.test.ts
           STATUS=$?
-          echo "Tests exited with $STATUS"
 
-          # if a core file was produced, make a back-trace
-          if ls core* >/dev/null 2>&1; then
+          # 4) if the abort happened and a core exists, make a back-trace
+          if compgen -G 'core.*' > /dev/null; then
             NODE_BIN=$(node -p 'process.execPath')
-            for c in core*; do
-              echo "Processing core file $c"
+            for c in core.*; do
               gdb --batch -ex 'thread apply all bt full' -ex 'quit' \
                   "$NODE_BIN" "$c" > "backtrace-$c.txt"
             done
           fi
           exit $STATUS
         continue-on-error: true   # let later steps run even on SIGABRT
-      - name: Upload gdb.log
+      - name: Upload core file
         if: always()                       # run this step regardless of previous result
         uses: actions/upload-artifact@v4
         with:
