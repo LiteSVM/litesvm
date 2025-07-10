@@ -13,13 +13,14 @@ import {
 	TransactionInstruction,
 } from "@solana/web3.js";
 
-const v8  = require('v8');
-
-
 test("clock", () => {
+	console.log("Running clock test");
 	const programId = PublicKey.unique();
+	console.log("Calling new LiteSVM()");
 	const svm = new LiteSVM();
+	console.log("Calling addProgramFromFile");
 	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
+	console.log("Calling new Keypair");
 	const payer = new Keypair();
 	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
