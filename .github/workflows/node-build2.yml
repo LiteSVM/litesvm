@@ -204,6 +204,7 @@ jobs:
           set confirm off
           file $NODE_BIN
           catch throw std::bad_alloc
+          catch signal SIGABRT
           run --max-old-space-size=4096 \
               -r ts-node/register -r tsconfig-paths/register \
               --test --test-concurrency=1 tests/*.test.ts
