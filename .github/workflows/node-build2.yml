@@ -195,9 +195,3 @@ jobs:
         run: |
           g++ -shared -fPIC -o liblognew.so lognew.cpp
           yarn test
-  mem-info:
-    name: mem info
-    runs-on: ubuntu-latest
-    steps:
-      - run: cat /proc/self/cgroup
-        working-directory: /home
