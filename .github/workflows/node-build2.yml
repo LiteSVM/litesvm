@@ -193,29 +193,35 @@ jobs:
         shell: bash
       - name: Install gdb
         run: sudo apt-get update && sudo apt-get install -y gdb
-      - name: Run tests under GDB (batch mode)
+      - name: Run node tests and keep core dump
+        id: tests
         shell: bash
         run: |
-          NODE_BIN=$(node -p 'process.execPath')
-          echo "Real node binary: $NODE_BIN"
+          # allow unlimited-size core files
+          ulimit -c unlimited
 
-          cat > gdb.cmds <<EOF
-          set pagination off
-          set confirm off
-          file $NODE_BIN
-          catch throw std::bad_alloc
-          catch signal SIGABRT
-          run --max-old-space-size=4096 \
+          # run the tests (exit status is preserved)
+          set +e
+          node --max-old-space-size=4096 \
               -r ts-node/register -r tsconfig-paths/register \
               --test --test-concurrency=1 tests/*.test.ts
-          bt full
-          quit
-          EOF
+          STATUS=$?
+          echo "Tests exited with $STATUS"
 
-          gdb --batch -x gdb.cmds 2>&1 | tee gdb.log
+          # if a core file was produced, make a back-trace
+          if ls core* >/dev/null 2>&1; then
+            NODE_BIN=$(node -p 'process.execPath')
+            for c in core*; do
+              echo "Processing core file $c"
+              gdb --batch -ex 'thread apply all bt full' -ex 'quit' \
+                  "$NODE_BIN" "$c" > "backtrace-$c.txt"
+            done
+          fi
+          exit $STATUS
+        continue-on-error: true   # let later steps run even on SIGABRT
       - name: Upload gdb.log
         if: always()                       # run this step regardless of previous result
         uses: actions/upload-artifact@v4
         with:
-          name: gdb-log-${{ matrix.target }}
-          path: gdb.log
+          name: gdb-backtraces-${{ matrix.target }}
+          path: backtrace-*.txt
