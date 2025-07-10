@@ -197,27 +197,25 @@ jobs:
         id: tests
         shell: bash
         run: |
-          # 1) unlimited core-file size for this shell *and its children*
+          # enable core dumps
           ulimit -c unlimited
+          echo '/tmp/core.%e.%p' | sudo tee /proc/sys/kernel/core_pattern
 
-          # 2) write cores as files in the workspace, not through systemd-coredump
-          echo 'core.%e.%p' | sudo tee /proc/sys/kernel/core_pattern
-
-          # 3) run the tests (capture exit so the script continues)
+          # run the tests (let the job continue even on SIGABRT)
           set +e
           node --max-old-space-size=4096 \
               -r ts-node/register -r tsconfig-paths/register \
               --test --test-concurrency=1 tests/*.test.ts
           STATUS=$?
 
-          # 4) if the abort happened and a core exists, make a back-trace
-          if compgen -G 'core.*' > /dev/null; then
-            NODE_BIN=$(node -p 'process.execPath')
-            for c in core.*; do
-              gdb --batch -ex 'thread apply all bt full' -ex 'quit' \
-                  "$NODE_BIN" "$c" > "backtrace-$c.txt"
-            done
-          fi
+          # generate back-traces for every core file we find
+          NODE_BIN=$(node -p 'process.execPath')
+          for c in /tmp/core.*; do
+            [ -e "$c" ] || continue
+            gdb --batch -ex 'thread apply all bt full' -ex quit \
+                "$NODE_BIN" "$c" > "backtrace-${c##*/}.txt"
+          done
+
           exit $STATUS
         continue-on-error: true   # let later steps run even on SIGABRT
       - name: Upload core file
