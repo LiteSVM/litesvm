@@ -9,5 +9,6 @@ fn test_dflow_load() {
     svm.add_program(
         pubkey!("DF1ow3DqMj3HvTj8i8J9yM2hE9hCrLLXpdbaKZu4ZPnz"),
         program_bytes,
-    );
+    )
+    .unwrap();
 }

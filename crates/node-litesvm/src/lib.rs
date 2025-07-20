@@ -236,9 +236,15 @@ impl LiteSvm {
 
     #[napi]
     /// Adds am SBF program to the test environment.
-    pub fn add_program(&mut self, program_id: Uint8Array, program_bytes: &[u8]) {
+    pub fn add_program(&mut self, program_id: Uint8Array, program_bytes: &[u8]) -> Result<()> {
         self.0
             .add_program(convert_pubkey(program_id), program_bytes)
+            .map_err(|e| {
+                Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to add program: {e}"),
+                )
+            })
     }
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
