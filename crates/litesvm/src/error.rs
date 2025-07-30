@@ -28,4 +28,6 @@ pub enum LiteSVMError {
     InvalidSysvarData(#[from] InvalidSysvarDataError),
     #[error("{0}")]
     Instruction(#[from] InstructionError),
+    #[error("{0}")]
+    InvalidPath(#[from] std::io::Error),
 }
