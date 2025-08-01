@@ -23,8 +23,9 @@ jobs:
 
       - name: Install Solana CLI
         run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/v2.2.18/install)"
-          echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          sh -c "$(curl -sSfL https://release.anza.xyz/v2.2.19/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          export PATH="$GITHUB_PATH:$PATH"
 
       - name: Build test programs
         run: cd crates/litesvm/test_programs && cargo build-sbf
@@ -51,9 +52,8 @@ jobs:
 
       - name: Rustup install nightly
         uses: dtolnay/rust-toolchain@nightly
-
-      - name: Rustup install rustfmt
-        run: rustup component add rustfmt --toolchain nightly
+        with:
+          components: clippy, rustfmt
 
       - name: Run cargo fmt
         run: cargo +nightly fmt --all -- --check

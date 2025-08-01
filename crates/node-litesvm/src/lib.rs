@@ -57,7 +57,9 @@ unsafe impl GlobalAlloc for LoggingAlloc {
         }
         p
     }
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) { System.dealloc(ptr, layout) }
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        System.dealloc(ptr, layout)
+    }
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         let p = System.realloc(ptr, layout, new_size);
         if p.is_null() {
@@ -69,7 +71,6 @@ unsafe impl GlobalAlloc for LoggingAlloc {
 
 #[global_allocator]
 static A: LoggingAlloc = LoggingAlloc;
-
 
 #[macro_use]
 extern crate napi_derive;

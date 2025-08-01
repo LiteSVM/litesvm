@@ -9,18 +9,18 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           check-latest: true
           cache: yarn
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
         run: cd crates/node-litesvm/ && corepack enable && yarn install
       - name: Download all artifacts
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v11
         with:
           workflow: node-build.yml
           path: crates/node-litesvm/artifacts
