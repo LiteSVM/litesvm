@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
     /**
      * Ref：https://v1.vuepress.vuejs.org/config/#title
@@ -41,9 +43,13 @@ module.exports = {
       [
         'vuepress-plugin-typedoc',
         {
-          entryPoints: ['litesvm/index.ts'],
-          tsconfig: 'tsconfig.json',
+          entryPoints: [
+            path.resolve(__dirname, '../../litesvm/index.ts')
+          ],
+          tsconfig: path.resolve(__dirname, '../../tsconfig.json'),
+          out: 'api',
           cleanOutputDir: true,
+          debug: true,
         },
       ],
     ],
