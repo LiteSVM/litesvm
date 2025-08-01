@@ -1,4 +1,4 @@
-name: CI2
+name: node-build
 env:
   DEBUG: napi:*
   APP_NAME: litesvm
