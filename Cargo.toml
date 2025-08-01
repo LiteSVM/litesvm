@@ -22,6 +22,7 @@ libsecp256k1 = "0.6.0"
 litesvm = { path = "crates/litesvm", version = "0.6" }
 log = "0.4"
 napi = { version = "3.1.5", default-features = false }
+napi-derive = "3.1.2"
 qualifier_attr = "0.2.2"
 serde = "1.0"
 smallvec = "1.13"
