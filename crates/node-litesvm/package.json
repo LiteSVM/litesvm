@@ -18,15 +18,17 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"@solana/web3.js": "^1.68.0",
-		"bs58": "^4.0.1"
+		"@solana/web3.js": "^1.98.4",
+		"bs58": "^6.0.0",
+		"fastestsmallesttextencoderdecoder": "^1.0.22"
 	},
 	"devDependencies": {
-		"@napi-rs/cli": "^3.0.0-alpha.89",
+		"@napi-rs/cli": "^3.0.4",
 		"@solana/spl-token": "^0.3.7",
 		"@swc/core": "^1.10.7",
 		"@types/bs58": "^4.0.1",
 		"@types/markdown-it": "^14.1.0",
+		"@types/node": "22",
 		"@types/node-fetch": "^2.6.4",
 		"bigint-buffer": "^1.1.5",
 		"markdown-it": "^14.1.0",
@@ -34,14 +36,15 @@
 		"rome": "^12.0.0",
 		"ts-node": "^10.9.1",
 		"tsconfig-paths": "^4.2.0",
-		"typedoc": "^0.24.0",
-		"typedoc-plugin-markdown": "^3.15.3",
-		"typescript": "5.1.6",
+		"typedoc": "^0.28.0",
+		"typedoc-plugin-markdown": "^4.8.0",
+		"typedoc-vitepress-theme": "^1.1.2",
+		"typescript": "5.8.3",
 		"vuepress": "^1.9.9",
-		"vuepress-plugin-typedoc": "^0.12.1"
+		"vuepress-plugin-typedoc": "^0.13.0"
 	},
 	"engines": {
-		"node": ">= 10"
+		"node": ">= 20"
 	},
 	"scripts": {
 		"artifacts": "napi artifacts",
