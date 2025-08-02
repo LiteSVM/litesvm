@@ -193,14 +193,6 @@ jobs:
         shell: bash
       - name: Install gdb
         run: sudo apt-get update && sudo apt-get install -y gdb
-      - name: Check available memory
-        run: |
-          echo "=== Memory Information ==="
-          free -h
-          echo "=== Node.js Memory Usage ==="
-          node -e "console.log('Node.js heap:', process.memoryUsage())"
-          echo "=== System Memory Info ==="
-          cat /proc/meminfo | head -10
       - name: Run node tests
         id: tests
         shell: bash
