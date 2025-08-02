@@ -197,11 +197,6 @@ jobs:
         id: tests
         shell: bash
         env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
+          NODE_OPTIONS: --max-old-space-size=8192
           UV_THREADPOOL_SIZE: "2"
-        run: |
-          # run the tests (let the job continue even on SIGABRT)
-          set +e
-          # Run tests with memory management
-          node -r ts-node/register -r tsconfig-paths/register \
-              --test --test-concurrency=1 tests/*.test.ts
+        run: node --test --test-concurrency=1 tests/*.test.ts
