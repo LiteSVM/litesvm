@@ -205,7 +205,7 @@ jobs:
         id: tests
         shell: bash
         env:
-          NODE_OPTIONS: "--max-old-space-size=8192 --expose-gc --optimize-for-size --gc-interval=100"
+          NODE_OPTIONS: "--max-old-space-size=8192 --expose-gc --gc-interval=100"
           UV_THREADPOOL_SIZE: "2"
         run: |
           # run the tests (let the job continue even on SIGABRT)
