@@ -193,12 +193,23 @@ jobs:
         shell: bash
       - name: Install gdb
         run: sudo apt-get update && sudo apt-get install -y gdb
+      - name: Check available memory
+        run: |
+          echo "=== Memory Information ==="
+          free -h
+          echo "=== Node.js Memory Usage ==="
+          node -e "console.log('Node.js heap:', process.memoryUsage())"
+          echo "=== System Memory Info ==="
+          cat /proc/meminfo | head -10
       - name: Run node tests
         id: tests
         shell: bash
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192 --expose-gc --optimize-for-size --gc-interval=100"
+          UV_THREADPOOL_SIZE: "2"
         run: |
           # run the tests (let the job continue even on SIGABRT)
           set +e
-          node --max-old-space-size=4096 \
-              -r ts-node/register -r tsconfig-paths/register \
+          # Run tests with memory management
+          node -r ts-node/register -r tsconfig-paths/register \
               --test --test-concurrency=1 tests/*.test.ts
