@@ -11,11 +11,18 @@ jobs:
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
+        
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          check-latest: true
+
       - name: Install dependencies
         run: cd crates/node-litesvm && corepack enable && yarn install
 
       - name: Build documentation
-        run: cd crates/node-litesvm && yarn docs:build
+        run: cd crates/node-litesvm && yarn predocs && yarn docs:build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
