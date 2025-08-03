@@ -21,13 +21,13 @@ on:
       - .editorconfig
       - crates/node-litesvm/docs/**
 
-defaults:
-  run:
-    working-directory: crates/node-litesvm
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v4
 
@@ -73,6 +73,9 @@ jobs:
             build: yarn build --target x86_64-unknown-linux-musl -x
     name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -141,6 +144,9 @@ jobs:
           - '20'
           - '22'
     runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -162,7 +168,6 @@ jobs:
         shell: bash
       - name: Test bindings
         run: yarn test
-        working-directory: crates/node-litesvm
   test-linux-binding:
     name: Test ${{ matrix.target }} - node@${{ matrix.node }}
     needs:
@@ -177,6 +182,9 @@ jobs:
           - '20'
           - '22'
     runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -221,7 +229,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gdb
       - name: Test bindings
         uses: addnab/docker-run-action@v3
-        working-directory: crates/node-litesvm
         with:
           image: ${{ steps.docker.outputs.IMAGE }}
           options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }}
