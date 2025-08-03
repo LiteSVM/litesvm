@@ -225,11 +225,9 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Install gdb
-        run: sudo apt-get update && sudo apt-get install -y gdb
       - name: Test bindings
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ steps.docker.outputs.IMAGE }}
-          options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }}
+          options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }}/crates/node-litesvm --platform ${{ steps.docker.outputs.PLATFORM }}
           run: yarn test        
