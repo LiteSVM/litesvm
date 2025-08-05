@@ -123,11 +123,10 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: yarn install
-      - name: Set C/C++ flags for ring on aarch64
+      - name: Force march for ring (aarch64 gnu)
         if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
         run: |
-          echo "CFLAGS_aarch64_unknown_linux_gnu=-march=armv8-a" >> $GITHUB_ENV
-          echo "CXXFLAGS_aarch64_unknown_linux_gnu=-march=armv8-a" >> $GITHUB_ENV
+          echo "TARGET_CFLAGS=-march=armv8-a" >> $GITHUB_ENV
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
