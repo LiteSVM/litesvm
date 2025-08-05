@@ -234,7 +234,4 @@ jobs:
         with:
           image: ${{ steps.docker.outputs.IMAGE }}
           options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }}/crates/node-litesvm --platform ${{ steps.docker.outputs.PLATFORM }}
-          run: |
-            rm -rf yarn.lock node_modules  # force re-resolution for this platform
-            yarn install
-            yarn test
+          run: yarn test
