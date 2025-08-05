@@ -38,4 +38,4 @@ solana-transaction-context = { workspace = true }
 solana-transaction-error = { workspace = true }
 
 [build-dependencies]
-napi-build = "2.0.1"
+napi-build = "2.2.3"
