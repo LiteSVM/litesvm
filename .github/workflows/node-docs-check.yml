@@ -29,6 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: yarn
+          cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Install dependencies
