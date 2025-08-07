@@ -17,6 +17,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
 
     steps:
       - name: Checkout
@@ -29,8 +32,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Install dependencies
-        working-directory: crates/node-litesvm
         run: yarn install
       - name: Build with VitePress
-        working-directory: crates/node-litesvm
         run: yarn predocs && yarn docs:build
