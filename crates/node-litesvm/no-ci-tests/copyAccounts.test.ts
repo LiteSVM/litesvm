@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
 import { PublicKey, Connection } from "@solana/web3.js";
 
@@ -13,5 +15,5 @@ test("copy accounts from devnet", async () => {
 	const svm = new LiteSVM();
 	svm.setAccount(usdcMint, accountInfo);
 	const rawAccount = svm.getAccount(usdcMint);
-	expect(rawAccount).not.toBeNull();
+	assert.notStrictEqual(rawAccount, null);
 });

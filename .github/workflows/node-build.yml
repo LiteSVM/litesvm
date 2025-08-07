@@ -20,81 +20,108 @@ on:
       - '**/*.gitignore'
       - .editorconfig
       - crates/node-litesvm/docs/**
+
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          cache-dependency-path: crates/node-litesvm/yarn.lock
+
+      - name: Install
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Oxlint
+        run: yarn lint
+
+      - name: Cargo fmt
+        run: cargo fmt -- --check
+
+      - name: Clippy
+        run: cargo clippy
   build:
     strategy:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-13
+          - host: macos-latest
             target: x86_64-apple-darwin
-            build: |
-              cd crates/node-litesvm &&
-              yarn build &&
-              strip -x litesvm/*.node
+            build: yarn build --target x86_64-apple-darwin
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            build: yarn build --target aarch64-apple-darwin
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: |-
-              set -e &&
-              cd crates/node-litesvm &&
-              yarn build --target x86_64-unknown-linux-gnu &&
-              strip litesvm/*.node
+            build: yarn build --target x86_64-unknown-linux-gnu --use-napi-cross
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust@sha256:10573060f07edd964f5de04a92d19f8228b396310a5c9c0df23ef69b1f566ab9
-            build: set -e && apk add perl && cd crates/node-litesvm && yarn build && strip litesvm/*.node
-          - host: macos-13
-            target: aarch64-apple-darwin
-            build: |
-              rustup target add aarch64-apple-darwin &&
-              cd crates/node-litesvm &&
-              yarn build --target aarch64-apple-darwin
-              strip -x litesvm/*.node
-    name: stable - ${{ matrix.settings.target }} - node@18
+            build: yarn build --target x86_64-unknown-linux-musl -x
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            build: yarn build --target aarch64-unknown-linux-musl -x
+    name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup node
-        uses: actions/setup-node@v3
-        if: ${{ !matrix.settings.docker }}
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          check-latest: true
+          node-version: 22
           cache: yarn
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install
-        uses: dtolnay/rust-toolchain@stable
-        if: ${{ !matrix.settings.docker }}
+        uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
+            ~/.napi-rs
             .cargo-cache
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+      - uses: mlugg/setup-zig@v2
+        if: ${{ contains(matrix.settings.target, 'musl') }}
+        with:
+          version: 0.14.1
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@v2
+        if: ${{ contains(matrix.settings.target, 'musl') }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tool: cargo-zigbuild
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
-        run: cd crates/node-litesvm && corepack enable && yarn install 
-      - name: Build in docker
-        uses: addnab/docker-run-action@v3
-        if: ${{ matrix.settings.docker }}
-        with:
-          image: ${{ matrix.settings.docker }}
-          options: '--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build'
-          run: ${{ matrix.settings.build }}
+        run: yarn install
       - name: Build
         run: ${{ matrix.settings.build }}
-        if: ${{ !matrix.settings.docker }}
         shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -102,39 +129,109 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: crates/node-litesvm/litesvm/litesvm.*.node
           if-no-files-found: error
-  universal-macOS:
-    name: Build universal macOS binary
+  test-macOS-binding:
+    name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:
       - build
-    runs-on: macos-13
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            architecture: arm64
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            architecture: x64
+        node:
+          - '20'
+          - '22'
+    runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: crates/node-litesvm
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          check-latest: true
+          node-version: ${{ matrix.node }}
           cache: yarn
+          architecture: ${{ matrix.settings.architecture }}
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
-        run: cd crates/node-litesvm && yarn install
-      - name: Download macOS x64 artifact
+        run: yarn install
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: bindings-x86_64-apple-darwin
-          path: crates/node-litesvm/artifacts
-      - name: Download macOS arm64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-aarch64-apple-darwin
-          path: crates/node-litesvm/artifacts
-      - name: Combine binaries
-        run: cd crates/node-litesvm && yarn universal
-      - name: Test universal binary
-        run: cd crates/node-litesvm && cp litesvm.darwin-universal.node litesvm/ && yarn test
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-universal-apple-darwin
-          path: crates/node-litesvm/litesvm/litesvm.*.node
-          if-no-files-found: error
+          name: bindings-${{ matrix.settings.target }}
+          path: crates/node-litesvm/litesvm
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Test bindings
+        run: yarn test
+  # test-linux-binding:
+  #   name: Test ${{ matrix.target }} - node@${{ matrix.node }}
+  #   needs:
+  #     - build
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       target:
+  #         - x86_64-unknown-linux-gnu
+  #         - x86_64-unknown-linux-musl
+  #         - aarch64-unknown-linux-musl
+  #       node:
+  #         - '20'
+  #         - '22'
+  #   runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+  #   defaults:
+  #     run:
+  #       working-directory: crates/node-litesvm
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ matrix.node }}
+  #         cache: yarn
+  #         cache-dependency-path: crates/node-litesvm/yarn.lock
+  #     - name: Output docker params
+  #       id: docker
+  #       run: |
+  #         node -e "
+  #           if ('${{ matrix.target }}'.startsWith('aarch64')) {
+  #             console.log('PLATFORM=linux/arm64')
+  #           } else if ('${{ matrix.target }}'.startsWith('armv7')) {
+  #             console.log('PLATFORM=linux/arm/v7')
+  #           } else {
+  #             console.log('PLATFORM=linux/amd64')
+  #           }
+  #         " >> $GITHUB_OUTPUT
+  #         node -e "
+  #           if ('${{ matrix.target }}'.endsWith('-musl')) {
+  #             console.log('IMAGE=node:${{ matrix.node }}-alpine')
+  #           } else {
+  #             console.log('IMAGE=node:${{ matrix.node }}-slim')
+  #           }
+  #         " >> $GITHUB_OUTPUT
+  #     - name: Install dependencies
+  #       run: |
+  #         yarn config set --json supportedArchitectures.cpu '["current", "arm64", "x64", "arm"]'
+  #         yarn config set --json supportedArchitectures.libc '["current", "musl", "gnu"]'
+  #         yarn install
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: bindings-${{ matrix.target }}
+  #         path: crates/node-litesvm/litesvm
+  #     - name: List packages
+  #       run: ls -R .
+  #       shell: bash
+  #     - name: Test bindings
+  #       uses: addnab/docker-run-action@v3
+  #       with:
+  #         image: ${{ steps.docker.outputs.IMAGE }}
+  #         options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }}/crates/node-litesvm --platform ${{ steps.docker.outputs.PLATFORM }}
+  #         run: yarn test

@@ -18,7 +18,7 @@ To add a compiled program to our tests we can use the `addProgramFromFile` metho
 Here's an example using a [simple program](https://github.com/solana-labs/solana-program-library/tree/bd216c8103cd8eb9f5f32e742973e7afb52f3b81/examples/rust/logging)
 from the Solana Program Library that just does some logging:
 
-<<< @/tests/splLogging.test.ts
+<<< @/../tests/splLogging.test.ts
 
 ## Time travel
 
@@ -27,7 +27,7 @@ a certain time. With `litesvm` you can dynamically overwrite the `Clock` sysvar 
 Here's an example using a program that panics if `clock.unix_timestamp` is greater than 100
 (which is on January 1st 1970):
 
-<<< @/tests/clock.test.ts
+<<< @/../tests/clock.test.ts
 
 See also: `svm.warpToSlot()`, which lets you jump to a future slot.
 
@@ -41,7 +41,7 @@ even though we don't have the USDC mint keypair. This is
 convenient for testing because it means we don't have to
 work with fake USDC in our tests:
 
-<<< @/tests/usdcMint.test.ts
+<<< @/../tests/usdcMint.test.ts
 
 ### Copying Accounts from a live environment
 
@@ -50,7 +50,7 @@ If you want to copy accounts from mainnet or devnet, you can use the `solana acc
 Or, if you want to pull live data every time you test, you can do this with a few lines of code. Here's a simple example that pulls account data from devnet
 and passes it to LiteSVM:
 
-<<< @/tests/copyAccounts.test.ts
+<<< @/../no-ci-tests/copyAccounts.test.ts
 
 ## Other features
 

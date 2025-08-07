@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import {
 	LAMPORTS_PER_SOL,
 	Transaction,
@@ -10,13 +12,16 @@ import { TransactionMetadata } from "internal";
 test("hello world", () => {
 	const [svm, programId, greetedPubkey] = helloworldProgram();
 	const lamports = getLamports(svm, greetedPubkey);
-	expect(lamports === LAMPORTS_PER_SOL);
+	assert.strictEqual(lamports, LAMPORTS_PER_SOL);
 	const payer = new Keypair();
 	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	expect(greetedAccountBefore).not.toBeNull();
-	expect(greetedAccountBefore?.data).toEqual(new Uint8Array([0, 0, 0, 0]));
+	assert.notStrictEqual(greetedAccountBefore, null);
+	assert.deepStrictEqual(
+		greetedAccountBefore?.data,
+		new Uint8Array([0, 0, 0, 0]),
+	);
 	const ix = new TransactionInstruction({
 		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
 		programId,
@@ -28,8 +33,11 @@ test("hello world", () => {
 	tx.sign(payer);
 	svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
-	expect(greetedAccountAfter).not.toBeNull();
-	expect(greetedAccountAfter?.data).toEqual(new Uint8Array([1, 0, 0, 0]));
+	assert.notStrictEqual(greetedAccountAfter, null);
+	assert.deepStrictEqual(
+		greetedAccountAfter?.data,
+		new Uint8Array([1, 0, 0, 0]),
+	);
 	const fetched = svm.getTransaction(tx.signature);
-	expect(fetched).toBeInstanceOf(TransactionMetadata);
+	assert.ok(fetched instanceof TransactionMetadata);
 });

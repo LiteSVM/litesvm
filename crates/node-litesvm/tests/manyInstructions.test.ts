@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import {
 	LAMPORTS_PER_SOL,
 	Transaction,
@@ -17,8 +19,11 @@ test("many instructions", () => {
 	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	expect(greetedAccountBefore).not.toBeNull();
-	expect(greetedAccountBefore?.data).toEqual(new Uint8Array([0, 0, 0, 0]));
+	assert.notStrictEqual(greetedAccountBefore, null);
+	assert.deepStrictEqual(
+		greetedAccountBefore?.data,
+		new Uint8Array([0, 0, 0, 0]),
+	);
 	const numIxs = 64;
 	const ixs = Array(numIxs).fill(ix);
 	const tx = new Transaction();
@@ -27,6 +32,9 @@ test("many instructions", () => {
 	tx.sign(payer);
 	svm.sendTransaction(tx);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
-	expect(greetedAccountAfter).not.toBeNull();
-	expect(greetedAccountAfter?.data).toEqual(new Uint8Array([64, 0, 0, 0]));
+	assert.notStrictEqual(greetedAccountAfter, null);
+	assert.deepStrictEqual(
+		greetedAccountAfter?.data,
+		new Uint8Array([64, 0, 0, 0]),
+	);
 });

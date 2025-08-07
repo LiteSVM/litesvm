@@ -14,15 +14,15 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
           check-latest: true
-      - uses: hecrj/setup-rust-action@v1
+      - name: Rustup install
+        uses: dtolnay/rust-toolchain@stable
         with:
-          rust-version: 1.68.0
           components: clippy
       - name: Install dependencies
         run: cd crates/node-litesvm && corepack enable && yarn install

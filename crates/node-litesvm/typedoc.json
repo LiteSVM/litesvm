@@ -1,0 +1,14 @@
+{
+    "entryPoints": [
+        "./litesvm/index.ts"
+    ],
+    "includeVersion": true,
+    "readme": "none",
+    "name": "API Reference",
+    "out": "./docs/api",
+    "docsRoot": "./docs",
+    "plugin": [
+        "typedoc-plugin-markdown",
+        "typedoc-vitepress-theme"
+    ]
+}

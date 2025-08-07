@@ -154,7 +154,6 @@ impl FailedTransactionMetadata {
 
 to_string_js!(FailedTransactionMetadata);
 
-#[derive(Clone)]
 #[napi]
 pub struct AddressAndAccount {
     pub address: Uint8Array,
