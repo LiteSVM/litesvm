@@ -19,15 +19,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          check-latest: true
+          cache: yarn
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
       - name: Install dependencies
-        run: cd crates/node-litesvm && corepack enable && yarn install
-
-      - name: Build documentation
-        run: cd crates/node-litesvm && yarn predocs && yarn docs:build
+        working-directory: crates/node-litesvm
+        run: yarn install
+      - name: Build with VitePress
+        working-directory: crates/node-litesvm
+        run: yarn predocs && yarn docs:build
