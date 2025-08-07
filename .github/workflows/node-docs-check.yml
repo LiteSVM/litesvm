@@ -17,10 +17,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: crates/node-litesvm
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,9 +26,9 @@ jobs:
           node-version: 22
           cache: yarn
           cache-dependency-path: crates/node-litesvm/yarn.lock
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
       - name: Install dependencies
+        working-directory: crates/node-litesvm
         run: yarn install
       - name: Build with VitePress
+        working-directory: crates/node-litesvm
         run: yarn predocs && yarn docs:build
