@@ -28,13 +28,15 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Install dependencies
+        working-directory: crates/node-litesvm
         run: yarn install
       - name: Build with VitePress
+        working-directory: crates/node-litesvm
         run: yarn docs:build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: crates/node-litesvm/docs/.vitepress/dist
 
   deploy:
     environment:
