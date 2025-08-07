@@ -4,7 +4,7 @@ import typedocSidebar from '../api/typedoc-sidebar.json';
 export default defineConfig({
   title: "LiteSVM",
   description: "A VitePress Site",
-  base: "litesvm",
+  base: "/litesvm",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
