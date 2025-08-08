@@ -7,9 +7,10 @@ edition = "2021"
 crate-type = ["cdylib", "lib"]
 
 [features]
+custom-heap = []
+custom-panic = []
 no-entrypoint = []
 cpi = ["no-entrypoint"]
-default = []
 
 [dependencies]
 borsh.workspace = true
