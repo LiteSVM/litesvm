@@ -265,7 +265,7 @@ use {
         error::LiteSVMError,
         history::TransactionHistory,
         message_processor::process_message,
-        spl::load_spl_programs,
+        programs::load_default_programs,
         types::{
             ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult,
         },
@@ -343,7 +343,7 @@ mod format_logs;
 mod history;
 mod message_processor;
 mod precompiles;
-mod spl;
+mod programs;
 mod utils;
 
 #[derive(Clone)]
@@ -386,7 +386,7 @@ impl LiteSVM {
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_precompiles()
-            .with_spl_programs()
+            .with_default_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
     }
@@ -526,13 +526,13 @@ impl LiteSVM {
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
-    fn set_spl_programs(&mut self) {
-        load_spl_programs(self);
+    fn set_default_programs(&mut self) {
+        load_default_programs(self);
     }
 
     /// Includes the standard SPL programs.
-    pub fn with_spl_programs(mut self) -> Self {
-        self.set_spl_programs();
+    pub fn with_default_programs(mut self) -> Self {
+        self.set_default_programs();
         self
     }
 
