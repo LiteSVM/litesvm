@@ -6,6 +6,7 @@ use {
     solana_instructions_sysvar::construct_instructions_data,
     solana_message::SanitizedMessage,
     solana_sha256_hasher::Hasher,
+    solana_svm_callback::InvokeContextCallback,
 };
 
 pub mod inner_instructions;
@@ -44,3 +45,7 @@ pub(crate) fn create_loadable_account_with_fields(
 pub(crate) fn create_loadable_account_for_test(name: &str) -> AccountSharedData {
     create_loadable_account_with_fields(name, DUMMY_INHERITABLE_ACCOUNT_FIELDS)
 }
+
+pub(crate) struct EmptyCallback;
+
+impl InvokeContextCallback for EmptyCallback {}
