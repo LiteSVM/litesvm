@@ -1,7 +1,7 @@
 use {
     crate::{to_string_js, util::convert_pubkey},
+    agave_feature_set::FeatureSet as FeatureSetOriginal,
     napi::bindgen_prelude::*,
-    solana_feature_set::FeatureSet as FeatureSetOriginal,
 };
 
 #[derive(Debug, Clone)]

@@ -4,6 +4,10 @@ version = "0.0.0"
 edition = "2021"
 include = ["/src"]
 
+[features]
+custom-heap = []
+custom-panic = []
+
 [dependencies]
 solana-account-info = { workspace = true }
 solana-clock = { workspace = true }

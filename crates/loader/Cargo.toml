@@ -9,7 +9,6 @@ rust-version.workspace = true
 
 [dependencies]
 litesvm = { workspace = true }
-solana-feature-set.workspace = true
 solana-instruction.workspace = true
 solana-keypair.workspace = true
 solana-loader-v3-interface = { workspace = true, features = ["bincode"] }
@@ -18,6 +17,7 @@ solana-signer.workspace = true
 solana-transaction.workspace = true
 
 [dev-dependencies]
+agave-feature-set.workspace = true
 solana-message.workspace = true
 test-log.workspace = true
 

@@ -10,6 +10,8 @@ license = "MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
+agave-feature-set.workspace = true
+agave-precompiles.workspace = true
 bincode = { workspace = true }
 bv = "0.11.1"
 litesvm = { workspace = true, features = ["nodejs-internal"] }
@@ -20,12 +22,10 @@ solana-clock = { workspace = true }
 solana-compute-budget = { workspace = true }
 solana-epoch-rewards = { workspace = true }
 solana-epoch-schedule = { workspace = true }
-solana-feature-set = { workspace = true }
 solana-hash = { workspace = true }
 solana-instruction = { workspace = true }
 solana-last-restart-slot = { workspace = true }
 solana-message = { workspace = true }
-solana-precompiles = { workspace = true, features = ["openssl-vendored"] }
 solana-pubkey = { workspace = true }
 solana-rent = { workspace = true }
 solana-signature = { workspace = true }
