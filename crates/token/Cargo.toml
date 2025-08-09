@@ -12,7 +12,7 @@ default = ["spl-token"]
 token-2022 = ["spl-token-2022"]
 
 [dependencies]
-litesvm.workspace = true
+litesvm = { workspace = true, features = ["cu-recorder"] }
 smallvec = "1.13"
 solana-keypair.workspace = true
 solana-program-pack.workspace = true

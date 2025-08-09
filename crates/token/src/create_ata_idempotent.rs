@@ -4,7 +4,6 @@ use {
     solana_keypair::Keypair,
     solana_pubkey::Pubkey,
     solana_signer::Signer,
-    solana_transaction::Transaction,
     spl_associated_token_account_client::instruction::create_associated_token_account_idempotent,
 };
 
@@ -60,11 +59,12 @@ impl<'a> CreateAssociatedTokenAccountIdempotent<'a> {
             token_program_id,
         );
 
-        let block_hash = self.svm.latest_blockhash();
-        let tx =
-            Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[self.payer], block_hash);
-
-        self.svm.send_transaction(tx)?;
+        self.svm.send_tx_from_ix_and_record_cus(
+            "create_ata_idempotent",
+            ix,
+            &payer_pk,
+            &[self.payer],
+        )?;
 
         let ata = spl_associated_token_account_client::address::get_associated_token_address_with_program_id(
             &authority,

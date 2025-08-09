@@ -255,6 +255,8 @@ much easier.
 
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
+#[cfg(feature = "cu-recorder")]
+use solana_instruction::Instruction;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
@@ -262,6 +264,7 @@ use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use {
     crate::{
         accounts_db::AccountsDb,
+        compute_unit_recorder::ComputeUnitRecorder,
         error::LiteSVMError,
         history::TransactionHistory,
         message_processor::process_message,
@@ -318,6 +321,7 @@ use {
     solana_transaction::{
         sanitized::{MessageHash, SanitizedTransaction},
         versioned::VersionedTransaction,
+        Transaction,
     },
     solana_transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
     solana_transaction_error::TransactionError,
@@ -333,6 +337,9 @@ pub mod error;
 pub mod types;
 
 mod accounts_db;
+
+#[cfg(feature = "cu-recorder")]
+mod compute_unit_recorder;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -352,6 +359,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    cu_recorder: Option<ComputeUnitRecorder>,
 }
 
 impl Default for LiteSVM {
@@ -367,6 +375,7 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            cu_recorder: None,
         }
     }
 }
@@ -1187,6 +1196,43 @@ impl LiteSVM {
         }
     }
 
+    /// Builds and Submits a transaction from the ix provided and records consumed compute units (CUs).
+    #[cfg(feature = "cu-recorder")]
+    pub fn send_tx_from_ix_and_record_cus(
+        &mut self,
+        ix_iden: impl ToString,
+        ix: Instruction,
+        payer_pk: &Pubkey,
+        signers: &[&Keypair],
+    ) -> TransactionResult {
+        let tx = Transaction::new_signed_with_payer(
+            &[ix],
+            Some(payer_pk),
+            signers,
+            self.latest_blockhash(),
+        );
+
+        let tx_res = self.send_transaction(tx)?;
+
+        let cu_recorder = self
+            .cu_recorder
+            .as_mut()
+            .expect("ComputeUnitRecorder not set");
+        cu_recorder.record_cus(ix_iden.to_string(), tx_res.compute_units_consumed);
+
+        Ok(tx_res)
+    }
+
+    /// Saves the recorded CU logs to the change log JSON file.
+    #[cfg(feature = "cu-recorder")]
+    pub fn save_cu_logs(&self) {
+        let cu_recorder = self
+            .cu_recorder
+            .as_ref()
+            .expect("ComputeUnitRecorder not set");
+        cu_recorder.commit_to_change_log();
+    }
+
     /// Simulates a transaction.
     pub fn simulate_transaction(
         &self,
@@ -1317,6 +1363,12 @@ impl LiteSVM {
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
+    }
+
+    #[cfg(feature = "cu-recorder")]
+    pub fn with_compute_units_recorder(mut self) -> Self {
+        self.cu_recorder = Some(ComputeUnitRecorder::new());
+        self
     }
 }
 

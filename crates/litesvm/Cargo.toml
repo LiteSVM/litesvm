@@ -11,6 +11,8 @@ readme = "../../README.md"
 [features]
 internal-test = []
 nodejs-internal = ["dep:qualifier_attr"]
+cu-recorder = ["serde", "dep:sha2", "dep:serde_json", "dep:chrono"]
+
 
 [dependencies]
 agave-reserved-account-keys.workspace = true
@@ -21,6 +23,11 @@ itertools.workspace = true
 log.workspace = true
 qualifier_attr = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+
+
 solana-account.workspace = true
 solana-address-lookup-table-interface.workspace = true
 solana-bpf-loader-program.workspace = true
@@ -67,7 +74,7 @@ solana-sysvar-id.workspace = true
 solana-timings.workspace = true
 solana-transaction = { workspace = true, features = ["precompiles", "verify"] }
 solana-transaction-context.workspace = true
-solana-transaction-error.workspace = true
+solana-transaction-error = { workspace = true, features = ["serde"] }
 solana-vote-program.workspace = true
 thiserror.workspace = true
 

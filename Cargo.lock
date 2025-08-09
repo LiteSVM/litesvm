@@ -2202,6 +2202,7 @@ checksum = "fe4cd85333e22411419a0bcae1297d25e58c9443848b11dc6a86fefe8c78a661"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.4",
+ "serde",
 ]
 
 [[package]]
@@ -2471,6 +2472,7 @@ dependencies = [
  "agave-reserved-account-keys",
  "ansi_term",
  "bincode",
+ "chrono",
  "criterion",
  "ed25519-dalek",
  "indexmap",
@@ -2479,6 +2481,8 @@ dependencies = [
  "log",
  "qualifier_attr",
  "serde",
+ "serde_json",
+ "sha2 0.10.9",
  "solana-account",
  "solana-address-lookup-table-interface",
  "solana-bpf-loader-program",

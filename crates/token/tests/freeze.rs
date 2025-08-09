@@ -12,7 +12,7 @@ use {
 
 #[test]
 fn test() {
-    let svm = &mut LiteSVM::new();
+    let svm = &mut LiteSVM::new().with_compute_units_recorder();
 
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
@@ -46,4 +46,5 @@ fn test() {
 
     let account: Account = get_spl_account(svm, &account_pk).unwrap();
     assert!(!account.is_frozen());
+    svm.save_cu_logs();
 }
