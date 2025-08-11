@@ -2588,6 +2588,7 @@ dependencies = [
  "solana-native-token 3.0.0",
  "solana-nonce",
  "solana-nonce-account",
+ "solana-precompile-error",
  "solana-program-error",
  "solana-program-option",
  "solana-program-pack",

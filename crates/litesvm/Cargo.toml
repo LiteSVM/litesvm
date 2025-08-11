@@ -46,6 +46,7 @@ solana-message.workspace = true
 solana-native-token.workspace = true
 solana-nonce.workspace = true
 solana-nonce-account.workspace = true
+solana-precompile-error.workspace = true
 solana-program-error.workspace = true
 solana-program-runtime.workspace = true
 solana-pubkey.workspace = true

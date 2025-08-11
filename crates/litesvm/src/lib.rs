@@ -272,7 +272,6 @@ use {
         utils::{
             create_blockhash,
             rent::{check_rent_state_with_account, get_account_rent_state},
-            EmptyCallback,
         },
     },
     agave_feature_set::FeatureSet,
@@ -339,6 +338,7 @@ pub mod error;
 pub mod types;
 
 mod accounts_db;
+mod callback;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -776,7 +776,6 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
-        // tx.verify_precompiles(&self.feature_set)?; TODO
 
         Ok(tx)
     }
@@ -935,7 +934,7 @@ impl LiteSVM {
                     EnvironmentConfig::new(
                         *blockhash,
                         self.fee_structure.lamports_per_signature,
-                        &EmptyCallback,
+                        self,
                         &feature_set,
                         &self.accounts.sysvar_cache,
                     ),
