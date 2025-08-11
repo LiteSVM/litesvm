@@ -607,8 +607,8 @@ impl LiteSVM {
     where
         T: Sysvar + SysvarId,
     {
-        let account =
-            AccountSharedData::new_data(1, &sysvar, &solana_sdk_ids::sysvar::id()).unwrap();
+        let mut account = AccountSharedData::new(1, T::size_of(), &solana_sdk_ids::sysvar::id());
+        account.serialize_data(sysvar).unwrap();
         self.accounts.add_account(T::id(), account).unwrap();
     }
 
