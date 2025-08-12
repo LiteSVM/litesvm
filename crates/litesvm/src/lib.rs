@@ -985,18 +985,20 @@ impl LiteSVM {
                     .get_key_of_account_at_index(index as IndexOfAccount)
                     .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
 
-                let post_rent_state = get_account_rent_state(&rent, &account);
-                let pre_rent_state = get_account_rent_state(
-                    &rent,
-                    &self.accounts.get_account(pubkey).unwrap_or_default(),
-                );
+                if !account.data().is_empty() {
+                    let post_rent_state = get_account_rent_state(&rent, &account);
+                    let pre_rent_state = get_account_rent_state(
+                        &rent,
+                        &self.accounts.get_account(pubkey).unwrap_or_default(),
+                    );
 
-                check_rent_state_with_account(
-                    &pre_rent_state,
-                    &post_rent_state,
-                    pubkey,
-                    index as IndexOfAccount,
-                )?;
+                    check_rent_state_with_account(
+                        &pre_rent_state,
+                        &post_rent_state,
+                        pubkey,
+                        index as IndexOfAccount,
+                    )?;
+                }
             }
         }
         Ok(())
