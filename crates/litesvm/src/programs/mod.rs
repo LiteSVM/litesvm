@@ -12,7 +12,7 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
     .unwrap();
     svm.add_program(
         pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
-        include_bytes!("elf/spl_token_2022-5.0.2.so"),
+        include_bytes!("elf/spl_token_2022-8.0.0.so"),
     )
     .unwrap();
     svm.add_program(
