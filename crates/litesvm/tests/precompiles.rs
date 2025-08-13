@@ -83,7 +83,7 @@ fn secp256k1_precompile_ok() {
     let mut svm = LiteSVM::new();
     svm.airdrop(&kp.pubkey(), 10u64.pow(9)).unwrap();
 
-    // Act - Produce an invalid secp256k1 instruction.
+    // Act - Produce an valid secp256k1 instruction.
     let msg = b"hello world";
     let secp_pubkey = libsecp256k1::PublicKey::from_secret_key(&kp_secp256k1);
     let eth_address = eth_address_from_pubkey(&secp_pubkey.serialize()[1..].try_into().unwrap());
