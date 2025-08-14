@@ -143,8 +143,8 @@ impl LiteSvm {
 
     #[napi]
     /// Includes the standard SPL programs
-    pub fn set_spl_programs(&mut self) {
-        self.0.set_spl_programs();
+    pub fn set_default_programs(&mut self) {
+        self.0.set_default_programs();
     }
 
     #[napi]

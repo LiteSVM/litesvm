@@ -4,7 +4,10 @@ use {
     litesvm::LiteSVM,
     serde::{Deserialize, Serialize},
     solana_account::{Account, ReadableAccount},
-    solana_config_program::{config_instruction, get_config_data, ConfigKeys, ConfigState},
+    solana_config_interface::{
+        instruction::{create_account_with_max_config_space, store},
+        state::ConfigKeys,
+    },
     solana_instruction::{error::InstructionError, AccountMeta},
     solana_keypair::Keypair,
     solana_pubkey::Pubkey,
@@ -32,10 +35,11 @@ impl MyConfig {
     }
 }
 
-impl ConfigState for MyConfig {
-    fn max_space() -> u64 {
-        serialized_size(&Self::default()).unwrap()
-    }
+/// Utility for extracting the `ConfigKeys` data from the account data.
+pub fn get_config_data(bytes: &[u8]) -> Result<&[u8], bincode::Error> {
+    bincode::deserialize::<ConfigKeys>(bytes)
+        .and_then(|keys| bincode::serialized_size(&keys))
+        .map(|offset| &bytes[offset as usize..])
 }
 
 struct TestContext {
@@ -64,11 +68,13 @@ fn create_config_account(
     let payer = &ctx.payer;
 
     let space = get_config_space(keys.len());
+    let max_space = serialized_size(&MyConfig::default()).unwrap();
     let lamports = ctx.svm.get_sysvar::<Rent>().minimum_balance(space);
-    let instructions = config_instruction::create_account::<MyConfig>(
+    let instructions = create_account_with_max_config_space::<MyConfig>(
         &payer.pubkey(),
         &config_keypair.pubkey(),
         lamports,
+        max_space,
         keys,
     );
 
@@ -103,7 +109,7 @@ fn test_process_store_ok() {
     let my_config = MyConfig::new(42);
 
     create_config_account(&mut context, &config_keypair, keys.clone());
-    let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     let payer = &context.payer;
 
     context
@@ -134,8 +140,7 @@ fn test_process_store_fail_instruction_data_too_large() {
     let my_config = MyConfig::new(42);
 
     create_config_account(&mut context, &config_keypair, keys.clone());
-    let mut instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let mut instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     instruction.data = vec![0; 123]; // <-- Replace data with a vector that's too large
     let payer = &context.payer;
 
@@ -164,8 +169,7 @@ fn test_process_store_fail_account0_not_signer() {
     let my_config = MyConfig::new(42);
 
     create_config_account(&mut context, &config_keypair, keys.clone());
-    let mut instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let mut instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     let payer = &context.payer;
 
     instruction.accounts[0].is_signer = false; // <----- not a signer
@@ -203,8 +207,7 @@ fn test_process_store_with_additional_signers() {
     let my_config = MyConfig::new(42);
 
     create_config_account(&mut context, &config_keypair, keys.clone());
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
     let payer = &context.payer;
 
     context
@@ -241,15 +244,14 @@ fn test_process_store_bad_config_account() {
         .svm
         .set_account(
             signer0.pubkey(),
-            Account::new(100_000, 0, &solana_config_program::id()),
+            Account::new(100_000, 0, &solana_config_interface::id()),
         )
         .unwrap();
 
     create_config_account(&mut context, &config_keypair, keys.clone());
     let payer = &context.payer;
 
-    let mut instruction =
-        config_instruction::store(&config_keypair.pubkey(), false, keys, &my_config);
+    let mut instruction = store(&config_keypair.pubkey(), false, keys, &my_config);
     instruction.accounts.remove(0); // Config popped out of instruction.
 
     let err = context
@@ -283,8 +285,7 @@ fn test_process_store_with_bad_additional_signer() {
     let payer = &context.payer;
 
     // Config-data pubkey doesn't match signer.
-    let mut instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
+    let mut instruction = store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
     instruction.accounts[1] = AccountMeta::new(bad_signer.pubkey(), true);
     let err = context
         .svm
@@ -302,8 +303,7 @@ fn test_process_store_with_bad_additional_signer() {
     );
 
     // Config-data pubkey not a signer.
-    let mut instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let mut instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     instruction.accounts[1].is_signer = false;
     let err = context
         .svm
@@ -341,8 +341,7 @@ fn test_config_updates() {
     create_config_account(&mut context, &config_keypair, keys.clone());
     let payer = &context.payer;
 
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -355,8 +354,7 @@ fn test_config_updates() {
 
     // Update with expected signatures.
     let new_config = MyConfig::new(84);
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), false, keys.clone(), &new_config);
+    let instruction = store(&config_keypair.pubkey(), false, keys.clone(), &new_config);
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -380,7 +378,7 @@ fn test_config_updates() {
         (pubkey, false),
         (signer0.pubkey(), true), // Missing signer1.
     ];
-    let instruction = config_instruction::store(&config_keypair.pubkey(), false, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), false, keys, &my_config);
     let err = context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -402,7 +400,7 @@ fn test_config_updates() {
         (signer0.pubkey(), true),
         (signer2.pubkey(), true), // Incorrect signer1.
     ];
-    let instruction = config_instruction::store(&config_keypair.pubkey(), false, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), false, keys, &my_config);
     let err = context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -438,7 +436,7 @@ fn test_config_initialize_contains_duplicates_fails() {
     let payer = &context.payer;
 
     // Attempt initialization with duplicate signer inputs.
-    let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     let err = context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -474,7 +472,7 @@ fn test_config_update_contains_duplicates_fails() {
     create_config_account(&mut context, &config_keypair, keys.clone());
     let payer = &context.payer;
 
-    let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -492,8 +490,7 @@ fn test_config_update_contains_duplicates_fails() {
         (signer0.pubkey(), true),
         (signer0.pubkey(), true), // Duplicate signer0.
     ];
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, dupe_keys, &new_config);
+    let instruction = store(&config_keypair.pubkey(), true, dupe_keys, &new_config);
     let err = context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -532,8 +529,7 @@ fn test_config_updates_requiring_config() {
     );
     let payer = &context.payer;
 
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -546,8 +542,7 @@ fn test_config_updates_requiring_config() {
 
     // Update with expected signatures.
     let new_config = MyConfig::new(84);
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &new_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys.clone(), &new_config);
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -568,7 +563,7 @@ fn test_config_updates_requiring_config() {
 
     // Attempt update with incomplete signatures.
     let keys = vec![(pubkey, false), (config_keypair.pubkey(), true)]; // Missing signer0.
-    let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     let err = context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -591,11 +586,13 @@ fn test_config_initialize_no_panic() {
     let config_keypair = Keypair::new();
     create_config_account(&mut context, &config_keypair, vec![]);
     let payer = &context.payer;
+    let max_space = serialized_size(&MyConfig::default()).unwrap();
 
-    let instructions = config_instruction::create_account::<MyConfig>(
+    let instructions = create_account_with_max_config_space::<MyConfig>(
         &payer.pubkey(),
         &config_keypair.pubkey(),
         1,
+        max_space,
         vec![],
     );
     let mut instruction = instructions[1].clone();
@@ -645,7 +642,7 @@ fn test_config_bad_owner() {
 
     let payer = &context.payer;
 
-    let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
     let err = context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -679,8 +676,7 @@ fn test_maximum_keys_input() {
     let my_config = MyConfig::new(42);
 
     create_config_account(&mut context, &config_keypair, keys.clone());
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys.clone(), &my_config);
     let payer = &context.payer;
 
     context
@@ -702,8 +698,7 @@ fn test_maximum_keys_input() {
     // Do an update with 37 keys, forcing the program to deserialize the
     // config account data.
     let new_config = MyConfig::new(84);
-    let instruction =
-        config_instruction::store(&config_keypair.pubkey(), true, keys.clone(), &new_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys.clone(), &new_config);
     context
         .svm
         .send_transaction(Transaction::new_signed_with_payer(
@@ -717,7 +712,7 @@ fn test_maximum_keys_input() {
     // Now try to store with 38 keys.
     keys.push((Pubkey::new_unique(), false));
     let my_config = MyConfig::new(42);
-    let instruction = config_instruction::store(&config_keypair.pubkey(), true, keys, &my_config);
+    let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
 
     let err = context
         .svm

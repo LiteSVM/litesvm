@@ -409,7 +409,6 @@ export declare class Rent {
    * Creates a `Rent` that charges no lamports.
    *
    * This is used for testing.
-   *
    */
   static free(): Rent
   /**

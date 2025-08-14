@@ -5,7 +5,10 @@ use {
     solana_instruction::error::InstructionError,
     solana_keypair::Keypair,
     solana_message::Message,
-    solana_secp256k1_program::{self as secp256k1_instruction, new_secp256k1_instruction},
+    solana_secp256k1_program::{
+        self as secp256k1_instruction, eth_address_from_pubkey,
+        new_secp256k1_instruction_with_signature, sign_message,
+    },
     solana_signer::Signer as SolanaSigner,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
@@ -80,8 +83,13 @@ fn secp256k1_precompile_ok() {
     let mut svm = LiteSVM::new();
     svm.airdrop(&kp.pubkey(), 10u64.pow(9)).unwrap();
 
-    // Act - Produce a valid secp256k1 instruction.
-    let ix = new_secp256k1_instruction(&kp_secp256k1, b"hello world");
+    // Act - Produce an valid secp256k1 instruction.
+    let msg = b"hello world";
+    let secp_pubkey = libsecp256k1::PublicKey::from_secret_key(&kp_secp256k1);
+    let eth_address = eth_address_from_pubkey(&secp_pubkey.serialize()[1..].try_into().unwrap());
+    let (signature, recovery_id) = sign_message(&kp_secp256k1.serialize(), msg).unwrap();
+    let ix = new_secp256k1_instruction_with_signature(msg, &signature, recovery_id, &eth_address);
+
     let tx = Transaction::new(
         &[&kp],
         Message::new(&[ix], Some(&kp.pubkey())),
@@ -102,7 +110,13 @@ fn secp256k1_precompile_err() {
     svm.airdrop(&kp.pubkey(), 10u64.pow(9)).unwrap();
 
     // Act - Produce an invalid secp256k1 instruction.
-    let mut ix = new_secp256k1_instruction(&kp_secp256k1, b"hello world");
+    let msg = b"hello world";
+    let secp_pubkey = libsecp256k1::PublicKey::from_secret_key(&kp_secp256k1);
+    let eth_address = eth_address_from_pubkey(&secp_pubkey.serialize()[1..].try_into().unwrap());
+    let (signature, recovery_id) = sign_message(&kp_secp256k1.serialize(), msg).unwrap();
+    let mut ix =
+        new_secp256k1_instruction_with_signature(msg, &signature, recovery_id, &eth_address);
+
     ix.data[secp256k1_instruction::DATA_START + 32] += 1;
     let tx = Transaction::new(
         &[&kp],

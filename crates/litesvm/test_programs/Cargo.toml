@@ -3,14 +3,14 @@ members = ["clock-example", "counter", "failure"]
 resolver = "2"
 
 [workspace.dependencies]
-borsh = "0.9.3"
-solana-account-info = "2.2"
+borsh = "1.5.5"
+solana-account-info = "2.3"
 solana-clock = "2.2"
 solana-msg = "2.2"
-solana-program-entrypoint = "2.2"
+solana-program-entrypoint = "2.3"
 solana-program-error = "2.2"
-solana-pubkey = "2.2"
-solana-sysvar = { version = "2.2", features = ["bincode"] }
+solana-pubkey = "2.3"
+solana-sysvar = { version = "2.3", features = ["bincode"] }
 
 [profile.release]
 overflow-checks = true

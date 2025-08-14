@@ -183,7 +183,7 @@ fn make_tx_wrong_signature(
         &blockhash,
     );
     let mut tx = Transaction::new(&[&payer_kp], msg, blockhash);
-    tx.signatures[0] = Signature::new_unique();
+    tx.signatures[0] = Signature::default();
     tx
 }
 

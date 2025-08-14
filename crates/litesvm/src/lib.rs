@@ -265,12 +265,16 @@ use {
         error::LiteSVMError,
         history::TransactionHistory,
         message_processor::process_message,
-        spl::load_spl_programs,
+        programs::load_default_programs,
         types::{
             ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult,
         },
-        utils::{create_blockhash, rent::RentState},
+        utils::{
+            create_blockhash,
+            rent::{check_rent_state_with_account, get_account_rent_state},
+        },
     },
+    agave_feature_set::FeatureSet,
     agave_reserved_account_keys::ReservedAccountKeys,
     itertools::Itertools,
     log::error,
@@ -282,12 +286,13 @@ use {
     solana_builtins::BUILTINS,
     solana_clock::Clock,
     solana_compute_budget::{
-        compute_budget::ComputeBudget, compute_budget_limits::ComputeBudgetLimits,
+        compute_budget::{ComputeBudget, SVMTransactionExecutionCost},
+        compute_budget_limits::ComputeBudgetLimits,
     },
     solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
     solana_epoch_rewards::EpochRewards,
     solana_epoch_schedule::EpochSchedule,
-    solana_feature_set::FeatureSet,
+    solana_fee::FeeFeatures,
     solana_fee_structure::FeeStructure,
     solana_hash::Hash,
     solana_keypair::Keypair,
@@ -333,11 +338,12 @@ pub mod error;
 pub mod types;
 
 mod accounts_db;
+mod callback;
 mod format_logs;
 mod history;
 mod message_processor;
 mod precompiles;
-mod spl;
+mod programs;
 mod utils;
 
 #[derive(Clone)]
@@ -380,7 +386,7 @@ impl LiteSVM {
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_precompiles()
-            .with_spl_programs()
+            .with_default_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
     }
@@ -465,7 +471,7 @@ impl LiteSVM {
         BUILTINS.iter().for_each(|builtint| {
             if builtint
                 .enable_feature_id
-                .map_or(true, |x| self.feature_set.is_active(&x))
+                .is_none_or(|x| self.feature_set.is_active(&x))
             {
                 let loaded_program =
                     ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
@@ -479,16 +485,17 @@ impl LiteSVM {
             }
         });
 
+        let compute_budget = self.compute_budget.unwrap_or_default();
         let program_runtime_v1 = create_program_runtime_environment_v1(
-            &self.feature_set,
-            &ComputeBudget::default(),
+            &self.feature_set.runtime_features(),
+            &compute_budget.to_budget(),
             false,
             false,
         )
         .unwrap();
 
         let program_runtime_v2 =
-            create_program_runtime_environment_v2(&ComputeBudget::default(), true);
+            create_program_runtime_environment_v2(&compute_budget.to_budget(), true);
 
         self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
         self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
@@ -505,7 +512,9 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
-            Keypair::from_bytes(&self.airdrop_kp).unwrap().pubkey(),
+            Keypair::try_from(self.airdrop_kp.as_slice())
+                .unwrap()
+                .pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
         );
     }
@@ -517,13 +526,13 @@ impl LiteSVM {
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
-    fn set_spl_programs(&mut self) {
-        load_spl_programs(self);
+    fn set_default_programs(&mut self) {
+        load_default_programs(self);
     }
 
     /// Includes the standard SPL programs.
-    pub fn with_spl_programs(mut self) -> Self {
-        self.set_spl_programs();
+    pub fn with_default_programs(mut self) -> Self {
+        self.set_default_programs();
         self
     }
 
@@ -598,8 +607,8 @@ impl LiteSVM {
     where
         T: Sysvar + SysvarId,
     {
-        let account =
-            AccountSharedData::new_data(1, &sysvar, &solana_sdk_ids::sysvar::id()).unwrap();
+        let mut account = AccountSharedData::new(1, T::size_of(), &solana_sdk_ids::sysvar::id());
+        account.serialize_data(sysvar).unwrap();
         self.accounts.add_account(T::id(), account).unwrap();
     }
 
@@ -618,7 +627,7 @@ impl LiteSVM {
 
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
-        let payer = Keypair::from_bytes(&self.airdrop_kp).unwrap();
+        let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[solana_system_interface::instruction::transfer(
@@ -733,9 +742,8 @@ impl LiteSVM {
             &self.accounts,
             &ReservedAccountKeys::empty_key_set(),
         );
-        res.map_err(|e| {
+        res.inspect_err(|_| {
             log::error!("Transaction sanitization failed");
-            e
         })
     }
 
@@ -768,7 +776,6 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
-        tx.verify_precompiles(&self.feature_set)?;
 
         Ok(tx)
     }
@@ -807,7 +814,7 @@ impl LiteSVM {
             false,
             self.fee_structure.lamports_per_signature,
             0,
-            solana_fee::FeeFeatures::from(&self.feature_set),
+            FeeFeatures::from(&self.feature_set),
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -920,23 +927,25 @@ impl LiteSVM {
         match maybe_program_indices {
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(compute_budget, accounts);
+                let feature_set = self.feature_set.runtime_features();
+                let mut invoke_context = InvokeContext::new(
+                    &mut context,
+                    &mut program_cache_for_tx_batch,
+                    EnvironmentConfig::new(
+                        *blockhash,
+                        self.fee_structure.lamports_per_signature,
+                        self,
+                        &feature_set,
+                        &self.accounts.sysvar_cache,
+                    ),
+                    Some(log_collector),
+                    compute_budget.to_budget(),
+                    SVMTransactionExecutionCost::default(),
+                );
                 let mut tx_result = process_message(
                     tx.message(),
                     &program_indices,
-                    &mut InvokeContext::new(
-                        &mut context,
-                        &mut program_cache_for_tx_batch,
-                        EnvironmentConfig::new(
-                            *blockhash,
-                            self.fee_structure.lamports_per_signature,
-                            0,
-                            &|_| 0,
-                            Arc::new(self.feature_set.clone()),
-                            &self.accounts.sysvar_cache,
-                        ),
-                        Some(log_collector),
-                        compute_budget,
-                    ),
+                    &mut invoke_context,
                     &mut ExecuteTimings::default(),
                     &mut accumulated_consume_units,
                 )
@@ -963,29 +972,32 @@ impl LiteSVM {
         tx: &SanitizedTransaction,
         context: &TransactionContext,
     ) -> Result<(), TransactionError> {
-        for index in 0..tx.message().account_keys().len() {
-            if tx.message().is_writable(index) {
+        let rent = self.accounts.sysvar_cache.get_rent().unwrap_or_default();
+        let message = tx.message();
+        for index in 0..message.account_keys().len() {
+            if message.is_writable(index) {
                 let account = context
-                    .get_account_at_index(index as IndexOfAccount)
-                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?
-                    .borrow();
+                    .accounts()
+                    .try_borrow(index as IndexOfAccount)
+                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
+
                 let pubkey = context
                     .get_key_of_account_at_index(index as IndexOfAccount)
                     .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
-                let rent = self.accounts.sysvar_cache.get_rent().unwrap_or_default();
 
                 if !account.data().is_empty() {
-                    let post_rent_state = RentState::from_account(&account, &rent);
-                    let pre_rent_state = RentState::from_account(
-                        &self.accounts.get_account(pubkey).unwrap_or_default(),
+                    let post_rent_state = get_account_rent_state(&rent, &account);
+                    let pre_rent_state = get_account_rent_state(
                         &rent,
+                        &self.accounts.get_account(pubkey).unwrap_or_default(),
                     );
 
-                    if !post_rent_state.transition_allowed_from(&pre_rent_state) {
-                        return Err(TransactionError::InsufficientFundsForRent {
-                            account_index: index as u8,
-                        });
-                    }
+                    check_rent_state_with_account(
+                        &pre_rent_state,
+                        &post_rent_state,
+                        pubkey,
+                        index as IndexOfAccount,
+                    )?;
                 }
             }
         }
@@ -1439,35 +1451,17 @@ fn validate_fee_payer(
             TransactionError::InsufficientFundsForFee
         })?;
 
-    let payer_pre_rent_state = RentState::from_account(payer_account, rent);
+    let payer_pre_rent_state = get_account_rent_state(rent, payer_account);
     // we already checked above if we have sufficient balance so this should never error.
     payer_account.checked_sub_lamports(fee).unwrap();
 
-    let payer_post_rent_state = RentState::from_account(payer_account, rent);
+    let payer_post_rent_state = get_account_rent_state(rent, payer_account);
     check_rent_state_with_account(
         &payer_pre_rent_state,
         &payer_post_rent_state,
         payer_address,
         payer_index,
     )
-}
-
-// modified version of the private fn in solana-svm
-fn check_rent_state_with_account(
-    pre_rent_state: &RentState,
-    post_rent_state: &RentState,
-    address: &Pubkey,
-    account_index: IndexOfAccount,
-) -> solana_transaction_error::TransactionResult<()> {
-    if !solana_sdk_ids::incinerator::check_id(address)
-        && !post_rent_state.transition_allowed_from(pre_rent_state)
-    {
-        let account_index = account_index as u8;
-        error!("Transaction would leave account {address} with insufficient funds for rent");
-        Err(TransactionError::InsufficientFundsForRent { account_index })
-    } else {
-        Ok(())
-    }
 }
 
 fn map_sanitize_result<F>(
