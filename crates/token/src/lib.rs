@@ -23,7 +23,7 @@ mod transfer;
 mod transfer_checked;
 
 #[cfg(feature = "token-2022")]
-pub use create_native_mint_2022 as create_native_mint;
+use create_native_mint_2022 as create_native_mint;
 #[cfg(not(feature = "token-2022"))]
 pub use spl_token;
 #[cfg(feature = "token-2022")]
