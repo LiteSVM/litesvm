@@ -291,7 +291,7 @@ export declare class LiteSvm {
   /** Changes the initial lamports in LiteSVM's airdrop account */
   setLamports(lamports: bigint): void
   /** Includes the standard SPL programs */
-  setSplPrograms(): void
+  setDefaultPrograms(): void
   /**
    * Changes the capacity of the transaction history.
    * Set this to 0 to disable transaction history and allow duplicate transactions.
