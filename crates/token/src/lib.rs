@@ -8,8 +8,10 @@ mod create_ata;
 mod create_ata_idempotent;
 mod create_mint;
 mod create_multisig;
-#[cfg(feature = "token-2022")]
+#[cfg(not(feature = "token-2022"))]
 mod create_native_mint;
+#[cfg(feature = "token-2022")]
+mod create_native_mint_2022;
 mod freeze_account;
 mod mint_to;
 mod mint_to_checked;
@@ -21,16 +23,16 @@ mod transfer;
 mod transfer_checked;
 
 #[cfg(feature = "token-2022")]
-pub use create_native_mint::*;
+pub use create_native_mint_2022 as create_native_mint;
 #[cfg(not(feature = "token-2022"))]
 pub use spl_token;
 #[cfg(feature = "token-2022")]
 pub use spl_token_2022 as spl_token;
 pub use {
     approve::*, approve_checked::*, burn::*, burn_checked::*, close_account::*, create_account::*,
-    create_ata::*, create_ata_idempotent::*, create_mint::*, create_multisig::*, freeze_account::*,
-    mint_to::*, mint_to_checked::*, revoke::*, set_authority::*, sync_native::*, thaw_account::*,
-    transfer::*, transfer_checked::*,
+    create_ata::*, create_ata_idempotent::*, create_mint::*, create_multisig::*,
+    create_native_mint::*, freeze_account::*, mint_to::*, mint_to_checked::*, revoke::*,
+    set_authority::*, sync_native::*, thaw_account::*, transfer::*, transfer_checked::*,
 };
 use {
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
