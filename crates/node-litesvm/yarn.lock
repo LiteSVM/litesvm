@@ -525,10 +525,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@napi-rs/cli@^3.0.4":
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/@napi-rs/cli/-/cli-3.0.4.tgz#f1db8c42d390906389c352007a7b80bc4f34a017"
-  integrity sha512-ilbCI69DVDQcIUSUB504LM1+Nhvo0jKycWAzzPJ22YwUoWrru/w0+V5sfjPINgkshQ4Ykv+oZOJXk9Kg1ZBUvg==
+"@napi-rs/cli@^3.1.4":
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/@napi-rs/cli/-/cli-3.1.4.tgz#13000ad4fab5a8f4ad39145ad352c64511367c83"
+  integrity sha512-XwYu7XB9KfL0ChFc90j9/XQJzbSGlMa5Alhgx7J13r+hxo/INS0lp1jRy1dQa7pb7Tr7fPLX6fR6JH78qfXqqg==
   dependencies:
     "@inquirer/prompts" "^7.4.0"
     "@napi-rs/cross-toolchain" "^1.0.0"
@@ -538,9 +538,9 @@
     colorette "^2.0.20"
     debug "^4.4.0"
     emnapi "^1.4.0"
+    es-toolkit "^1.39.8"
     find-up "^7.0.0"
     js-yaml "^4.1.0"
-    lodash-es "^4.17.21"
     semver "^7.7.1"
     typanion "^3.14.0"
 
@@ -2074,6 +2074,11 @@ es-set-tostringtag@^2.1.0:
     has-tostringtag "^1.0.2"
     hasown "^2.0.2"
 
+es-toolkit@^1.39.8:
+  version "1.39.9"
+  resolved "https://registry.yarnpkg.com/es-toolkit/-/es-toolkit-1.39.9.tgz#6c75f868eb7b93da823de69fabf9bcd8384b8a9a"
+  integrity sha512-9OtbkZmTA2Qc9groyA1PUNeb6knVTkvB2RSdr/LcJXDL8IdEakaxwXLHXa7VX/Wj0GmdMJPR3WhnPGhiP3E+qg==
+
 es6-promise@^4.0.3:
   version "4.2.8"
   resolved "https://registry.yarnpkg.com/es6-promise/-/es6-promise-4.2.8.tgz#4eb21594c972bc40553d276e510539143db53e0a"
@@ -2360,11 +2365,6 @@ locate-path@^7.2.0:
   integrity sha512-gvVijfZvn7R+2qyPX8mAuKcFGDf6Nc61GdvGafQsHL0sBIxfKzA+usWn4GFC/bk+QdwPUD4kWFJLhElipq+0VA==
   dependencies:
     p-locate "^6.0.0"
-
-lodash-es@^4.17.21:
-  version "4.17.21"
-  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.21.tgz#43e626c46e6591b7750beb2b50117390c609e3ee"
-  integrity sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==
 
 lunr@^2.3.9:
   version "2.3.9"
@@ -2848,20 +2848,20 @@ type-fest@^0.21.3:
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.21.3.tgz#d260a24b0198436e133fa26a524a6d65fa3b2e37"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
 
-typedoc-plugin-markdown@^4.8.0:
-  version "4.8.0"
-  resolved "https://registry.yarnpkg.com/typedoc-plugin-markdown/-/typedoc-plugin-markdown-4.8.0.tgz#4ef70fb05d38674ed212d6ff99f7e857c49e266e"
-  integrity sha512-BQqXnT9PETe6WEFf8bcsvvGEGQHbwTo/BFyY+RUIsSB05Y0Wn56iF+fK1PY2OKJJIhV4kp4dp7osaP9Bm5a0Zw==
+typedoc-plugin-markdown@^4.8.1:
+  version "4.8.1"
+  resolved "https://registry.yarnpkg.com/typedoc-plugin-markdown/-/typedoc-plugin-markdown-4.8.1.tgz#481359c42e2738be84ad7581267c5b2255cb0431"
+  integrity sha512-ug7fc4j0SiJxSwBGLncpSo8tLvrT9VONvPUQqQDTKPxCoFQBADLli832RGPtj6sfSVJebNSrHZQRUdEryYH/7g==
 
 typedoc-vitepress-theme@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/typedoc-vitepress-theme/-/typedoc-vitepress-theme-1.1.2.tgz#71c85dd1b85a8599843804e924327aa9a93426f4"
   integrity sha512-hQvCZRr5uKDqY1bRuY1+eNTNn6d4TE4OP5pnw65Y7WGgajkJW9X1/lVJK2UJpcwCmwkdjw1QIO49H9JQlxWhhw==
 
-typedoc@^0.28.9:
-  version "0.28.9"
-  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.28.9.tgz#9af272796c6e68077a044149d1f7626b37de9693"
-  integrity sha512-aw45vwtwOl3QkUAmWCnLV9QW1xY+FSX2zzlit4MAfE99wX+Jij4ycnpbAWgBXsRrxmfs9LaYktg/eX5Bpthd3g==
+typedoc@^0.28.10:
+  version "0.28.10"
+  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.28.10.tgz#566a19201e7469dc5ca3cc436049655e0beb0201"
+  integrity sha512-zYvpjS2bNJ30SoNYfHSRaFpBMZAsL7uwKbWwqoCNFWjcPnI3e/mPLh2SneH9mX7SJxtDpvDgvd9/iZxGbo7daw==
   dependencies:
     "@gerrit0/mini-shiki" "^3.9.0"
     lunr "^2.3.9"

@@ -177,8 +177,8 @@ export class LiteSVM {
 	 * Adds the standard SPL programs.
 	 * @returns The modified LiteSVM instance
 	 */
-	withSplPrograms(): LiteSVM {
-		this.inner.setSplPrograms();
+	withDefaultPrograms(): LiteSVM {
+		this.inner.setDefaultPrograms();
 		return this;
 	}
 
