@@ -8,15 +8,17 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
-default = ["spl-token"]
-token-2022 = ["spl-token-2022"]
+default = ["dep:spl-token", "dep:solana-account", "dep:solana-rent"]
+token-2022 = ["dep:spl-token-2022"]
 
 [dependencies]
 litesvm.workspace = true
 smallvec.workspace = true
+solana-account = { workspace = true, optional = true }
 solana-keypair.workspace = true
 solana-program-pack.workspace = true
 solana-pubkey.workspace = true
+solana-rent = { workspace = true, optional = true }
 solana-signer.workspace = true
 solana-system-interface.workspace = true
 solana-transaction = { workspace = true, features = ["precompiles", "verify"] }
