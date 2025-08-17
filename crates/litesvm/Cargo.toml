@@ -11,6 +11,7 @@ readme = "../../README.md"
 [features]
 internal-test = []
 nodejs-internal = ["dep:qualifier_attr"]
+hashbrown = ["dep:hashbrown"]
 
 [dependencies]
 agave-feature-set.workspace = true
@@ -18,6 +19,7 @@ agave-precompiles.workspace = true
 agave-reserved-account-keys.workspace = true
 ansi_term.workspace = true
 bincode.workspace = true
+hashbrown = { workspace = true, optional = true }
 indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
