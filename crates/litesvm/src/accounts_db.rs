@@ -29,8 +29,14 @@ use {
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::Sysvar,
     solana_transaction_error::TransactionError,
-    std::{collections::HashMap, sync::Arc},
+    std::sync::Arc,
 };
+
+#[cfg(feature = "hashbrown")]
+use hashbrown::HashMap;
+
+#[cfg(not(feature = "hashbrown"))]
+use std::collections::HashMap;
 
 const FEES_ID: Pubkey = solana_pubkey::pubkey!("SysvarFees111111111111111111111111111111111");
 const RECENT_BLOCKHASHES_ID: Pubkey =
