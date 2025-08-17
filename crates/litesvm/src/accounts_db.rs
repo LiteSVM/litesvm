@@ -65,6 +65,10 @@ pub(crate) struct AccountsDb {
 }
 
 impl AccountsDb {
+    pub(crate) fn has_account(&self, pubkey: &Pubkey) -> bool {
+        self.inner.contains_key(pubkey)
+    }
+
     pub(crate) fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
         self.inner.get(pubkey).map(|acc| acc.to_owned())
     }
