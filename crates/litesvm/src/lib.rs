@@ -587,6 +587,11 @@ impl LiteSVM {
         self.accounts.get_account(pubkey).map(Into::into)
     }
 
+    /// Returns true if the account exists in the AccountsDb.
+    pub fn has_account(&self, pubkey: &Pubkey) -> bool {
+        self.accounts.has_account(pubkey)
+    }
+
     /// Sets all information associated with the account of the provided pubkey.
     pub fn set_account(&mut self, pubkey: Pubkey, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(pubkey, data.into())
