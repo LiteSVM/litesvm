@@ -109,3 +109,7 @@ harness = false
 [[bench]]
 name = "max_perf"
 harness = false
+
+[[bench]]
+name = "hashing"
+harness = false
