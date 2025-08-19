@@ -1,3 +1,7 @@
+#[cfg(feature = "hashbrown")]
+use hashbrown::HashMap;
+#[cfg(not(feature = "hashbrown"))]
+use std::collections::HashMap;
 use {
     crate::error::{InvalidSysvarDataError, LiteSVMError},
     log::error,
@@ -31,12 +35,6 @@ use {
     solana_transaction_error::TransactionError,
     std::sync::Arc,
 };
-
-#[cfg(feature = "hashbrown")]
-use hashbrown::HashMap;
-
-#[cfg(not(feature = "hashbrown"))]
-use std::collections::HashMap;
 
 const FEES_ID: Pubkey = solana_pubkey::pubkey!("SysvarFees111111111111111111111111111111111");
 const RECENT_BLOCKHASHES_ID: Pubkey =
