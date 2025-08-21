@@ -180,13 +180,13 @@ impl LiteSvm {
 
     #[napi]
     /// Returns all information associated with the account of the provided pubkey.
-    pub fn get_account(&self, pubkey: Uint8Array) -> Option<Account> {
+    pub fn get_account(&self, pubkey: &[u8]) -> Option<Account> {
         self.0.get_account(&convert_pubkey(pubkey)).map(Account)
     }
 
     #[napi]
     /// Sets all information associated with the account of the provided pubkey.
-    pub fn set_account(&mut self, pubkey: Uint8Array, data: &Account) -> Result<()> {
+    pub fn set_account(&mut self, pubkey: &[u8], data: &Account) -> Result<()> {
         self.0
             .set_account(convert_pubkey(pubkey), data.0.clone())
             .map_err(|e| to_js_error(e, "Failed to set account"))
@@ -194,7 +194,7 @@ impl LiteSvm {
 
     #[napi]
     /// Gets the balance of the provided account pubkey.
-    pub fn get_balance(&self, pubkey: Uint8Array) -> Option<u64> {
+    pub fn get_balance(&self, pubkey: &[u8]) -> Option<u64> {
         self.0.get_balance(&convert_pubkey(pubkey))
     }
 
@@ -206,15 +206,15 @@ impl LiteSvm {
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
     /// Gets a transaction from the transaction history.
-    pub fn get_transaction(&self, signature: Uint8Array) -> Option<TransactionResult> {
+    pub fn get_transaction(&self, signature: &[u8]) -> Option<TransactionResult> {
         self.0
-            .get_transaction(&Signature::try_from(signature.as_ref()).unwrap())
+            .get_transaction(&Signature::try_from(signature).unwrap())
             .map(|x| convert_transaction_result(x.clone()))
     }
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
     /// Airdrops the account with the lamports specified.
-    pub fn airdrop(&mut self, pubkey: Uint8Array, lamports: BigInt) -> Result<TransactionResult> {
+    pub fn airdrop(&mut self, pubkey: &[u8], lamports: BigInt) -> Result<TransactionResult> {
         Ok(convert_transaction_result(self.0.airdrop(
             &convert_pubkey(pubkey),
             bigint_to_u64(&lamports)?,
@@ -223,7 +223,7 @@ impl LiteSvm {
 
     #[napi]
     /// Adds am SBF program to the test environment from the file specified.
-    pub fn add_program_from_file(&mut self, program_id: Uint8Array, path: String) -> Result<()> {
+    pub fn add_program_from_file(&mut self, program_id: &[u8], path: String) -> Result<()> {
         self.0
             .add_program_from_file(convert_pubkey(program_id), path)
             .map_err(|e| {
@@ -236,7 +236,7 @@ impl LiteSvm {
 
     #[napi]
     /// Adds am SBF program to the test environment.
-    pub fn add_program(&mut self, program_id: Uint8Array, program_bytes: &[u8]) -> Result<()> {
+    pub fn add_program(&mut self, program_id: &[u8], program_bytes: &[u8]) -> Result<()> {
         self.0
             .add_program(convert_pubkey(program_id), program_bytes)
             .map_err(|e| {
@@ -248,29 +248,29 @@ impl LiteSvm {
     }
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
-    pub fn send_legacy_transaction(&mut self, tx_bytes: Uint8Array) -> TransactionResult {
-        let tx: Transaction = deserialize(&tx_bytes).unwrap();
+    pub fn send_legacy_transaction(&mut self, tx_bytes: &[u8]) -> TransactionResult {
+        let tx: Transaction = deserialize(tx_bytes).unwrap();
         let res = self.0.send_transaction(tx);
         convert_transaction_result(res)
     }
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
-    pub fn send_versioned_transaction(&mut self, tx_bytes: Uint8Array) -> TransactionResult {
-        let tx: VersionedTransaction = deserialize(&tx_bytes).unwrap();
+    pub fn send_versioned_transaction(&mut self, tx_bytes: &[u8]) -> TransactionResult {
+        let tx: VersionedTransaction = deserialize(tx_bytes).unwrap();
         let res = self.0.send_transaction(tx);
         convert_transaction_result(res)
     }
 
     #[napi(ts_return_type = "SimulatedTransactionInfo | FailedTransactionMetadata")]
-    pub fn simulate_legacy_transaction(&mut self, tx_bytes: Uint8Array) -> SimulateResult {
-        let tx: Transaction = deserialize(&tx_bytes).unwrap();
+    pub fn simulate_legacy_transaction(&mut self, tx_bytes: &[u8]) -> SimulateResult {
+        let tx: Transaction = deserialize(tx_bytes).unwrap();
         let res = self.0.simulate_transaction(tx);
         convert_sim_result(res)
     }
 
     #[napi(ts_return_type = "SimulatedTransactionInfo | FailedTransactionMetadata")]
-    pub fn simulate_versioned_transaction(&mut self, tx_bytes: Uint8Array) -> SimulateResult {
-        let tx: VersionedTransaction = deserialize(&tx_bytes).unwrap();
+    pub fn simulate_versioned_transaction(&mut self, tx_bytes: &[u8]) -> SimulateResult {
+        let tx: VersionedTransaction = deserialize(tx_bytes).unwrap();
         let res = self.0.simulate_transaction(tx);
         convert_sim_result(res)
     }

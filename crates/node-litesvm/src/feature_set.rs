@@ -1,7 +1,6 @@
 use {
     crate::{to_string_js, util::convert_pubkey},
     agave_feature_set::FeatureSet as FeatureSetOriginal,
-    napi::bindgen_prelude::*,
 };
 
 #[derive(Debug, Clone)]
@@ -21,12 +20,12 @@ impl FeatureSet {
     }
 
     #[napi]
-    pub fn is_active(&self, feature_id: Uint8Array) -> bool {
+    pub fn is_active(&self, feature_id: &[u8]) -> bool {
         self.0.is_active(&convert_pubkey(feature_id))
     }
 
     #[napi]
-    pub fn activated_slot(&self, feature_id: Uint8Array) -> Option<u64> {
+    pub fn activated_slot(&self, feature_id: &[u8]) -> Option<u64> {
         self.0.activated_slot(&convert_pubkey(feature_id))
     }
 }

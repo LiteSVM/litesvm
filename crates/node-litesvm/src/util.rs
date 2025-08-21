@@ -1,7 +1,7 @@
 use {napi::bindgen_prelude::*, solana_hash::Hash, solana_pubkey::Pubkey, std::str::FromStr};
 
-pub(crate) fn convert_pubkey(address: Uint8Array) -> Pubkey {
-    Pubkey::try_from(address.as_ref()).unwrap()
+pub(crate) fn convert_pubkey(address: &[u8]) -> Pubkey {
+    Pubkey::try_from(address).unwrap()
 }
 
 pub(crate) fn try_parse_hash(raw: &str) -> Result<Hash> {

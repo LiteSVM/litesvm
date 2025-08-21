@@ -525,10 +525,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@napi-rs/cli@^3.1.4":
-  version "3.1.4"
-  resolved "https://registry.yarnpkg.com/@napi-rs/cli/-/cli-3.1.4.tgz#13000ad4fab5a8f4ad39145ad352c64511367c83"
-  integrity sha512-XwYu7XB9KfL0ChFc90j9/XQJzbSGlMa5Alhgx7J13r+hxo/INS0lp1jRy1dQa7pb7Tr7fPLX6fR6JH78qfXqqg==
+"@napi-rs/cli@^3.1.5":
+  version "3.1.5"
+  resolved "https://registry.yarnpkg.com/@napi-rs/cli/-/cli-3.1.5.tgz#6c3c297b3b0e7b1ad08393f124e438e8c930dae7"
+  integrity sha512-Wn6ZPw27qJiEWglGjkaAa70AHuLtyPya6FvjINYJ5U20uvbRhoB0Ta2+bFTAFfUb9R+wvuFvog9JQdy65OmFAQ==
   dependencies:
     "@inquirer/prompts" "^7.4.0"
     "@napi-rs/cross-toolchain" "^1.0.0"
