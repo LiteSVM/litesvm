@@ -2,21 +2,20 @@ use {
     criterion::{criterion_group, criterion_main, Criterion},
     solana_pubkey::Pubkey,
     std::{
-        hash::{BuildHasher, BuildHasherDefault, DefaultHasher, Hash, Hasher},
+        hash::{BuildHasher, BuildHasherDefault, DefaultHasher},
         hint::black_box,
     },
 };
 
 #[inline(never)]
 fn std_default(address: &Pubkey, hash_builder: &BuildHasherDefault<DefaultHasher>) -> u64 {
-    let mut hasher = hash_builder.build_hasher();
-    address.hash(&mut hasher);
-    hasher.finish()
+    hash_builder.hash_one(address)
 }
 
 #[cfg(feature = "hashbrown")]
 #[inline(never)]
 fn hashbrown(address: &Pubkey, hash_builder: &hashbrown::DefaultHashBuilder) -> u64 {
+    use std::hash::{Hash, Hasher};
     let mut hasher = hash_builder.build_hasher();
     address.hash(&mut hasher);
     hasher.finish()
