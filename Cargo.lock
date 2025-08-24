@@ -2695,10 +2695,12 @@ version = "0.6.1"
 dependencies = [
  "litesvm",
  "smallvec",
+ "solana-account",
  "solana-keypair",
  "solana-native-token 3.0.0",
  "solana-program-pack",
  "solana-pubkey",
+ "solana-rent",
  "solana-signer",
  "solana-system-interface",
  "solana-transaction",
