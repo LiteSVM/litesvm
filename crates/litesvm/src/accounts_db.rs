@@ -215,7 +215,11 @@ impl AccountsDb {
                 && x.1.data().first().is_some_and(|byte| *byte == 3)
         });
         for (pubkey, acc) in accounts {
-            self.add_account(pubkey, acc)?;
+            if acc.lamports() == 0 {
+                self.inner.remove(&pubkey);
+            } else {
+                self.add_account(pubkey, acc)?;
+            }
         }
         Ok(())
     }
