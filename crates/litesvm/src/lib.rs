@@ -592,6 +592,28 @@ impl LiteSVM {
         self.accounts.add_account(pubkey, data.into())
     }
 
+    /// **⚠️ ADVANCED USE ONLY ⚠️**
+    ///
+    /// Returns a reference to the internal accounts database.
+    ///
+    /// This provides read-only access to the accounts database for advanced inspection.
+    /// Use [`get_account`](LiteSVM::get_account) for normal account retrieval.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use litesvm::LiteSVM;
+    ///
+    /// let svm = LiteSVM::new();
+    ///
+    /// // Read-only access to accounts database
+    /// let accounts_db = svm.accounts_db();
+    /// // ... inspect internal state if needed
+    /// ```
+    pub fn accounts_db(&self) -> &AccountsDb {
+        &self.accounts
+    }
+
     /// Gets the balance of the provided account pubkey.
     pub fn get_balance(&self, pubkey: &Pubkey) -> Option<u64> {
         self.accounts.get_account(pubkey).map(|x| x.lamports())
