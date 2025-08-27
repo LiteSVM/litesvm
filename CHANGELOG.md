@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-08-27
+
+### Added
+
+- Allow access to the internal accounts db ([#205](https://github.com/LiteSVM/litesvm/pull/205)).
+- Update token crate to support native mint functionality ([#200](https://github.com/LiteSVM/litesvm/pull/200)).
+- Feature to use hashbrown crate instead of std::collections ([#203](https://github.com/LiteSVM/litesvm/pull/203)).
+
+### Changed
+
+- Update Solana crates to 2.3 ([#194](https://github.com/LiteSVM/litesvm/pull/194)).
+- Refactor `add_program` methods to accept program_id as `impl Into<Pubkey>` for improved flexibility ([#183](https://github.com/LiteSVM/litesvm/pull/183)).
+- Make `add_program` return an error if the program is invalid ([#187](https://github.com/LiteSVM/litesvm/pull/187)).
+
+### Fixed
+
+- Cleanup 0 lamport accounts ([#204](https://github.com/LiteSVM/litesvm/pull/204)).
+- Fix the documentation for Node ([#191](https://github.com/LiteSVM/litesvm/pull/191)).
+
 ## [0.6.1] - 2025-03-31
 
 ### Fixed
@@ -97,7 +116,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/LiteSVM/litesvm/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/LiteSVM/litesvm/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/LiteSVM/litesvm/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/LiteSVM/litesvm/compare/v0.4.0...v0.5.0
