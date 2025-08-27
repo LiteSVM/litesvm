@@ -63,9 +63,9 @@ where
 
 #[derive(Clone, Default)]
 pub struct AccountsDb {
-    inner: HashMap<Pubkey, AccountSharedData>,
-    pub(crate) programs_cache: ProgramCacheForTxBatch,
-    pub(crate) sysvar_cache: SysvarCache,
+    pub inner: HashMap<Pubkey, AccountSharedData>,
+    pub programs_cache: ProgramCacheForTxBatch,
+    pub sysvar_cache: SysvarCache,
 }
 
 impl AccountsDb {
