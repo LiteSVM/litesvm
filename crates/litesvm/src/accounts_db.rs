@@ -62,14 +62,14 @@ where
 }
 
 #[derive(Clone, Default)]
-pub(crate) struct AccountsDb {
-    inner: HashMap<Pubkey, AccountSharedData>,
-    pub(crate) programs_cache: ProgramCacheForTxBatch,
-    pub(crate) sysvar_cache: SysvarCache,
+pub struct AccountsDb {
+    pub inner: HashMap<Pubkey, AccountSharedData>,
+    pub programs_cache: ProgramCacheForTxBatch,
+    pub sysvar_cache: SysvarCache,
 }
 
 impl AccountsDb {
-    pub(crate) fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
+    pub fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
         self.inner.get(pubkey).map(|acc| acc.to_owned())
     }
 
