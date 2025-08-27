@@ -2,9 +2,10 @@ use {
     litesvm::LiteSVM,
     solana_keypair::Keypair,
     solana_message::Message,
+    solana_native_token::LAMPORTS_PER_SOL,
     solana_pubkey::Pubkey,
     solana_signer::Signer,
-    solana_system_interface::instruction::{create_account, transfer},
+    solana_system_interface::instruction::{allocate, create_account, transfer},
     solana_transaction::Transaction,
 };
 
@@ -66,4 +67,26 @@ fn system_create_account() {
     assert_eq!(account.lamports, rent_amount);
     assert_eq!(account.data.len(), space);
     assert_eq!(account.owner, solana_sdk_ids::system_program::id());
+}
+
+#[test_log::test]
+fn system_allocate_account() {
+    let from_keypair = Keypair::new();
+    let new_account_keypair = Keypair::new();
+    let from = from_keypair.pubkey();
+    let new_account = new_account_keypair.pubkey();
+
+    let mut svm = LiteSVM::new();
+    svm.airdrop(&from, 10 * LAMPORTS_PER_SOL).unwrap();
+
+    let instruction = allocate(&new_account, 10);
+
+    let tx = Transaction::new(
+        &[&from_keypair, &new_account_keypair],
+        Message::new(&[instruction], Some(&from)),
+        svm.latest_blockhash(),
+    );
+    svm.send_transaction(tx).unwrap();
+
+    assert!(svm.get_account(&new_account).is_none());
 }

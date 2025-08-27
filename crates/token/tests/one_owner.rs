@@ -164,5 +164,5 @@ fn test() {
         .send()
         .unwrap();
 
-    assert!(svm.get_account(&payer_ata_pk).unwrap().data.is_empty());
+    assert!(svm.get_account(&payer_ata_pk).is_none());
 }

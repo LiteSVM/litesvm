@@ -195,5 +195,5 @@ fn test() {
         .send()
         .unwrap();
 
-    assert!(svm.get_account(&random_account_pk).unwrap().data.is_empty());
+    assert!(svm.get_account(&random_account_pk).is_none());
 }
