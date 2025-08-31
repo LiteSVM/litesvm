@@ -1,10 +1,10 @@
 {
 	"name": "litesvm",
-	"version": "0.3.2",
-	"main": "litesvm/index.js",
-	"types": "litesvm/index.d.ts",
+	"version": "0.3.3",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"files": [
-		"litesvm/"
+		"dist/"
 	],
 	"napi": {
 		"binaryName": "litesvm",
