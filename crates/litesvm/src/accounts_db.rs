@@ -94,7 +94,11 @@ impl AccountsDb {
         } else {
             self.maybe_handle_sysvar_account(pubkey, &account)?;
         }
-        self.add_account_no_checks(pubkey, account);
+        if account.lamports() == 0 {
+            self.inner.remove(&pubkey);
+        } else {
+            self.add_account_no_checks(pubkey, account);
+        }
         Ok(())
     }
 
@@ -215,11 +219,7 @@ impl AccountsDb {
                 && x.1.data().first().is_some_and(|byte| *byte == 3)
         });
         for (pubkey, acc) in accounts {
-            if acc.lamports() == 0 {
-                self.inner.remove(&pubkey);
-            } else {
-                self.add_account(pubkey, acc)?;
-            }
+            self.add_account(pubkey, acc)?;
         }
         Ok(())
     }
