@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-09-17
+
+### Fixed
+
+- Fix zero lamport accounts set with `set_accounts` ([#218](https://github.com/LiteSVM/litesvm/pull/218)).
+
 ## [0.7.0] - 2025-08-27
 
 ### Added
@@ -116,7 +122,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/LiteSVM/litesvm/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/LiteSVM/litesvm/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/LiteSVM/litesvm/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/LiteSVM/litesvm/compare/v0.5.0...v0.6.0
