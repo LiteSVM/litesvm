@@ -606,7 +606,7 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
-            Keypair::from_bytes(self.airdrop_kp.as_slice())
+            Keypair::try_from(self.airdrop_kp.as_slice())
                 .unwrap()
                 .pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
@@ -743,7 +743,7 @@ impl LiteSVM {
 
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
-        let payer = Keypair::from_bytes(self.airdrop_kp.as_slice()).unwrap();
+        let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[solana_system_interface::instruction::transfer(
