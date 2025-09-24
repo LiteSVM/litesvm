@@ -251,14 +251,35 @@ rather than just testing your program and client code.
 In general though it is recommended to use `litesvm` wherever possible, as it will make your life
 much easier.
 
+## Instruction tracing
+
+Instruction tracing can be enabled provided the `SBF_TRACE_DIR` environment variable is set.
+Once enabled it can't be stopped. It's however possible to silence the default handler of
+the incoming traces.
+By default VM registers and the executed instructions are written to this directory.
+Registers and instructions are written in different files. The format is as follows:
+- `[u64; 12],[u64; 12],...,[u64; 12]` - i.e a set of `12` registers along with each executed
+  instruction within each instantiated `EbpfVm` for a loaded program;
+- `u64,u64,...,u64` - directly mapped per each register set from above.
+
 */
 
+use std::io::Write;
+use std::str::FromStr;
+
+use crate::types::InstructionTracingHandler;
+use crate::utils::{as_bytes, cast_slice};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
+use sha2::{Digest, Sha256};
+use solana_program_runtime::loaded_programs::ProgramCacheEntryType;
+use solana_program_runtime::solana_sbpf::program::BuiltinProgram;
+use solana_program_runtime::solana_sbpf::vm::Config;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
 use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+
 use {
     crate::{
         accounts_db::AccountsDb,
@@ -358,6 +379,8 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    enable_instruction_tracing: bool,
+    instruction_tracing_handler: Option<Arc<InstructionTracingHandler>>,
 }
 
 impl Default for LiteSVM {
@@ -373,6 +396,8 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            enable_instruction_tracing: false,
+            instruction_tracing_handler: None,
         }
     }
 }
@@ -381,6 +406,7 @@ impl LiteSVM {
     /// Creates the basic test environment.
     pub fn new() -> Self {
         LiteSVM::default()
+            .with_config()
             .with_feature_set(FeatureSet::all_enabled())
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
@@ -389,6 +415,74 @@ impl LiteSVM {
             .with_default_programs()
             .with_sigverify(true)
             .with_blockhash_check(true)
+    }
+
+    // must be before with_builtins for tracing to work
+    #[allow(clippy::field_reassign_with_default)]
+    fn with_config(mut self) -> Self {
+        if std::env::var("SBF_TRACE_DIR").is_ok() {
+            // So enable instruction tracing since the environment variable is set.
+            let mut config = Config::default();
+            config.enable_instruction_tracing = true;
+
+            self.enable_instruction_tracing = true;
+
+            self.accounts.programs_cache.environments.program_runtime_v1 =
+                Arc::new(BuiltinProgram::new_loader(config.clone()));
+            self.accounts.programs_cache.environments.program_runtime_v2 =
+                Arc::new(BuiltinProgram::new_loader(config));
+
+            let default_handler = LiteSVM::get_default_instruction_tracing_handler();
+            self.set_instruction_tracing_handler(Some(default_handler));
+        }
+
+        self
+    }
+
+    /// Provide a default instruction tracing handler that writes registers and instructions
+    /// in the `SBF_TRACE_DIR` provided directory if it's set.
+    pub fn get_default_instruction_tracing_handler() -> Arc<InstructionTracingHandler> {
+        let handler = Arc::new(
+            |batch_regs: &Vec<Vec<[u64; 12]>>,
+             batch_insns: &Vec<Vec<u64>>|
+             -> Result<(), Box<dyn std::error::Error>> {
+                if let Ok(sbf_trace_dir) = &std::env::var("SBF_TRACE_DIR") {
+                    let current_dir = std::env::current_dir()?;
+                    let sbf_trace_dir = current_dir.join(sbf_trace_dir);
+                    std::fs::create_dir_all(&sbf_trace_dir)?;
+
+                    // eprintln!("Number of batches: {}", batch_regs.iter().len());
+                    for (regs, insns) in batch_regs.iter().zip(batch_insns.iter()) {
+                        let digest = Sha256::digest(as_bytes(regs.as_slice()));
+                        let hex = hex::encode(digest);
+                        let fname = &hex[..16];
+                        let base = sbf_trace_dir.join(fname);
+                        let mut regs_file = std::fs::File::create(base.with_extension("regs"))?;
+                        let mut insns_file = std::fs::File::create(base.with_extension("insns"))?;
+                        for regs_set in regs {
+                            let Some(ix) = insns.get(regs_set[11] as usize) else {
+                                continue;
+                            };
+                            let _ = regs_file.write(as_bytes(regs_set.as_slice()))?;
+                            // eprintln!("pc {:08x} -> insn {:08x}", (regs_set[11] << 3) + 0x120, ix);
+                            let _ = insns_file.write(ix.to_le_bytes().as_slice())?;
+                        }
+                    }
+                }
+                Ok(())
+            },
+        );
+        handler
+    }
+
+    /// Change the instruction tracing handler.
+    /// Once enabled in the runtime tracing can't be stopped.
+    /// It's however up to the user to remove or change the handler at any time.
+    pub fn set_instruction_tracing_handler(
+        &mut self,
+        handler: Option<Arc<InstructionTracingHandler>>,
+    ) {
+        self.instruction_tracing_handler = handler;
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
@@ -490,7 +584,7 @@ impl LiteSVM {
             &self.feature_set.runtime_features(),
             &compute_budget.to_budget(),
             false,
-            false,
+            self.enable_instruction_tracing,
         )
         .unwrap();
 
@@ -512,7 +606,7 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
-            Keypair::try_from(self.airdrop_kp.as_slice())
+            Keypair::from_bytes(self.airdrop_kp.as_slice())
                 .unwrap()
                 .pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
@@ -649,7 +743,7 @@ impl LiteSVM {
 
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
-        let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
+        let payer = Keypair::from_bytes(self.airdrop_kp.as_slice()).unwrap();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[solana_system_interface::instruction::transfer(
@@ -973,6 +1067,39 @@ impl LiteSVM {
                 )
                 .map(|_| ());
 
+                if let Some(instruction_tracing_handler) = &self.instruction_tracing_handler {
+                    if let Ok(program_ids_trace) = self.get_program_ids_trace(&invoke_context) {
+                        let mut insns = Vec::new();
+                        for mut invocation_stack in program_ids_trace.into_iter() {
+                            while let Some(program_id) = invocation_stack.pop() {
+                                let Some(entry) = self.accounts.programs_cache.find(&program_id)
+                                else {
+                                    continue;
+                                };
+                                match &entry.program {
+                                    ProgramCacheEntryType::Loaded(executable) => {
+                                        let (_vaddr, text_bytes) = executable.get_text_bytes();
+                                        // eprintln!(
+                                        //     "program_id: {} vaddr {:#x?} text_bytes: {:x?}",
+                                        //     program_id,
+                                        //     _vaddr,
+                                        //     &text_bytes[..32],
+                                        // );
+                                        if let Some(slice) = cast_slice(text_bytes) {
+                                            insns.push(slice.to_vec());
+                                        }
+                                    }
+                                    _ => {
+                                        // Only loaded programs seem to have traces.
+                                    }
+                                }
+                            }
+                            let regs = invoke_context.get_traces();
+                            let _ = instruction_tracing_handler(regs, &insns);
+                        }
+                    }
+                }
+
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
                 };
@@ -987,6 +1114,47 @@ impl LiteSVM {
             }
             Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
         }
+    }
+
+    // To get executed instructions we need the list of invoked programs exactly how it happened
+    // in time (taking into account the CPIs if any).
+    // Parse the stable log to collect the list.
+    fn get_program_ids_trace(
+        &self,
+        invoke_context: &InvokeContext,
+    ) -> Result<Vec<Vec<Pubkey>>, Box<dyn std::error::Error>> {
+        let log_collector = invoke_context
+            .get_log_collector()
+            .ok_or("Can't get log collector".to_string())?;
+        let logc = log_collector.try_borrow()?;
+        let invocations: Vec<_> = logc
+            .get_recorded_content()
+            .iter()
+            .filter(|line| line.starts_with("Program") && line.contains("invoke ["))
+            .collect();
+
+        let mut invocations_stacked = Vec::new();
+        for (matched, chunk) in &invocations
+            .iter()
+            .chunk_by(|line| line.contains("invoke [1]"))
+        {
+            let mut keys = Vec::new();
+            for line in chunk.into_iter() {
+                let maybe_key = line
+                    .split(" ")
+                    .nth(1)
+                    .ok_or("Missing invocation key".to_string())?;
+                let pubkey = Pubkey::from_str(maybe_key)?;
+                keys.push(pubkey);
+            }
+            if matched {
+                invocations_stacked.push(keys);
+            } else if let Some(inner) = invocations_stacked.last_mut() {
+                inner.append(&mut keys)
+            }
+        }
+
+        Ok(invocations_stacked)
     }
 
     fn check_accounts_rent(

@@ -44,3 +44,17 @@ pub(crate) fn create_loadable_account_with_fields(
 pub(crate) fn create_loadable_account_for_test(name: &str) -> AccountSharedData {
     create_loadable_account_with_fields(name, DUMMY_INHERITABLE_ACCOUNT_FIELDS)
 }
+
+pub(crate) fn as_bytes<T: Copy>(slice: &[T]) -> &[u8] {
+    unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, std::mem::size_of_val(slice)) }
+}
+
+pub(crate) fn cast_slice(slice: &[u8]) -> Option<&[u64]> {
+    let ptr = slice.as_ptr() as *const u64;
+    if (slice.len() % size_of::<u64>()) != 0 || !ptr.is_aligned() {
+        return None;
+    }
+
+    let len = slice.len() / size_of::<u64>();
+    Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+}

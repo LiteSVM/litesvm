@@ -93,6 +93,8 @@ spl-associated-token-account-client.workspace = true
 spl-token.workspace = true
 test-log.workspace = true
 tokio.workspace = true
+sha2.workspace = true
+hex.workspace = true
 
 [lints]
 workspace = true

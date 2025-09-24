@@ -90,6 +90,8 @@ spl-token-2022 = "8.0"
 test-log = "0.2"
 thiserror = "2.0"
 tokio = "1.35"
+sha2 = "0.10"
+hex = "0.4"
 
 [profile.bench]
 debug = true
