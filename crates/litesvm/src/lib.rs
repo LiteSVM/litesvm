@@ -1079,12 +1079,6 @@ impl LiteSVM {
                                 match &entry.program {
                                     ProgramCacheEntryType::Loaded(executable) => {
                                         let (_vaddr, text_bytes) = executable.get_text_bytes();
-                                        // eprintln!(
-                                        //     "program_id: {} vaddr {:#x?} text_bytes: {:x?}",
-                                        //     program_id,
-                                        //     _vaddr,
-                                        //     &text_bytes[..32],
-                                        // );
                                         if let Some(slice) = cast_slice(text_bytes) {
                                             insns.push(slice.to_vec());
                                         }
