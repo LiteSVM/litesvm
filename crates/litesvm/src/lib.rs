@@ -451,7 +451,6 @@ impl LiteSVM {
                     let sbf_trace_dir = current_dir.join(sbf_trace_dir);
                     std::fs::create_dir_all(&sbf_trace_dir)?;
 
-                    // eprintln!("Number of batches: {}", batch_regs.iter().len());
                     for (regs, insns) in batch_regs.iter().zip(batch_insns.iter()) {
                         let digest = Sha256::digest(as_bytes(regs.as_slice()));
                         let hex = hex::encode(digest);
@@ -464,7 +463,6 @@ impl LiteSVM {
                                 continue;
                             };
                             let _ = regs_file.write(as_bytes(regs_set.as_slice()))?;
-                            // eprintln!("pc {:08x} -> insn {:08x}", (regs_set[11] << 3) + 0x120, ix);
                             let _ = insns_file.write(ix.to_le_bytes().as_slice())?;
                         }
                     }
