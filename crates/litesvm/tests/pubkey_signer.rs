@@ -1,11 +1,8 @@
-use agave_feature_set::FeatureSet;
-use litesvm::LiteSVM;
-use solana_message::Message;
-use solana_native_token::LAMPORTS_PER_SOL;
-use solana_pubkey::Pubkey;
-use solana_signature::Signature;
-use solana_system_interface::instruction::transfer;
-use solana_transaction::Transaction;
+use {
+    agave_feature_set::FeatureSet, litesvm::LiteSVM, solana_message::Message,
+    solana_native_token::LAMPORTS_PER_SOL, solana_pubkey::Pubkey, solana_signature::Signature,
+    solana_system_interface::instruction::transfer, solana_transaction::Transaction,
+};
 
 #[test]
 fn pubkey_signer() {
