@@ -185,7 +185,7 @@ use {
     solana_program_pack::Pack,
     solana_pubkey::{pubkey, Pubkey},
     spl_associated_token_account_client::address::get_associated_token_address,
-    spl_token::{
+    spl_token_interface::{
         state::{Account as TokenAccount, AccountState},
         ID as TOKEN_PROGRAM_ID,
     },
@@ -1298,7 +1298,7 @@ impl LiteSVM {
     }
 
     #[cfg(feature = "internal-test")]
-    pub fn get_feature_set(&self) -> Arc<FeatureSet> {
+    pub fn get_feature_set(&self) -> FeatureSet {
         self.feature_set.clone()
     }
 

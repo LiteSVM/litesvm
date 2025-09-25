@@ -20,7 +20,7 @@ fn test() {
 
     CreateNativeMint::new(svm, &payer_kp).send().unwrap();
 
-    let mint: Mint = get_spl_account(svm, &spl_token_2022::native_mint::ID).unwrap();
+    let mint: Mint = get_spl_account(svm, &spl_token_2022_interface::native_mint::ID).unwrap();
 
     assert_eq!(mint.decimals, 9);
     assert_eq!(mint.supply, 0);
@@ -28,10 +28,13 @@ fn test() {
     assert!(mint.is_initialized);
     assert_eq!(mint.freeze_authority, None.into());
 
-    let account_pk =
-        CreateAssociatedTokenAccount::new(svm, &payer_kp, &spl_token_2022::native_mint::ID)
-            .send()
-            .unwrap();
+    let account_pk = CreateAssociatedTokenAccount::new(
+        svm,
+        &payer_kp,
+        &spl_token_2022_interface::native_mint::ID,
+    )
+    .send()
+    .unwrap();
 
     SyncNative::new(svm, &payer_kp, &account_pk).send().unwrap();
 }

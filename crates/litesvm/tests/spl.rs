@@ -10,7 +10,7 @@ fn spl_token() {
     let payer_pk = payer_kp.pubkey();
     let mint_kp = Keypair::new();
     let mint_pk = mint_kp.pubkey();
-    let mint_len = spl_token::state::Mint::LEN;
+    let mint_len = spl_token_interface::state::Mint::LEN;
 
     svm.airdrop(&payer_pk, 1000000000).unwrap();
 
@@ -19,12 +19,17 @@ fn spl_token() {
         &mint_pk,
         svm.minimum_balance_for_rent_exemption(mint_len),
         mint_len as u64,
-        &spl_token::id(),
+        &spl_token_interface::id(),
     );
 
-    let init_mint_ins =
-        spl_token::instruction::initialize_mint2(&spl_token::id(), &mint_pk, &payer_pk, None, 8)
-            .unwrap();
+    let init_mint_ins = spl_token_interface::instruction::initialize_mint2(
+        &spl_token_interface::id(),
+        &mint_pk,
+        &payer_pk,
+        None,
+        8,
+    )
+    .unwrap();
     let balance_before = svm.get_balance(&payer_pk).unwrap();
     let expected_fee = 2 * 5000; // two signers
     let tx_result = svm.send_transaction(Transaction::new_signed_with_payer(
@@ -36,13 +41,13 @@ fn spl_token() {
     assert!(tx_result.is_ok());
     let expected_rent = svm
         .get_sysvar::<Rent>()
-        .minimum_balance(spl_token::state::Mint::LEN);
+        .minimum_balance(spl_token_interface::state::Mint::LEN);
     let balance_after = svm.get_balance(&payer_pk).unwrap();
 
     assert_eq!(balance_before - balance_after, expected_rent + expected_fee);
 
     let mint_acc = svm.get_account(&mint_kp.pubkey());
-    let mint = spl_token::state::Mint::unpack(&mint_acc.unwrap().data).unwrap();
+    let mint = spl_token_interface::state::Mint::unpack(&mint_acc.unwrap().data).unwrap();
 
     assert_eq!(mint.decimals, 8);
     assert_eq!(mint.mint_authority, Some(payer_pk).into());

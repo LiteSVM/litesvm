@@ -90,17 +90,12 @@ solana-pubkey.workspace = true
 solana-secp256k1-program.workspace = true
 solana-signer.workspace = true
 spl-associated-token-account-client.workspace = true
-spl-token.workspace = true
+spl-token-interface.workspace = true
 test-log.workspace = true
 tokio.workspace = true
 
 [lints]
 workspace = true
-
-[[bench]]
-name = "banks_client_comparison"
-required-features = ["internal-test"]
-harness = false
 
 [[bench]]
 name = "simple_bench"

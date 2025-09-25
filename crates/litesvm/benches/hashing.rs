@@ -15,10 +15,7 @@ fn std_default(address: &Pubkey, hash_builder: &BuildHasherDefault<DefaultHasher
 #[cfg(feature = "hashbrown")]
 #[inline(never)]
 fn hashbrown(address: &Pubkey, hash_builder: &hashbrown::DefaultHashBuilder) -> u64 {
-    use std::hash::{Hash, Hasher};
-    let mut hasher = hash_builder.build_hasher();
-    address.hash(&mut hasher);
-    hasher.finish()
+    hash_builder.hash_one(address)
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
