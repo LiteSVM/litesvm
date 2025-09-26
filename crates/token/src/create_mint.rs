@@ -1,7 +1,7 @@
 #[cfg(not(feature = "token-2022"))]
 use solana_program_pack::Pack;
 #[cfg(feature = "token-2022")]
-use spl_token_2022::extension::ExtensionType;
+use spl_token_2022_interface::extension::ExtensionType;
 use {
     super::{
         spl_token::{instruction::initialize_mint2, state::Mint},

@@ -77,6 +77,7 @@ pub enum InstructionErrorFieldless {
     MaxAccountsExceeded,
     MaxInstructionTraceLengthExceeded,
     BuiltinProgramsMustConsumeComputeUnits,
+    BorshIoError,
 }
 
 to_string_js!(InstructionErrorFieldless);
@@ -97,8 +98,8 @@ fn convert_instruction_error(e: InstructionErrorOriginal) -> InstructionError {
         InstructionErrorOriginal::Custom(code) => {
             InstructionError::B(InstructionErrorCustom { code })
         }
-        InstructionErrorOriginal::BorshIoError(msg) => {
-            InstructionError::C(InstructionErrorBorshIO { msg })
+        InstructionErrorOriginal::BorshIoError => {
+            InstructionError::A(InstructionErrorFieldless::BorshIoError)
         }
         InstructionErrorOriginal::GenericError => {
             InstructionError::A(InstructionErrorFieldless::GenericError)

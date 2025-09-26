@@ -1,9 +1,10 @@
 use {
     litesvm::LiteSVM,
     solana_account::Account,
+    solana_program_option::COption,
     solana_program_pack::Pack,
     solana_rent::Rent,
-    spl_token::{native_mint::DECIMALS, solana_program::program_option::COption, state::Mint},
+    spl_token_interface::{native_mint::DECIMALS, state::Mint},
 };
 
 pub fn create_native_mint(svm: &mut LiteSVM) {
@@ -19,11 +20,11 @@ pub fn create_native_mint(svm: &mut LiteSVM) {
     let account = Account {
         lamports: svm.get_sysvar::<Rent>().minimum_balance(data.len()),
         data,
-        owner: spl_token::ID,
+        owner: spl_token_interface::ID,
         executable: false,
         rent_epoch: 0,
     };
 
-    svm.set_account(spl_token::native_mint::ID, account)
+    svm.set_account(spl_token_interface::native_mint::ID, account)
         .unwrap();
 }

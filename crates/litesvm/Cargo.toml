@@ -12,11 +12,13 @@ readme = "../../README.md"
 internal-test = []
 nodejs-internal = ["dep:qualifier_attr"]
 hashbrown = ["dep:hashbrown"]
+serde = []
 
 [dependencies]
 agave-feature-set.workspace = true
 agave-precompiles.workspace = true
 agave-reserved-account-keys.workspace = true
+agave-syscalls.workspace = true
 ansi_term.workspace = true
 bincode.workspace = true
 hashbrown = { workspace = true, optional = true }
@@ -24,9 +26,12 @@ indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 qualifier_attr = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
+serde.workspace = true
 solana-account.workspace = true
-solana-address-lookup-table-interface.workspace = true
+solana-address-lookup-table-interface = { workspace = true, features = [
+    "bincode",
+    "bytemuck",
+] }
 solana-bpf-loader-program.workspace = true
 solana-builtins.workspace = true
 solana-clock.workspace = true
@@ -43,7 +48,6 @@ solana-keypair.workspace = true
 solana-last-restart-slot.workspace = true
 solana-loader-v3-interface.workspace = true
 solana-loader-v4-interface.workspace = true
-solana-log-collector.workspace = true
 solana-message.workspace = true
 solana-native-token.workspace = true
 solana-nonce.workspace = true
@@ -61,13 +65,14 @@ solana-slot-hashes.workspace = true
 solana-slot-history.workspace = true
 solana-stake-interface.workspace = true
 solana-svm-callback.workspace = true
+solana-svm-log-collector.workspace = true
+solana-svm-timings.workspace = true
 solana-svm-transaction.workspace = true
 solana-system-interface.workspace = true
 solana-system-program.workspace = true
 solana-sysvar.workspace = true
 solana-sysvar-id.workspace = true
-solana-timings.workspace = true
-solana-transaction = { workspace = true, features = ["precompiles", "verify"] }
+solana-transaction = { workspace = true, features = ["verify"] }
 solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
 solana-vote-program.workspace = true
@@ -87,10 +92,10 @@ solana-program-option.workspace = true
 solana-program-pack.workspace = true
 solana-program-test.workspace = true
 solana-pubkey.workspace = true
-solana-secp256k1-program.workspace = true
+solana-secp256k1-program = { workspace = true, features = ["bincode"] }
 solana-signer.workspace = true
-spl-associated-token-account-client.workspace = true
-spl-token.workspace = true
+spl-associated-token-account-interface.workspace = true
+spl-token-interface.workspace = true
 test-log.workspace = true
 tokio.workspace = true
 

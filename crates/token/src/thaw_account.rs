@@ -71,7 +71,7 @@ impl<'a> ThawAccount<'a> {
         let account = if let Some(account) = self.account {
             *account
         } else {
-            spl_associated_token_account_client::address::get_associated_token_address_with_program_id(
+            spl_associated_token_account_interface::address::get_associated_token_address_with_program_id(
                 &authority,
                 self.mint,
                 token_program_id,

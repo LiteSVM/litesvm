@@ -5,7 +5,7 @@ use {
     solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
-    spl_associated_token_account_client::instruction::create_associated_token_account_idempotent,
+    spl_associated_token_account_interface::instruction::create_associated_token_account_idempotent,
 };
 
 /// ### Description
@@ -66,7 +66,7 @@ impl<'a> CreateAssociatedTokenAccountIdempotent<'a> {
 
         self.svm.send_transaction(tx)?;
 
-        let ata = spl_associated_token_account_client::address::get_associated_token_address_with_program_id(
+        let ata = spl_associated_token_account_interface::address::get_associated_token_address_with_program_id(
             &authority,
             self.mint,
             token_program_id,

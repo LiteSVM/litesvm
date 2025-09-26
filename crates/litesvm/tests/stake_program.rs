@@ -23,7 +23,7 @@ use {
     solana_transaction_error::TransactionError,
     solana_vote_program::{
         vote_instruction,
-        vote_state::{self, VoteInit, VoteState, VoteStateVersions},
+        vote_state::{self, VoteInit, VoteStateV3, VoteStateVersions},
     },
 };
 
@@ -40,7 +40,7 @@ fn increment_vote_account_credits(
     for _ in 0..number_of_credits {
         vote_state.increment_credits(epoch, 1);
     }
-    let versioned = VoteStateVersions::new_current(vote_state);
+    let versioned = VoteStateVersions::V3(Box::new(vote_state));
     vote_state::to(&versioned, &mut vote_account).unwrap();
     svm.set_account(vote_account_address, vote_account).unwrap();
 }
@@ -94,7 +94,7 @@ fn create_vote(
     vote_account: &Keypair,
 ) {
     let rent = svm.get_sysvar::<Rent>();
-    let rent_voter = rent.minimum_balance(VoteState::size_of());
+    let rent_voter = rent.minimum_balance(VoteStateV3::size_of());
 
     let mut instructions = vec![system_instruction::create_account(
         &payer.pubkey(),

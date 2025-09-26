@@ -11,7 +11,7 @@ pub struct ComputeBudget(pub(crate) ComputeBudgetOriginal);
 impl ComputeBudget {
     #[napi(constructor)]
     pub fn new() -> Self {
-        Self(ComputeBudgetOriginal::default())
+        Self(ComputeBudgetOriginal::new_with_defaults(false))
     }
 
     #[napi(getter)]
@@ -111,14 +111,6 @@ impl ComputeBudget {
     #[napi(getter)]
     pub fn log_pubkey_units(&self) -> u64 {
         self.0.log_pubkey_units
-    }
-    #[napi(setter)]
-    pub fn set_max_cpi_instruction_size(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.max_cpi_instruction_size = bigint_to_usize(&val)?)
-    }
-    #[napi(getter)]
-    pub fn max_cpi_instruction_size(&self) -> usize {
-        self.0.max_cpi_instruction_size
     }
     #[napi(setter)]
     pub fn set_cpi_bytes_per_unit(&mut self, val: BigInt) -> Result<()> {

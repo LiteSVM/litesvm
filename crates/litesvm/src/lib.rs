@@ -184,8 +184,8 @@ use {
     solana_program_option::COption,
     solana_program_pack::Pack,
     solana_pubkey::{pubkey, Pubkey},
-    spl_associated_token_account_client::address::get_associated_token_address,
-    spl_token::{
+    spl_associated_token_account_interface::address::get_associated_token_address,
+    spl_token_interface::{
         state::{Account as TokenAccount, AccountState},
         ID as TOKEN_PROGRAM_ID,
     },
@@ -276,13 +276,14 @@ use {
     },
     agave_feature_set::FeatureSet,
     agave_reserved_account_keys::ReservedAccountKeys,
+    agave_syscalls::{
+        create_program_runtime_environment_v1, create_program_runtime_environment_v2,
+    },
     itertools::Itertools,
     log::error,
     precompiles::load_precompiles,
+    serde::de::DeserializeOwned,
     solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
-    solana_bpf_loader_program::syscalls::{
-        create_program_runtime_environment_v1, create_program_runtime_environment_v2,
-    },
     solana_builtins::BUILTINS,
     solana_clock::Clock,
     solana_compute_budget::{
@@ -297,7 +298,6 @@ use {
     solana_hash::Hash,
     solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
-    solana_log_collector::LogCollector,
     solana_message::{
         inner_instruction::InnerInstructionsList, Message, SanitizedMessage, VersionedMessage,
     },
@@ -315,11 +315,12 @@ use {
     solana_slot_hashes::SlotHashes,
     solana_slot_history::SlotHistory,
     solana_stake_interface::stake_history::StakeHistory,
+    solana_svm_log_collector::LogCollector,
+    solana_svm_timings::ExecuteTimings,
     solana_svm_transaction::svm_message::SVMMessage,
     solana_system_program::{get_system_account_kind, SystemAccountKind},
-    solana_sysvar::Sysvar,
+    solana_sysvar::{Sysvar, SysvarSerialize},
     solana_sysvar_id::SysvarId,
-    solana_timings::ExecuteTimings,
     solana_transaction::{
         sanitized::{MessageHash, SanitizedTransaction},
         versioned::VersionedTransaction,
@@ -485,7 +486,9 @@ impl LiteSVM {
             }
         });
 
-        let compute_budget = self.compute_budget.unwrap_or_default();
+        let compute_budget = self
+            .compute_budget
+            .unwrap_or(ComputeBudget::new_with_defaults(false));
         let program_runtime_v1 = create_program_runtime_environment_v1(
             &self.feature_set.runtime_features(),
             &compute_budget.to_budget(),
@@ -627,7 +630,7 @@ impl LiteSVM {
     /// Sets the sysvar to the test environment.
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
-        T: Sysvar + SysvarId,
+        T: Sysvar + SysvarId + SysvarSerialize,
     {
         let mut account = AccountSharedData::new(1, T::size_of(), &solana_sdk_ids::sysvar::id());
         account.serialize_data(sysvar).unwrap();
@@ -637,7 +640,7 @@ impl LiteSVM {
     /// Gets a sysvar from the test environment.
     pub fn get_sysvar<T>(&self) -> T
     where
-        T: Sysvar + SysvarId,
+        T: Sysvar + SysvarId + DeserializeOwned,
     {
         bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
     }
@@ -817,7 +820,7 @@ impl LiteSVM {
         let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
             compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
             heap_size: compute_budget_limits.updated_heap_bytes,
-            ..ComputeBudget::default()
+            ..ComputeBudget::new_with_defaults(false)
         });
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
@@ -907,23 +910,22 @@ impl LiteSVM {
             .instructions()
             .iter()
             .map(|c| {
-                let mut account_indices: Vec<u16> = Vec::with_capacity(2);
                 let program_index = c.program_id_index as usize;
                 // This may never error, because the transaction is sanitized
                 let (program_id, program_account) = accounts.get(program_index).unwrap();
                 if native_loader::check_id(program_id) {
-                    return Ok(account_indices);
+                    return Ok(program_index as IndexOfAccount);
                 }
                 if !program_account.executable() {
                     error!("Program account {program_id} is not executable.");
                     return Err(TransactionError::InvalidProgramForExecution);
                 }
-                account_indices.insert(0, program_index as IndexOfAccount);
 
                 let owner_id = program_account.owner();
                 if native_loader::check_id(owner_id) {
-                    return Ok(account_indices);
+                    return Ok(program_index as IndexOfAccount);
                 }
+
                 if !accounts
                     .get(builtins_start_index..)
                     .ok_or(TransactionError::ProgramAccountNotFound)?
@@ -941,11 +943,13 @@ impl LiteSVM {
                         error!("Owner account {owner_id} is not executable");
                         return Err(TransactionError::InvalidProgramForExecution);
                     }
+                    //Add program_id to the stuff
                     accounts.push((*owner_id, owner_account.into()));
                 }
-                Ok(account_indices)
+                Ok(program_index as IndexOfAccount)
             })
-            .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
+            .collect::<Result<Vec<u16>, TransactionError>>();
+
         match maybe_program_indices {
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(compute_budget, accounts);

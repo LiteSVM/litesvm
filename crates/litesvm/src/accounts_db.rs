@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use {
     crate::error::{InvalidSysvarDataError, LiteSVMError},
     log::error,
+    serde::de::DeserializeOwned,
     solana_account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
     solana_address_lookup_table_interface::{error::AddressLookupError, state::AddressLookupTable},
     solana_clock::Clock,
@@ -13,7 +14,7 @@ use {
     solana_loader_v4_interface::state::LoaderV4State,
     solana_message::{
         v0::{LoadedAddresses, MessageAddressTableLookup},
-        AddressLoader, AddressLoaderError,
+        AddressLoader,
     },
     solana_nonce as nonce,
     solana_program_runtime::{
@@ -32,7 +33,7 @@ use {
     },
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::Sysvar,
-    solana_transaction_error::TransactionError,
+    solana_transaction_error::{AddressLoaderError, TransactionError},
     std::sync::Arc,
 };
 
@@ -48,7 +49,7 @@ fn handle_sysvar<T>(
     address: Pubkey,
 ) -> Result<(), InvalidSysvarDataError>
 where
-    T: Sysvar,
+    T: Sysvar + DeserializeOwned,
 {
     accounts_clone.insert(address, account.clone());
     cache.reset();
@@ -191,7 +192,7 @@ impl AccountsDb {
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar::<solana_sysvar::stake_history::StakeHistory>(
+                handle_sysvar::<solana_stake_interface::stake_history::StakeHistory>(
                     cache,
                     StakeHistory,
                     account,
