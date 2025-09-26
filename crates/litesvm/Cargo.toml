@@ -101,11 +101,6 @@ test-log.workspace = true
 workspace = true
 
 [[bench]]
-name = "banks_client_comparison"
-required-features = ["internal-test"]
-harness = false
-
-[[bench]]
 name = "simple_bench"
 harness = false
 
