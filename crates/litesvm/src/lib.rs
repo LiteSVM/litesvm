@@ -184,8 +184,8 @@ use {
     solana_program_option::COption,
     solana_program_pack::Pack,
     solana_pubkey::{pubkey, Pubkey},
-    spl_associated_token_account_client::address::get_associated_token_address,
-    spl_token::{
+    spl_associated_token_account_interface::address::get_associated_token_address,
+    spl_token_interface::{
         state::{Account as TokenAccount, AccountState},
         ID as TOKEN_PROGRAM_ID,
     },

@@ -2815,6 +2815,7 @@ dependencies = [
  "solana-transaction-context",
  "solana-transaction-error",
  "solana-vote-program",
+ "spl-associated-token-account-interface",
  "spl-token-interface",
  "test-log",
  "thiserror 2.0.16",
