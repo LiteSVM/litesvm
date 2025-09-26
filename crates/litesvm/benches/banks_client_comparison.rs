@@ -127,14 +127,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             );
         })
     });
-    group.bench_function("banks_client_bench", |b| {
-        b.iter(|| {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                do_program_test(program_id, counter_address, feature_set.clone()).await;
-            });
-        })
-    });
 }
 
 fn counter_acc(program_id: Pubkey) -> solana_account::Account {
