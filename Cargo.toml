@@ -61,7 +61,6 @@ solana-program-error = "3.0"
 solana-program-option = "3.0"
 solana-program-pack = "3.0"
 solana-program-runtime = "3.0"
-solana-program-test = "3.0"
 solana-pubkey = "3.0"
 solana-rent = "3.0"
 solana-runtime-transaction = "3.0"
@@ -90,7 +89,6 @@ spl-token-interface = "2.0"
 spl-token-2022-interface = "2.0"
 test-log = "0.2"
 thiserror = "2.0"
-tokio = "1.35"
 
 [profile.bench]
 debug = true

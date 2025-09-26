@@ -6,7 +6,6 @@ use {
     solana_keypair::Keypair,
     solana_message::Message,
     solana_pubkey::Pubkey,
-    solana_rent::Rent,
     solana_signer::Signer,
     solana_transaction::Transaction,
     std::path::PathBuf,
@@ -69,48 +68,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             );
         })
     });
-    group.bench_function("max_perf_banks_client", |b| {
-        // this has to do more work than max_perf_litesvm because you can't turn off blockhash checking.
-        // That's ok, the point is that litesvm lets you strip away more stuff.
-        b.iter(|| {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                do_program_test(program_id, counter_address).await;
-            });
-        })
-    });
-}
-
-async fn do_program_test(program_id: Pubkey, counter_address: Pubkey) {
-    let mut pt = solana_program_test::ProgramTest::default();
-    add_program(&read_counter_program(), program_id, &mut pt);
-    let mut ctx = pt.start_with_context().await;
-    ctx.set_account(&counter_address, &counter_acc(program_id).into());
-
-    for deduper in 0..NUM_GREETINGS {
-        let tx = make_tx(
-            program_id,
-            counter_address,
-            &ctx.payer.pubkey(),
-            ctx.last_blockhash,
-            &ctx.payer,
-            deduper,
-        );
-        let tx_res = ctx
-            .banks_client
-            .process_transaction_with_metadata(tx.clone())
-            .await
-            .unwrap();
-        tx_res.result.unwrap();
-    }
-    let fetched = ctx
-        .banks_client
-        .get_account(counter_address)
-        .await
-        .unwrap()
-        .unwrap()
-        .data[0];
-    assert_eq!(fetched, NUM_GREETINGS);
 }
 
 fn counter_acc(program_id: Pubkey) -> solana_account::Account {
@@ -120,25 +77,6 @@ fn counter_acc(program_id: Pubkey) -> solana_account::Account {
         owner: program_id,
         ..Default::default()
     }
-}
-
-fn read_counter_program() -> Vec<u8> {
-    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    so_path.push("test_programs/target/deploy/counter.so");
-    std::fs::read(so_path).unwrap()
-}
-
-fn add_program(bytes: &[u8], program_id: Pubkey, pt: &mut solana_program_test::ProgramTest) {
-    pt.add_account(
-        program_id,
-        Account {
-            lamports: Rent::default().minimum_balance(bytes.len()).max(1),
-            data: bytes.to_vec(),
-            owner: solana_sdk_ids::bpf_loader::id(),
-            executable: true,
-            rent_epoch: 0,
-        },
-    );
 }
 
 criterion_group!(benches, criterion_benchmark);
