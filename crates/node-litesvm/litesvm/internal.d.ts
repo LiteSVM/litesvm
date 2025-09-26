@@ -81,8 +81,6 @@ export declare class ComputeBudget {
   get stackFrameSize(): bigint
   set logPubkeyUnits(val: bigint)
   get logPubkeyUnits(): bigint
-  set maxCpiInstructionSize(val: bigint)
-  get maxCpiInstructionSize(): bigint
   set cpiBytesPerUnit(val: bigint)
   get cpiBytesPerUnit(): bigint
   set sysvarBaseCost(val: bigint)
@@ -563,7 +561,8 @@ export declare const enum InstructionErrorFieldless {
   MaxAccountsDataAllocationsExceeded = 48,
   MaxAccountsExceeded = 49,
   MaxInstructionTraceLengthExceeded = 50,
-  BuiltinProgramsMustConsumeComputeUnits = 51
+  BuiltinProgramsMustConsumeComputeUnits = 51,
+  BorshIoError = 52
 }
 
 export declare const enum SlotHistoryCheck {

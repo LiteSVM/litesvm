@@ -24,10 +24,10 @@ mod transfer_checked;
 
 #[cfg(feature = "token-2022")]
 use create_native_mint_2022 as create_native_mint;
-#[cfg(not(feature = "token-2022"))]
-pub use spl_token;
 #[cfg(feature = "token-2022")]
-pub use spl_token_2022 as spl_token;
+pub use spl_token_2022_interface as spl_token;
+#[cfg(not(feature = "token-2022"))]
+pub use spl_token_interface as spl_token;
 pub use {
     approve::*, approve_checked::*, burn::*, burn_checked::*, close_account::*, create_account::*,
     create_ata::*, create_ata_idempotent::*, create_mint::*, create_multisig::*,
