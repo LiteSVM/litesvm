@@ -160,7 +160,11 @@ jobs:
           architecture: ${{ matrix.settings.architecture }}
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Install dependencies
-        run: yarn install
+        run: |
+          yarn install || (echo "First install failed, trying to rebuild @swc/core..." && yarn add @swc/core@latest --force && yarn install)
+        env:
+          SWC_BINARY_CACHE: 0
+          SWC_SKIP_BINARY_DOWNLOAD: 0
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
