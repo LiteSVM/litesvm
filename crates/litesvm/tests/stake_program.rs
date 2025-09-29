@@ -2,7 +2,7 @@
 
 use {
     litesvm::LiteSVM,
-    solana_account::Account,
+    solana_account::{Account, ReadableAccount, WritableAccount},
     solana_clock::Clock,
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
@@ -21,11 +21,21 @@ use {
     solana_system_interface::instruction as system_instruction,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
-    solana_vote_program::{
-        vote_instruction,
-        vote_state::{self, VoteInit, VoteStateV3, VoteStateVersions},
+    solana_vote_interface::{
+        instruction as vote_instruction,
+        state::{VoteInit, VoteStateV3, VoteStateVersions},
     },
 };
+
+// utility function, used by Stakes, tests
+fn from<T: ReadableAccount>(account: &T) -> Option<VoteStateV3> {
+    VoteStateV3::deserialize(account.data()).ok()
+}
+
+// utility function, used by Stakes, tests
+fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
+    VoteStateV3::serialize(versioned, account.data_as_mut_slice()).ok()
+}
 
 fn increment_vote_account_credits(
     svm: &mut LiteSVM,
@@ -34,14 +44,14 @@ fn increment_vote_account_credits(
 ) {
     // generate some vote activity for rewards
     let mut vote_account = svm.get_account(&vote_account_address).unwrap();
-    let mut vote_state = vote_state::from(&vote_account).unwrap();
+    let mut vote_state = from(&vote_account).unwrap();
 
     let epoch = svm.get_sysvar::<Clock>().epoch;
     for _ in 0..number_of_credits {
         vote_state.increment_credits(epoch, 1);
     }
     let versioned = VoteStateVersions::V3(Box::new(vote_state));
-    vote_state::to(&versioned, &mut vote_account).unwrap();
+    to(&versioned, &mut vote_account).unwrap();
     svm.set_account(vote_account_address, vote_account).unwrap();
 }
 
@@ -114,7 +124,7 @@ fn create_vote(
         },
         rent_voter,
         vote_instruction::CreateVoteAccountConfig {
-            space: VoteStateVersions::vote_state_size_of(true) as u64,
+            space: VoteStateV3::size_of() as u64,
             ..Default::default()
         },
     ));
