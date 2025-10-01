@@ -1,20 +1,12 @@
 use {
-    agave_feature_set::FeatureSet, litesvm::LiteSVM, solana_message::Message,
-    solana_native_token::LAMPORTS_PER_SOL, solana_pubkey::Pubkey, solana_signature::Signature,
+    litesvm::LiteSVM, solana_message::Message, solana_native_token::LAMPORTS_PER_SOL,
+    solana_pubkey::Pubkey, solana_signature::Signature,
     solana_system_interface::instruction::transfer, solana_transaction::Transaction,
 };
 
 #[test]
 fn pubkey_signer() {
-    let mut svm = LiteSVM::default()
-        .with_feature_set(FeatureSet::all_enabled())
-        .with_builtins()
-        .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
-        .with_sysvars()
-        .with_precompiles()
-        .with_default_programs()
-        .with_sigverify(false)
-        .with_blockhash_check(true);
+    let mut svm = LiteSVM::new().with_sigverify(false);
 
     let dean = Pubkey::new_unique();
     svm.airdrop(&dean, 10 * LAMPORTS_PER_SOL).unwrap();
