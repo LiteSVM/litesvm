@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.8.1] - 2025-10-03
+
+### Removed
+
+- Remove vote-program dep ([#226](https://github.com/LiteSVM/litesvm/pull/226)).
+
 ## [0.8.0] - 2025-09-26
 
 ### Changed
@@ -136,7 +142,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/LiteSVM/litesvm/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/LiteSVM/litesvm/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/LiteSVM/litesvm/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/LiteSVM/litesvm/compare/v0.6.1...v0.7.0

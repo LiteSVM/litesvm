@@ -4,7 +4,7 @@ members = ["crates/*"]
 exclude = ["crates/node-litesvm/tests/clock-example"]
 
 [workspace.package]
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/LiteSVM/litesvm"
