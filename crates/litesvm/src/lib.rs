@@ -340,7 +340,7 @@ use {
     },
     solana_transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
     solana_transaction_error::TransactionError,
-    std::{cell::RefCell, io::Write, path::Path, rc::Rc, str::FromStr, sync::Arc},
+    std::{cell::RefCell, io::Write, path::Path, rc::Rc, sync::Arc},
     types::SimulatedTransactionInfo,
     utils::{
         construct_instructions_account,
@@ -1059,7 +1059,7 @@ impl LiteSVM {
                 .map(|_| ());
 
                 if let Some(instruction_tracing_handler) = &self.instruction_tracing_handler {
-                    if let Ok(program_ids_trace) = self.get_program_ids_trace(&invoke_context) {
+                    if let Ok(program_ids_trace) = self.get_program_ids_trace(&invoke_context, tx) {
                         let mut insns = Vec::new();
                         for mut invocation_stack in program_ids_trace.into_iter() {
                             while let Some(program_id) = invocation_stack.pop() {
@@ -1103,43 +1103,28 @@ impl LiteSVM {
 
     // To get executed instructions we need the list of invoked programs exactly how it happened
     // in time (taking into account the CPIs if any).
-    // Parse the stable log to collect the list.
     fn get_program_ids_trace(
         &self,
         invoke_context: &InvokeContext,
+        transaction: &SanitizedTransaction,
     ) -> Result<Vec<Vec<Pubkey>>, Box<dyn std::error::Error>> {
-        let log_collector = invoke_context
-            .get_log_collector()
-            .ok_or("Can't get log collector".to_string())?;
-        let logc = log_collector.try_borrow()?;
-        let invocations: Vec<_> = logc
-            .get_recorded_content()
-            .iter()
-            .filter(|line| line.starts_with("Program") && line.contains("invoke ["))
-            .collect();
-
-        let mut invocations_stacked = Vec::new();
-        for (matched, chunk) in &invocations
-            .iter()
-            .chunk_by(|line| line.contains("invoke [1]"))
-        {
-            let mut keys = Vec::new();
-            for line in chunk.into_iter() {
-                let maybe_key = line
-                    .split(" ")
-                    .nth(1)
-                    .ok_or("Missing invocation key".to_string())?;
-                let pubkey = Pubkey::from_str(maybe_key)?;
-                keys.push(pubkey);
-            }
-            if matched {
-                invocations_stacked.push(keys);
-            } else if let Some(inner) = invocations_stacked.last_mut() {
-                inner.append(&mut keys)
+        let cpi_instructions =
+            inner_instructions_list_from_instruction_trace(invoke_context.transaction_context);
+        let msg = transaction.message();
+        let msg_keys = msg.static_account_keys();
+        // Resolve which program is being executed for each frame in the trace
+        let mut program_id_invocation_order = Vec::new();
+        for (ix_idx, cpi_ixs) in cpi_instructions.iter().enumerate() {
+            let top_level_program_id = msg.instructions()[ix_idx].program_id(msg_keys);
+            program_id_invocation_order.push(vec![*top_level_program_id]);
+            for inner_ix in cpi_ixs {
+                if let Some(inner) = program_id_invocation_order.last_mut() {
+                    inner.push(*inner_ix.instruction.program_id(msg_keys))
+                }
             }
         }
 
-        Ok(invocations_stacked)
+        Ok(program_id_invocation_order)
     }
 
     fn check_accounts_rent(
