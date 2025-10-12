@@ -1,5 +1,4 @@
 use {crate::LiteSVM, solana_svm_callback::InvokeContextCallback};
-
 #[cfg(feature = "precompiles")]
 use {
     agave_precompiles::{get_precompile, is_precompile},
