@@ -253,6 +253,8 @@ much easier.
 
 */
 
+#[cfg(feature = "precompiles")]
+use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
 #[allow(deprecated)]
@@ -281,7 +283,6 @@ use {
     },
     itertools::Itertools,
     log::error,
-    precompiles::load_precompiles,
     serde::de::DeserializeOwned,
     solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     solana_builtins::BUILTINS,
@@ -343,6 +344,7 @@ mod callback;
 mod format_logs;
 mod history;
 mod message_processor;
+#[cfg(feature = "precompiles")]
 mod precompiles;
 mod programs;
 mod utils;
@@ -381,15 +383,19 @@ impl Default for LiteSVM {
 impl LiteSVM {
     /// Creates the basic test environment.
     pub fn new() -> Self {
-        LiteSVM::default()
+        let svm = LiteSVM::default()
             .with_feature_set(FeatureSet::all_enabled())
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
-            .with_precompiles()
             .with_default_programs()
             .with_sigverify(true)
-            .with_blockhash_check(true)
+            .with_blockhash_check(true);
+
+        #[cfg(feature = "precompiles")]
+        let svm = svm.with_precompiles();
+
+        svm
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
@@ -562,6 +568,7 @@ impl LiteSVM {
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    #[cfg(feature = "precompiles")]
     fn set_precompiles(&mut self) {
         load_precompiles(self);
     }
@@ -569,6 +576,7 @@ impl LiteSVM {
     /// Adds the standard precompiles to the VM.
     //
     // Use `with_feature_set` beforehand to change change what precompiles are added.
+    #[cfg(feature = "precompiles")]
     pub fn with_precompiles(mut self) -> Self {
         self.set_precompiles();
         self
