@@ -13,10 +13,11 @@ internal-test = []
 nodejs-internal = ["dep:qualifier_attr"]
 hashbrown = ["dep:hashbrown"]
 serde = []
+precompiles = ["dep:agave-precompiles"]
 
 [dependencies]
 agave-feature-set.workspace = true
-agave-precompiles.workspace = true
+agave-precompiles = { workspace = true, optional = true }
 agave-reserved-account-keys.workspace = true
 agave-syscalls.workspace = true
 ansi_term.workspace = true
@@ -99,6 +100,10 @@ test-log.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "precompiles"
+required-features = ["precompiles"]
 
 [[bench]]
 name = "simple_bench"

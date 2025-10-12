@@ -1,11 +1,15 @@
+use {crate::LiteSVM, solana_svm_callback::InvokeContextCallback};
+#[cfg(feature = "precompiles")]
 use {
-    crate::LiteSVM,
     agave_precompiles::{get_precompile, is_precompile},
     solana_precompile_error::PrecompileError,
     solana_pubkey::Pubkey,
-    solana_svm_callback::InvokeContextCallback,
 };
 
+#[cfg(not(feature = "precompiles"))]
+impl InvokeContextCallback for LiteSVM {}
+
+#[cfg(feature = "precompiles")]
 impl InvokeContextCallback for LiteSVM {
     fn is_precompile(&self, program_id: &solana_pubkey::Pubkey) -> bool {
         is_precompile(program_id, |feature_id: &Pubkey| {

@@ -14,7 +14,7 @@ agave-feature-set.workspace = true
 agave-precompiles.workspace = true
 bincode = { workspace = true }
 bv = "0.11.1"
-litesvm = { workspace = true, features = ["nodejs-internal"] }
+litesvm = { workspace = true, features = ["nodejs-internal", "precompiles"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive.workspace = true
 solana-account = { workspace = true }
