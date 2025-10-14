@@ -168,11 +168,12 @@ export class LiteSVMKit {
 	/**
 	 * Gets the balance of the provided account address.
 	 * @param address - The account address.
-	 * @returns The account's balance in lamports.
+	 * @returns The account's balance in lamports. Returns 0n for non-existent accounts.
 	 */
-	getBalance(address: Address): bigint | null {
+	getBalance(address: Address): bigint {
 		const addressBytes = addressToBytes(address);
-		return this.inner.getBalance(addressBytes);
+		const balance = this.inner.getBalance(addressBytes);
+		return balance !== null ? balance : 0n;
 	}
 
 	/**
