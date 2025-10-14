@@ -1,5 +1,3 @@
-// Kit integration exports - provides @solana/kit compatible interface
-
 // Re-export Kit types and utilities
 export type {
 	KitAccountInfo,
@@ -9,23 +7,18 @@ export type {
 	KitInnerInstruction,
 } from "./types";
 
-// Re-export Kit factory interface and implementation
-export type { LiteSVMKit } from "./factory";
-export { LiteSVMKit as LiteSVMKitClass } from "./extensions";
+// Re-export Kit class and factory functions
+export { LiteSVMKit } from "./extensions";
 export { createLiteSVM, createLiteSVMDefault } from "./factory";
 
-// Re-export Kit converters
+// Re-export Kit utility functions  
 export {
-	addressFromPublicKey,
-	publicKeyFromAddress,
-	kitAccountFromAccount,
-	accountFromKitAccount,
-	signatureFromTransactionSignature,
-	transactionSignatureFromSignature,
-	kitTransactionMetadataFromTransactionMetadata,
-	kitFailedTransactionMetadataFromFailedTransactionMetadata,
-	isLegacyTransaction,
-	isVersionedTransaction,
+	addressToBytes,
+	addressFromBytes,
+	signatureToBytes,
+	signatureFromBytes,
+	serializeKitTransaction,
+	deserializeToKitTransaction,
 	isKitTransaction,
 } from "./converters";
 

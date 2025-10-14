@@ -19,20 +19,28 @@ export interface KitAccountInfo {
 export interface KitTransactionMetadata {
 	readonly signature: Signature;
 	readonly slot: bigint;
-	readonly logs: readonly string[];
-	readonly unitsConsumed: bigint;
+	readonly computeUnitsConsumed: bigint;
+	readonly fee: bigint;
+	readonly innerInstructions: readonly KitInnerInstruction[];
+	readonly logMessages: readonly string[];
 	readonly returnData?: {
 		readonly programId: Address;
 		readonly data: Uint8Array;
 	};
-	readonly innerInstructions: readonly KitInnerInstruction[];
+	readonly preBalances: readonly bigint[];
+	readonly postBalances: readonly bigint[];
+	readonly preTokenBalances: readonly any[]; // TODO: Define proper token balance type
+	readonly postTokenBalances: readonly any[]; // TODO: Define proper token balance type
 }
 
 export interface KitFailedTransactionMetadata {
 	readonly signature: Signature;
-	readonly error: TransactionError;
-	readonly logs: readonly string[];
-	readonly unitsConsumed: bigint;
+	readonly slot: bigint;
+	readonly computeUnitsConsumed: bigint;
+	readonly fee: bigint;
+	readonly innerInstructions: readonly KitInnerInstruction[];
+	readonly logMessages: readonly string[];
+	readonly err: TransactionError;
 }
 
 export interface KitInnerInstruction {

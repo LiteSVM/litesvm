@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { address, generateKeyPairSigner } from "@solana/kit";
-import { createLiteSVM, LiteSVMKitClass, addressFromPublicKey, publicKeyFromAddress } from "litesvm";
+import { createLiteSVM, LiteSVMKit, addressFromBytes, addressToBytes } from "litesvm";
 
 test("kit factory creates working instance", () => {
 	const svm = createLiteSVM();
@@ -13,8 +13,8 @@ test("kit factory creates working instance", () => {
 
 test("kit address conversion works", () => {
 	const testAddress = address("11111111111111111111111111111111");
-	const publicKey = publicKeyFromAddress(testAddress);
-	const addr = addressFromPublicKey(publicKey);
+	const addressBytes = addressToBytes(testAddress);
+	const addr = addressFromBytes(addressBytes);
 	
 	assert.equal(testAddress, addr);
 });
@@ -60,19 +60,19 @@ test("kit account management", () => {
 });
 
 test("kit extended class functionality", () => {
-	const svm = new LiteSVMKitClass();
+	const svm = new LiteSVMKit();
 	const testAddress = address("11111111111111111111111111111112");
 	
 	// Test Kit-specific methods  
-	const balance = svm.getBalanceKit(testAddress);
+	const balance = svm.getBalance(testAddress);
 	assert.ok(balance !== undefined);
 
-	const account = svm.getAccountKit(testAddress);
+	const account = svm.getAccount(testAddress);
 	// Account doesn't exist initially
 	assert.equal(account, null);
 	
 	// Set an account and verify
-	svm.setAccountKit(testAddress, {
+	svm.setAccount(testAddress, {
 		address: testAddress,
 		executable: false,
 		lamports: BigInt(1000000000),
@@ -81,7 +81,7 @@ test("kit extended class functionality", () => {
 		rentEpoch: 0n,
 	});
 	
-	const newAccount = svm.getAccountKit(testAddress);
+	const newAccount = svm.getAccount(testAddress);
 	assert.ok(newAccount);
 	assert.equal(newAccount.lamports, BigInt(1000000000));
 });
