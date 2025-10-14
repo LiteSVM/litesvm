@@ -54,6 +54,71 @@ test("one transfer", () => {
 Note: by default the `LiteSVM` instance includes some core programs such as
 the System Program and SPL Token.
 
+## @solana/kit Integration
+
+LiteSVM now supports [@solana/kit](https://github.com/solana-labs/solana-kit) types and methods alongside the traditional @solana/web3.js API. This provides a more modern, type-safe experience for Solana development.
+
+### Kit Usage Example
+
+```ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { LiteSVMKitClass } from "litesvm";
+import { address } from "@solana/kit";
+
+test("kit integration", () => {
+	const svm = new LiteSVMKitClass();
+	
+	// Use Kit Address types
+	const testAddress = address("11111111111111111111111111111111");
+	
+	// Get account info using Kit methods
+	const account = svm.getAccountKit(testAddress);
+	assert(account !== null);
+	assert.strictEqual(account.executable, true);
+	
+	// Get balance using Kit methods  
+	const balance = svm.getBalanceKit(testAddress);
+	assert(balance !== null);
+	assert(balance > 0n);
+});
+```
+
+### Kit API Methods
+
+The `LiteSVMKitClass` provides Kit-compatible versions of all major LiteSVM methods:
+
+- **Account Management:**
+  - `getAccountKit(address: Address): KitAccountInfo | null`
+  - `setAccountKit(address: Address, account: KitAccountInfo): void`
+  - `getBalanceKit(address: Address): bigint | null`
+
+- **Configuration:** All standard LiteSVM configuration methods (withSysvars, withDefaultPrograms, etc.)
+
+- **Types:** Full support for Kit types including `Address`, `KitAccountInfo`, and more
+
+### Migration from web3.js
+
+You can gradually migrate from @solana/web3.js to @solana/kit by using both APIs side-by-side:
+
+```ts
+import { LiteSVMKitClass } from "litesvm";
+import { PublicKey } from "@solana/web3.js";
+import { address } from "@solana/kit";
+
+const svm = new LiteSVMKitClass();
+
+// Use web3.js PublicKey
+const pubkey = new PublicKey("11111111111111111111111111111111");
+const web3Account = svm.getAccount(pubkey);
+
+// Use Kit Address  
+const addr = address("11111111111111111111111111111111");
+const kitAccount = svm.getAccountKit(addr);
+
+// Both return equivalent data in their respective formats
+```
+
 ## Installation
 
 ```
