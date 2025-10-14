@@ -3,7 +3,13 @@ import type {
 	Address,
 	Signature,
 	TransactionError,
+	TransactionMessage,
+	TransactionMessageWithFeePayer,
+	Lamports,
 } from "@solana/kit";
+
+// Kit-compatible transaction message (includes feePayer)
+export type KitTransactionMessage = TransactionMessageWithFeePayer<Address>;
 
 // Kit-compatible account type
 export interface KitAccountInfo {
@@ -13,6 +19,20 @@ export interface KitAccountInfo {
 	readonly data: Uint8Array;
 	readonly owner: Address;
 	readonly rentEpoch: bigint;
+}
+
+// Token balance types for transaction metadata
+export interface KitTokenBalance {
+	readonly accountIndex: number;
+	readonly mint: Address;
+	readonly uiTokenAmount: {
+		readonly amount: string;
+		readonly decimals: number;
+		readonly uiAmount?: number;
+		readonly uiAmountString: string;
+	};
+	readonly owner?: Address;
+	readonly programId?: Address;
 }
 
 // Kit-compatible transaction result types
@@ -29,8 +49,8 @@ export interface KitTransactionMetadata {
 	};
 	readonly preBalances: readonly bigint[];
 	readonly postBalances: readonly bigint[];
-	readonly preTokenBalances: readonly any[]; // TODO: Define proper token balance type
-	readonly postTokenBalances: readonly any[]; // TODO: Define proper token balance type
+	readonly preTokenBalances: readonly KitTokenBalance[];
+	readonly postTokenBalances: readonly KitTokenBalance[];
 }
 
 export interface KitFailedTransactionMetadata {
@@ -59,11 +79,11 @@ export interface KitSimulatedTransactionInfo {
 export function isKitFailedTransaction(
 	result: KitTransactionMetadata | KitFailedTransactionMetadata,
 ): result is KitFailedTransactionMetadata {
-	return "error" in result;
+	return "err" in result;
 }
 
 export function isKitSuccessfulTransaction(
 	result: KitTransactionMetadata | KitFailedTransactionMetadata,
 ): result is KitTransactionMetadata {
-	return !("error" in result);
+	return !("err" in result);
 }

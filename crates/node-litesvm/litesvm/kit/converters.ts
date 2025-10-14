@@ -1,11 +1,14 @@
 import {
 	Address,
 	address,
-	Transaction as KitTransaction,
 	Signature,
 	signature,
+	compileTransactionMessage,
+	getCompiledTransactionMessageEncoder,
+	getCompiledTransactionMessageDecoder,
 } from "@solana/kit";
 import bs58 from "bs58";
+import type { KitTransactionMessage } from "./types.js";
 
 /**
  * Core utility functions for @solana/kit integration
@@ -30,20 +33,40 @@ export function signatureFromBytes(bytes: Uint8Array): Signature {
 	return signature(bs58.encode(bytes));
 }
 
-// Mock transaction serialization for Kit transactions
-// TODO: Replace with actual @solana/kit serialization once API is available
-export function serializeKitTransaction(tx: KitTransaction): Uint8Array {
-	// Placeholder implementation - need actual Kit serialization
-	throw new Error("Kit transaction serialization not yet implemented - awaiting @solana/kit API");
+// Kit transaction serialization using proper @solana/kit API
+export function serializeKitTransactionMessage(txMessage: KitTransactionMessage): Uint8Array {
+	try {
+		// Compile the transaction message into a compiled format
+		// Use type assertion to work around complex Kit type requirements
+		const compiledMessage = compileTransactionMessage(txMessage as any);
+		
+		// Get the encoder for compiled transaction messages
+		const encoder = getCompiledTransactionMessageEncoder();
+		
+		// Encode to bytes and return as regular Uint8Array
+		const encoded = encoder.encode(compiledMessage);
+		return new Uint8Array(encoded);
+	} catch (error) {
+		throw new Error(`Failed to serialize Kit transaction message: ${error}`);
+	}
 }
 
-export function deserializeToKitTransaction(serialized: Uint8Array): KitTransaction {
-	// Placeholder implementation - need actual Kit deserialization
-	throw new Error("Kit transaction deserialization not yet implemented - awaiting @solana/kit API");
+export function deserializeToKitTransactionMessage(serialized: Uint8Array): any {
+	try {
+		// Get the decoder for compiled transaction messages
+		const decoder = getCompiledTransactionMessageDecoder();
+		
+		// Decode from bytes - use type assertion to work around Kit type issues
+		const compiledMessage = decoder.decode(serialized as any);
+		
+		return compiledMessage;
+	} catch (error) {
+		throw new Error(`Failed to deserialize Kit transaction message: ${error}`);
+	}
 }
 
 // Type guards for Kit types
-export function isKitTransaction(tx: any): tx is KitTransaction {
-	// Basic type guard - may need refinement based on actual Kit transaction structure
-	return tx && typeof tx === 'object' && 'instructions' in tx;
+export function isKitTransactionMessage(tx: any): tx is KitTransactionMessage {
+	// Basic type guard for transaction message structure
+	return tx && typeof tx === 'object' && 'instructions' in tx && 'feePayer' in tx;
 }

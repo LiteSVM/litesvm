@@ -17,9 +17,9 @@ export {
 	addressFromBytes,
 	signatureToBytes,
 	signatureFromBytes,
-	serializeKitTransaction,
-	deserializeToKitTransaction,
-	isKitTransaction,
+	serializeKitTransactionMessage,
+	deserializeToKitTransactionMessage,
+	isKitTransactionMessage,
 } from "./converters";
 
 // Re-export Kit type guards
