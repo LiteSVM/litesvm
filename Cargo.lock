@@ -2513,6 +2513,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
+name = "sodasvm"
+version = "0.8.1"
+dependencies = [
+ "litesvm",
+ "solana-account",
+ "solana-hash",
+ "solana-keypair",
+ "solana-message",
+ "solana-pubkey",
+ "solana-signer",
+ "solana-system-interface",
+ "solana-transaction",
+ "test-log",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "solana-account"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,26 @@
+[package]
+name = "sodasvm"
+description = ""
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+litesvm = { path = "../litesvm" }
+solana-account.workspace = true
+solana-hash.workspace = true
+solana-transaction.workspace = true
+solana-pubkey.workspace = true
+solana-keypair.workspace = true
+solana-signer.workspace = true
+solana-message.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+test-log.workspace = true
+solana-system-interface.workspace = true
+
+[lints]
+workspace = true
