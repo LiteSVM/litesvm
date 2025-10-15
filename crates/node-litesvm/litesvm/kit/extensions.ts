@@ -1,541 +1,496 @@
 // Extended LiteSVM class with pure @solana/kit support (no @solana/web3.js dependencies)
-import type {
-	Address,
-	Signature,
-	Lamports,
-} from "@solana/kit";
-import { Account, LiteSvm as LiteSVMInner, ComputeBudget, FeatureSet } from "../internal";
-import type {
-	KitAccountInfo,
-	KitTransactionMessage,
-	KitTransactionMetadata,
-	KitFailedTransactionMetadata,
-	KitSimulatedTransactionInfo,
-	KitInnerInstruction,
-	KitTokenBalance,
-} from "./types";
-import type {
-	FailedTransactionMetadata,
-	TransactionMetadata,
-	InnerInstruction,
+import type { Address, Signature, Lamports } from "@solana/kit";
+import {
+  Account,
+  LiteSvm as LiteSVMInner,
+  ComputeBudget,
+  FeatureSet,
+  TransactionMetadata,
+  FailedTransactionMetadata,
 } from "../internal";
+import type {
+  KitAccountInfo,
+  KitTransactionMessage,
+  KitTransactionMetadata,
+  KitFailedTransactionMetadata,
+  KitSimulatedTransactionInfo,
+  KitInnerInstruction,
+} from "./types";
+import type { InnerInstruction } from "../internal";
 import { serializeKitTransactionMessage } from "./converters";
 import bs58 from "bs58";
 
 // Helper function to convert Address to bytes
 function addressToBytes(address: Address): Uint8Array {
-	// @solana/kit Address is base58-encoded string, decode to bytes
-	return bs58.decode(address);
+  // @solana/kit Address is base58-encoded string, decode to bytes
+  return bs58.decode(address);
 }
 
 // Helper function to convert Account to KitAccountInfo
 function toKitAccountInfo(acc: Account, address: Address): KitAccountInfo {
-	return {
-		address,
-		executable: acc.executable(),
-		owner: bs58.encode(acc.owner()) as unknown as Address, // Convert bytes to base58 string, then cast to Address
-		lamports: acc.lamports(),
-		data: acc.data(),
-		rentEpoch: acc.rentEpoch(),
-	};
+  return {
+    address,
+    executable: acc.executable(),
+    owner: bs58.encode(acc.owner()) as unknown as Address, // Convert bytes to base58 string, then cast to Address
+    lamports: acc.lamports(),
+    data: acc.data(),
+    rentEpoch: acc.rentEpoch(),
+  };
 }
 
 // Helper function to convert KitAccountInfo to Account
 function fromKitAccountInfo(acc: KitAccountInfo): Account {
-	const maybeRentEpoch = acc.rentEpoch;
-	const rentEpoch = maybeRentEpoch || 0n;
-	return new Account(
-		acc.lamports,
-		acc.data,
-		addressToBytes(acc.owner),
-		acc.executable,
-		rentEpoch,
-	);
+  const maybeRentEpoch = acc.rentEpoch;
+  const rentEpoch = maybeRentEpoch || 0n;
+  return new Account(
+    acc.lamports,
+    acc.data,
+    addressToBytes(acc.owner),
+    acc.executable,
+    rentEpoch
+  );
 }
 
 // Helper function to convert inner instructions from LiteSVM format to Kit format
-function convertInnerInstructions(innerInstructions: InnerInstruction[][]): KitInnerInstruction[] {
-	const result: KitInnerInstruction[] = [];
-	
-	// Flatten the nested structure and convert each instruction
-	for (const instructionGroup of innerInstructions) {
-		for (const innerInstruction of instructionGroup) {
-			const instruction = innerInstruction.instruction();
-			
-			// Convert account indices to addresses (this is a simplified conversion)
-			// In a real implementation, you'd need access to the transaction's account keys
-			const accounts: Address[] = [];
-			const accountIndices = instruction.accounts();
-			for (let i = 0; i < accountIndices.length; i++) {
-				// This is a placeholder - actual implementation would resolve indices to addresses
-				accounts.push(bs58.encode(new Uint8Array(32).fill(accountIndices[i])) as Address);
-			}
-			
-			result.push({
-				programId: bs58.encode(new Uint8Array(32).fill(instruction.programIdIndex())) as Address,
-				accounts,
-				data: instruction.data(),
-			});
-		}
-	}
-	
-	return result;
-}
+function convertInnerInstructions(
+  innerInstructions: InnerInstruction[][]
+): KitInnerInstruction[] {
+  const result: KitInnerInstruction[] = [];
 
-// Helper function to convert token balances (placeholder implementation)
-function convertTokenBalances(tokenBalances: any[]): KitTokenBalance[] {
-	// This is a placeholder since actual token balance structure depends on LiteSVM's implementation
-	// In a real implementation, this would convert from the native LiteSVM token balance format
-	return tokenBalances.map((balance, index) => ({
-		accountIndex: index,
-		mint: bs58.encode(new Uint8Array(32)) as Address, // Placeholder
-		uiTokenAmount: {
-			amount: "0",
-			decimals: 0,
-			uiAmount: 0,
-			uiAmountString: "0",
-		},
-		owner: bs58.encode(new Uint8Array(32)) as Address, // Placeholder
-		programId: bs58.encode(new Uint8Array(32)) as Address, // Placeholder
-	}));
-}
+  // Flatten the nested structure and convert each instruction
+  for (const instructionGroup of innerInstructions) {
+    for (const innerInstruction of instructionGroup) {
+      const instruction = innerInstruction.instruction();
 
+      // Convert account indices to addresses (this is a simplified conversion)
+      // In a real implementation, you'd need access to the transaction's account keys
+      const accounts: Address[] = [];
+      const accountIndices = instruction.accounts();
+      for (let i = 0; i < accountIndices.length; i++) {
+        // This is a placeholder - actual implementation would resolve indices to addresses
+        accounts.push(
+          bs58.encode(new Uint8Array(32).fill(accountIndices[i])) as Address
+        );
+      }
+
+      result.push({
+        programId: bs58.encode(
+          new Uint8Array(32).fill(instruction.programIdIndex())
+        ) as Address,
+        accounts,
+        data: instruction.data(),
+      });
+    }
+  }
+
+  return result;
+}
 /**
  * Extended LiteSVM class with pure @solana/kit support
  * This provides Kit-compatible methods that work exclusively with @solana/kit types
  * while maintaining backward compatibility with @solana/web3.js
  */
 export class LiteSVMKit {
-	private inner: LiteSVMInner;
+  private inner: LiteSVMInner;
 
-	/** Create a new LiteSVM instance with standard functionality enabled */
-	constructor() {
-		this.inner = new LiteSVMInner();
-	}
+  /** Create a new LiteSVM instance with standard functionality enabled */
+  constructor() {
+    this.inner = new LiteSVMInner();
+  }
 
-	/** Create a new LiteSVM instance with minimal functionality enabled */
-	static default(): LiteSVMKit {
-		const svm = new LiteSVMKit();
-		const inner = LiteSVMInner.default();
-		svm.inner = inner;
-		return svm;
-	}
+  /** Create a new LiteSVM instance with minimal functionality enabled */
+  static default(): LiteSVMKit {
+    const svm = new LiteSVMKit();
+    const inner = LiteSVMInner.default();
+    svm.inner = inner;
+    return svm;
+  }
 
-	// Configuration methods - all return LiteSVMKit for method chaining
-	withComputeBudget(budget: ComputeBudget): LiteSVMKit {
-		this.inner.setComputeBudget(budget);
-		return this;
-	}
+  // Configuration methods - all return LiteSVMKit for method chaining
+  withComputeBudget(budget: ComputeBudget): LiteSVMKit {
+    this.inner.setComputeBudget(budget);
+    return this;
+  }
 
-	withSigverify(sigverify: boolean): LiteSVMKit {
-		this.inner.setSigverify(sigverify);
-		return this;
-	}
+  withSigverify(sigverify: boolean): LiteSVMKit {
+    this.inner.setSigverify(sigverify);
+    return this;
+  }
 
-	withBlockhashCheck(check: boolean): LiteSVMKit {
-		this.inner.setBlockhashCheck(check);
-		return this;
-	}
+  withBlockhashCheck(check: boolean): LiteSVMKit {
+    this.inner.setBlockhashCheck(check);
+    return this;
+  }
 
-	withSysvars(): LiteSVMKit {
-		this.inner.setSysvars();
-		return this;
-	}
+  withSysvars(): LiteSVMKit {
+    this.inner.setSysvars();
+    return this;
+  }
 
-	withFeatureSet(featureSet: FeatureSet): LiteSVMKit {
-		this.inner.setFeatureSet(featureSet);
-		return this;
-	}
+  withFeatureSet(featureSet: FeatureSet): LiteSVMKit {
+    this.inner.setFeatureSet(featureSet);
+    return this;
+  }
 
-	withBuiltins(): LiteSVMKit {
-		this.inner.setBuiltins();
-		return this;
-	}
+  withBuiltins(): LiteSVMKit {
+    this.inner.setBuiltins();
+    return this;
+  }
 
-	withLamports(lamports: bigint): LiteSVMKit {
-		this.inner.setLamports(lamports);
-		return this;
-	}
+  withLamports(lamports: bigint): LiteSVMKit {
+    this.inner.setLamports(lamports);
+    return this;
+  }
 
-	withDefaultPrograms(): LiteSVMKit {
-		this.inner.setDefaultPrograms();
-		return this;
-	}
+  withDefaultPrograms(): LiteSVMKit {
+    this.inner.setDefaultPrograms();
+    return this;
+  }
 
-	withTransactionHistory(capacity: bigint): LiteSVMKit {
-		this.inner.setTransactionHistory(capacity);
-		return this;
-	}
+  withTransactionHistory(capacity: bigint): LiteSVMKit {
+    this.inner.setTransactionHistory(capacity);
+    return this;
+  }
 
-	withLogBytesLimit(limit?: bigint): LiteSVMKit {
-		this.inner.setLogBytesLimit(limit);
-		return this;
-	}
+  withLogBytesLimit(limit?: bigint): LiteSVMKit {
+    this.inner.setLogBytesLimit(limit);
+    return this;
+  }
 
-	withPrecompiles(): LiteSVMKit {
-		this.inner.setPrecompiles();
-		return this;
-	}
+  withPrecompiles(): LiteSVMKit {
+    this.inner.setPrecompiles();
+    return this;
+  }
 
-	// Pure @solana/kit methods - no web3.js dependencies
-	
-	/**
-	 * Calculates the minimum balance required to make an account with specified data length rent exempt.
-	 * @param dataLen - The number of bytes in the account.
-	 * @returns The required balance in lamports
-	 */
-	minimumBalanceForRentExemption(dataLen: bigint): bigint {
-		return this.inner.minimumBalanceForRentExemption(dataLen);
-	}
+  // Pure @solana/kit methods - no web3.js dependencies
 
-	/**
-	 * Return the account at the given address.
-	 * If the account is not found, null is returned.
-	 * @param address - The account address to look up.
-	 * @returns The account object, if the account exists.
-	 */
-	getAccount(address: Address): KitAccountInfo | null {
-		const addressBytes = addressToBytes(address);
-		const inner = this.inner.getAccount(addressBytes);
-		return inner === null ? null : toKitAccountInfo(inner, address);
-	}
+  /**
+   * Calculates the minimum balance required to make an account with specified data length rent exempt.
+   * @param dataLen - The number of bytes in the account.
+   * @returns The required balance in lamports
+   */
+  minimumBalanceForRentExemption(dataLen: bigint): bigint {
+    return this.inner.minimumBalanceForRentExemption(dataLen);
+  }
 
-	/**
-	 * Create or overwrite an account, subverting normal runtime checks.
-	 *
-	 * This method exists to make it easier to set up artificial situations
-	 * that would be difficult to replicate by sending individual transactions.
-	 * Beware that it can be used to create states that would not be reachable
-	 * by sending transactions!
-	 *
-	 * @param address - The address to write to.
-	 * @param account - The account object to write.
-	 */
-	setAccount(address: Address, account: KitAccountInfo) {
-		const addressBytes = addressToBytes(address);
-		const accountObj = fromKitAccountInfo(account);
-		this.inner.setAccount(addressBytes, accountObj);
-	}
+  /**
+   * Return the account at the given address.
+   * If the account is not found, null is returned.
+   * @param address - The account address to look up.
+   * @returns The account object, if the account exists.
+   */
+  getAccount(address: Address): KitAccountInfo | null {
+    const addressBytes = addressToBytes(address);
+    const inner = this.inner.getAccount(addressBytes);
+    return inner === null ? null : toKitAccountInfo(inner, address);
+  }
 
-	/**
-	 * Gets the balance of the provided account address.
-	 * @param address - The account address.
-	 * @returns The account's balance in lamports. Returns 0n for non-existent accounts.
-	 */
-	getBalance(address: Address): bigint {
-		const addressBytes = addressToBytes(address);
-		const balance = this.inner.getBalance(addressBytes);
-		return balance !== null ? balance : 0n;
-	}
+  /**
+   * Create or overwrite an account, subverting normal runtime checks.
+   *
+   * This method exists to make it easier to set up artificial situations
+   * that would be difficult to replicate by sending individual transactions.
+   * Beware that it can be used to create states that would not be reachable
+   * by sending transactions!
+   *
+   * @param address - The address to write to.
+   * @param account - The account object to write.
+   */
+  setAccount(address: Address, account: KitAccountInfo) {
+    const addressBytes = addressToBytes(address);
+    const accountObj = fromKitAccountInfo(account);
+    this.inner.setAccount(addressBytes, accountObj);
+  }
 
-	/**
-	 * Gets the latest blockhash.
-	 * Since LiteSVM doesn't have blocks, this is an arbitrary value controlled by LiteSVM
-	 * @returns The designated latest blockhash.
-	 */
-	latestBlockhash(): string {
-		return this.inner.latestBlockhash();
-	}
+  /**
+   * Gets the balance of the provided account address.
+   * @param address - The account address.
+   * @returns The account's balance in lamports. Returns 0n for non-existent accounts.
+   */
+  getBalance(address: Address): bigint {
+    const addressBytes = addressToBytes(address);
+    const balance = this.inner.getBalance(addressBytes);
+    return balance !== null ? balance : 0n;
+  }
 
-	/**
-	 * Gets a transaction from the transaction history.
-	 * @param signature - The transaction signature
-	 * @returns The transaction, if it is found in the history.
-	 */
-	getTransaction(
-		signature: Signature,
-	): KitTransactionMetadata | KitFailedTransactionMetadata | null {
-		// Convert Signature to bytes - signatures are base58 strings like addresses
-		const signatureBytes = bs58.decode(signature);
-		const result = this.inner.getTransaction(signatureBytes);
-		
-		if (!result) return null;
-		
-		// Check if this is a FailedTransactionMetadata (has err method)
-		if ("err" in result) {
-			// Failed transaction - convert to KitFailedTransactionMetadata
-			const meta = result.meta();
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: meta.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: [], // Default empty array - would need conversion from meta.innerInstructions()
-				logMessages: meta.logs(),
-				err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
-			};
-		} else {
-			// Successful transaction - convert to KitTransactionMetadata
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: result.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: [], // Default empty array - would need conversion from result.innerInstructions()
-				logMessages: result.logs(),
-				returnData: {
-					programId: result.returnData().programId() as unknown as Address,
-					data: result.returnData().data(),
-				},
-				preBalances: [], // Default empty array - not available in LiteSVM metadata
-				postBalances: [], // Default empty array - not available in LiteSVM metadata
-				preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-				postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-			};
-		}
-	}
+  /**
+   * Gets the latest blockhash.
+   * Since LiteSVM doesn't have blocks, this is an arbitrary value controlled by LiteSVM
+   * @returns The designated latest blockhash.
+   */
+  latestBlockhash(): string {
+    return this.inner.latestBlockhash();
+  }
 
-	/**
-	 * Airdrops the lamport amount specified to the given address.
-	 * @param address The airdrop recipient.
-	 * @param lamports - The amount to airdrop.
-	 * @returns The transaction result.
-	 */
-	airdrop(
-		address: Address,
-		lamports: bigint,
-	): KitTransactionMetadata | KitFailedTransactionMetadata | null {
-		const addressBytes = addressToBytes(address);
-		const result = this.inner.airdrop(addressBytes, lamports);
-		
-		if (!result) return null;
-		
-		// Convert result to Kit types 
-		if ("err" in result) {
-			// Failed transaction - FailedTransactionMetadata
-			const signature = bs58.encode(result.meta().signature()) as Signature;
-			const meta = result.meta();
-			
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: meta.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: [], // Default empty array - would need conversion from meta.innerInstructions()
-				logMessages: meta.logs(),
-				err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
-			};
-		} else {
-			// Successful transaction - TransactionMetadata  
-			const signature = bs58.encode(result.signature()) as Signature;
-			
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: result.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: [], // Default empty array - would need conversion from result.innerInstructions()
-				logMessages: result.logs(),
-				returnData: {
-					programId: result.returnData().programId() as unknown as Address,
-					data: result.returnData().data(),
-				},
-				preBalances: [], // Default empty array - not available in LiteSVM metadata
-				postBalances: [], // Default empty array - not available in LiteSVM metadata
-				preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-				postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-			};
-		}
-	}
+  /**
+   * Gets a transaction from the transaction history.
+   * @param signature - The transaction signature
+   * @returns The transaction, if it is found in the history.
+   */
+  getTransaction(
+    signature: Signature
+  ): KitTransactionMetadata | KitFailedTransactionMetadata | null {
+    // Convert Signature to bytes - signatures are base58 strings like addresses
+    const signatureBytes = bs58.decode(signature);
+    const result = this.inner.getTransaction(signatureBytes);
 
-	/**
-	 * Adds an SBF program to the test environment from the file specified.
-	 * @param programId - The program ID.
-	 * @param path - The path to the .so file.
-	 */
-	addProgramFromFile(programId: Address, path: string) {
-		const programIdBytes = addressToBytes(programId);
-		return this.inner.addProgramFromFile(programIdBytes, path);
-	}
+    if (!result) return null;
 
-	/**
-	 * Adds am SBF program to the test environment.
-	 * @param programId - The program ID.
-	 * @param programBytes - The raw bytes of the compiled program.
-	 */
-	addProgram(programId: Address, programBytes: Uint8Array) {
-		const programIdBytes = addressToBytes(programId);
-		return this.inner.addProgram(programIdBytes, programBytes);
-	}
+    // Check if this is a FailedTransactionMetadata (has err method)
+    if ("err" in result) {
+      // Failed transaction - convert to KitFailedTransactionMetadata
+      const meta = result.meta();
+      return {
+        signature,
+        slot: 0n, // Default slot - not available in LiteSVM metadata
+        computeUnitsConsumed: meta.computeUnitsConsumed(),
+        fee: 0n, // Default fee - not available in LiteSVM metadata
+        innerInstructions: [], // Default empty array - would need conversion from meta.innerInstructions()
+        logMessages: meta.logs(),
+        err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
+      };
+    } else {
+      // Successful transaction - convert to KitTransactionMetadata
+      return {
+        signature,
+        slot: 0n, // Default slot - not available in LiteSVM metadata
+        computeUnitsConsumed: result.computeUnitsConsumed(),
+        fee: 0n, // Default fee - not available in LiteSVM metadata
+        innerInstructions: [], // Default empty array - would need conversion from result.innerInstructions()
+        logMessages: result.logs(),
+        returnData: {
+          programId: result.returnData().programId() as unknown as Address,
+          data: result.returnData().data(),
+        },
+        preBalances: [], // Default empty array - not available in LiteSVM metadata
+        postBalances: [], // Default empty array - not available in LiteSVM metadata
+        preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
+        postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
+      };
+    }
+  }
 
-	/**
-	 * Processes a Kit transaction and returns the result.
-	 * @param tx - The Kit transaction message to send.
-	 * @returns KitTransactionMetadata if the transaction succeeds, else KitFailedTransactionMetadata
-	 */
-	sendTransaction(
-		tx: KitTransactionMessage,
-	): KitTransactionMetadata | KitFailedTransactionMetadata {
-		// Serialize the Kit transaction message to bytes
-		const serializedTx = serializeKitTransactionMessage(tx);
-		
-		// Send the serialized transaction to LiteSVM using the legacy transaction method
-		// Since Kit transactions are similar to legacy transactions (not versioned), we use the legacy method
-		const result = this.inner.sendLegacyTransaction(serializedTx);
-		
-		// Check if this is a FailedTransactionMetadata (has err method)
-		if ("err" in result) {
-			// Failed transaction - convert to KitFailedTransactionMetadata
-			const signature = bs58.encode(result.meta().signature()) as Signature;
-			const meta = result.meta();
-			
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: meta.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: convertInnerInstructions(meta.innerInstructions()),
-				logMessages: meta.logs(),
-				err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
-			};
-		} else {
-			// Successful transaction - convert to KitTransactionMetadata
-			const signature = bs58.encode(result.signature()) as Signature;
-			
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: result.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: convertInnerInstructions(result.innerInstructions()),
-				logMessages: result.logs(),
-				returnData: {
-					programId: result.returnData().programId() as unknown as Address,
-					data: result.returnData().data(),
-				},
-				preBalances: [], // Default empty array - not available in LiteSVM metadata
-				postBalances: [], // Default empty array - not available in LiteSVM metadata
-				preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-				postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-			};
-		}
-	}
+  /**
+   * Airdrops the lamport amount specified to the given address.
+   * @param address The airdrop recipient.
+   * @param lamports - The amount to airdrop.
+   * @returns The transaction result.
+   */
+  airdrop(
+    address: Address,
+    lamports: bigint
+  ): KitTransactionMetadata | KitFailedTransactionMetadata | null {
+    const addressBytes = addressToBytes(address);
+    const result = this.inner.airdrop(addressBytes, lamports);
 
-	/**
-	 * Simulates a Kit transaction
-	 * @param tx The Kit transaction message to simulate
-	 * @returns KitSimulatedTransactionInfo if simulation succeeds, else KitFailedTransactionMetadata
-	 */
-	simulateTransaction(
-		tx: KitTransactionMessage,
-	): KitFailedTransactionMetadata | KitSimulatedTransactionInfo {
-		// Serialize the Kit transaction message to bytes
-		const serializedTx = serializeKitTransactionMessage(tx);
-		
-		// Simulate the serialized transaction with LiteSVM using the legacy transaction method
-		// Since Kit transactions are similar to legacy transactions (not versioned), we use the legacy method
-		const result = this.inner.simulateLegacyTransaction(serializedTx);
-		
-		// Check if this is a FailedTransactionMetadata (has err method)
-		if ("err" in result) {
-			// Failed transaction - convert to KitFailedTransactionMetadata
-			const signature = bs58.encode(result.meta().signature()) as Signature;
-			const meta = result.meta();
-			
-			return {
-				signature,
-				slot: 0n, // Default slot - not available in LiteSVM metadata
-				computeUnitsConsumed: meta.computeUnitsConsumed(),
-				fee: 0n, // Default fee - not available in LiteSVM metadata
-				innerInstructions: convertInnerInstructions(meta.innerInstructions()),
-				logMessages: meta.logs(),
-				err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
-			};
-		} else {
-			// Successful simulation - convert to KitSimulatedTransactionInfo
-			const meta = result.meta();
-			return {
-				meta(): KitTransactionMetadata {
-					const signature = bs58.encode(meta.signature()) as Signature;
-					
-					return {
-						signature,
-						slot: 0n, // Default slot - not available in LiteSVM metadata
-						computeUnitsConsumed: meta.computeUnitsConsumed(),
-						fee: 0n, // Default fee - not available in LiteSVM metadata
-						innerInstructions: convertInnerInstructions(meta.innerInstructions()),
-						logMessages: meta.logs(),
-						returnData: {
-							programId: meta.returnData().programId() as unknown as Address,
-							data: meta.returnData().data(),
-						},
-						preBalances: [], // Default empty array - not available in LiteSVM metadata
-						postBalances: [], // Default empty array - not available in LiteSVM metadata
-						preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-						postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
-					};
-				},
-				postAccounts(): readonly [Address, KitAccountInfo][] {
-					// Convert post-simulation accounts from SimulatedTransactionInfo
-					return result.postAccounts().map((addressAndAccount): [Address, KitAccountInfo] => {
-						const account = addressAndAccount.account();
-						const address = bs58.encode(addressAndAccount.address) as Address;
-						return [
-							address,
-							{
-								address,
-								executable: account.executable(),
-								lamports: account.lamports() as Lamports,
-								data: account.data(),
-								owner: bs58.encode(account.owner()) as Address,
-								rentEpoch: account.rentEpoch(),
-							},
-						];
-					});
-				},
-			};
-		}
-	}
+    if (!result) return null;
 
-	/**
-	 * Expires the current blockhash.
-	 * The return value of `latestBlockhash()` will be different after calling this.
-	 */
-	expireBlockhash() {
-		this.inner.expireBlockhash();
-	}
+    // Convert result to Kit types
+    if ("err" in result) {
+      // Failed transaction - FailedTransactionMetadata
+      const signature = bs58.encode(result.meta().signature()) as Signature;
+      const meta = result.meta();
 
-	/**
-	 * Warps the clock to the specified slot. This is a convenience wrapper
-	 * around `setClock()`.
-	 * @param slot - The new slot.
-	 */
-	warpToSlot(slot: bigint) {
-		this.inner.warpToSlot(slot);
-	}
+      return {
+        signature,
+        slot: 0n, // Default slot - not available in LiteSVM metadata
+        computeUnitsConsumed: meta.computeUnitsConsumed(),
+        fee: 0n, // Default fee - not available in LiteSVM metadata
+        innerInstructions: [], // Default empty array - would need conversion from meta.innerInstructions()
+        logMessages: meta.logs(),
+        err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
+      };
+    } else {
+      // Successful transaction - TransactionMetadata
+      const signature = bs58.encode(result.signature()) as Signature;
 
-	/**
-	 * Get the cluster clock.
-	 * @returns the clock object.
-	 */
-	getClock() {
-		return this.inner.getClock();
-	}
+      return {
+        signature,
+        slot: 0n, // Default slot - not available in LiteSVM metadata
+        computeUnitsConsumed: result.computeUnitsConsumed(),
+        fee: 0n, // Default fee - not available in LiteSVM metadata
+        innerInstructions: [], // Default empty array - would need conversion from result.innerInstructions()
+        logMessages: result.logs(),
+        returnData: {
+          programId: result.returnData().programId() as unknown as Address,
+          data: result.returnData().data(),
+        },
+        preBalances: [], // Default empty array - not available in LiteSVM metadata
+        postBalances: [], // Default empty array - not available in LiteSVM metadata
+        preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
+        postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
+      };
+    }
+  }
 
-	/**
-	 * Overwrite the clock sysvar.
-	 * @param clock - The clock object.
-	 */
-	setClock(clock: any) {
-		this.inner.setClock(clock);
-	}
+  /**
+   * Adds an SBF program to the test environment from the file specified.
+   * @param programId - The program ID.
+   * @param path - The path to the .so file.
+   */
+  addProgramFromFile(programId: Address, path: string) {
+    const programIdBytes = addressToBytes(programId);
+    return this.inner.addProgramFromFile(programIdBytes, path);
+  }
 
-	// Additional sysvar methods would go here...
-	// For brevity, I'll add the most commonly used ones
+  /**
+   * Adds am SBF program to the test environment.
+   * @param programId - The program ID.
+   * @param programBytes - The raw bytes of the compiled program.
+   */
+  addProgram(programId: Address, programBytes: Uint8Array) {
+    const programIdBytes = addressToBytes(programId);
+    return this.inner.addProgram(programIdBytes, programBytes);
+  }
 
-	/**
-	 * Get the cluster rent.
-	 * @returns The rent object.
-	 */
-	getRent() {
-		return this.inner.getRent();
-	}
+  /**
+   * Processes a Kit transaction and returns the result.
+   * @param tx - The Kit transaction message to send.
+   * @returns KitTransactionMetadata if the transaction succeeds, else KitFailedTransactionMetadata
+   */
+  async sendTransaction(
+    tx: KitTransactionMessage
+  ): Promise<TransactionMetadata | FailedTransactionMetadata> {
+    // Serialize the Kit transaction message to bytes
+    const serializedTx = await serializeKitTransactionMessage(tx);
 
-	/**
-	 * Overwrite the rent sysvar.
-	 * @param rent - The new rent object.
-	 */
-	setRent(rent: any) {
-		this.inner.setRent(rent);
-	}
+    // Send the serialized transaction to LiteSVM using the versioned transaction method
+    // Kit v0 transactions are versioned transactions, not legacy
+    const result = this.inner.sendVersionedTransaction(serializedTx);
+
+    // Return the actual result from LiteSVM to maintain instanceof checks
+    return result;
+  }
+
+  /**
+   * Simulates a Kit transaction
+   * @param tx The Kit transaction message to simulate
+   * @returns KitSimulatedTransactionInfo if simulation succeeds, else KitFailedTransactionMetadata
+   */
+  async simulateTransaction(
+    tx: KitTransactionMessage
+  ): Promise<KitFailedTransactionMetadata | KitSimulatedTransactionInfo> {
+    // Serialize the Kit transaction message to bytes
+    const serializedTx = await serializeKitTransactionMessage(tx);
+
+    // Simulate the serialized transaction with LiteSVM using the versioned transaction method
+    // Kit v0 transactions are versioned transactions, not legacy
+    const result = this.inner.simulateVersionedTransaction(serializedTx);
+
+    // Check if this is a FailedTransactionMetadata (has err method)
+    if ("err" in result) {
+      // Failed transaction - convert to KitFailedTransactionMetadata
+      const signature = bs58.encode(result.meta().signature()) as Signature;
+      const meta = result.meta();
+
+      return {
+        signature,
+        slot: 0n, // Default slot - not available in LiteSVM metadata
+        computeUnitsConsumed: meta.computeUnitsConsumed(),
+        fee: 0n, // Default fee - not available in LiteSVM metadata
+        innerInstructions: convertInnerInstructions(meta.innerInstructions()),
+        logMessages: meta.logs(),
+        err: result.err() as any, // Cast the error to TransactionError - types are incompatible but runtime compatible
+      };
+    } else {
+      // Successful simulation - convert to KitSimulatedTransactionInfo
+      const meta = result.meta();
+      return {
+        meta(): KitTransactionMetadata {
+          const signature = bs58.encode(meta.signature()) as Signature;
+
+          return {
+            signature,
+            slot: 0n, // Default slot - not available in LiteSVM metadata
+            computeUnitsConsumed: meta.computeUnitsConsumed(),
+            fee: 0n, // Default fee - not available in LiteSVM metadata
+            innerInstructions: convertInnerInstructions(
+              meta.innerInstructions()
+            ),
+            logMessages: meta.logs(),
+            returnData: {
+              programId: meta.returnData().programId() as unknown as Address,
+              data: meta.returnData().data(),
+            },
+            preBalances: [], // Default empty array - not available in LiteSVM metadata
+            postBalances: [], // Default empty array - not available in LiteSVM metadata
+            preTokenBalances: [], // Default empty array - not available in LiteSVM metadata
+            postTokenBalances: [], // Default empty array - not available in LiteSVM metadata
+          };
+        },
+        postAccounts(): readonly [Address, KitAccountInfo][] {
+          // Convert post-simulation accounts from SimulatedTransactionInfo
+          return result
+            .postAccounts()
+            .map((addressAndAccount): [Address, KitAccountInfo] => {
+              const account = addressAndAccount.account();
+              const address = bs58.encode(addressAndAccount.address) as Address;
+              return [
+                address,
+                {
+                  address,
+                  executable: account.executable(),
+                  lamports: account.lamports() as Lamports,
+                  data: account.data(),
+                  owner: bs58.encode(account.owner()) as Address,
+                  rentEpoch: account.rentEpoch(),
+                },
+              ];
+            });
+        },
+      };
+    }
+  }
+
+  /**
+   * Expires the current blockhash.
+   * The return value of `latestBlockhash()` will be different after calling this.
+   */
+  expireBlockhash() {
+    this.inner.expireBlockhash();
+  }
+
+  /**
+   * Warps the clock to the specified slot. This is a convenience wrapper
+   * around `setClock()`.
+   * @param slot - The new slot.
+   */
+  warpToSlot(slot: bigint) {
+    this.inner.warpToSlot(slot);
+  }
+
+  /**
+   * Get the cluster clock.
+   * @returns the clock object.
+   */
+  getClock() {
+    return this.inner.getClock();
+  }
+
+  /**
+   * Overwrite the clock sysvar.
+   * @param clock - The clock object.
+   */
+  setClock(clock: any) {
+    this.inner.setClock(clock);
+  }
+
+  // Additional sysvar methods would go here...
+  // For brevity, I'll add the most commonly used ones
+
+  /**
+   * Get the cluster rent.
+   * @returns The rent object.
+   */
+  getRent() {
+    return this.inner.getRent();
+  }
+
+  /**
+   * Overwrite the rent sysvar.
+   * @param rent - The new rent object.
+   */
+  setRent(rent: any) {
+    this.inner.setRent(rent);
+  }
 }

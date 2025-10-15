@@ -3,9 +3,7 @@ import type {
 	Address,
 	Signature,
 	TransactionError,
-	TransactionMessage,
 	TransactionMessageWithFeePayer,
-	Lamports,
 } from "@solana/kit";
 
 // Kit-compatible transaction message (includes feePayer)
@@ -43,6 +41,7 @@ export interface KitTransactionMetadata {
 	readonly fee: bigint;
 	readonly innerInstructions: readonly KitInnerInstruction[];
 	readonly logMessages: readonly string[];
+	readonly logs?: readonly string[]; // Add the 'logs' property to the KitTransactionMetadata interface
 	readonly returnData?: {
 		readonly programId: Address;
 		readonly data: Uint8Array;
