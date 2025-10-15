@@ -97,28 +97,6 @@ The `LiteSVMKitClass` provides Kit-compatible versions of all major LiteSVM meth
 
 - **Types:** Full support for Kit types including `Address`, `KitAccountInfo`, and more
 
-### Migration from web3.js
-
-You can gradually migrate from @solana/web3.js to @solana/kit by using both APIs side-by-side:
-
-```ts
-import { LiteSVMKitClass } from "litesvm";
-import { PublicKey } from "@solana/web3.js";
-import { address } from "@solana/kit";
-
-const svm = new LiteSVMKitClass();
-
-// Use web3.js PublicKey
-const pubkey = new PublicKey("11111111111111111111111111111111");
-const web3Account = svm.getAccount(pubkey);
-
-// Use Kit Address  
-const addr = address("11111111111111111111111111111111");
-const kitAccount = svm.getAccountKit(addr);
-
-// Both return equivalent data in their respective formats
-```
-
 ## Installation
 
 ```
