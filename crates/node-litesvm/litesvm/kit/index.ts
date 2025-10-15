@@ -1,4 +1,3 @@
-// Re-export Kit types and utilities
 export type {
   KitAccountInfo,
   KitTransactionMetadata,
@@ -7,11 +6,9 @@ export type {
   KitInnerInstruction,
 } from "./types";
 
-// Re-export Kit class and factory functions
 export { LiteSVMKit } from "./extensions";
 export { createLiteSVM, createLiteSVMDefault } from "./factory";
 
-// Re-export Kit utility functions
 export {
   addressToBytes,
   addressFromBytes,

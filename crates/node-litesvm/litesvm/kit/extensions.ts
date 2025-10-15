@@ -1,4 +1,3 @@
-// Extended LiteSVM class with pure @solana/kit support (no @solana/web3.js dependencies)
 import type { Address, Signature, Lamports } from "@solana/kit";
 import {
   Account,
