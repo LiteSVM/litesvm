@@ -8,7 +8,7 @@ import {
   getTransactionEncoder,
 } from "@solana/kit";
 import bs58 from "bs58";
-import type { KitTransactionMessage } from "./types.js";
+import type { KitTransactionMessage } from "./types";
 
 /**
  * Core utility functions for @solana/kit integration
