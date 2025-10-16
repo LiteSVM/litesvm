@@ -11,7 +11,7 @@ to NodeJS, giving you a powerful, fast and ergonomic way to test Solana programs
 For a standard testing workflow, LiteSVM offers an experience superior to `solana-test-validator` (slow, unwieldy)
 and `bankrun` (reasonably fast and powerful, but inherits a lot of warts from `solana-program-test`).
 
-## Minimal example (olana/web3.js)
+## Minimal example (solana/web3.js)
 
 This example just transfers lamports from Alice to Bob without loading
 any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
