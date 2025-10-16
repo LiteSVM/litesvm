@@ -11,7 +11,7 @@ to NodeJS, giving you a powerful, fast and ergonomic way to test Solana programs
 For a standard testing workflow, LiteSVM offers an experience superior to `solana-test-validator` (slow, unwieldy)
 and `bankrun` (reasonably fast and powerful, but inherits a lot of warts from `solana-program-test`).
 
-## Minimal example
+## Minimal example (olana/web3.js)
 
 This example just transfers lamports from Alice to Bob without loading
 any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
@@ -51,51 +51,73 @@ test("one transfer", () => {
 	assert.strictEqual(balanceAfter, transferLamports);
 });
 ```
-Note: by default the `LiteSVM` instance includes some core programs such as
-the System Program and SPL Token.
 
-## @solana/kit Integration
+### Minimal Example (solana/kit)
 
-LiteSVM now supports [@solana/kit](https://github.com/solana-labs/solana-kit) types and methods alongside the traditional @solana/web3.js API. This provides a more modern, type-safe experience for Solana development.
+Below is an example that demonstrates the usage of Solana Kit:
 
-### Kit Usage Example
-
-```ts
+```typescript
+// tests/kit-oneTransfer.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LiteSVMKitClass } from "litesvm";
-import { address } from "@solana/kit";
+import { LiteSVMKit } from "litesvm";
+import { generateKeyPairSigner } from "@solana/signers";
+import type { Blockhash, Address } from "@solana/kit";
+import {
+  appendTransactionMessageInstructions,
+  createTransactionMessage,
+  pipe,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+} from "@solana/kit";
+import { getTransferSolInstruction, SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 
-test("kit integration", () => {
-	const svm = new LiteSVMKitClass();
-	
-	// Use Kit Address types
-	const testAddress = address("11111111111111111111111111111111");
-	
-	// Get account info using Kit methods
-	const account = svm.getAccountKit(testAddress);
-	assert(account !== null);
-	assert.strictEqual(account.executable, true);
-	
-	// Get balance using Kit methods  
-	const balance = svm.getBalanceKit(testAddress);
-	assert(balance !== null);
-	assert(balance > 0n);
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("one transfer", async () => {
+  const svm = new LiteSVMKit();
+
+  // Alice (sender / fee payer)
+  const alice = await generateKeyPairSigner();
+  await svm.airdrop(alice.address, LAMPORTS_PER_SOL);
+
+  // Bob (recipient) — make sure a System-owned account exists
+  const bob = await generateKeyPairSigner();
+  const bobAddress: Address = bob.address;
+  svm.setAccount(bobAddress, {
+    address: bobAddress,
+    owner: SYSTEM_PROGRAM_ADDRESS,
+    executable: false,
+    lamports: 0n,
+    data: new Uint8Array(),
+    rentEpoch: 0n,
+  });
+
+  const transferAmount = 1_000_000n; // 0.001 SOL
+  const { blockhash } = svm.latestBlockhash() as Blockhash | any; // supports either shape
+
+  // Build a proper System transfer ix (no explicit "version" needed)
+  const transferIx = getTransferSolInstruction({
+    source: alice,                // you can pass the signer directly
+    destination: bobAddress,
+    lamports: transferAmount,
+  });
+
+  const tx = pipe(
+    createTransactionMessage(), // no version arg
+    (m) => setTransactionMessageFeePayerSigner(alice, m),
+    (m) => setTransactionMessageLifetimeUsingBlockhash({ blockhash, lastValidBlockHeight: 0n }, m),
+    (m) => appendTransactionMessageInstructions([transferIx], m),
+  );
+
+  await svm.sendTransaction(tx);
+
+  const bobBalance = svm.getBalance(bobAddress);
+  assert.strictEqual(bobBalance, transferAmount);
 });
 ```
-
-### Kit API Methods
-
-The `LiteSVMKitClass` provides Kit-compatible versions of all major LiteSVM methods:
-
-- **Account Management:**
-  - `getAccountKit(address: Address): KitAccountInfo | null`
-  - `setAccountKit(address: Address, account: KitAccountInfo): void`
-  - `getBalanceKit(address: Address): bigint | null`
-
-- **Configuration:** All standard LiteSVM configuration methods (withSysvars, withDefaultPrograms, etc.)
-
-- **Types:** Full support for Kit types including `Address`, `KitAccountInfo`, and more
+Note: by default the `LiteSVM` instance includes some core programs such as
+the System Program and SPL Token.
 
 ## Installation
 
