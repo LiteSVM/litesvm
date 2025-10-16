@@ -57,7 +57,6 @@ test("one transfer", () => {
 Below is an example that demonstrates the usage of Solana Kit:
 
 ```typescript
-// tests/kit-oneTransfer.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVMKit } from "litesvm";
