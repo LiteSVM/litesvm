@@ -69,18 +69,21 @@ import {
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
 } from "@solana/kit";
-import { getTransferSolInstruction, SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
+import {
+  SYSTEM_PROGRAM_ADDRESS,
+  getTransferSolInstruction,
+} from "@solana-program/system";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
 test("one transfer", async () => {
   const svm = new LiteSVMKit();
 
-  // Alice (sender / fee payer)
+  // Alice (fee payer & source)
   const alice = await generateKeyPairSigner();
-  await svm.airdrop(alice.address, LAMPORTS_PER_SOL);
+  svm.airdrop(alice.address, LAMPORTS_PER_SOL);
 
-  // Bob (recipient) — make sure a System-owned account exists
+  // Bob (destination) — create a system-owned account for him
   const bob = await generateKeyPairSigner();
   const bobAddress: Address = bob.address;
   svm.setAccount(bobAddress, {
@@ -92,28 +95,34 @@ test("one transfer", async () => {
     rentEpoch: 0n,
   });
 
-  const transferAmount = 1_000_000n; // 0.001 SOL
-  const { blockhash } = svm.latestBlockhash() as Blockhash | any; // supports either shape
+  const transferLamports = 1_000_000n;
+  const blockhash = svm.latestBlockhash() as Blockhash;
 
-  // Build a proper System transfer ix (no explicit "version" needed)
+  // Proper System Program transfer instruction (Kit-native)
   const transferIx = getTransferSolInstruction({
-    source: alice,                // you can pass the signer directly
+    source: alice,
     destination: bobAddress,
-    lamports: transferAmount,
+    amount: transferLamports,
   });
 
+  // Build and send the transaction
   const tx = pipe(
-    createTransactionMessage(), // no version arg
-    (m) => setTransactionMessageFeePayerSigner(alice, m),
-    (m) => setTransactionMessageLifetimeUsingBlockhash({ blockhash, lastValidBlockHeight: 0n }, m),
-    (m) => appendTransactionMessageInstructions([transferIx], m),
+    createTransactionMessage({ version: 0 }),
+    (msg) => setTransactionMessageFeePayerSigner(alice, msg),
+    (msg) =>
+      setTransactionMessageLifetimeUsingBlockhash(
+        { blockhash, lastValidBlockHeight: 0n },
+        msg
+      ),
+    (msg) => appendTransactionMessageInstructions([transferIx], msg)
   );
 
   await svm.sendTransaction(tx);
 
   const bobBalance = svm.getBalance(bobAddress);
-  assert.strictEqual(bobBalance, transferAmount);
+  assert.strictEqual(bobBalance, transferLamports);
 });
+
 ```
 Note: by default the `LiteSVM` instance includes some core programs such as
 the System Program and SPL Token.
