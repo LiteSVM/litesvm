@@ -2517,6 +2517,8 @@ name = "sodasvm"
 version = "0.8.1"
 dependencies = [
  "litesvm",
+ "serde",
+ "sha3",
  "solana-account",
  "solana-hash",
  "solana-keypair",
