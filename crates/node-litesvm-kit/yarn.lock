@@ -1451,13 +1451,13 @@ __metadata:
   linkType: hard
 
 "@octokit/plugin-paginate-rest@npm:^13.0.1":
-  version: 13.2.0
-  resolution: "@octokit/plugin-paginate-rest@npm:13.2.0"
+  version: 13.2.1
+  resolution: "@octokit/plugin-paginate-rest@npm:13.2.1"
   dependencies:
-    "@octokit/types": "npm:^15.0.0"
+    "@octokit/types": "npm:^15.0.1"
   peerDependencies:
     "@octokit/core": ">=6"
-  checksum: 10c0/85c6f91dcad7a12d0c5affb17636492d9cd62032c1ea3ebae2d75fb66958b219deda698c7c27ede83d11f81fa4c63866b72684b9acd237e1cec6bbfa098e4d4e
+  checksum: 10c0/16cd034ee6426f742514d0ca553a2c4355cd68c2eb9211030f3ec2538f4c833d587b3737bb720e34f98be8fae15acb07693d17314350cf067557abb4cb1598fb
   languageName: node
   linkType: hard
 
@@ -1471,13 +1471,13 @@ __metadata:
   linkType: hard
 
 "@octokit/plugin-rest-endpoint-methods@npm:^16.0.0":
-  version: 16.1.0
-  resolution: "@octokit/plugin-rest-endpoint-methods@npm:16.1.0"
+  version: 16.1.1
+  resolution: "@octokit/plugin-rest-endpoint-methods@npm:16.1.1"
   dependencies:
-    "@octokit/types": "npm:^15.0.0"
+    "@octokit/types": "npm:^15.0.1"
   peerDependencies:
     "@octokit/core": ">=6"
-  checksum: 10c0/ee08bc4c7c3208d41efdc9f5655790578fafee28d1e653781762c958c60e8f76e454ad8ace98a4b4468f645bcaa572e7c7a955f88cb6d567eee4e099cc982000
+  checksum: 10c0/3d5f2aca5c206a39d55139be32f8a18037a4e6c8b98d905681da7673c9430630e963bca604e1337edccc7a6861f535583b103f2c5af90b5515fd70b7db1bca47
   languageName: node
   linkType: hard
 
@@ -1515,12 +1515,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/types@npm:^15.0.0":
-  version: 15.0.0
-  resolution: "@octokit/types@npm:15.0.0"
+"@octokit/types@npm:^15.0.0, @octokit/types@npm:^15.0.1":
+  version: 15.0.1
+  resolution: "@octokit/types@npm:15.0.1"
   dependencies:
     "@octokit/openapi-types": "npm:^26.0.0"
-  checksum: 10c0/49c233d83bdd8fecaa985c84bda78eee0ab41b12c0501fe6835c9ff91f09edc01b28ab7b89cd17218726d76d0b563565f72c0cb25082248fd3f07a01a9534187
+  checksum: 10c0/f1f8d8a988c6295d669461082936a4e27d5a021ff870ebb93b8afa8f227f6eb0fb520f98631af31fc56dea0cb84e15df65e736f408cde321693154e4432c575d
   languageName: node
   linkType: hard
 
@@ -1851,6 +1851,15 @@ __metadata:
   peerDependencies:
     "@solana/kit": ^4.0
   checksum: 10c0/d2f1c08775f6a819f7151fc91da860023dfebef60c47a98490df48f9a027102a172f747c81041fad228eefcdf1abc49bc127455cf92ca91e451b1cacb0b34344
+  languageName: node
+  linkType: hard
+
+"@solana-program/token@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@solana-program/token@npm:0.7.0"
+  peerDependencies:
+    "@solana/kit": ^4.0
+  checksum: 10c0/f4b7cd0c80bf8e77c1efa6c25d2287a914235d495a900419ab2fc451f2249f4e3076fb4d8d6b43b1c94b2650de20808b59b037399315088c5a44a84dcfdb7306
   languageName: node
   linkType: hard
 
@@ -2499,11 +2508,11 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:*":
-  version: 24.9.0
-  resolution: "@types/node@npm:24.9.0"
+  version: 24.9.1
+  resolution: "@types/node@npm:24.9.1"
   dependencies:
     undici-types: "npm:~7.16.0"
-  checksum: 10c0/c0129572f2c1528d2d1b7f4ebdbc3c4b40273964d40786c8be3596e7482394ed4882676b2a44362d4b1da5bac0274fdf2cae11dce3d76319cadac541fd76e531
+  checksum: 10c0/c52f8168080ef9a7c3dc23d8ac6061fab5371aad89231a0f6f4c075869bc3de7e89b075b1f3e3171d9e5143d0dda1807c3dab8e32eac6d68f02e7480e7e78576
   languageName: node
   linkType: hard
 
@@ -3713,6 +3722,7 @@ __metadata:
     "@algolia/client-search": "npm:^5.39.0"
     "@napi-rs/cli": "npm:^3.2.0"
     "@solana-program/system": "npm:0.9.0"
+    "@solana-program/token": "npm:^0.7.0"
     "@solana/kit": "npm:^4.0.0"
     "@types/fastestsmallesttextencoderdecoder": "npm:^1"
     "@types/markdown-it": "npm:^14.1.2"
