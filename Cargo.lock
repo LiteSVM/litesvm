@@ -1637,39 +1637,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "litesvm-node-kit"
-version = "0.3.3"
-dependencies = [
- "agave-feature-set",
- "agave-precompiles",
- "bincode",
- "bv",
- "litesvm",
- "napi",
- "napi-build",
- "napi-derive",
- "solana-account",
- "solana-clock",
- "solana-compute-budget",
- "solana-epoch-rewards",
- "solana-epoch-schedule",
- "solana-hash",
- "solana-instruction",
- "solana-last-restart-slot",
- "solana-message",
- "solana-pubkey",
- "solana-rent",
- "solana-signature",
- "solana-slot-hashes",
- "solana-slot-history",
- "solana-stake-interface",
- "solana-sysvar",
- "solana-transaction",
- "solana-transaction-context",
- "solana-transaction-error",
-]
-
-[[package]]
 name = "litesvm-token"
 version = "0.8.1"
 dependencies = [

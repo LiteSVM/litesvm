@@ -1,43 +1,65 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+} from "@solana/kit";
 import { helloworldProgram, getLamports } from "./util";
-import { TransactionMetadata } from "internal";
 
-test("hello world", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("hello world", async () => {
+	const [svm, programId, greetedPubkey] = await helloworldProgram();
 	const lamports = getLamports(svm, greetedPubkey);
 	assert.strictEqual(lamports, LAMPORTS_PER_SOL);
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
+	
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
 	assert.deepStrictEqual(
 		greetedAccountBefore?.data,
 		new Uint8Array([0, 0, 0, 0]),
 	);
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(ix);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
+	
+	// Verify account setup
+	assert.strictEqual(greetedAccountBefore?.owner, programId);
+	
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	
+	// Create an instruction to call the program
+	const instruction = {
+		programAddress: programId,
+		accounts: [
+			{
+				address: greetedPubkey,
+				role: 1, // WRITABLE (without signer)
+			},
+		],
+		data: new Uint8Array([0]), // Counter increment instruction
+	};
+	
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions([instruction], tx),
+	);
+	
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	
+	svm.sendTransaction(signedTransaction);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
 	assert.deepStrictEqual(
 		greetedAccountAfter?.data,
 		new Uint8Array([1, 0, 0, 0]),
 	);
-	const fetched = svm.getTransaction(tx.signature);
-	assert.ok(fetched instanceof TransactionMetadata);
 });

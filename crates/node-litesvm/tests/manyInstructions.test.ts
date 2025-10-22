@@ -1,40 +1,65 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+} from "@solana/kit";
 import { helloworldProgram } from "./util";
 
-test("many instructions", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("many instructions", async () => {
+	const [svm, programId, greetedPubkey] = await helloworldProgram();
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
 	assert.deepStrictEqual(
 		greetedAccountBefore?.data,
 		new Uint8Array([0, 0, 0, 0]),
 	);
-	const numIxs = 64;
-	const ixs = Array(numIxs).fill(ix);
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
+	
+	// Verify account setup
+	assert.strictEqual(greetedAccountBefore?.owner, programId);
+	
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	const numInstructions = 64;
+	
+	// Create many identical instructions to test batch processing
+	const instructions = Array(numInstructions).fill(null).map(() => ({
+		programAddress: programId,
+		accounts: [
+			{
+				address: greetedPubkey,
+				role: 1, // WRITABLE (without signer)
+			},
+		],
+		data: new Uint8Array([0]), // Counter increment instruction
+	}));
+	
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions(instructions, tx),
+	);
+	
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	
+	svm.sendTransaction(signedTransaction);
+	
+	// After 64 increment instructions, the counter should be 64
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
 	assert.deepStrictEqual(
 		greetedAccountAfter?.data,
-		new Uint8Array([64, 0, 0, 0]),
+		new Uint8Array([64, 0, 0, 0]), // 64 in little-endian format
 	);
 });

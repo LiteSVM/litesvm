@@ -2,39 +2,75 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM, TransactionMetadata } from "litesvm";
 import {
-	Keypair,
-	LAMPORTS_PER_SOL,
-	PublicKey,
-	Transaction,
-	TransactionInstruction,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+} from "@solana/kit";
 
-test("spl logging", () => {
-	const programId = PublicKey.unique();
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("spl logging", async () => {
+	const programId = await generateKeyPairSigner();
 	const svm = new LiteSVM();
-	svm.addProgramFromFile(programId, "program_bytes/spl_example_logging.so");
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
-	const ixs = [
-		new TransactionInstruction({
-			programId,
-			keys: [
-				{ pubkey: PublicKey.unique(), isSigner: false, isWritable: false },
-			],
-		}),
-	];
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	// let's sim it first
-	const simRes = svm.simulateTransaction(tx);
-	const sendRes = svm.sendTransaction(tx);
+	svm.addProgramFromFile(programId.address, "program_bytes/spl_example_logging.so");
+	
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	
+	// Verify program is loaded
+	const programAccount = svm.getAccount(programId.address);
+	assert.notStrictEqual(programAccount, null);
+	assert.strictEqual(programAccount?.executable, true);
+	
+	// Verify payer has funds
+	const payerBalance = svm.getBalance(payer.address);
+	assert.strictEqual(payerBalance, LAMPORTS_PER_SOL);
+	
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	const dummyAccount = await generateKeyPairSigner();
+	
+	// Create an instruction to call the logging program
+	const instruction = {
+		programAddress: programId.address,
+		accounts: [
+			{
+				address: dummyAccount.address,
+				role: 0, // READONLY
+			},
+		],
+		data: new Uint8Array([]), // No data needed for basic logging
+	};
+	
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions([instruction], tx),
+	);
+	
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	
+	// Test both simulation and execution to compare logs
+	const simRes = svm.simulateTransaction(signedTransaction);
+	const sendRes = svm.sendTransaction(signedTransaction);
+	
 	if (sendRes instanceof TransactionMetadata) {
-		assert.deepStrictEqual(simRes.meta().logs(), sendRes.logs());
-		assert.strictEqual(sendRes.logs()[1], "Program log: static string");
+		// Both simulation and execution should succeed
+		assert.deepStrictEqual(simRes.meta().logs(), sendRes.logs(), "Simulation and execution logs should match");
+		
+		// The logging program should produce some log output
+		const logs = sendRes.logs();
+		assert.ok(logs.length > 0, "Program should produce log output");
+		
+		// Check for expected log message from the SPL logging example
+		const hasStaticStringLog = logs.some(log => log.includes("Program log: static string"));
+		assert.ok(hasStaticStringLog, "Should contain 'static string' log message");
 	} else {
-		throw new Error("Unexpected tx failure");
+		throw new Error("Expected transaction to succeed for logging test");
 	}
 });

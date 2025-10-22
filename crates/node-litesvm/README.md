@@ -17,37 +17,49 @@ This example just transfers lamports from Alice to Bob without loading
 any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
 
 ```ts
-import { test } from "node:test";
+mport { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
 import {
-	PublicKey,
-	Transaction,
-	SystemProgram,
-	Keypair,
-	LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+} from "@solana/kit";
+import { getTransferSolInstruction } from "@solana-program/system";
 
-test("one transfer", () => {
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("one transfer", async () => {
 	const svm = new LiteSVM();
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const receiver = PublicKey.unique();
-	const blockhash = svm.latestBlockhash();
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	
+	const receiver = await generateKeyPairSigner();
+	const latestBlockhash = blockhash(svm.latestBlockhash());
 	const transferLamports = 1_000_000n;
-	const ixs = [
-		SystemProgram.transfer({
-			fromPubkey: payer.publicKey,
-			toPubkey: receiver,
-			lamports: transferLamports,
-		}),
-	];
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
-	const balanceAfter = svm.getBalance(receiver);
+	
+	const transferInstruction = getTransferSolInstruction({
+		source: payer,
+		destination: receiver.address,
+		amount: transferLamports,
+	});
+	
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions([transferInstruction], tx),
+	);
+	
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	
+	svm.sendTransaction(signedTransaction);
+	const balanceAfter = svm.getBalance(receiver.address);
 	assert.strictEqual(balanceAfter, transferLamports);
 });
 ```

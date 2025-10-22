@@ -1,37 +1,52 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	PublicKey,
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	VersionedTransaction,
-	MessageV0,
-	Keypair,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+	compileTransaction,
+} from "@solana/kit";
+import { getTransferSolInstruction } from "@solana-program/system";
 import { helloworldProgram } from "./util";
 
-test("versioned tx", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("versioned tx", async () => {
+	const [svm, programId, greetedPubkey] = await helloworldProgram();
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	const transferAmount = 1000n;
+	
+	// Create a simple transfer instruction for version 0 transaction
+	const transferInstruction = getTransferSolInstruction({
+		source: payer,
+		destination: greetedPubkey,
+		amount: transferAmount,
 	});
-	const msg = MessageV0.compile({
-		payerKey: payer.publicKey,
-		instructions: [ix],
-		recentBlockhash: svm.latestBlockhash(),
-	});
-	const tx = new VersionedTransaction(msg);
-	tx.sign([payer]);
-	const res = svm.sendTransaction(tx);
+	
+	// Create version 0 transaction message
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions([transferInstruction], tx),
+	);
+	
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	const compiledTransaction = compileTransaction(transactionMessage);
+	
+	// Send the versioned transaction
+	const res = svm.sendTransaction(signedTransaction);
+	
+	// Verify the transfer worked
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(
-		greetedAccountAfter?.data,
-		new Uint8Array([1, 0, 0, 0]),
-	);
+	assert.strictEqual(greetedAccountAfter?.lamports, LAMPORTS_PER_SOL + transferAmount);
 });

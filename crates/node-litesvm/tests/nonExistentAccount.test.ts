@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
-import { PublicKey } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/kit";
 
-test("non-existent account", () => {
+test("non-existent account", async () => {
 	const svm = new LiteSVM();
-	const acc = svm.getAccount(PublicKey.unique());
+	const keyPair = await generateKeyPairSigner();
+	const acc = svm.getAccount(keyPair.address);
 	assert.strictEqual(acc, null);
 });
