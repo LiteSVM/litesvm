@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
-import { type Address } from "@solana/kit";
+import { lamports, type Address } from "@solana/kit";
 import { generateKeyPairSigner } from "@solana/signers";
 import {
 	TOKEN_PROGRAM_ADDRESS,
@@ -10,7 +10,7 @@ import {
 	getTokenDecoder,
 } from "@solana-program/token";
 
-const ONE_SOL = 1_000_000_000n;
+const ONE_SOL = lamports(1_000_000_000n);
 
 test("infinite usdc mint", async () => {
 	const ownerSigner = await generateKeyPairSigner();
@@ -42,11 +42,11 @@ test("infinite usdc mint", async () => {
 	
 	// Write the ATA directly into the VM, owned by the SPL Token program
 	svm.setAccount(ataAddress, {
-		lamports: ONE_SOL, 
+		lamports: ONE_SOL,
 		data: tokenAccData, 
 		owner: TOKEN_PROGRAM_ADDRESS,
 		executable: false,
-		rentEpoch: 0n,
+		space: BigInt(8),
 	});
 	
 	const rawAccount = svm.getAccount(ataAddress);

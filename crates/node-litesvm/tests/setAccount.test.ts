@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM, AccountInfoBytes } from "litesvm";
-import { address, type Address } from "@solana/kit";
+import { address, lamports } from "@solana/kit";
 
-const LAMPORTS_PER_SOL = 1_000_000_000n;
+const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
 test("set account", () => {
 	const svm = new LiteSVM();
@@ -12,9 +12,9 @@ test("set account", () => {
 	const toSet: AccountInfoBytes = {
 		executable: false,
 		owner: defaultOwner,
-		lamports: LAMPORTS_PER_SOL,
+		lamports: lamports(LAMPORTS_PER_SOL),
 		data: new Uint8Array([0, 1]),
-		rentEpoch: 0n,
+		space: BigInt(2),
 	};
 	svm.setAccount(testAddress, toSet);
 	const fetched = svm.getAccount(testAddress);

@@ -11,13 +11,14 @@ import {
 	signTransactionMessageWithSigners,
 	pipe,
 	blockhash,
+	lamports,
 } from "@solana/kit";
 import { getTransferSolInstruction } from "@solana-program/system";
 
 test("one transfer", async () => {
 	const svm = new LiteSVM();
 	const payer = await generateKeyPairSigner();
-	const LAMPORTS_PER_SOL = 1_000_000_000n;
+	const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 	
 	// Test airdrop functionality
 	svm.airdrop(payer.address, LAMPORTS_PER_SOL);

@@ -10,11 +10,12 @@ import {
 	pipe,
 	blockhash,
 	compileTransaction,
+	lamports,
 } from "@solana/kit";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { helloworldProgram } from "./util";
 
-const LAMPORTS_PER_SOL = 1_000_000_000n;
+const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
 test("versioned tx", async () => {
 	const [svm, programId, greetedPubkey] = await helloworldProgram();

@@ -10,10 +10,11 @@ import {
 	signTransactionMessageWithSigners,
 	pipe,
 	blockhash,
+	lamports,
 } from "@solana/kit";
 import { helloworldProgram } from "./util";
 
-const LAMPORTS_PER_SOL = 1_000_000_000n;
+const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
 test("test sigverify", async () => {
 	let [svm, programId, greetedPubkey] = await helloworldProgram();
