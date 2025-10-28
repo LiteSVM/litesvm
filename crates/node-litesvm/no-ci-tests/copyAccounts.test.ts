@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import * as assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { LiteSVM, AccountInfoBytes } from "../litesvm";
 import { address, createSolanaRpc, fetchJsonParsedAccount, lamports } from "@solana/kit";
 
