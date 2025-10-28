@@ -5,7 +5,7 @@ import { generateKeyPairSigner } from "@solana/kit";
 
 test("non-existent account", async () => {
 	const svm = new LiteSVM();
-	const keyPair = await generateKeyPairSigner();
-	const acc = svm.getAccount(keyPair.address);
+	const keypair = await generateKeyPairSigner();
+	const acc = svm.getAccount(keypair.address);
 	assert.strictEqual(acc, null);
 });

@@ -1,45 +1,86 @@
+console.log("In clock module");
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LiteSVM, Clock } from "litesvm";
-import { generateKeyPairSigner, lamports } from "@solana/kit";
+console.log("Doing litesvm imports");
+import {
+	FailedTransactionMetadata,
+	LiteSVM,
+	TransactionMetadata,
+} from "litesvm";
+console.log("Doing solana kit imports");
+import { createTransactionMessage,
+  appendTransactionMessageInstructions,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
+  pipe,
+  lamports,
+  generateKeyPairSigner,
+  blockhash,
+  } from "@solana/kit";
 
 const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
 test("clock", async () => {
-	const programId = await generateKeyPairSigner();
+	console.log("Running clock test");
+	const programSigner = await generateKeyPairSigner();
+	const programId = programSigner.address;
+	console.log("Calling new LiteSVM()");
 	const svm = new LiteSVM();
-	svm.addProgramFromFile(programId.address, "program_bytes/litesvm_clock_example.so");
-
+	console.log("Calling addProgramFromFile");
+	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
+	console.log("Calling new Keypair");
 	const payer = await generateKeyPairSigner();
-	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	svm.airdrop(payer.address, BigInt(LAMPORTS_PER_SOL));
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	
+	const ixs: Array<{ programAddress: any; accounts: Array<any>; data: Uint8Array }> = [
+		{ programAddress: programId, accounts: [], data: new Uint8Array([]) },
+	];
 
-	// Test clock manipulation
+	const tx = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions(ixs, tx),
+	);
+
+	const signedTransaction = await signTransactionMessageWithSigners(tx);
+
+	// set the time to January 1st 2000
 	const initialClock = svm.getClock();
-	assert.strictEqual(initialClock.epoch, 0n);
+	initialClock.unixTimestamp = 1735689600n;
+	svm.setClock(initialClock);
+	// this will fail because the contract wants it to be January 1970
+	const failed = svm.sendTransaction(signedTransaction);
+	if (failed instanceof FailedTransactionMetadata) {
+		assert.ok(failed.err().toString().includes("ProgramFailedToComplete"));
+	} else {
+		throw new Error("Expected transaction failure here");
+	}
+	// so let's turn back time
+	const newClock = svm.getClock();
+	newClock.unixTimestamp = 50n;
+	svm.setClock(newClock);
 
-	// Set the time to January 1st 2000
-	const modifiedClock = new Clock(
-		initialClock.slot,
-		initialClock.epochStartTimestamp,
-		initialClock.epoch,
-		initialClock.leaderScheduleEpoch,
-		1735689600n // January 1st 2000
+	const ixs2: Array<{ programAddress: any; accounts: Array<any>; data: Uint8Array }> = [
+		{
+			programAddress: programId,
+			accounts: [],
+			data: new Uint8Array(Buffer.from("foobar")), // unused, just here to dedup the tx
+		},
+	];
+
+	const tx2 = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions(ixs2, tx),
 	);
-	svm.setClock(modifiedClock);
 
-	let clockAfterUpdate = svm.getClock();
-	assert.strictEqual(clockAfterUpdate.unixTimestamp, 1735689600n);
+	const signedTransaction2 = await signTransactionMessageWithSigners(tx2);
 
-	// Turn back time 
-	const earlierClock = new Clock(
-		initialClock.slot,
-		initialClock.epochStartTimestamp,
-		initialClock.epoch,
-		initialClock.leaderScheduleEpoch,
-		50n // Early timestamp
-	);
-	svm.setClock(earlierClock);
-
-	clockAfterUpdate = svm.getClock();
-	assert.strictEqual(clockAfterUpdate.unixTimestamp, 50n);
+	const success = svm.sendTransaction(signedTransaction2);
+	assert.ok(success instanceof TransactionMetadata);
+	console.log("Finished clock test");
 });

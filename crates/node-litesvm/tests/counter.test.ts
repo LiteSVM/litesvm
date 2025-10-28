@@ -29,34 +29,26 @@ test("hello world", async () => {
 		greetedAccountBefore?.data,
 		new Uint8Array([0, 0, 0, 0]),
 	);
-
-	// Verify account setup
 	assert.strictEqual(greetedAccountBefore?.owner, programId);
 	assert.strictEqual(greetedAccountBefore?.lamports, LAMPORTS_PER_SOL);
-
 	const latestBlockhash = blockhash(svm.latestBlockhash());
-
-	// Create a simple instruction to call the counter program
 	const instruction = {
 		programAddress: programId,
 		accounts: [
 			{
 				address: greetedPubkey,
-				role: 1, // WRITABLE (without signer)
+				role: 1,
 			},
 		],
-		data: new Uint8Array([0]), // Counter increment instruction
+		data: new Uint8Array([0]),
 	};
-
 	const transactionMessage = pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
 		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
 		(tx) => appendTransactionMessageInstructions([instruction], tx),
 	);
-
 	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
-
 	svm.sendTransaction(signedTransaction);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);

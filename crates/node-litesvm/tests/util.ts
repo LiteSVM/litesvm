@@ -2,7 +2,7 @@ import { ComputeBudget, LiteSVM } from "../litesvm";
 import { lamports, generateKeyPairSigner, Address } from "@solana/kit";
 import { readFileSync } from "node:fs";
 
-const LAMPORTS_PER_SOL = lamports(1_000_000_000n); // Convert bigint to Lamports
+const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
 export function getLamports(svm: LiteSVM, address: Address): bigint | null {
 	const acc = svm.getAccount(address);

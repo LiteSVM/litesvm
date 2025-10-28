@@ -1,69 +1,52 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { FailedTransactionMetadata } from "litesvm";
 import {
-	generateKeyPairSigner,
 	createTransactionMessage,
+	appendTransactionMessageInstructions,
 	setTransactionMessageFeePayerSigner,
 	setTransactionMessageLifetimeUsingBlockhash,
-	appendTransactionMessageInstructions,
 	signTransactionMessageWithSigners,
 	pipe,
-	blockhash,
+	generateKeyPairSigner,
 	lamports,
+	blockhash,
 } from "@solana/kit";
 import { helloworldProgram } from "./util";
-import { FailedTransactionMetadata } from "../litesvm";
-
-const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
+import { TransactionErrorFieldless } from "internal";
 
 test("compute limit", async () => {
-	// Test that compute budget configuration works with very low limit (10 compute units)
 	const [svm, programId, greetedPubkey] = await helloworldProgram(10n);
-	const payer = await generateKeyPairSigner();
-	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
-
-	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(
-		greetedAccountBefore?.data,
-		new Uint8Array([0, 0, 0, 0]),
-	);
-
-	// Verify the account is owned by the program
-	assert.strictEqual(greetedAccountBefore?.owner, programId);
-
-	const latestBlockhash = blockhash(svm.latestBlockhash());
-
-	// Create an instruction that should exceed the compute limit
-	const instruction = {
+	const ix = {
 		programAddress: programId,
 		accounts: [
 			{
 				address: greetedPubkey,
-				role: 1, // WRITABLE (without signer)
+				role: 1,
 			},
 		],
-		data: new Uint8Array([0]), // Counter increment instruction
+		data: new Uint8Array([0]),
 	};
-
-	const transactionMessage = pipe(
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, lamports(1_000_000_000n));
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	const greetedAccountBefore = svm.getAccount(greetedPubkey);
+	assert.notStrictEqual(greetedAccountBefore, null);
+	assert.deepStrictEqual(
+		greetedAccountBefore.data,
+		new Uint8Array([0, 0, 0, 0]),
+	);
+	const tx = pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
 		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
-		(tx) => appendTransactionMessageInstructions([instruction], tx),
+		(tx) => appendTransactionMessageInstructions([ix], tx),
 	);
-
-	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
-
-	// This should fail due to compute limit being too low (10 compute units)
-	const result = svm.sendTransaction(signedTransaction);
-	if (result instanceof FailedTransactionMetadata) {
-		// Transaction failed as expected due to compute limit
-		assert.ok(true, "Transaction failed due to compute limit as expected");
+	const signedTx = await signTransactionMessageWithSigners(tx);
+	const res = svm.sendTransaction(signedTx);
+	if (res instanceof FailedTransactionMetadata) {
+		assert.strictEqual(res.err(), TransactionErrorFieldless.AccountNotFound);
 	} else {
-		// If the transaction succeeded, verify the account state didn't change much
-		// This could happen if the program uses very few compute units
-		const greetedAccountAfter = svm.getAccount(greetedPubkey);
-		assert.notStrictEqual(greetedAccountAfter, null);
+		throw new Error("Expected transaction failure");
 	}
 });
