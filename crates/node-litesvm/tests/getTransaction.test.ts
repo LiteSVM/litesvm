@@ -18,13 +18,10 @@ const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
 test("hello world", async () => {
 	const [svm, programId, greetedPubkey] = await helloworldProgram();
-
 	const lamportsBefore = getLamports(svm, greetedPubkey);
 	assert.strictEqual(lamportsBefore, LAMPORTS_PER_SOL);
-
 	const payer = await generateKeyPairSigner();
 	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
-
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
 	assert.deepStrictEqual(
