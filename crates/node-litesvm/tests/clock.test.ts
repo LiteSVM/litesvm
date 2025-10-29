@@ -8,16 +8,17 @@ import {
 	TransactionMetadata,
 } from "litesvm";
 console.log("Doing solana kit imports");
-import { createTransactionMessage,
-  appendTransactionMessageInstructions,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
-  pipe,
-  lamports,
-  generateKeyPairSigner,
-  blockhash,
-  } from "@solana/kit";
+import {
+	createTransactionMessage,
+	appendTransactionMessageInstructions,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
+	pipe,
+	lamports,
+	generateKeyPairSigner,
+	blockhash,
+} from "@solana/kit";
 
 const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
 
@@ -33,13 +34,21 @@ test("clock", async () => {
 	const payer = await generateKeyPairSigner();
 	svm.airdrop(payer.address, BigInt(LAMPORTS_PER_SOL));
 	const latestBlockhash = blockhash(svm.latestBlockhash());
-	const ixs: Array<{ programAddress: any; accounts: Array<any>; data: Uint8Array }> = [
-		{ programAddress: programId, accounts: [], data: new Uint8Array([]) },
+	const ixs = [
+		{
+			programAddress: programId,
+			accounts: [] as const,
+			data: new Uint8Array([]),
+		},
 	];
 	const tx = pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				{ blockhash: latestBlockhash, lastValidBlockHeight: 0n },
+				tx,
+			),
 		(tx) => appendTransactionMessageInstructions(ixs, tx),
 	);
 	const signedTransaction = await signTransactionMessageWithSigners(tx);
@@ -58,17 +67,21 @@ test("clock", async () => {
 	const newClock = svm.getClock();
 	newClock.unixTimestamp = 50n;
 	svm.setClock(newClock);
-	const ixs2: Array<{ programAddress: any; accounts: Array<any>; data: Uint8Array }> = [
+	const ixs2 = [
 		{
 			programAddress: programId,
-			accounts: [],
+			accounts: [] as const,
 			data: new Uint8Array(Buffer.from("foobar")), // unused, just here to dedup the tx
 		},
 	];
 	const tx2 = pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				{ blockhash: latestBlockhash, lastValidBlockHeight: 0n },
+				tx,
+			),
 		(tx) => appendTransactionMessageInstructions(ixs2, tx),
 	);
 	const signedTransaction2 = await signTransactionMessageWithSigners(tx2);

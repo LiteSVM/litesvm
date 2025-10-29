@@ -24,16 +24,22 @@ test("non-existent program", async () => {
 	const latestBlockhash = blockhash(svm.latestBlockhash());
 	const instruction = {
 		programAddress: programId,
-		accounts: [] as Array<{ address: any; role: number }>,
+		accounts: [] as const,
 		data: new Uint8Array(1),
 	};
 	const transactionMessage = pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 1000n }, tx),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				{ blockhash: latestBlockhash, lastValidBlockHeight: 1000n },
+				tx,
+			),
 		(tx) => appendTransactionMessageInstructions([instruction], tx),
 	);
-	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	const signedTransaction = await signTransactionMessageWithSigners(
+		transactionMessage,
+	);
 	const res = svm.sendTransaction(signedTransaction);
 	if (res instanceof FailedTransactionMetadata) {
 		const err = res.err();

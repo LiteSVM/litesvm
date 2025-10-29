@@ -17,5 +17,5 @@ test("set account", () => {
 	svm.setAccount(pubkey, toSet);
 	const fetched = svm.getAccount(pubkey);
 	assert.notStrictEqual(fetched, null);
-	assert.deepStrictEqual(fetched!.data, data);
+	assert.deepStrictEqual(fetched?.data, data);
 });

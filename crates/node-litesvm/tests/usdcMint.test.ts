@@ -1,17 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
-import {
-	generateKeyPairSigner,
-	address,
-	lamports,
-} from "@solana/kit";
+import { generateKeyPairSigner, address, lamports } from "@solana/kit";
 import {
 	TOKEN_PROGRAM_ADDRESS,
 	findAssociatedTokenPda,
 	getTokenEncoder,
 	getTokenDecoder,
 	AccountState,
+	type TokenArgs,
 } from "@solana-program/token";
 
 test("infinite usdc mint", async () => {
@@ -23,15 +20,15 @@ test("infinite usdc mint", async () => {
 		tokenProgram: TOKEN_PROGRAM_ADDRESS,
 	});
 	const usdcToOwn = 1_000_000_000_000n;
-	const tokenAccountData = {
+	const tokenAccountData: TokenArgs = {
 		mint: usdcMint,
 		owner: owner.address,
 		amount: usdcToOwn,
-		delegate: null as any,
+		delegate: null,
 		state: AccountState.Initialized,
-		isNative: null as any,
+		isNative: 0n,
 		delegatedAmount: 0n,
-		closeAuthority: null as any,
+		closeAuthority: null,
 	};
 	const encoder = getTokenEncoder();
 	const tokenAccData = new Uint8Array(encoder.encode(tokenAccountData));
@@ -45,12 +42,32 @@ test("infinite usdc mint", async () => {
 	});
 	const rawAccount = svm.getAccount(ata);
 	assert.notStrictEqual(rawAccount, null, "Token account should exist");
-	assert.strictEqual(rawAccount!.owner, TOKEN_PROGRAM_ADDRESS, "Account should be owned by token program");
-	assert.strictEqual(rawAccount!.lamports, lamports(1_000_000_000n), "Account should have correct lamports");
-	
+	assert.strictEqual(
+		rawAccount.owner,
+		TOKEN_PROGRAM_ADDRESS,
+		"Account should be owned by token program",
+	);
+	assert.strictEqual(
+		rawAccount.lamports,
+		lamports(1_000_000_000n),
+		"Account should have correct lamports",
+	);
+
 	const decoder = getTokenDecoder();
-	const decodedTokenAccount = decoder.decode(rawAccount!.data);
-	assert.strictEqual(decodedTokenAccount.amount, usdcToOwn, "Token account should contain the correct USDC amount");
-	assert.strictEqual(decodedTokenAccount.mint, usdcMint, "Token account should be associated with USDC mint");
-	assert.strictEqual(decodedTokenAccount.owner, owner.address, "Token account should be owned by the correct address");
+	const decodedTokenAccount = decoder.decode(rawAccount.data);
+	assert.strictEqual(
+		decodedTokenAccount.amount,
+		usdcToOwn,
+		"Token account should contain the correct USDC amount",
+	);
+	assert.strictEqual(
+		decodedTokenAccount.mint,
+		usdcMint,
+		"Token account should be associated with USDC mint",
+	);
+	assert.strictEqual(
+		decodedTokenAccount.owner,
+		owner.address,
+		"Token account should be owned by the correct address",
+	);
 });
