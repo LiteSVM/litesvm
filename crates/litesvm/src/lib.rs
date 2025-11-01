@@ -658,6 +658,13 @@ impl LiteSVM {
         self.history.get_transaction(signature)
     }
 
+    /// Returns the pubkey of the internal airdrop account.
+    pub fn airdrop_pubkey(&self) -> Pubkey {
+        Keypair::try_from(self.airdrop_kp.as_slice())
+            .unwrap()
+            .pubkey()
+    }
+
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
         let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
