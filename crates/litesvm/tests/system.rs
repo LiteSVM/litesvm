@@ -90,3 +90,32 @@ fn system_allocate_account() {
 
     assert!(svm.get_account(&new_account).is_none());
 }
+
+#[test_log::test]
+fn test_airdrop_pubkey() {
+    let funding_amount = 10 * LAMPORTS_PER_SOL;
+    let mut svm = LiteSVM::new().with_lamports(funding_amount);
+
+    let airdrop_pubkey = svm.airdrop_pubkey();
+
+    let initial_balance = svm.get_balance(&airdrop_pubkey).unwrap();
+    assert_eq!(initial_balance, funding_amount);
+
+    let recipient = Pubkey::new_unique();
+    let airdrop_amount = 100_000;
+    svm.airdrop(&recipient, airdrop_amount).unwrap();
+
+    let after_airdrop = svm.get_balance(&airdrop_pubkey).unwrap();
+    assert!(after_airdrop < initial_balance);
+    assert_eq!(
+        after_airdrop,
+        initial_balance - airdrop_amount - 5000 // transaction fee
+    );
+
+    assert_eq!(svm.get_balance(&recipient).unwrap(), airdrop_amount);
+    assert_eq!(svm.airdrop_pubkey(), airdrop_pubkey);
+
+    let recipient2 = Pubkey::new_unique();
+    svm.airdrop(&recipient2, airdrop_amount).unwrap();
+    assert_eq!(svm.get_balance(&recipient2).unwrap(), airdrop_amount);
+}
