@@ -717,6 +717,49 @@ impl LiteSVM {
         Ok(())
     }
 
+    /// Adds an SBF program with owner to the test environment from the file specified.
+    pub fn add_program_from_file_with_owner(
+        &mut self,
+        program_id: impl Into<Pubkey>,
+        owner: impl Into<Pubkey>,
+        path: impl AsRef<Path>,
+    ) -> Result<(), LiteSVMError> {
+        let program_id = program_id.into();
+        let program_bytes = std::fs::read(path)?;
+        let program_len = program_bytes.len();
+        let lamports = self.minimum_balance_for_rent_exemption(program_len);
+        let mut account = AccountSharedData::new(lamports, program_len, &owner.into());
+        account.set_executable(true);
+        account.set_data_from_slice(&program_bytes);
+        let current_slot = self
+            .accounts
+            .sysvar_cache
+            .get_clock()
+            .unwrap_or_default()
+            .slot;
+        let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
+            None,
+            &mut LoadProgramMetrics::default(),
+            account.data(),
+            account.owner(),
+            account.data().len(),
+            current_slot,
+            self.accounts
+                .programs_cache
+                .environments
+                .program_runtime_v1
+                .clone(),
+            false,
+        )
+        .unwrap_or_default();
+        loaded_program.effective_slot = current_slot;
+        self.accounts.add_account(program_id, account)?;
+        self.accounts
+            .programs_cache
+            .replenish(program_id, Arc::new(loaded_program));
+        Ok(())
+    }
+
     /// Adds am SBF program to the test environment.
     pub fn add_program(
         &mut self,
