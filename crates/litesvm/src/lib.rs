@@ -575,6 +575,10 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_account_tracking(&mut self, enabled: bool) {
         self.account_tracking = enabled;
+        // Enable tracking immediately when turned on
+        if enabled {
+            self.accounts.enable_tracking();
+        }
     }
 
     /// Enable or disable account access tracking.
@@ -1279,11 +1283,6 @@ impl LiteSVM {
 
     /// Submits a signed transaction.
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
-        // Enable tracking if configured
-        if self.account_tracking {
-            self.accounts.enable_tracking();
-        }
-
         let log_collector = LogCollector {
             bytes_limit: self.log_bytes_limit,
             ..Default::default()
@@ -1306,6 +1305,11 @@ impl LiteSVM {
 
         // Collect tracked accounts (if tracking was enabled)
         let accessed_accounts = self.accounts.take_tracked_accounts();
+        
+        // Re-enable tracking for next operation if tracking is configured
+        if self.account_tracking {
+            self.accounts.enable_tracking();
+        }
 
         let Ok(logs) = Rc::try_unwrap(log_collector).map(|lc| lc.into_inner().messages) else {
             unreachable!("Log collector should not be used after send_transaction returns")

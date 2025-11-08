@@ -272,3 +272,25 @@ fn test_tracking_can_be_toggled() {
     let result2 = svm2.send_transaction(tx2).unwrap();
     assert!(result2.accessed_accounts.is_none());
 }
+
+#[test]
+fn test_get_accessed_accounts_manual_retrieval() {
+    let mut svm = LiteSVM::new()
+        .with_account_tracking(true);
+
+    let account1 = Pubkey::new_unique();
+    let account2 = Pubkey::new_unique();
+
+    // Access some accounts (tracking is now enabled immediately)
+    svm.get_account(&account1);
+    svm.get_account(&account2);
+
+    // Retrieve accessed accounts manually using the new method
+    let accessed = svm.get_accessed_accounts();
+    assert!(accessed.is_some());
+    
+    let accessed_vec = accessed.unwrap();
+    assert_eq!(accessed_vec.len(), 2);
+    assert!(accessed_vec.contains(&account1));
+    assert!(accessed_vec.contains(&account2));
+}
