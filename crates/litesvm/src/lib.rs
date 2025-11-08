@@ -619,6 +619,35 @@ impl LiteSVM {
         self
     }
 
+    /// Retrieve and clear tracked account accesses.
+    ///
+    /// This is useful for debugging setup failures where you need to see which
+    /// accounts were accessed before an error occurred (e.g., during program loading).
+    ///
+    /// Returns `None` if tracking is not enabled or no accounts have been accessed yet.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use litesvm::LiteSVM;
+    ///
+    /// let mut svm = LiteSVM::new()
+    ///     .with_account_tracking(true);
+    ///
+    /// // If setup fails, you can still see what was accessed
+    /// if let Err(e) = svm.add_program_from_file("program.so") {
+    ///     if let Some(accessed) = svm.get_accessed_accounts() {
+    ///         let missing: Vec<_> = accessed.iter()
+    ///             .filter(|pk| svm.get_account(pk).is_none())
+    ///             .collect();
+    ///         eprintln!("Setup failed, missing accounts: {:?}", missing);
+    ///     }
+    /// }
+    /// ```
+    pub fn get_accessed_accounts(&mut self) -> Option<Vec<solana_pubkey::Pubkey>> {
+        self.accounts.take_tracked_accounts()
+    }
+
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     #[cfg(feature = "precompiles")]
     fn set_precompiles(&mut self) {

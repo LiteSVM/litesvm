@@ -78,6 +78,23 @@ match svm.send_transaction(tx) {
 
 This is especially useful for programs that do CPI calls - you can see what accounts nested program calls need without reading their source code.
 
+**Debugging setup failures:**
+
+```rust
+let mut svm = LiteSVM::new()
+    .with_account_tracking(true);
+
+// If program loading fails, you can still see what was accessed
+if let Err(e) = svm.add_program_from_file("program.so") {
+    if let Some(accessed) = svm.get_accessed_accounts() {
+        let missing: Vec<_> = accessed.iter()
+            .filter(|pk| svm.get_account(pk).is_none())
+            .collect();
+        println!("Setup failed, missing: {:?}", missing);
+    }
+}
+```
+
 **Note**: Account tracking is disabled by default for zero overhead. Only enable it when debugging.
 
 ### 🛠️ Developing litesvm
