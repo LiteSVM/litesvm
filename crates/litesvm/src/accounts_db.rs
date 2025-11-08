@@ -34,7 +34,7 @@ use {
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::Sysvar,
     solana_transaction_error::{AddressLoaderError, TransactionError},
-    std::sync::Arc,
+    std::sync::{Arc, RwLock},
 };
 
 const FEES_ID: Pubkey = solana_pubkey::pubkey!("SysvarFees111111111111111111111111111111111");
@@ -67,11 +67,41 @@ pub struct AccountsDb {
     pub inner: HashMap<Pubkey, AccountSharedData>,
     pub programs_cache: ProgramCacheForTxBatch,
     pub sysvar_cache: SysvarCache,
+
+    /// Tracks all account accesses when enabled.
+    /// Only allocated when `.with_account_tracking(true)` is used.
+    pub(crate) access_tracker: Option<Arc<RwLock<Vec<Pubkey>>>>,
 }
 
 impl AccountsDb {
     pub fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
+        // Track this access if tracking is enabled
+        if let Some(tracker) = &self.access_tracker {
+            tracker
+                .write()
+                .expect("account tracker lock should not be poisoned")
+                .push(*pubkey);
+        }
+
         self.inner.get(pubkey).map(|acc| acc.to_owned())
+    }
+
+    /// Enable account access tracking for the next transaction.
+    /// Creates a new empty tracker.
+    pub(crate) fn enable_tracking(&mut self) {
+        self.access_tracker = Some(Arc::new(RwLock::new(Vec::new())));
+    }
+
+    /// Retrieve all tracked account accesses and disable tracking.
+    /// Returns `None` if tracking was not enabled.
+    pub(crate) fn take_tracked_accounts(&mut self) -> Option<Vec<Pubkey>> {
+        self.access_tracker.take().map(|tracker| {
+            // Try to unwrap Arc (should always succeed since we're the only owner)
+            Arc::try_unwrap(tracker)
+                .ok()
+                .and_then(|lock| lock.into_inner().ok())
+                .unwrap_or_default()
+        })
     }
 
     /// We should only use this when we know we're not touching any executable or sysvar accounts,
