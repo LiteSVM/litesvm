@@ -1305,7 +1305,7 @@ impl LiteSVM {
 
         // Collect tracked accounts (if tracking was enabled)
         let accessed_accounts = self.accounts.take_tracked_accounts();
-        
+
         // Re-enable tracking for next operation if tracking is configured
         if self.account_tracking {
             self.accounts.enable_tracking();
