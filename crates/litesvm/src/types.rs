@@ -24,15 +24,8 @@ pub struct TransactionMetadata {
     /// Only populated when account tracking is enabled via `.with_account_tracking(true)`.
     /// Includes both successful and failed account lookups.
     ///
-    /// Use this to debug missing accounts:
-    /// ```
-    /// if let Some(accessed) = &meta.accessed_accounts {
-    ///     let missing: Vec<_> = accessed.iter()
-    ///         .filter(|pk| svm.get_account(pk).is_none())
-    ///         .collect();
-    ///     println!("Missing accounts: {:?}", missing);
-    /// }
-    /// ```
+    /// Use this to debug missing accounts by checking which accessed accounts
+    /// are not present in the VM state.
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub accessed_accounts: Option<Vec<Pubkey>>,
 }

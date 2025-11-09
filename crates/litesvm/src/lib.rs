@@ -602,21 +602,8 @@ impl LiteSVM {
     /// let mut svm = LiteSVM::new()
     ///     .with_account_tracking(true);
     ///
-    /// // When transaction fails, check which accounts were accessed
-    /// match svm.send_transaction(tx) {
-    ///     Err(failed) => {
-    ///         if let Some(accessed) = &failed.meta.accessed_accounts {
-    ///             let missing: Vec<_> = accessed.iter()
-    ///                 .filter(|pk| svm.get_account(pk).is_none())
-    ///                 .collect();
-    ///
-    ///             if !missing.is_empty() {
-    ///                 eprintln!("Missing accounts: {:?}", missing);
-    ///             }
-    ///         }
-    ///     }
-    ///     Ok(_) => println!("Success!"),
-    /// }
+    /// // Now when transactions run, accessed accounts will be tracked
+    /// // and available in the transaction metadata
     /// ```
     pub fn with_account_tracking(mut self, enabled: bool) -> Self {
         self.set_account_tracking(enabled);
@@ -632,20 +619,20 @@ impl LiteSVM {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// use litesvm::LiteSVM;
+    /// use solana_pubkey::Pubkey;
     ///
     /// let mut svm = LiteSVM::new()
     ///     .with_account_tracking(true);
     ///
-    /// // If setup fails, you can still see what was accessed
-    /// if let Err(e) = svm.add_program_from_file("program.so") {
-    ///     if let Some(accessed) = svm.get_accessed_accounts() {
-    ///         let missing: Vec<_> = accessed.iter()
-    ///             .filter(|pk| svm.get_account(pk).is_none())
-    ///             .collect();
-    ///         eprintln!("Setup failed, missing accounts: {:?}", missing);
-    ///     }
+    /// // Access some accounts
+    /// let account_key = Pubkey::new_unique();
+    /// let _ = svm.get_account(&account_key);
+    ///
+    /// // Retrieve what was accessed
+    /// if let Some(accessed) = svm.get_accessed_accounts() {
+    ///     assert!(accessed.contains(&account_key));
     /// }
     /// ```
     pub fn get_accessed_accounts(&mut self) -> Option<Vec<solana_pubkey::Pubkey>> {
