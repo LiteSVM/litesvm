@@ -1608,7 +1608,6 @@ name = "litesvm-node"
 version = "0.3.3"
 dependencies = [
  "agave-feature-set",
- "agave-precompiles",
  "bincode",
  "bv",
  "litesvm",
@@ -1630,7 +1629,6 @@ dependencies = [
  "solana-slot-hashes",
  "solana-slot-history",
  "solana-stake-interface",
- "solana-sysvar",
  "solana-transaction",
  "solana-transaction-context",
  "solana-transaction-error",
