@@ -11,7 +11,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 agave-feature-set.workspace = true
-agave-precompiles.workspace = true
 bincode = { workspace = true }
 bv = "0.11.1"
 litesvm = { workspace = true, features = ["nodejs-internal", "precompiles"] }
@@ -32,7 +31,6 @@ solana-signature = { workspace = true }
 solana-slot-hashes = { workspace = true }
 solana-slot-history = { workspace = true }
 solana-stake-interface = { workspace = true }
-solana-sysvar = { workspace = true }
 solana-transaction = { workspace = true }
 solana-transaction-context = { workspace = true }
 solana-transaction-error = { workspace = true }
