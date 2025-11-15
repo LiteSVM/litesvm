@@ -7,39 +7,57 @@ import {
 	LiteSVM,
 	TransactionMetadata,
 } from "litesvm";
-console.log("Doing web3.js imports");
+console.log("Doing solana kit imports");
 import {
-	Keypair,
-	LAMPORTS_PER_SOL,
-	PublicKey,
-	Transaction,
-	TransactionInstruction,
-} from "@solana/web3.js";
+	createTransactionMessage,
+	appendTransactionMessageInstructions,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
+	pipe,
+	lamports,
+	generateKeyPairSigner,
+	blockhash,
+} from "@solana/kit";
 
-test("clock", () => {
+const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
+
+test("clock", async () => {
 	console.log("Running clock test");
-	const programId = PublicKey.unique();
+	const programSigner = await generateKeyPairSigner();
+	const programId = programSigner.address;
 	console.log("Calling new LiteSVM()");
 	const svm = new LiteSVM();
 	console.log("Calling addProgramFromFile");
 	svm.addProgramFromFile(programId, "program_bytes/litesvm_clock_example.so");
 	console.log("Calling new Keypair");
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, BigInt(LAMPORTS_PER_SOL));
+	const latestBlockhash = blockhash(svm.latestBlockhash());
 	const ixs = [
-		new TransactionInstruction({ keys: [], programId, data: Buffer.from("") }),
+		{
+			programAddress: programId,
+			accounts: [] as const,
+			data: new Uint8Array([]),
+		},
 	];
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
+	const tx = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				{ blockhash: latestBlockhash, lastValidBlockHeight: 0n },
+				tx,
+			),
+		(tx) => appendTransactionMessageInstructions(ixs, tx),
+	);
+	const signedTransaction = await signTransactionMessageWithSigners(tx);
 	// set the time to January 1st 2000
 	const initialClock = svm.getClock();
 	initialClock.unixTimestamp = 1735689600n;
 	svm.setClock(initialClock);
 	// this will fail because the contract wants it to be January 1970
-	const failed = svm.sendTransaction(tx);
+	const failed = svm.sendTransaction(signedTransaction);
 	if (failed instanceof FailedTransactionMetadata) {
 		assert.ok(failed.err().toString().includes("ProgramFailedToComplete"));
 	} else {
@@ -50,18 +68,24 @@ test("clock", () => {
 	newClock.unixTimestamp = 50n;
 	svm.setClock(newClock);
 	const ixs2 = [
-		new TransactionInstruction({
-			keys: [],
-			programId,
-			data: Buffer.from("foobar"), // unused, just here to dedup the tx
-		}),
+		{
+			programAddress: programId,
+			accounts: [] as const,
+			data: new Uint8Array(Buffer.from("foobar")), // unused, just here to dedup the tx
+		},
 	];
-	const tx2 = new Transaction();
-	tx2.recentBlockhash = blockhash;
-	tx2.add(...ixs2);
-	tx2.sign(payer);
-	// now the transaction goes through
-	const success = svm.sendTransaction(tx2);
+	const tx2 = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				{ blockhash: latestBlockhash, lastValidBlockHeight: 0n },
+				tx,
+			),
+		(tx) => appendTransactionMessageInstructions(ixs2, tx),
+	);
+	const signedTransaction2 = await signTransactionMessageWithSigners(tx2);
+	const success = svm.sendTransaction(signedTransaction2);
 	assert.ok(success instanceof TransactionMetadata);
 	console.log("Finished clock test");
 });

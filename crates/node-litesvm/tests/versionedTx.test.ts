@@ -1,37 +1,46 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	PublicKey,
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	VersionedTransaction,
-	MessageV0,
-	Keypair,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	pipe,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	blockhash,
+} from "@solana/kit";
 import { helloworldProgram } from "./util";
 
-test("versioned tx", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const msg = MessageV0.compile({
-		payerKey: payer.publicKey,
-		instructions: [ix],
-		recentBlockhash: svm.latestBlockhash(),
-	});
-	const tx = new VersionedTransaction(msg);
-	tx.sign([payer]);
-	const res = svm.sendTransaction(tx);
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+test("versioned tx", async () => {
+	const [svm, programId, greetedPubkey] = await helloworldProgram();
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, BigInt(LAMPORTS_PER_SOL));
+	const ix = {
+		programAddress: programId,
+		accounts: [
+			{
+				address: greetedPubkey,
+				role: 1,
+			},
+		],
+		data: new Uint8Array([0]),
+	};
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, tx),
+		(tx) => appendTransactionMessageInstructions([ix], tx)
+	);
+	const transaction = await signTransactionMessageWithSigners(transactionMessage);
+	svm.sendTransaction(transaction);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
 	assert.deepStrictEqual(
 		greetedAccountAfter?.data,
-		new Uint8Array([1, 0, 0, 0]),
+		new Uint8Array([1, 0, 0, 0])
 	);
 });

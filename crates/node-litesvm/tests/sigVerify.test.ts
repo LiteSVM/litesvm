@@ -1,39 +1,64 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	PublicKey,
-} from "@solana/web3.js";
+	lamports,
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+} from "@solana/kit";
 import { helloworldProgram } from "./util";
 
-test("test sigverify", () => {
-	let [svm, programId, greetedPubkey] = helloworldProgram();
+const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
+
+test("test sigverify", async () => {
+	let [svm, programId, greetedPubkey] = await helloworldProgram();
 	svm = svm.withSigverify(false);
-	const payerPubkey = new PublicKey(12345);
-	const fakeSigner = {
-		publicKey: payerPubkey,
-		secretKey: new Uint8Array(32),
-	}; // note that the secretKey & publicKey do not match
-	svm.airdrop(payerPubkey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
+	const realSigner = await generateKeyPairSigner();
+	svm.airdrop(realSigner.address, LAMPORTS_PER_SOL);
+
+	const latestBlockhash = blockhash(svm.latestBlockhash());
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
 	assert.deepStrictEqual(
 		greetedAccountBefore?.data,
 		new Uint8Array([0, 0, 0, 0]),
 	);
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(ix);
-	tx.sign(fakeSigner);
-	svm.sendTransaction(tx);
+	const instruction = {
+		programAddress: programId,
+		accounts: [
+			{
+				address: greetedPubkey,
+				role: 1
+			},
+		],
+		data: new Uint8Array([0]),
+	};
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(realSigner, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({
+			blockhash: latestBlockhash,
+			lastValidBlockHeight: 0n
+		}, tx),
+		(tx) => appendTransactionMessageInstructions([instruction], tx),
+	);
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	const originalSignatures = Object.values(signedTransaction.signatures);
+	const fakeSignature = originalSignatures[0];
+	const corruptedSignatureBytes = new Uint8Array(fakeSignature.length);
+	const corruptedSignature = Object.assign(corruptedSignatureBytes, fakeSignature);
+	const corruptedTransaction = {
+		...signedTransaction,
+		signatures: {
+			[realSigner.address]: corruptedSignature,
+		},
+	};
+	svm.sendTransaction(corruptedTransaction);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
 	assert.deepStrictEqual(
