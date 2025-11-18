@@ -11,7 +11,7 @@ pub struct ComputeBudget(pub(crate) ComputeBudgetOriginal);
 impl ComputeBudget {
     #[napi(constructor)]
     pub fn new() -> Self {
-        Self(ComputeBudgetOriginal::new_with_defaults(false))
+        Self(ComputeBudgetOriginal::new_with_defaults(false, false))
     }
 
     #[napi(getter)]

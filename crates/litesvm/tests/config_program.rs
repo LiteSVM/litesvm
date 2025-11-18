@@ -610,7 +610,7 @@ fn test_config_initialize_no_panic() {
         .err;
     assert_eq!(
         err,
-        TransactionError::InstructionError(0, InstructionError::NotEnoughAccountKeys)
+        TransactionError::InstructionError(0, InstructionError::MissingAccount)
     );
 }
 

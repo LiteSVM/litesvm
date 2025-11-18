@@ -1,13 +1,15 @@
 //! this code is taken from https://github.com/anza-xyz/agave/blob/master/svm/src/rent_calculator.rs
 //! Commit 6fbbaf67837e2dc973822be9e1c20e1fed58e8eb
 use {
-    solana_account::{AccountSharedData, ReadableAccount},
     solana_pubkey::Pubkey,
     solana_rent::Rent,
     solana_transaction_context::IndexOfAccount,
-    solana_transaction_error::{TransactionError, TransactionResult as Result},
+    solana_transaction_error::{TransactionError, TransactionResult},
 };
 
+/// When rent is collected from an exempt account, rent_epoch is set to this
+/// value. The idea is to have a fixed, consistent value for rent_epoch for all accounts that do not collect rent.
+/// This enables us to get rid of the field completely.
 /// Rent state of a Solana account.
 #[derive(Debug, PartialEq, Eq)]
 pub enum RentState {
@@ -32,7 +34,7 @@ pub fn check_rent_state_with_account(
     post_rent_state: &RentState,
     address: &Pubkey,
     account_index: IndexOfAccount,
-) -> Result<()> {
+) -> TransactionResult<()> {
     if !solana_sdk_ids::incinerator::check_id(address)
         && !transition_allowed(pre_rent_state, post_rent_state)
     {
@@ -48,15 +50,19 @@ pub fn check_rent_state_with_account(
 /// This method has a default implementation that treats accounts with zero
 /// lamports as uninitialized and uses the implemented `get_rent` to
 /// determine whether an account is rent-exempt.
-pub fn get_account_rent_state(rent: &Rent, account: &AccountSharedData) -> RentState {
-    if account.lamports() == 0 {
+pub fn get_account_rent_state(
+    rent: &Rent,
+    account_lamports: u64,
+    account_size: usize,
+) -> RentState {
+    if account_lamports == 0 {
         RentState::Uninitialized
-    } else if rent.is_exempt(account.lamports(), account.data().len()) {
+    } else if rent.is_exempt(account_lamports, account_size) {
         RentState::RentExempt
     } else {
         RentState::RentPaying {
-            data_size: account.data().len(),
-            lamports: account.lamports(),
+            data_size: account_size,
+            lamports: account_lamports,
         }
     }
 }
