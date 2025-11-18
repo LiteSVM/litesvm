@@ -281,7 +281,6 @@ use {
     agave_syscalls::{
         create_program_runtime_environment_v1, create_program_runtime_environment_v2,
     },
-    itertools::Itertools,
     log::error,
     serde::de::DeserializeOwned,
     solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
@@ -484,6 +483,7 @@ impl LiteSVM {
                     ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
                 self.accounts
                     .programs_cache
+                    .borrow_mut()
                     .replenish(builtint.program_id, Arc::new(loaded_program));
                 self.accounts.add_builtin_account(
                     builtint.program_id,
@@ -506,8 +506,9 @@ impl LiteSVM {
         let program_runtime_v2 =
             create_program_runtime_environment_v2(&compute_budget.to_budget(), true);
 
-        self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
-        self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
+        let mut program_cache = self.accounts.programs_cache.borrow_mut();
+        program_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
+        program_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
     }
 
     /// Changes the default builtins.
@@ -699,6 +700,7 @@ impl LiteSVM {
 
         self.accounts
             .programs_cache
+            .borrow_mut()
             .replenish(program_id, Arc::new(builtin));
 
         let mut account = AccountSharedData::new(1, 1, &bpf_loader::id());
@@ -744,6 +746,7 @@ impl LiteSVM {
             current_slot,
             self.accounts
                 .programs_cache
+                .borrow()
                 .environments
                 .program_runtime_v1
                 .clone(),
@@ -754,6 +757,7 @@ impl LiteSVM {
         self.accounts.add_account(program_id, account)?;
         self.accounts
             .programs_cache
+            .borrow_mut()
             .replenish(program_id, Arc::new(loaded_program));
         Ok(())
     }
@@ -837,18 +841,12 @@ impl LiteSVM {
             heap_size: compute_budget_limits.updated_heap_bytes,
             ..ComputeBudget::new_with_defaults(false)
         });
-        let blockhash = tx.message().recent_blockhash();
-        //reload program cache
-        let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
-        let mut accumulated_consume_units = 0;
         let message = tx.message();
+        let blockhash = message.recent_blockhash();
+        //reload program cache
+        let mut program_cache_for_tx_batch = self.accounts.programs_cache.borrow_mut();
+        let mut accumulated_consume_units = 0;
         let account_keys = message.account_keys();
-        let instruction_accounts = message
-            .instructions()
-            .iter()
-            .flat_map(|instruction| &instruction.accounts)
-            .unique()
-            .collect::<Vec<&u8>>();
         let fee = solana_fee::calculate_fee(
             message,
             false,
@@ -858,6 +856,7 @@ impl LiteSVM {
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
+        let rent = self.accounts.sysvar_cache.get_rent().unwrap();
         let maybe_accounts = account_keys
             .iter()
             .enumerate()
@@ -866,12 +865,10 @@ impl LiteSVM {
                 let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
                 } else {
-                    let instruction_account = u8::try_from(i)
-                        .map(|i| instruction_accounts.contains(&&i))
-                        .unwrap_or(false);
+                    let instruction_account = message.is_instruction_account(i);
                     let mut account = if !instruction_account
                         && !message.is_writable(i)
-                        && self.accounts.programs_cache.find(key).is_some()
+                        && program_cache_for_tx_batch.find(key).is_some()
                     {
                         // Optimization to skip loading of accounts which are only used as
                         // programs in top-level instructions and not passed as instruction accounts.
@@ -884,16 +881,8 @@ impl LiteSVM {
                             default_account
                         })
                     };
-                    if !validated_fee_payer
-                        && (!message.is_invoked(i) || message.is_instruction_account(i))
-                    {
-                        validate_fee_payer(
-                            key,
-                            &mut account,
-                            i as IndexOfAccount,
-                            &self.accounts.sysvar_cache.get_rent().unwrap(),
-                            fee,
-                        )?;
+                    if !validated_fee_payer && (!message.is_invoked(i) || instruction_account) {
+                        validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
                         validated_fee_payer = true;
                         payer_key = Some(*key);
                     }
@@ -947,19 +936,19 @@ impl LiteSVM {
                     .iter()
                     .any(|(key, _)| key == owner_id)
                 {
-                    let owner_account = self.get_account(owner_id).unwrap();
+                    let owner_account = self.accounts.get_account(owner_id).unwrap();
                     if !native_loader::check_id(owner_account.owner()) {
                         error!(
                             "Owner account {owner_id} is not owned by the native loader program."
                         );
                         return Err(TransactionError::InvalidProgramForExecution);
                     }
-                    if !owner_account.executable {
+                    if !owner_account.executable() {
                         error!("Owner account {owner_id} is not executable");
                         return Err(TransactionError::InvalidProgramForExecution);
                     }
                     //Add program_id to the stuff
-                    accounts.push((*owner_id, owner_account.into()));
+                    accounts.push((*owner_id, owner_account));
                 }
                 Ok(program_index as IndexOfAccount)
             })

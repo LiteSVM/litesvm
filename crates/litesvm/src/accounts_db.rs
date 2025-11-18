@@ -34,7 +34,7 @@ use {
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::Sysvar,
     solana_transaction_error::{AddressLoaderError, TransactionError},
-    std::sync::Arc,
+    std::{cell::RefCell, sync::Arc},
 };
 
 const FEES_ID: Pubkey = solana_pubkey::pubkey!("SysvarFees111111111111111111111111111111111");
@@ -65,7 +65,7 @@ where
 #[derive(Clone, Default)]
 pub struct AccountsDb {
     pub inner: HashMap<Pubkey, AccountSharedData>,
-    pub programs_cache: ProgramCacheForTxBatch,
+    pub programs_cache: RefCell<ProgramCacheForTxBatch>,
     pub sysvar_cache: SysvarCache,
 }
 
@@ -91,6 +91,7 @@ impl AccountsDb {
         {
             let loaded_program = self.load_program(&account)?;
             self.programs_cache
+                .borrow_mut()
                 .replenish(pubkey, Arc::new(loaded_program));
         } else {
             self.maybe_handle_sysvar_account(pubkey, &account)?;
@@ -118,7 +119,9 @@ impl AccountsDb {
             CLOCK_ID => {
                 let parsed: Clock = bincode::deserialize(account.data())
                     .map_err(|_| InvalidSysvarDataError::Clock)?;
-                self.programs_cache.set_slot_for_tests(parsed.slot);
+                self.programs_cache
+                    .borrow_mut()
+                    .set_slot_for_tests(parsed.slot);
                 let mut accounts_clone = self.inner.clone();
                 accounts_clone.insert(pubkey, account.clone());
                 cache.reset();
@@ -232,7 +235,12 @@ impl AccountsDb {
         let metrics = &mut LoadProgramMetrics::default();
 
         let owner = program_account.owner();
-        let program_runtime_v1 = self.programs_cache.environments.program_runtime_v1.clone();
+        let program_runtime_v1 = self
+            .programs_cache
+            .borrow()
+            .environments
+            .program_runtime_v1
+            .clone();
         let slot = self.sysvar_cache.get_clock().unwrap().slot;
 
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
