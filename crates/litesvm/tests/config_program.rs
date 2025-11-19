@@ -581,6 +581,7 @@ fn test_config_updates_requiring_config() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_config_initialize_no_panic() {
     let mut context = setup_test_context();
     let config_keypair = Keypair::new();
