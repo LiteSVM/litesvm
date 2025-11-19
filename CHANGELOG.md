@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.8.2] - 2025-11-19
+
+### Fixed
+
+- Fix dependencies so the workspace continues to build against Solana 3.0 patch releases
+  ([#247](https://github.com/LiteSVM/litesvm/pull/247)).
+
 ## [0.8.1] - 2025-10-03
 
 ### Removed
@@ -142,7 +149,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/LiteSVM/litesvm/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/LiteSVM/litesvm/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/LiteSVM/litesvm/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/LiteSVM/litesvm/compare/v0.7.0...v0.7.1
