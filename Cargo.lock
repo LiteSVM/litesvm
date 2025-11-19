@@ -1785,7 +1785,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "agave-feature-set",
  "agave-precompiles",
@@ -1862,7 +1862,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-loader"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "agave-feature-set",
  "litesvm",
@@ -1909,7 +1909,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-token"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "litesvm",
  "smallvec",
