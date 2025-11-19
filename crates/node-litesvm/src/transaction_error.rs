@@ -158,6 +158,7 @@ fn convert_instruction_error(e: InstructionErrorOriginal) -> InstructionError {
         InstructionErrorOriginal::RentEpochModified => {
             InstructionError::A(InstructionErrorFieldless::RentEpochModified)
         }
+        #[allow(deprecated)]
         InstructionErrorOriginal::NotEnoughAccountKeys => {
             InstructionError::A(InstructionErrorFieldless::NotEnoughAccountKeys)
         }
