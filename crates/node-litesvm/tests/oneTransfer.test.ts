@@ -2,32 +2,46 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
 import {
-	PublicKey,
-	Transaction,
-	SystemProgram,
-	Keypair,
-	LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	lamports,
+	blockhash,
+} from "@solana/kit";
+import { getTransferSolInstruction } from "@solana-program/system";
 
-test("one transfer", () => {
+test("one transfer", async () => {
 	const svm = new LiteSVM();
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const receiver = PublicKey.unique();
-	const blockhash = svm.latestBlockhash();
-	const transferLamports = 1_000_000n;
-	const ixs = [
-		SystemProgram.transfer({
-			fromPubkey: payer.publicKey,
-			toPubkey: receiver,
-			lamports: transferLamports,
-		}),
-	];
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
-	const balanceAfter = svm.getBalance(receiver);
-	assert.strictEqual(balanceAfter, transferLamports);
+	const sender = await generateKeyPairSigner();
+	const recipient = await generateKeyPairSigner();
+	const LAMPORTS_PER_SOL = 1_000_000_000n;
+	const transferAmount = lamports(LAMPORTS_PER_SOL / 100n);
+	svm.airdrop(sender.address, lamports(LAMPORTS_PER_SOL));
+	const senderBalance = svm.getBalance(sender.address);
+	assert.strictEqual(senderBalance, lamports(LAMPORTS_PER_SOL));
+	const recipientBalanceBefore = svm.getBalance(recipient.address);
+	assert.strictEqual(recipientBalanceBefore, null);
+	const transferInstruction = getTransferSolInstruction({
+		source: sender,
+		destination: recipient.address,
+		amount: transferAmount,
+	});
+	const latestBlockhash = blockhash(svm.latestBlockhash());
+	const transactionMessage = pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(sender, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash({
+			blockhash: latestBlockhash,
+			lastValidBlockHeight: 0n
+		}, tx),
+		(tx) => appendTransactionMessageInstructions([transferInstruction], tx),
+	);
+	const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+	svm.sendTransaction(signedTransaction);
+	const balanceAfter = svm.getBalance(recipient.address);
+	assert.strictEqual(balanceAfter, transferAmount);
 });

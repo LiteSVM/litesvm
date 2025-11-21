@@ -1,23 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
+	generateKeyPairSigner,
+	createTransactionMessage,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	appendTransactionMessageInstructions,
+	signTransactionMessageWithSigners,
+	pipe,
+	blockhash,
+	lamports,
+} from "@solana/kit";
 import { helloworldProgram } from "./util";
 
-test("many instructions", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
+test("many instructions", async () => {
+	const [svm, programId, greetedPubkey] = await helloworldProgram();
+	const ix = {
+		programAddress: programId,
+		accounts: [{ address: greetedPubkey, role: 1 }],
+		data: new Uint8Array([0]),
+	};
+	const payer = await generateKeyPairSigner();
+	const LAMPORTS_PER_SOL = lamports(1_000_000_000n);
+	svm.airdrop(payer.address, LAMPORTS_PER_SOL);
+	const latestBlockhash = blockhash(svm.latestBlockhash());
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
 	assert.deepStrictEqual(
@@ -26,11 +32,14 @@ test("many instructions", () => {
 	);
 	const numIxs = 64;
 	const ixs = Array(numIxs).fill(ix);
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
+	const tx = pipe(
+		createTransactionMessage({ version: 0 }),
+		(m) => setTransactionMessageFeePayerSigner(payer, m),
+		(m) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: latestBlockhash, lastValidBlockHeight: 0n }, m),
+		(m) => appendTransactionMessageInstructions(ixs, m),
+	);
+	const signed = await signTransactionMessageWithSigners(tx);
+	svm.sendTransaction(signed);
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
 	assert.deepStrictEqual(

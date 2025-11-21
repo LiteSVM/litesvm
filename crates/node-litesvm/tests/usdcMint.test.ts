@@ -1,48 +1,73 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
-import { PublicKey } from "@solana/web3.js";
+import { generateKeyPairSigner, address, lamports } from "@solana/kit";
 import {
-	getAssociatedTokenAddressSync,
-	AccountLayout,
-	ACCOUNT_SIZE,
-	TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+	TOKEN_PROGRAM_ADDRESS,
+	findAssociatedTokenPda,
+	getTokenEncoder,
+	getTokenDecoder,
+	AccountState,
+	type TokenArgs,
+} from "@solana-program/token";
 
-test("infinite usdc mint", () => {
-	const owner = PublicKey.unique();
-	const usdcMint = new PublicKey(
-		"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-	);
-	const ata = getAssociatedTokenAddressSync(usdcMint, owner, true);
+test("infinite usdc mint", async () => {
+	const owner = await generateKeyPairSigner();
+	const usdcMint = address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+	const [ata] = await findAssociatedTokenPda({
+		mint: usdcMint,
+		owner: owner.address,
+		tokenProgram: TOKEN_PROGRAM_ADDRESS,
+	});
 	const usdcToOwn = 1_000_000_000_000n;
-	const tokenAccData = Buffer.alloc(ACCOUNT_SIZE);
-	AccountLayout.encode(
-		{
-			mint: usdcMint,
-			owner,
-			amount: usdcToOwn,
-			delegateOption: 0,
-			delegate: PublicKey.default,
-			delegatedAmount: 0n,
-			state: 1,
-			isNativeOption: 0,
-			isNative: 0n,
-			closeAuthorityOption: 0,
-			closeAuthority: PublicKey.default,
-		},
-		tokenAccData,
-	);
+	const tokenAccountData: TokenArgs = {
+		mint: usdcMint,
+		owner: owner.address,
+		amount: usdcToOwn,
+		delegate: null,
+		state: AccountState.Initialized,
+		isNative: 0n,
+		delegatedAmount: 0n,
+		closeAuthority: null,
+	};
+	const encoder = getTokenEncoder();
+	const tokenAccData = new Uint8Array(encoder.encode(tokenAccountData));
 	const svm = new LiteSVM();
 	svm.setAccount(ata, {
-		lamports: 1_000_000_000,
+		lamports: lamports(1_000_000_000n),
 		data: tokenAccData,
-		owner: TOKEN_PROGRAM_ID,
+		owner: TOKEN_PROGRAM_ADDRESS,
 		executable: false,
+		space: BigInt(tokenAccData.length),
 	});
 	const rawAccount = svm.getAccount(ata);
-	assert.notStrictEqual(rawAccount, null);
-	const rawAccountData = rawAccount?.data;
-	const decoded = AccountLayout.decode(rawAccountData);
-	assert.strictEqual(decoded.amount, usdcToOwn);
+	assert.notStrictEqual(rawAccount, null, "Token account should exist");
+	assert.strictEqual(
+		rawAccount.owner,
+		TOKEN_PROGRAM_ADDRESS,
+		"Account should be owned by token program",
+	);
+	assert.strictEqual(
+		rawAccount.lamports,
+		lamports(1_000_000_000n),
+		"Account should have correct lamports",
+	);
+
+	const decoder = getTokenDecoder();
+	const decodedTokenAccount = decoder.decode(rawAccount.data);
+	assert.strictEqual(
+		decodedTokenAccount.amount,
+		usdcToOwn,
+		"Token account should contain the correct USDC amount",
+	);
+	assert.strictEqual(
+		decodedTokenAccount.mint,
+		usdcMint,
+		"Token account should be associated with USDC mint",
+	);
+	assert.strictEqual(
+		decodedTokenAccount.owner,
+		owner.address,
+		"Token account should be owned by the correct address",
+	);
 });
