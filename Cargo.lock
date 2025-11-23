@@ -1892,6 +1892,7 @@ dependencies = [
  "bincode",
  "bv",
  "litesvm",
+ "litesvm-token",
  "napi",
  "napi-build",
  "napi-derive",
