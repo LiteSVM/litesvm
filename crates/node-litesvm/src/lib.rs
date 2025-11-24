@@ -44,6 +44,7 @@ mod sysvar;
 mod transaction_error;
 mod transaction_metadata;
 mod util;
+mod native_mint;
 
 #[macro_use]
 extern crate napi_derive;
@@ -402,7 +403,7 @@ impl LiteSvm {
             .inner
             .contains_key(&spl_token_interface::ID)
         {
-            litesvm_token::create_native_mint(&mut self.0);
+            native_mint::create_native_mint(&mut self.0);
         }
 
         if self
@@ -411,7 +412,7 @@ impl LiteSvm {
             .inner
             .contains_key(&spl_token_2022_interface::ID)
         {
-            litesvm_token::create_native_mint_2022(&mut self.0);
+            native_mint::create_native_mint_2022(&mut self.0);
         }
     }
 }
