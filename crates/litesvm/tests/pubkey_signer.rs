@@ -20,6 +20,16 @@ fn pubkey_signer() {
     };
     svm.send_transaction(tx).unwrap();
 
-    assert!(svm.get_balance(&dean).unwrap() < 9 * LAMPORTS_PER_SOL);
-    assert_eq!(svm.get_balance(&jacob).unwrap(), LAMPORTS_PER_SOL);
+    svm.expire_blockhash();
+
+    let ix = transfer(&dean, &jacob, LAMPORTS_PER_SOL);
+    let hash = svm.latest_blockhash();
+    let tx = Transaction {
+        message: Message::new_with_blockhash(&[ix], Some(&dean), &hash),
+        signatures: vec![Signature::default()],
+    };
+    svm.send_transaction(tx).unwrap();
+
+    assert!(svm.get_balance(&dean).unwrap() < 8 * LAMPORTS_PER_SOL);
+    assert_eq!(svm.get_balance(&jacob).unwrap(), 2 * LAMPORTS_PER_SOL);
 }
