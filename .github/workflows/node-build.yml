@@ -245,5 +245,5 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ steps.docker.outputs.IMAGE }}
-          options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }}
+          options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }}/crates/node-litesvm --platform ${{ steps.docker.outputs.PLATFORM }}
           run: yarn test
