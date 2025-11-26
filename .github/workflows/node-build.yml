@@ -230,7 +230,7 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           name: bindings-${{ matrix.target }}
-          path: .
+          path: crates/node-litesvm/litesvm
       - name: List packages
         run: ls -R .
         shell: bash
