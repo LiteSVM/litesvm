@@ -18,7 +18,10 @@ use {
     },
     solana_nonce as nonce,
     solana_program_runtime::{
-        loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch},
+        loaded_programs::{
+            LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch,
+            ProgramRuntimeEnvironments,
+        },
         sysvar_cache::SysvarCache,
     },
     solana_pubkey::Pubkey,
@@ -67,6 +70,7 @@ pub struct AccountsDb {
     pub inner: HashMap<Pubkey, AccountSharedData>,
     pub programs_cache: ProgramCacheForTxBatch,
     pub sysvar_cache: SysvarCache,
+    pub environments: ProgramRuntimeEnvironments,
 }
 
 impl AccountsDb {
@@ -232,7 +236,7 @@ impl AccountsDb {
         let metrics = &mut LoadProgramMetrics::default();
 
         let owner = program_account.owner();
-        let program_runtime_v1 = self.programs_cache.environments.program_runtime_v1.clone();
+        let program_runtime_v1 = self.environments.program_runtime_v1.clone();
         let slot = self.sysvar_cache.get_clock().unwrap().slot;
 
         if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {

@@ -36,5 +36,10 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
         address_lookup_table::ID,
         include_bytes!("elf/address_lookup_table.so"),
     )
+    .unwrap();
+    svm.add_program(
+        pubkey!("Stake11111111111111111111111111111111111111"),
+        include_bytes!("elf/core_bpf_stake-1.0.1.so"),
+    )
     .unwrap()
 }
