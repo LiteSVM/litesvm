@@ -8,25 +8,25 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
-default = ["dep:spl-token-interface", "dep:solana-account", "dep:solana-rent"]
-token-2022 = ["dep:spl-token-2022-interface"]
+default = []
+token-2022 = []
 
 [dependencies]
 litesvm.workspace = true
 smallvec.workspace = true
-solana-account = { workspace = true, optional = true }
+solana-account = { workspace = true }
 solana-keypair.workspace = true
 solana-program-option.workspace = true
 solana-program-pack.workspace = true
 solana-pubkey.workspace = true
-solana-rent = { workspace = true, optional = true }
+solana-rent = { workspace = true }
 solana-signer.workspace = true
 solana-system-interface.workspace = true
 solana-transaction = { workspace = true, features = ["verify"] }
 solana-transaction-error.workspace = true
 spl-associated-token-account-interface.workspace = true
-spl-token-interface = { workspace = true, optional = true }
-spl-token-2022-interface = { workspace = true, optional = true }
+spl-token-interface = { workspace = true }
+spl-token-2022-interface = { workspace = true }
 
 [dev-dependencies]
 solana-native-token.workspace = true

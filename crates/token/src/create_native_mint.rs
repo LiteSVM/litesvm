@@ -4,10 +4,11 @@ use {
     solana_program_option::COption,
     solana_program_pack::Pack,
     solana_rent::Rent,
+    solana_pubkey::Pubkey,
     spl_token_interface::{native_mint::DECIMALS, state::Mint},
 };
 
-pub fn create_native_mint(svm: &mut LiteSVM) {
+fn create_native_mint_with_program_id(svm: &mut LiteSVM, address: Pubkey, token_program: Pubkey) {
     let mut data = vec![0; Mint::LEN];
     let mint = Mint {
         mint_authority: COption::None,
@@ -20,11 +21,19 @@ pub fn create_native_mint(svm: &mut LiteSVM) {
     let account = Account {
         lamports: svm.get_sysvar::<Rent>().minimum_balance(data.len()),
         data,
-        owner: spl_token_interface::ID,
+        owner: token_program,
         executable: false,
         rent_epoch: 0,
     };
 
-    svm.set_account(spl_token_interface::native_mint::ID, account)
+    svm.set_account(address, account)
         .unwrap();
+}
+
+pub fn create_native_mint(svm: &mut LiteSVM) {
+    create_native_mint_with_program_id(svm, spl_token_interface::native_mint::ID, spl_token_interface::ID);
+}
+
+pub fn create_native_mint_2022(svm: &mut LiteSVM) {
+    create_native_mint_with_program_id(svm, spl_token_2022_interface::native_mint::ID, spl_token_2022_interface::ID);
 }

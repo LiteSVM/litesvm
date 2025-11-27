@@ -8,10 +8,7 @@ mod create_ata;
 mod create_ata_idempotent;
 mod create_mint;
 mod create_multisig;
-#[cfg(not(feature = "token-2022"))]
 mod create_native_mint;
-#[cfg(feature = "token-2022")]
-mod create_native_mint_2022;
 mod freeze_account;
 mod mint_to;
 mod mint_to_checked;
@@ -22,8 +19,6 @@ mod thaw_account;
 mod transfer;
 mod transfer_checked;
 
-#[cfg(feature = "token-2022")]
-use create_native_mint_2022 as create_native_mint;
 #[cfg(feature = "token-2022")]
 pub use spl_token_2022_interface as spl_token;
 #[cfg(not(feature = "token-2022"))]

@@ -393,4 +393,25 @@ impl LiteSvm {
     pub fn set_stake_history(&mut self, history: &StakeHistory) {
         self.0.set_sysvar::<StakeHistoryOriginal>(&history.0)
     }
+
+    #[napi]
+    pub fn with_native_mints(&mut self) {
+        if self
+            .0
+            .accounts_db()
+            .inner
+            .contains_key(&spl_token_interface::ID)
+        {
+            litesvm_token::create_native_mint(&mut self.0);
+        }
+
+        if self
+            .0
+            .accounts_db()
+            .inner
+            .contains_key(&spl_token_2022_interface::ID)
+        {
+            litesvm_token::create_native_mint_2022(&mut self.0);
+        }
+    }
 }
