@@ -947,19 +947,19 @@ impl LiteSVM {
                     .iter()
                     .any(|(key, _)| key == owner_id)
                 {
-                    let owner_account = self.get_account(owner_id).unwrap();
+                    let owner_account = self.accounts.get_account(owner_id).unwrap();
                     if !native_loader::check_id(owner_account.owner()) {
                         error!(
                             "Owner account {owner_id} is not owned by the native loader program."
                         );
                         return Err(TransactionError::InvalidProgramForExecution);
                     }
-                    if !owner_account.executable {
+                    if !owner_account.executable() {
                         error!("Owner account {owner_id} is not executable");
                         return Err(TransactionError::InvalidProgramForExecution);
                     }
                     //Add program_id to the stuff
-                    accounts.push((*owner_id, owner_account.into()));
+                    accounts.push((*owner_id, owner_account));
                 }
                 Ok(program_index as IndexOfAccount)
             })
