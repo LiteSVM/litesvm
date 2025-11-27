@@ -197,3 +197,6 @@ Cargo.lock
 *.node
 
 cache
+
+# NAPI-RS generated platform packages (build output)
+npm/
