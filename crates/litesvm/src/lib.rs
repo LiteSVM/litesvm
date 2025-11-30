@@ -354,6 +354,7 @@ pub struct LiteSVM {
     accounts: AccountsDb,
     airdrop_kp: [u8; 64],
     feature_set: FeatureSet,
+    reserved_account_keys: ReservedAccountKeys,
     latest_blockhash: Hash,
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
@@ -365,10 +366,12 @@ pub struct LiteSVM {
 
 impl Default for LiteSVM {
     fn default() -> Self {
+        let feature_set = FeatureSet::default();
         Self {
             accounts: Default::default(),
             airdrop_kp: Keypair::new().to_bytes(),
-            feature_set: Default::default(),
+            reserved_account_keys: Self::reserved_account_keys_for_feature_set(&feature_set),
+            feature_set,
             latest_blockhash: create_blockhash(b"genesis"),
             history: TransactionHistory::new(),
             compute_budget: None,
@@ -471,6 +474,13 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_feature_set(&mut self, feature_set: FeatureSet) {
         self.feature_set = feature_set;
+        self.reserved_account_keys = Self::reserved_account_keys_for_feature_set(&self.feature_set);
+    }
+
+    fn reserved_account_keys_for_feature_set(feature_set: &FeatureSet) -> ReservedAccountKeys {
+        let mut reserved_account_keys = ReservedAccountKeys::default();
+        reserved_account_keys.update_active_set(feature_set);
+        reserved_account_keys
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
@@ -780,7 +790,7 @@ impl LiteSVM {
             MessageHash::Compute,
             Some(false),
             &self.accounts,
-            &ReservedAccountKeys::empty_key_set(),
+            &self.reserved_account_keys.active,
         );
         res.inspect_err(|_| {
             log::error!("Transaction sanitization failed");
@@ -1515,5 +1525,36 @@ where
     match res {
         Ok(s_tx) => op(s_tx),
         Err(e) => e,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::*,
+        solana_instruction::{account_meta::AccountMeta, Instruction},
+        solana_message::{Message, VersionedMessage},
+    };
+
+    #[test]
+    fn sysvar_accounts_are_demoted_to_readonly() {
+        let payer = Keypair::new();
+        let svm = LiteSVM::new();
+        let rent_key = solana_sdk_ids::sysvar::rent::id();
+        let ix = Instruction {
+            program_id: solana_sdk_ids::system_program::id(),
+            accounts: vec![AccountMeta {
+                pubkey: rent_key,
+                is_signer: false,
+                is_writable: true,
+            }],
+            data: vec![],
+        };
+        let message = Message::new(&[ix], Some(&payer.pubkey()));
+        let tx =
+            VersionedTransaction::try_new(VersionedMessage::Legacy(message), &[&payer]).unwrap();
+        let sanitized = svm.sanitize_transaction_no_verify_inner(tx).unwrap();
+
+        assert!(!sanitized.message().is_writable(1));
     }
 }
