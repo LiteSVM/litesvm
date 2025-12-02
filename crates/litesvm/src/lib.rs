@@ -1167,7 +1167,7 @@ impl LiteSVM {
         &self,
         sanitized_tx: &SanitizedTransaction,
     ) -> Result<(), ExecutionResult> {
-        if self.history.check_transaction(sanitized_tx.signature()) {
+        if self.sigverify && self.history.check_transaction(sanitized_tx.signature()) {
             return Err(ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
                 ..Default::default()
