@@ -19,6 +19,15 @@ pub struct TransactionMetadata {
     pub inner_instructions: InnerInstructionsList,
     pub compute_units_consumed: u64,
     pub return_data: TransactionReturnData,
+
+    /// All accounts accessed during transaction execution.
+    /// Only populated when account tracking is enabled via `.with_account_tracking(true)`.
+    /// Includes both successful and failed account lookups.
+    ///
+    /// Use this to debug missing accounts by checking which accessed accounts
+    /// are not present in the VM state.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub accessed_accounts: Option<Vec<Pubkey>>,
 }
 
 impl TransactionMetadata {
