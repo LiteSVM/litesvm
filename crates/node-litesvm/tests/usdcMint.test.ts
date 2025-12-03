@@ -1,48 +1,65 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { LiteSVM } from "litesvm";
-import { PublicKey } from "@solana/web3.js";
 import {
-	getAssociatedTokenAddressSync,
-	AccountLayout,
-	ACCOUNT_SIZE,
-	TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+	AccountState,
+	findAssociatedTokenPda,
+	getTokenDecoder,
+	getTokenEncoder,
+	Token,
+	TOKEN_PROGRAM_ADDRESS,
+} from "@solana-program/token";
+import {
+	address,
+	assertAccountExists,
+	decodeAccount,
+	generateKeyPairSigner,
+	lamports,
+	none,
+} from "@solana/kit";
+import { LiteSVM } from "litesvm";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { generateAddress, LAMPORTS_PER_SOL } from "./util";
 
-test("infinite usdc mint", () => {
-	const owner = PublicKey.unique();
-	const usdcMint = new PublicKey(
-		"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-	);
-	const ata = getAssociatedTokenAddressSync(usdcMint, owner, true);
-	const usdcToOwn = 1_000_000_000_000n;
-	const tokenAccData = Buffer.alloc(ACCOUNT_SIZE);
-	AccountLayout.encode(
-		{
-			mint: usdcMint,
-			owner,
-			amount: usdcToOwn,
-			delegateOption: 0,
-			delegate: PublicKey.default,
-			delegatedAmount: 0n,
-			state: 1,
-			isNativeOption: 0,
-			isNative: 0n,
-			closeAuthorityOption: 0,
-			closeAuthority: PublicKey.default,
-		},
-		tokenAccData,
-	);
+test("infinite usdc mint", async () => {
+	// Given the following addresses and signers.
+	const [payer, owner] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
+	const usdcMint = address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+
+	// And a LiteSVM client such that the payer has some balance.
 	const svm = new LiteSVM();
-	svm.setAccount(ata, {
-		lamports: 1_000_000_000,
-		data: tokenAccData,
-		owner: TOKEN_PROGRAM_ID,
-		executable: false,
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+
+	// Add the following associated token account for the owner.
+	const [ata] = await findAssociatedTokenPda({
+		owner,
+		mint: usdcMint,
+		tokenProgram: TOKEN_PROGRAM_ADDRESS,
 	});
-	const rawAccount = svm.getAccount(ata);
-	assert.notStrictEqual(rawAccount, null);
-	const rawAccountData = rawAccount?.data;
-	const decoded = AccountLayout.decode(rawAccountData);
-	assert.strictEqual(decoded.amount, usdcToOwn);
+
+	// And the following token account data.
+	const tokenAccountData: Token = {
+		mint: usdcMint,
+		owner,
+		amount: 1_000_000_000_000n,
+		delegate: none(),
+		state: AccountState.Initialized,
+		isNative: none(),
+		delegatedAmount: 0n,
+		closeAuthority: none(),
+	};
+	const encodedTokenAccountData = getTokenEncoder().encode(tokenAccountData);
+
+	// When we set that associated token account on the LiteSVM.
+	svm.setAccount({
+		address: ata,
+		lamports: lamports(LAMPORTS_PER_SOL),
+		programAddress: TOKEN_PROGRAM_ADDRESS,
+		executable: false,
+		data: encodedTokenAccountData,
+		space: BigInt(encodedTokenAccountData.length),
+	});
+
+	// Then we can fetch the account and it matches what we set.
+	const fetchedAccount = decodeAccount(svm.getAccount(ata), getTokenDecoder());
+	assertAccountExists(fetchedAccount);
+	assert.deepStrictEqual(fetchedAccount.data, tokenAccountData);
 });

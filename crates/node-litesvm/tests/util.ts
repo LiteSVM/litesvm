@@ -1,71 +1,74 @@
-import { ComputeBudget, LiteSVM } from "../litesvm";
 import {
+	AccountRole,
 	Address,
+	appendTransactionMessageInstructions,
+	createTransactionMessage,
 	generateKeyPairSigner,
+	getStructDecoder,
+	getU32Decoder,
+	Instruction,
 	lamports,
-	Lamports,
+	pipe,
+	SendableTransaction,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
+	Transaction,
+	TransactionSigner,
+	TransactionWithLifetime,
 } from "@solana/kit";
-import { readFileSync } from "node:fs";
+import { ComputeBudget, LiteSVM } from "../litesvm";
 
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+export async function getSignedTransaction(
+	svm: LiteSVM,
+	payer: TransactionSigner,
+	instructions?: Instruction[],
+): Promise<SendableTransaction & Transaction & TransactionWithLifetime> {
+	return await pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => (instructions ? appendTransactionMessageInstructions(instructions, tx) : tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash(svm.latestBlockhashLifetime(), tx),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
+}
 
 export async function generateAddress() {
 	return (await generateKeyPairSigner()).address;
 }
 
-export function getLamports(svm: LiteSVM, address: Address): Lamports | null {
-	const acc = svm.getAccount(address);
-	return acc === null ? null : acc.lamports;
-}
+export const setComputeUnitLimit = (computeUnitLimit: bigint) => (svm: LiteSVM) => {
+	const computeBudget = new ComputeBudget();
+	computeBudget.computeUnitLimit = computeUnitLimit;
+	return svm.withComputeBudget(computeBudget);
+};
 
-export async function helloworldProgram(
-	computeMaxUnits?: bigint,
-): Promise<[LiteSVM, Address, Address]> {
-	const [programAddress, greetedAddress] = await Promise.all([
-		generateAddress(),
-		generateAddress(),
-	]);
-	let svm = new LiteSVM();
-	if (computeMaxUnits) {
-		const computeBudget = new ComputeBudget();
-		computeBudget.computeUnitLimit = computeMaxUnits;
-		svm = svm.withComputeBudget(computeBudget);
-	}
-	const data = new Uint8Array([0, 0, 0, 0]);
-	svm.setAccount(greetedAddress, {
-		executable: false,
-		programAddress: programAddress,
-		lamports: lamports(1000000000n),
-		data,
-		space: BigInt(data.length),
-	});
+export const setHelloWorldProgram = (programAddress: Address) => (svm: LiteSVM) =>
 	svm.addProgramFromFile(programAddress, "program_bytes/counter.so");
-	return [svm, programAddress, greetedAddress];
+
+export const setHelloWorldAccount =
+	(address: Address, programAddress: Address) => (svm: LiteSVM) => {
+		const initialData = new Uint8Array([0, 0, 0, 0]);
+		return svm.setAccount({
+			address,
+			executable: false,
+			programAddress: programAddress,
+			lamports: lamports(LAMPORTS_PER_SOL),
+			data: initialData,
+			space: BigInt(initialData.length),
+		});
+	};
+
+export function getGreetInstruction(greetedAddress: Address, programAddress: Address): Instruction {
+	return {
+		accounts: [{ address: greetedAddress, role: AccountRole.WRITABLE }],
+		programAddress,
+		data: new Uint8Array([0]),
+	};
 }
 
-/* TODO: Combine helpers whilst testing both functions. I.e. unwrap second one. */
-export async function helloworldProgramViaSetAccount(
-	computeMaxUnits?: bigint,
-): Promise<[LiteSVM, Address, Address]> {
-	const [programAddress, greetedAddress] = await Promise.all([
-		generateAddress(),
-		generateAddress(),
-	]);
-	let svm = new LiteSVM();
-	if (computeMaxUnits) {
-		const computeBudget = new ComputeBudget();
-		computeBudget.computeUnitLimit = computeMaxUnits;
-		svm = svm.withComputeBudget(computeBudget);
-	}
-	const data = new Uint8Array([0, 0, 0, 0]);
-	svm.setAccount(greetedAddress, {
-		executable: false,
-		programAddress,
-		lamports: lamports(1000000000n),
-		data,
-		space: BigInt(data.length),
-	});
-	const programBytes = readFileSync("program_bytes/counter.so");
-	svm.addProgram(programAddress, programBytes);
-	return [svm, programAddress, greetedAddress];
+export function getCounterDecoder() {
+	return getStructDecoder([["count", getU32Decoder()]]);
 }

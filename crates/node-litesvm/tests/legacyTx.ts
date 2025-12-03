@@ -1,9 +1,14 @@
 import {
+	appendTransactionMessageInstruction,
 	assertAccountExists,
+	createTransactionMessage,
 	decodeAccount,
+	generateKeyPairSigner,
 	lamports,
-	SignatureBytes,
-	TransactionPartialSigner,
+	pipe,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { LiteSVM } from "index";
 import assert from "node:assert/strict";
@@ -12,34 +17,22 @@ import {
 	generateAddress,
 	getCounterDecoder,
 	getGreetInstruction,
-	getSignedTransaction,
 	LAMPORTS_PER_SOL,
 	setHelloWorldAccount,
 	setHelloWorldProgram,
 } from "./util";
 
-test("test sigverify", async () => {
-	// Given the following addresses.
-	const [fakePayerAddress, programAddress, greetedAddress] = await Promise.all([
-		generateAddress(),
+test("legacy tx", async () => {
+	// Given the following addresses and signers.
+	const [payer, programAddress, greetedAddress] = await Promise.all([
+		generateKeyPairSigner(),
 		generateAddress(),
 		generateAddress(),
 	]);
 
-	// And the following fake payer that provides an invalid signature.
-	const fakePayer: TransactionPartialSigner = {
-		address: fakePayerAddress,
-		signTransactions: async (transactions) =>
-			transactions.map(() => ({
-				// Adds an invalid signature (all zeros) for the fake payer.
-				[fakePayerAddress]: new Uint8Array(64).fill(42) as SignatureBytes,
-			})),
-	};
-
-	// And a LiteSVM client with sigverify disabled.
+	// And a LiteSVM client with a hello world program and greeted account set up.
 	const svm = new LiteSVM()
-		.withSigverify(false)
-		.tap((svm) => svm.airdrop(fakePayer.address, lamports(LAMPORTS_PER_SOL)))
+		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
 		.tap(setHelloWorldProgram(programAddress))
 		.tap(setHelloWorldAccount(greetedAddress, programAddress));
 
@@ -49,11 +42,16 @@ test("test sigverify", async () => {
 	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
 	assert.deepStrictEqual(greetedAccountBefore.lamports, lamports(LAMPORTS_PER_SOL));
 
-	// When we send a greet instruction signed by the fake payer.
-	const transaction = await getSignedTransaction(svm, fakePayer, [
-		getGreetInstruction(greetedAddress, programAddress),
-	]);
-	const result = svm.sendTransaction(transaction);
+	// When we send a greet instruction using a legacy transaction.
+	const transaction = await pipe(
+		createTransactionMessage({ version: "legacy" }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) =>
+			appendTransactionMessageInstruction(getGreetInstruction(programAddress, greetedAddress), tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash(svm.latestBlockhashLifetime(), tx),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
+	svm.sendTransaction(transaction);
 
 	// Then the greeted account has 1 greet.
 	const greetedAccountAfter = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());

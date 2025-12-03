@@ -1,81 +1,43 @@
-import {
-	appendTransactionMessageInstruction,
-	createTransactionMessage,
-	generateKeyPairSigner,
-	lamports,
-	pipe,
-	setTransactionMessageFeePayerSigner,
-	setTransactionMessageLifetimeUsingBlockhash,
-	signTransactionMessageWithSigners,
-} from "@solana/kit";
-import {
-	FailedTransactionMetadata,
-	LiteSVM,
-	TransactionMetadata,
-} from "litesvm";
+import { generateKeyPairSigner, lamports } from "@solana/kit";
+import { FailedTransactionMetadata, LiteSVM, TransactionMetadata } from "litesvm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { generateAddress, LAMPORTS_PER_SOL } from "./util";
+import { generateAddress, getSignedTransaction, LAMPORTS_PER_SOL } from "./util";
 
 test("clock", async () => {
-	const programAddress = await generateAddress();
-	const svm = new LiteSVM();
-	svm.addProgramFromFile(
-		programAddress,
-		"program_bytes/litesvm_clock_example.so",
-	);
-	const payer = await generateKeyPairSigner();
-	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	// Given the following addresses and signers.
+	const [payer, programAddress] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
 
-	const firstTransaction = await pipe(
-		createTransactionMessage({ version: 0 }),
-		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => appendTransactionMessageInstruction({ programAddress }, tx),
-		(tx) =>
-			setTransactionMessageLifetimeUsingBlockhash(
-				{ blockhash: svm.latestBlockhash(), lastValidBlockHeight: 0n },
-				tx,
-			),
-		(tx) => signTransactionMessageWithSigners(tx),
-	);
+	// And a LiteSVM client with a hello world program loaded from `litesvm_clock_example.so`.
+	const svm = new LiteSVM()
+		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
+		.addProgramFromFile(programAddress, "program_bytes/litesvm_clock_example.so");
 
-	// set the time to January 1st 2000
+	// And given two unique transactions.
+	const [firstTransaction, secondTransaction] = await Promise.all([
+		getSignedTransaction(svm, payer, [{ programAddress, data: new Uint8Array([0]) }]),
+		getSignedTransaction(svm, payer, [{ programAddress, data: new Uint8Array([1]) }]),
+	]);
+
+	// When we set the time to January 1st 2000 and send the first transaction.
 	const initialClock = svm.getClock();
 	initialClock.unixTimestamp = 1735689600n;
 	svm.setClock(initialClock);
-	// this will fail because the contract wants it to be January 1970
-	const failed = svm.sendTransaction(firstTransaction);
-	if (failed instanceof FailedTransactionMetadata) {
-		assert.ok(failed.err().toString().includes("ProgramFailedToComplete"));
+	const firstResult = svm.sendTransaction(firstTransaction);
+
+	// Then it fails because the contract wants it to be January 1970.
+	if (firstResult instanceof FailedTransactionMetadata) {
+		assert.ok(firstResult.err().toString().includes("ProgramFailedToComplete"));
 	} else {
 		throw new Error("Expected transaction failure here");
 	}
 
-	// so let's turn back time
+	// When we set the time to January 1st 1970 and send the second transaction.
 	const newClock = svm.getClock();
 	newClock.unixTimestamp = 50n;
 	svm.setClock(newClock);
+	const secondResult = svm.sendTransaction(secondTransaction);
 
-	const secondTransaction = await pipe(
-		createTransactionMessage({ version: 0 }),
-		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) =>
-			appendTransactionMessageInstruction(
-				{
-					programAddress,
-					data: new Uint8Array([1]), // Unused, just here to dedup the transaction.
-				},
-				tx,
-			),
-		(tx) =>
-			setTransactionMessageLifetimeUsingBlockhash(
-				{ blockhash: svm.latestBlockhash(), lastValidBlockHeight: 0n },
-				tx,
-			),
-		(tx) => signTransactionMessageWithSigners(tx),
-	);
-
-	// now the transaction goes through
-	const success = svm.sendTransaction(secondTransaction);
-	assert.ok(success instanceof TransactionMetadata);
+	// Then it succeeds.
+	assert.ok(secondResult instanceof TransactionMetadata);
 });

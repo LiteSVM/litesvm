@@ -1,52 +1,42 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { FailedTransactionMetadata } from "litesvm";
-import { helloworldProgram, LAMPORTS_PER_SOL } from "./util";
+import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { TransactionErrorFieldless } from "internal";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm";
+import assert from "node:assert/strict";
+import { test } from "node:test";
 import {
-	AccountRole,
-	appendTransactionMessageInstruction,
-	createTransactionMessage,
-	generateKeyPairSigner,
-	Instruction,
-	lamports,
-	pipe,
-	setTransactionMessageFeePayerSigner,
-	setTransactionMessageLifetimeUsingBlockhash,
-	signTransactionMessageWithSigners,
-} from "@solana/kit";
+	generateAddress,
+	getGreetInstruction,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+	setComputeUnitLimit,
+	setHelloWorldAccount,
+	setHelloWorldProgram,
+} from "./util";
 
 test("compute limit", async () => {
-	const [svm, programAddress, greetedAddress] = await helloworldProgram(10n);
-	const ix: Instruction = {
-		accounts: [{ address: greetedAddress, role: AccountRole.WRITABLE }],
-		programAddress: programAddress,
-		data: new Uint8Array([0]),
-	};
-	const payer = await generateKeyPairSigner();
-	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
-	const greetedAccountBefore = svm.getAccount(greetedAddress);
-	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(
-		greetedAccountBefore.data,
-		new Uint8Array([0, 0, 0, 0]),
-	);
+	// Given the following addresses and signers.
+	const [payer, programAddress, greetedAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+		generateAddress(),
+	]);
 
-	const transaction = await pipe(
-		createTransactionMessage({ version: 0 }),
-		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => appendTransactionMessageInstruction(ix, tx),
-		(tx) =>
-			setTransactionMessageLifetimeUsingBlockhash(
-				{ blockhash: svm.latestBlockhash(), lastValidBlockHeight: 0n },
-				tx,
-			),
-		(tx) => signTransactionMessageWithSigners(tx),
-	);
+	// And a LiteSVM client with a CU limit set to 10.
+	const svm = new LiteSVM()
+		.tap(setComputeUnitLimit(10n))
+		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
+		.tap(setHelloWorldProgram(programAddress))
+		.tap(setHelloWorldAccount(greetedAddress, programAddress));
 
-	const res = svm.sendTransaction(transaction);
-	if (res instanceof FailedTransactionMetadata) {
-		assert.strictEqual(res.err(), TransactionErrorFieldless.AccountNotFound);
+	// When we send a greet instruction which uses more than 10 compute units.
+	const transaction = await getSignedTransaction(svm, payer, [
+		getGreetInstruction(greetedAddress, programAddress),
+	]);
+	const result = svm.sendTransaction(transaction);
+
+	// Then we expect it to fail.
+	if (result instanceof FailedTransactionMetadata) {
+		assert.strictEqual(result.err(), TransactionErrorFieldless.AccountNotFound);
 	} else {
 		throw new Error("Expected transaction failure");
 	}

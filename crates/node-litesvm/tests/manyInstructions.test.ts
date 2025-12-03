@@ -1,40 +1,47 @@
-import { test } from "node:test";
+import { assertAccountExists, decodeAccount, generateKeyPairSigner, lamports } from "@solana/kit";
+import { LiteSVM } from "index";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import {
+	generateAddress,
+	getCounterDecoder,
+	getGreetInstruction,
+	getSignedTransaction,
 	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
-import { helloworldProgram } from "./util";
+	setHelloWorldAccount,
+	setHelloWorldProgram,
+} from "./util";
 
-test("many instructions", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
-	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(
-		greetedAccountBefore?.data,
-		new Uint8Array([0, 0, 0, 0]),
+const NUMBER_OF_INSTRUCTIONS = 64;
+
+test("many instructions", async () => {
+	// Given the following addresses and signers.
+	const [payer, programAddress, greetedAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+		generateAddress(),
+	]);
+
+	// And a LiteSVM client with a hello world program and greeted account set up.
+	const svm = new LiteSVM()
+		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
+		.tap(setHelloWorldProgram(programAddress))
+		.tap(setHelloWorldAccount(greetedAddress, programAddress));
+
+	// And given the greeted account has 0 greets.
+	const greetedAccountBefore = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	assertAccountExists(greetedAccountBefore);
+	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
+
+	// When we send a transaction with many greet instructions.
+	const instructions = Array(NUMBER_OF_INSTRUCTIONS).fill(
+		getGreetInstruction(greetedAddress, programAddress),
 	);
-	const numIxs = 64;
-	const ixs = Array(numIxs).fill(ix);
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
-	const greetedAccountAfter = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(
-		greetedAccountAfter?.data,
-		new Uint8Array([64, 0, 0, 0]),
-	);
+	const transaction = await getSignedTransaction(svm, payer, instructions);
+	svm.sendTransaction(transaction);
+
+	// Then we expect the greeted account to have been greeted many times.
+	const greetedAccountAfter = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	assertAccountExists(greetedAccountAfter);
+	assert.deepStrictEqual(greetedAccountAfter.data.count, NUMBER_OF_INSTRUCTIONS);
 });

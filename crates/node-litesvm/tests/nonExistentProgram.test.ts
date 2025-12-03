@@ -1,34 +1,28 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { LiteSVM, FailedTransactionMetadata } from "litesvm";
-import {
-	PublicKey,
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
+import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { TransactionErrorFieldless } from "internal";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { generateAddress, getSignedTransaction, LAMPORTS_PER_SOL } from "./util";
 
-test("non-existent program", () => {
+test("non-existent program", async () => {
+	// Given the following addresses and signers.
+	const [payer, programAddress] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
+
+	// And a LiteSVM client with no loaded programs.
 	const svm = new LiteSVM();
-	const ix = new TransactionInstruction({
-		data: Buffer.alloc(1),
-		keys: [],
-		programId: PublicKey.unique(),
-	});
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const tx = new Transaction().add(ix);
-	tx.recentBlockhash = svm.latestBlockhash();
-	tx.sign(payer);
-	const res = svm.sendTransaction(tx);
-	if (res instanceof FailedTransactionMetadata) {
-		const err = res.err();
-		assert.strictEqual(
-			err,
-			TransactionErrorFieldless.InvalidProgramForExecution,
-		);
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+
+	// When we try to send a transaction to a non-existent program.
+	const transaction = await getSignedTransaction(svm, payer, [
+		{ data: new Uint8Array([0]), programAddress },
+	]);
+	const result = svm.sendTransaction(transaction);
+
+	// Then we expect it to fail.
+	if (result instanceof FailedTransactionMetadata) {
+		const err = result.err();
+		assert.strictEqual(err, TransactionErrorFieldless.InvalidProgramForExecution);
 	} else {
 		throw new Error("Expected transaction failure");
 	}

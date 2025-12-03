@@ -1,56 +1,44 @@
-import { test } from "node:test";
+import { assertAccountExists, decodeAccount, generateKeyPairSigner, lamports } from "@solana/kit";
+import { LiteSVM } from "index";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
 import {
-	AccountRole,
-	appendTransactionMessageInstruction,
-	createTransactionMessage,
-	generateKeyPairSigner,
-	Instruction,
-	lamports,
-	pipe,
-	setTransactionMessageFeePayerSigner,
-	setTransactionMessageLifetimeUsingBlockhash,
-	signTransactionMessageWithSigners,
-} from "@solana/kit";
-import { helloworldProgramViaSetAccount, LAMPORTS_PER_SOL } from "./util";
+	generateAddress,
+	getCounterDecoder,
+	getGreetInstruction,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+	setHelloWorldAccount,
+} from "./util";
 
 test("add program via setAccount", async () => {
-	const [svm, programId, greetedPubkey] =
-		await helloworldProgramViaSetAccount();
-	const payer = await generateKeyPairSigner();
-	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
-	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(
-		greetedAccountBefore?.data,
-		new Uint8Array([0, 0, 0, 0]),
-	);
+	// Given the following addresses and signers.
+	const [payer, programAddress, greetedAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+		generateAddress(),
+	]);
 
-	const instruction: Instruction = {
-		accounts: [{ address: greetedPubkey, role: AccountRole.WRITABLE }],
-		programAddress: programId,
-		data: Buffer.from([0]),
-	};
+	// And a LiteSVM client with a hello world program loaded using `addProgram`.
+	const svm = new LiteSVM()
+		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
+		.tap(setHelloWorldAccount(greetedAddress, programAddress))
+		.addProgram(programAddress, readFileSync("program_bytes/counter.so"));
 
-	const transaction = await pipe(
-		createTransactionMessage({ version: 0 }),
-		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => appendTransactionMessageInstruction(instruction, tx),
-		(tx) =>
-			setTransactionMessageLifetimeUsingBlockhash(
-				{ blockhash, lastValidBlockHeight: 0n },
-				tx,
-			),
-		(tx) => signTransactionMessageWithSigners(tx),
-	);
+	// And given the greeted account has 0 greets.
+	const greetedAccountBefore = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	assertAccountExists(greetedAccountBefore);
+	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
 
+	// When we send a greet instruction.
+	const transaction = await getSignedTransaction(svm, payer, [
+		getGreetInstruction(greetedAddress, programAddress),
+	]);
 	svm.sendTransaction(transaction);
 
-	const greetedAccountAfter = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(
-		greetedAccountAfter?.data,
-		new Uint8Array([1, 0, 0, 0]),
-	);
+	// Then the greeted account has 1 greet.
+	const greetedAccountAfter = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	assertAccountExists(greetedAccountAfter);
+	assert.deepStrictEqual(greetedAccountAfter.data.count, 1);
 });

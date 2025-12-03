@@ -1,17 +1,13 @@
-import { test } from "node:test";
+import { Clock, LiteSVM, Rent } from "litesvm";
 import assert from "node:assert/strict";
-import { LiteSVM, Rent, Clock } from "litesvm";
+import { test } from "node:test";
 
 test("sysvar", () => {
 	const svm = new LiteSVM();
 	const rentBefore = svm.getRent();
 	assert.strictEqual(rentBefore.burnPercent, 50);
 	assert.strictEqual(rentBefore.minimumBalance(123n), 1746960n);
-	const newRent = new Rent(
-		rentBefore.lamportsPerByteYear,
-		rentBefore.exemptionThreshold,
-		0,
-	);
+	const newRent = new Rent(rentBefore.lamportsPerByteYear, rentBefore.exemptionThreshold, 0);
 	svm.setRent(newRent);
 	const rentAfter = svm.getRent();
 	assert.strictEqual(rentAfter.burnPercent, 0);
