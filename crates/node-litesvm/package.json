@@ -19,14 +19,13 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"@solana/web3.js": "^1.98.4",
-		"fastestsmallesttextencoderdecoder": "^1.0.22"
+		"@solana-program/system": "^0.10.0",
+		"@solana-program/token": "^0.9.0",
+		"@solana/kit": "^5.0.0"
 	},
 	"devDependencies": {
 		"@algolia/client-search": "^5.45.0",
 		"@napi-rs/cli": "^3.4.1",
-		"@solana/spl-token": "^0.4.14",
-		"@types/fastestsmallesttextencoderdecoder": "^1.0.2",
 		"@types/markdown-it": "^14.1.2",
 		"@types/node": "22.19.1",
 		"@types/node-fetch": "^2.6.13",
