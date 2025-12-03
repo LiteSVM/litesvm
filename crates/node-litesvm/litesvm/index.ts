@@ -34,41 +34,43 @@ export {
 	TransactionReturnData,
 } from "./internal";
 import {
-	AccountInfo,
-	PublicKey,
+	Address,
+	assertIsFullySignedTransaction,
+	Blockhash,
+	EncodedAccount,
+	getAddressCodec,
+	getTransactionEncoder,
+	getTransactionVersionDecoder,
+	Lamports,
+	lamports,
 	Transaction,
-	VersionedTransaction,
-} from "@solana/web3.js";
+} from "@solana/kit";
 
-export type AccountInfoBytes = AccountInfo<Uint8Array>;
+export type AccountInfoBytes = Omit<EncodedAccount, "address">;
 
 function toAccountInfo(acc: Account): AccountInfoBytes {
-	const owner = new PublicKey(acc.owner());
+	const data = acc.data();
 	return {
 		executable: acc.executable(),
-		owner,
-		lamports: Number(acc.lamports()),
-		data: acc.data(),
-		rentEpoch: Number(acc.rentEpoch()),
+		lamports: lamports(acc.lamports()),
+		programAddress: getAddressCodec().decode(acc.owner()),
+		space: BigInt(data.length),
+		data,
 	};
 }
 
 function fromAccountInfo(acc: AccountInfoBytes): Account {
-	const maybeRentEpoch = acc.rentEpoch;
-	const rentEpoch = maybeRentEpoch || 0;
 	return new Account(
 		BigInt(acc.lamports),
-		acc.data,
-		acc.owner.toBytes(),
+		acc.data as Uint8Array,
+		getAddressCodec().encode(acc.programAddress) as Uint8Array,
 		acc.executable,
-		BigInt(rentEpoch),
+		0n, // rentEpoch was removed from the RPC spec and Kit.
 	);
 }
 
-function convertAddressAndAccount(
-	val: AddressAndAccount,
-): [PublicKey, Account] {
-	return [new PublicKey(val.address), val.account()];
+function convertAddressAndAccount(val: AddressAndAccount): [Address, Account] {
+	return [getAddressCodec().decode(val.address), val.account()];
 }
 
 export class SimulatedTransactionInfo {
@@ -79,7 +81,7 @@ export class SimulatedTransactionInfo {
 	meta(): TransactionMetadata {
 		return this.inner.meta();
 	}
-	postAccounts(): [PublicKey, Account][] {
+	postAccounts(): [Address, Account][] {
 		return this.inner.postAccounts().map(convertAddressAndAccount);
 	}
 }
@@ -227,8 +229,10 @@ export class LiteSVM {
 	 * @param address - The account address to look up.
 	 * @returns The account object, if the account exists.
 	 */
-	getAccount(address: PublicKey): AccountInfoBytes | null {
-		const inner = this.inner.getAccount(address.toBytes());
+	getAccount(address: Address): AccountInfoBytes | null {
+		const inner = this.inner.getAccount(
+			getAddressCodec().encode(address) as Uint8Array,
+		);
 		return inner === null ? null : toAccountInfo(inner);
 	}
 
@@ -243,8 +247,11 @@ export class LiteSVM {
 	 * @param address - The address to write to.
 	 * @param account - The account object to write.
 	 */
-	setAccount(address: PublicKey, account: AccountInfoBytes) {
-		this.inner.setAccount(address.toBytes(), fromAccountInfo(account));
+	setAccount(address: Address, account: AccountInfoBytes) {
+		this.inner.setAccount(
+			getAddressCodec().encode(address) as Uint8Array,
+			fromAccountInfo(account),
+		);
 	}
 
 	/**
@@ -252,8 +259,10 @@ export class LiteSVM {
 	 * @param address - The account address.
 	 * @returns The account's balance in lamports.
 	 */
-	getBalance(address: PublicKey): bigint | null {
-		return this.inner.getBalance(address.toBytes());
+	getBalance(address: Address): bigint | null {
+		return this.inner.getBalance(
+			getAddressCodec().encode(address) as Uint8Array,
+		);
 	}
 
 	/**
@@ -261,8 +270,8 @@ export class LiteSVM {
 	 * Since LiteSVM doesn't have blocks, this is an arbitrary value controlled by LiteSVM
 	 * @returns The designated latest blockhash.
 	 */
-	latestBlockhash(): string {
-		return this.inner.latestBlockhash();
+	latestBlockhash(): Blockhash {
+		return this.inner.latestBlockhash() as Blockhash;
 	}
 
 	/**
@@ -283,10 +292,13 @@ export class LiteSVM {
 	 * @returns The transaction result.
 	 */
 	airdrop(
-		address: PublicKey,
-		lamports: bigint,
+		address: Address,
+		lamports: Lamports,
 	): TransactionMetadata | FailedTransactionMetadata | null {
-		return this.inner.airdrop(address.toBytes(), lamports);
+		return this.inner.airdrop(
+			getAddressCodec().encode(address) as Uint8Array,
+			lamports,
+		);
 	}
 
 	/**
@@ -294,8 +306,11 @@ export class LiteSVM {
 	 * @param programId - The program ID.
 	 * @param path - The path to the .so file.
 	 */
-	addProgramFromFile(programId: PublicKey, path: string) {
-		return this.inner.addProgramFromFile(programId.toBytes(), path);
+	addProgramFromFile(programId: Address, path: string) {
+		return this.inner.addProgramFromFile(
+			getAddressCodec().encode(programId) as Uint8Array,
+			path,
+		);
 	}
 
 	/**
@@ -303,8 +318,11 @@ export class LiteSVM {
 	 * @param programId - The program ID.
 	 * @param programBytes - The raw bytes of the compiled program.
 	 */
-	addProgram(programId: PublicKey, programBytes: Uint8Array) {
-		return this.inner.addProgram(programId.toBytes(), programBytes);
+	addProgram(programId: Address, programBytes: Uint8Array) {
+		return this.inner.addProgram(
+			getAddressCodec().encode(programId) as Uint8Array,
+			programBytes,
+		);
 	}
 
 	/**
@@ -313,18 +331,24 @@ export class LiteSVM {
 	 * @returns TransactionMetadata if the transaction succeeds, else FailedTransactionMetadata
 	 */
 	sendTransaction(
-		tx: Transaction | VersionedTransaction,
+		tx: Transaction,
 	): TransactionMetadata | FailedTransactionMetadata {
 		const internal = this.inner;
-		const serialized = tx.serialize({
-			requireAllSignatures: true,
-			verifySignatures: internal.getSigverify(),
-		});
+		if (internal.getSigverify()) {
+			assertIsFullySignedTransaction(tx);
+		}
 
-		if (tx instanceof Transaction) {
-			return internal.sendLegacyTransaction(serialized);
-		} else {
-			return internal.sendVersionedTransaction(serialized);
+		// The version is located at the beginning of the message bytes.
+		const version = getTransactionVersionDecoder().decode(tx.messageBytes);
+		const serialized = getTransactionEncoder().encode(tx) as Uint8Array;
+
+		switch (version) {
+			case "legacy":
+				return internal.sendLegacyTransaction(serialized);
+			case 0:
+				return internal.sendVersionedTransaction(serialized);
+			default:
+				throw new Error(`Unsupported transaction version: ${version}`);
 		}
 	}
 
@@ -334,20 +358,33 @@ export class LiteSVM {
 	 * @returns SimulatedTransactionInfo if simulation succeeds, else FailedTransactionMetadata
 	 */
 	simulateTransaction(
-		tx: Transaction | VersionedTransaction,
+		tx: Transaction,
 	): FailedTransactionMetadata | SimulatedTransactionInfo {
 		const internal = this.inner;
-		const serialized = tx.serialize({
-			requireAllSignatures: true,
-			verifySignatures: internal.getSigverify(),
-		});
-		const inner =
-			tx instanceof Transaction
-				? internal.simulateLegacyTransaction(serialized)
-				: internal.simulateVersionedTransaction(serialized);
-		return inner instanceof FailedTransactionMetadata
-			? inner
-			: new SimulatedTransactionInfo(inner);
+		if (internal.getSigverify()) {
+			assertIsFullySignedTransaction(tx);
+		}
+
+		// The version is located at the beginning of the message bytes.
+		const version = getTransactionVersionDecoder().decode(tx.messageBytes);
+		const serialized = getTransactionEncoder().encode(tx) as Uint8Array;
+
+		const inner = (() => {
+			switch (version) {
+				case "legacy":
+					return internal.simulateLegacyTransaction(serialized);
+				case 0:
+					return internal.simulateVersionedTransaction(serialized);
+				default:
+					throw new Error(`Unsupported transaction version: ${version}`);
+			}
+		})();
+
+		if (inner instanceof FailedTransactionMetadata) {
+			return inner;
+		}
+
+		return new SimulatedTransactionInfo(inner);
 	}
 
 	/**
