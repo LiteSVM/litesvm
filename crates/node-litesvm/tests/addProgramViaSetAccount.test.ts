@@ -1,17 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
-import { helloworldProgramViaSetAccount } from "./util";
+	AccountRole,
+	appendTransactionMessageInstruction,
+	createTransactionMessage,
+	generateKeyPairSigner,
+	Instruction,
+	lamports,
+	pipe,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
+} from "@solana/kit";
+import { helloworldProgramViaSetAccount, LAMPORTS_PER_SOL } from "./util";
 
-test("add program via setAccount", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgramViaSetAccount();
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
+test("add program via setAccount", async () => {
+	const [svm, programId, greetedPubkey] =
+		await helloworldProgramViaSetAccount();
+	const payer = await generateKeyPairSigner();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
 	const greetedAccountBefore = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountBefore, null);
@@ -19,16 +26,27 @@ test("add program via setAccount", () => {
 		greetedAccountBefore?.data,
 		new Uint8Array([0, 0, 0, 0]),
 	);
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
+
+	const instruction: Instruction = {
+		accounts: [{ address: greetedPubkey, role: AccountRole.WRITABLE }],
+		programAddress: programId,
 		data: Buffer.from([0]),
-	});
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(ix);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
+	};
+
+	const transaction = await pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => appendTransactionMessageInstruction(instruction, tx),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				{ blockhash, lastValidBlockHeight: 0n },
+				tx,
+			),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
+
+	svm.sendTransaction(transaction);
+
 	const greetedAccountAfter = svm.getAccount(greetedPubkey);
 	assert.notStrictEqual(greetedAccountAfter, null);
 	assert.deepStrictEqual(

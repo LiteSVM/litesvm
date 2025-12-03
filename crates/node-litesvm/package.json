@@ -39,7 +39,8 @@
 		"typedoc-plugin-markdown": "^4.9.0",
 		"typedoc-vitepress-theme": "^1.1.2",
 		"typescript": "^5.9.3",
-		"vitepress": "^1.6.4"
+		"vitepress": "^1.6.4",
+		"ws": "^8.18.0"
 	},
 	"engines": {
 		"node": ">= 20"
