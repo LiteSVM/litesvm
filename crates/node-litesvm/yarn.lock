@@ -854,6 +854,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lorisleiva/litesvm-kit@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@lorisleiva/litesvm-kit@workspace:."
+  dependencies:
+    "@algolia/client-search": "npm:^5.45.0"
+    "@napi-rs/cli": "npm:^3.4.1"
+    "@solana/spl-token": "npm:^0.4.14"
+    "@solana/web3.js": "npm:^1.98.4"
+    "@types/fastestsmallesttextencoderdecoder": "npm:^1.0.2"
+    "@types/markdown-it": "npm:^14.1.2"
+    "@types/node": "npm:22.19.1"
+    "@types/node-fetch": "npm:^2.6.13"
+    fastestsmallesttextencoderdecoder: "npm:^1.0.22"
+    markdown-it: "npm:^14.1.0"
+    markdown-it-include: "npm:^2.0.0"
+    rome: "npm:^12.1.3"
+    search-insights: "npm:^2.17.3"
+    ts-node: "npm:^10.9.2"
+    tsconfig-paths: "npm:^4.2.0"
+    typedoc: "npm:^0.28.15"
+    typedoc-plugin-markdown: "npm:^4.9.0"
+    typedoc-vitepress-theme: "npm:^1.1.2"
+    typescript: "npm:^5.9.3"
+    vitepress: "npm:^1.6.4"
+  languageName: unknown
+  linkType: soft
+
 "@napi-rs/cli@npm:^3.4.1":
   version: 3.4.1
   resolution: "@napi-rs/cli@npm:3.4.1"
@@ -3656,33 +3683,6 @@ __metadata:
   checksum: 10c0/ff4abbcdfa2003472fc3eb4b8e60905ec97718e11e33cca52059919a4c80cc0e0c2a14d23e23d8c00e5402bc5a885cdba8ca053a11483ab3cc8b3c7a52f88e2d
   languageName: node
   linkType: hard
-
-"litesvm@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "litesvm@workspace:."
-  dependencies:
-    "@algolia/client-search": "npm:^5.45.0"
-    "@napi-rs/cli": "npm:^3.4.1"
-    "@solana/spl-token": "npm:^0.4.14"
-    "@solana/web3.js": "npm:^1.98.4"
-    "@types/fastestsmallesttextencoderdecoder": "npm:^1.0.2"
-    "@types/markdown-it": "npm:^14.1.2"
-    "@types/node": "npm:22.19.1"
-    "@types/node-fetch": "npm:^2.6.13"
-    fastestsmallesttextencoderdecoder: "npm:^1.0.22"
-    markdown-it: "npm:^14.1.0"
-    markdown-it-include: "npm:^2.0.0"
-    rome: "npm:^12.1.3"
-    search-insights: "npm:^2.17.3"
-    ts-node: "npm:^10.9.2"
-    tsconfig-paths: "npm:^4.2.0"
-    typedoc: "npm:^0.28.15"
-    typedoc-plugin-markdown: "npm:^4.9.0"
-    typedoc-vitepress-theme: "npm:^1.1.2"
-    typescript: "npm:^5.9.3"
-    vitepress: "npm:^1.6.4"
-  languageName: unknown
-  linkType: soft
 
 "lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0":
   version: 10.4.3
