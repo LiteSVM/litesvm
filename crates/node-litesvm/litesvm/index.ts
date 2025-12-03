@@ -50,8 +50,16 @@ export {
 	TransactionReturnData,
 } from "./internal";
 
-function convertAddressAndAccount(val: AddressAndAccount): [Address, Account] {
-	return [getAddressCodec().decode(val.address), val.account()];
+function toEncodedAccount(address: Address, account: Account): EncodedAccount {
+	const data = account.data();
+	return {
+		address,
+		executable: account.executable(),
+		lamports: lamports(account.lamports()),
+		programAddress: getAddressCodec().decode(account.owner()),
+		space: BigInt(data.length),
+		data,
+	};
 }
 
 export class SimulatedTransactionInfo {
@@ -62,8 +70,15 @@ export class SimulatedTransactionInfo {
 	meta(): TransactionMetadata {
 		return this.inner.meta();
 	}
-	postAccounts(): [Address, Account][] {
-		return this.inner.postAccounts().map(convertAddressAndAccount);
+	postAccounts(): EncodedAccount[] {
+		return this.inner
+			.postAccounts()
+			.map((addressAndAccount: AddressAndAccount) =>
+				toEncodedAccount(
+					getAddressCodec().decode(addressAndAccount.address),
+					addressAndAccount.account(),
+				),
+			);
 	}
 }
 
@@ -213,20 +228,9 @@ export class LiteSVM {
 	getAccount(address: Address): MaybeEncodedAccount {
 		const inner = this.inner.getAccount(getAddressCodec().encode(address) as Uint8Array);
 
-		if (inner === null) {
-			return { exists: false, address };
-		}
-
-		const data = inner.data();
-		return {
-			exists: true,
-			address,
-			executable: inner.executable(),
-			lamports: lamports(inner.lamports()),
-			programAddress: getAddressCodec().decode(inner.owner()),
-			space: BigInt(data.length),
-			data,
-		};
+		return inner === null
+			? { exists: false, address }
+			: ({ exists: true, ...toEncodedAccount(address, inner) } as MaybeEncodedAccount);
 	}
 
 	/**
