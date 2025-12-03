@@ -1,4 +1,20 @@
 import {
+	Address,
+	assertIsFullySignedTransaction,
+	Blockhash,
+	EncodedAccount,
+	getAddressCodec,
+	getBase58Encoder,
+	getTransactionEncoder,
+	getTransactionVersionDecoder,
+	Lamports,
+	lamports,
+	MaybeEncodedAccount,
+	Signature,
+	Transaction,
+	TransactionBlockhashLifetime,
+} from "@solana/kit";
+import {
 	Account,
 	AddressAndAccount,
 	Clock,
@@ -7,9 +23,9 @@ import {
 	EpochSchedule,
 	FailedTransactionMetadata,
 	FeatureSet,
-	SimulatedTransactionInfo as SimulatedTransactionInfoInner,
 	LiteSvm as LiteSVMInner,
 	Rent,
+	SimulatedTransactionInfo as SimulatedTransactionInfoInner,
 	SlotHash,
 	SlotHistory,
 	StakeHistory,
@@ -33,41 +49,6 @@ export {
 	TransactionMetadata,
 	TransactionReturnData,
 } from "./internal";
-import {
-	Address,
-	assertIsFullySignedTransaction,
-	Blockhash,
-	EncodedAccount,
-	getAddressCodec,
-	getTransactionEncoder,
-	getTransactionVersionDecoder,
-	Lamports,
-	lamports,
-	Transaction,
-} from "@solana/kit";
-
-export type AccountInfoBytes = Omit<EncodedAccount, "address">;
-
-function toAccountInfo(acc: Account): AccountInfoBytes {
-	const data = acc.data();
-	return {
-		executable: acc.executable(),
-		lamports: lamports(acc.lamports()),
-		programAddress: getAddressCodec().decode(acc.owner()),
-		space: BigInt(data.length),
-		data,
-	};
-}
-
-function fromAccountInfo(acc: AccountInfoBytes): Account {
-	return new Account(
-		BigInt(acc.lamports),
-		acc.data as Uint8Array,
-		getAddressCodec().encode(acc.programAddress) as Uint8Array,
-		acc.executable,
-		0n, // rentEpoch was removed from the RPC spec and Kit.
-	);
-}
 
 function convertAddressAndAccount(val: AddressAndAccount): [Address, Account] {
 	return [getAddressCodec().decode(val.address), val.account()];
@@ -229,11 +210,23 @@ export class LiteSVM {
 	 * @param address - The account address to look up.
 	 * @returns The account object, if the account exists.
 	 */
-	getAccount(address: Address): AccountInfoBytes | null {
-		const inner = this.inner.getAccount(
-			getAddressCodec().encode(address) as Uint8Array,
-		);
-		return inner === null ? null : toAccountInfo(inner);
+	getAccount(address: Address): MaybeEncodedAccount {
+		const inner = this.inner.getAccount(getAddressCodec().encode(address) as Uint8Array);
+
+		if (inner === null) {
+			return { exists: false, address };
+		}
+
+		const data = inner.data();
+		return {
+			exists: true,
+			address,
+			executable: inner.executable(),
+			lamports: lamports(inner.lamports()),
+			programAddress: getAddressCodec().decode(inner.owner()),
+			space: BigInt(data.length),
+			data,
+		};
 	}
 
 	/**
@@ -247,11 +240,18 @@ export class LiteSVM {
 	 * @param address - The address to write to.
 	 * @param account - The account object to write.
 	 */
-	setAccount(address: Address, account: AccountInfoBytes) {
+	setAccount(account: EncodedAccount): LiteSVM {
 		this.inner.setAccount(
-			getAddressCodec().encode(address) as Uint8Array,
-			fromAccountInfo(account),
+			getAddressCodec().encode(account.address) as Uint8Array,
+			new Account(
+				BigInt(account.lamports),
+				account.data as Uint8Array,
+				getAddressCodec().encode(account.programAddress) as Uint8Array,
+				account.executable,
+				0n, // rentEpoch was removed from the RPC spec and Kit.
+			),
 		);
+		return this;
 	}
 
 	/**
@@ -259,10 +259,11 @@ export class LiteSVM {
 	 * @param address - The account address.
 	 * @returns The account's balance in lamports.
 	 */
-	getBalance(address: Address): bigint | null {
-		return this.inner.getBalance(
-			getAddressCodec().encode(address) as Uint8Array,
-		);
+	getBalance(address: Address): Lamports | null {
+		const addressBytes = getAddressCodec().encode(address) as Uint8Array;
+		const balance = this.inner.getBalance(addressBytes);
+
+		return balance === null ? null : lamports(balance);
 	}
 
 	/**
@@ -275,14 +276,26 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Gets the latest blockhash and last valid block height.
+	 * Since LiteSVM doesn't have blocks, this is an arbitrary value controlled by LiteSVM
+	 * @returns The designated latest blockhash and last valid block height.
+	 */
+	latestBlockhashLifetime(): TransactionBlockhashLifetime {
+		// TODO: Check if that's okay?
+		return {
+			blockhash: this.inner.latestBlockhash() as Blockhash,
+			lastValidBlockHeight: 0n,
+		};
+	}
+
+	/**
 	 * Gets a transaction from the transaction history.
 	 * @param signature - The transaction signature bytes
 	 * @returns The transaction, if it is found in the history.
 	 */
-	getTransaction(
-		signature: Uint8Array,
-	): TransactionMetadata | FailedTransactionMetadata | null {
-		return this.inner.getTransaction(signature);
+	getTransaction(signature: Signature): TransactionMetadata | FailedTransactionMetadata | null {
+		const signatureBytes = getBase58Encoder().encode(signature) as Uint8Array;
+		return this.inner.getTransaction(signatureBytes);
 	}
 
 	/**
@@ -295,10 +308,7 @@ export class LiteSVM {
 		address: Address,
 		lamports: Lamports,
 	): TransactionMetadata | FailedTransactionMetadata | null {
-		return this.inner.airdrop(
-			getAddressCodec().encode(address) as Uint8Array,
-			lamports,
-		);
+		return this.inner.airdrop(getAddressCodec().encode(address) as Uint8Array, lamports);
 	}
 
 	/**
@@ -306,11 +316,9 @@ export class LiteSVM {
 	 * @param programId - The program ID.
 	 * @param path - The path to the .so file.
 	 */
-	addProgramFromFile(programId: Address, path: string) {
-		return this.inner.addProgramFromFile(
-			getAddressCodec().encode(programId) as Uint8Array,
-			path,
-		);
+	addProgramFromFile(programId: Address, path: string): LiteSVM {
+		this.inner.addProgramFromFile(getAddressCodec().encode(programId) as Uint8Array, path);
+		return this;
 	}
 
 	/**
@@ -318,11 +326,9 @@ export class LiteSVM {
 	 * @param programId - The program ID.
 	 * @param programBytes - The raw bytes of the compiled program.
 	 */
-	addProgram(programId: Address, programBytes: Uint8Array) {
-		return this.inner.addProgram(
-			getAddressCodec().encode(programId) as Uint8Array,
-			programBytes,
-		);
+	addProgram(programId: Address, programBytes: Uint8Array): LiteSVM {
+		this.inner.addProgram(getAddressCodec().encode(programId) as Uint8Array, programBytes);
+		return this;
 	}
 
 	/**
@@ -330,9 +336,7 @@ export class LiteSVM {
 	 * @param tx - The transaction to send.
 	 * @returns TransactionMetadata if the transaction succeeds, else FailedTransactionMetadata
 	 */
-	sendTransaction(
-		tx: Transaction,
-	): TransactionMetadata | FailedTransactionMetadata {
+	sendTransaction(tx: Transaction): TransactionMetadata | FailedTransactionMetadata {
 		const internal = this.inner;
 		if (internal.getSigverify()) {
 			assertIsFullySignedTransaction(tx);
@@ -357,9 +361,7 @@ export class LiteSVM {
 	 * @param tx The transaction to simulate
 	 * @returns SimulatedTransactionInfo if simulation succeeds, else FailedTransactionMetadata
 	 */
-	simulateTransaction(
-		tx: Transaction,
-	): FailedTransactionMetadata | SimulatedTransactionInfo {
+	simulateTransaction(tx: Transaction): FailedTransactionMetadata | SimulatedTransactionInfo {
 		const internal = this.inner;
 		if (internal.getSigverify()) {
 			assertIsFullySignedTransaction(tx);
@@ -391,8 +393,9 @@ export class LiteSVM {
 	 * Expires the current blockhash.
 	 * The return value of `latestBlockhash()` will be different after calling this.
 	 */
-	expireBlockhash() {
+	expireBlockhash(): LiteSVM {
 		this.inner.expireBlockhash();
+		return this;
 	}
 
 	/**
@@ -400,8 +403,9 @@ export class LiteSVM {
 	 * around `setClock()`.
 	 * @param slot - The new slot.
 	 */
-	warpToSlot(slot: bigint) {
+	warpToSlot(slot: bigint): LiteSVM {
 		this.inner.warpToSlot(slot);
+		return this;
 	}
 
 	/**
@@ -416,8 +420,9 @@ export class LiteSVM {
 	 * Overwrite the clock sysvar.
 	 * @param clock - The clock object.
 	 */
-	setClock(clock: Clock) {
+	setClock(clock: Clock): LiteSVM {
 		this.inner.setClock(clock);
+		return this;
 	}
 
 	/**
@@ -432,8 +437,9 @@ export class LiteSVM {
 	 * Overwrite the EpochRewards sysvar.
 	 * @param rewards - The EpochRewards object.
 	 */
-	setEpochRewards(rewards: EpochRewards) {
+	setEpochRewards(rewards: EpochRewards): LiteSVM {
 		this.inner.setEpochRewards(rewards);
+		return this;
 	}
 
 	/**
@@ -448,8 +454,9 @@ export class LiteSVM {
 	 * Overwrite the EpochSchedule sysvar.
 	 * @param schedule - The EpochSchedule object.
 	 */
-	setEpochSchedule(schedule: EpochSchedule) {
+	setEpochSchedule(schedule: EpochSchedule): LiteSVM {
 		this.inner.setEpochSchedule(schedule);
+		return this;
 	}
 
 	/**
@@ -464,8 +471,9 @@ export class LiteSVM {
 	 * Overwrite the last restart slot sysvar.
 	 * @param slot - The last restart slot.
 	 */
-	setLastRestartSlot(slot: bigint) {
+	setLastRestartSlot(slot: bigint): LiteSVM {
 		this.inner.setLastRestartSlot(slot);
+		return this;
 	}
 
 	/**
@@ -480,8 +488,9 @@ export class LiteSVM {
 	 * Overwrite the rent sysvar.
 	 * @param rent - The new rent object.
 	 */
-	setRent(rent: Rent) {
+	setRent(rent: Rent): LiteSVM {
 		this.inner.setRent(rent);
+		return this;
 	}
 
 	/**
@@ -496,8 +505,9 @@ export class LiteSVM {
 	 * Overwrite the SlotHashes sysvar.
 	 * @param hashes - The SlotHash array.
 	 */
-	setSlotHashes(hashes: SlotHash[]) {
+	setSlotHashes(hashes: SlotHash[]): LiteSVM {
 		this.inner.setSlotHashes(hashes);
+		return this;
 	}
 
 	/**
@@ -512,8 +522,9 @@ export class LiteSVM {
 	 * Overwrite the SlotHistory sysvar.
 	 * @param history - The SlotHistory object
 	 */
-	setSlotHistory(history: SlotHistory) {
+	setSlotHistory(history: SlotHistory): LiteSVM {
 		this.inner.setSlotHistory(history);
+		return this;
 	}
 
 	/**
@@ -528,7 +539,17 @@ export class LiteSVM {
 	 * Overwrite the StakeHistory sysvar.
 	 * @param history - The StakeHistory object
 	 */
-	setStakeHistory(history: StakeHistory) {
+	setStakeHistory(history: StakeHistory): LiteSVM {
 		this.inner.setStakeHistory(history);
+		return this;
+	}
+
+	/**
+	 * Helper method to apply a function to the LiteSVM instance in a chain.
+	 * @param fn - The function to apply.
+	 */
+	tap(fn: (svm: LiteSVM) => void): LiteSVM {
+		fn(this);
+		return this;
 	}
 }
