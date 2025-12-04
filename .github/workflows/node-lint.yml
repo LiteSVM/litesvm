@@ -1,17 +1,13 @@
 name: node-lint
 on:
   push:
-    branches:
-      - master
-      - loris/kitify
+    branches: [master]
   pull_request:
-    branches:
-      - master
-      - loris/kitify
+    branches: [master]
     paths-ignore:
-      - "**/*.md"
+      - '**/*.md'
       - LICENSE
-      - "**/*.gitignore"
+      - '**/*.gitignore'
       - .editorconfig
       - node-litesvm/docs/**
 jobs:

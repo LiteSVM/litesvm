@@ -2,26 +2,22 @@ name: node-build
 env:
   DEBUG: napi:*
   APP_NAME: litesvm
-  MACOSX_DEPLOYMENT_TARGET: "10.13"
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
 on:
   push:
-    branches:
-      - master
-      - loris/kitify
+    branches: [master]
     paths-ignore:
-      - "**/*.md"
+      - '**/*.md'
       - LICENSE
-      - "**/*.gitignore"
+      - '**/*.gitignore'
       - .editorconfig
       - crates/node-litesvm/docs/**
   pull_request:
-    branches:
-      - master
-      - loris/kitify
+    branches: [master]
     paths-ignore:
-      - "**/*.md"
+      - '**/*.md'
       - LICENSE
-      - "**/*.gitignore"
+      - '**/*.gitignore'
       - .editorconfig
       - crates/node-litesvm/docs/**
 
@@ -39,7 +35,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: "yarn"
+          cache: 'yarn'
           cache-dependency-path: crates/node-litesvm/yarn.lock
 
       - name: Install
@@ -151,8 +147,8 @@ jobs:
             target: x86_64-apple-darwin
             architecture: x64
         node:
-          - "20"
-          - "22"
+          - '20'
+          - '22'
     runs-on: ${{ matrix.settings.host }}
     defaults:
       run:
@@ -192,8 +188,8 @@ jobs:
           # - aarch64-unknown-linux-musl
           # - armv7-unknown-linux-gnueabihf
         node:
-          - "20"
-          - "22"
+          - '20'
+          - '22'
     runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     defaults:
       run:

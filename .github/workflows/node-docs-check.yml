@@ -5,13 +5,13 @@ on:
     branches: [master]
     paths-ignore:
       - LICENSE
-      - "**/*.gitignore"
+      - '**/*.gitignore'
       - .editorconfig
   pull_request:
     branches: [master]
     paths-ignore:
       - LICENSE
-      - "**/*.gitignore"
+      - '**/*.gitignore'
       - .editorconfig
 
 jobs:
