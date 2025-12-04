@@ -252,7 +252,7 @@ export class LiteSVM {
 				account.data as Uint8Array,
 				getAddressCodec().encode(account.programAddress) as Uint8Array,
 				account.executable,
-				0n, // rentEpoch was removed from the RPC spec and Kit.
+				0n, // rentEpoch was deprecated from the RPC response and removed from Kit.
 			),
 		);
 		return this;
