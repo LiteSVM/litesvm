@@ -1,51 +1,86 @@
+import {
+	AccountRole,
+	Address,
+	appendTransactionMessageInstructions,
+	createTransactionMessage,
+	generateKeyPairSigner,
+	getStructDecoder,
+	getU32Decoder,
+	Instruction,
+	lamports,
+	pipe,
+	SendableTransaction,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
+	Transaction,
+	TransactionSigner,
+	TransactionWithLifetime,
+} from "@solana/kit";
 import { ComputeBudget, LiteSVM } from "../litesvm";
-import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { readFileSync } from "node:fs";
 
-export function getLamports(svm: LiteSVM, address: PublicKey): number | null {
-	const acc = svm.getAccount(address);
-	return acc === null ? null : acc.lamports;
+export const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+export async function getSignedTransaction(
+	svm: LiteSVM,
+	payer: TransactionSigner,
+	instructions?: Instruction[],
+): Promise<SendableTransaction & Transaction & TransactionWithLifetime> {
+	return await pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) =>
+			instructions
+				? appendTransactionMessageInstructions(instructions, tx)
+				: tx,
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				svm.latestBlockhashLifetime(),
+				tx,
+			),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
 }
 
-export function helloworldProgram(
-	computeMaxUnits?: bigint,
-): [LiteSVM, PublicKey, PublicKey] {
-	const programId = PublicKey.unique();
-	const greetedPubkey = PublicKey.unique();
-	let svm = new LiteSVM();
-	if (computeMaxUnits) {
-		const computeBudget = new ComputeBudget();
-		computeBudget.computeUnitLimit = computeMaxUnits;
-		svm = svm.withComputeBudget(computeBudget);
-	}
-	svm.setAccount(greetedPubkey, {
-		executable: false,
-		owner: programId,
-		lamports: LAMPORTS_PER_SOL,
-		data: new Uint8Array([0, 0, 0, 0]),
-	});
-	svm.addProgramFromFile(programId, "program_bytes/counter.so");
-	return [svm, programId, greetedPubkey];
+export async function generateAddress() {
+	return (await generateKeyPairSigner()).address;
 }
 
-export function helloworldProgramViaSetAccount(
-	computeMaxUnits?: bigint,
-): [LiteSVM, PublicKey, PublicKey] {
-	const programId = PublicKey.unique();
-	const greetedPubkey = PublicKey.unique();
-	const programBytes = readFileSync("program_bytes/counter.so");
-	let svm = new LiteSVM();
-	if (computeMaxUnits) {
+export const setComputeUnitLimit =
+	(computeUnitLimit: bigint) => (svm: LiteSVM) => {
 		const computeBudget = new ComputeBudget();
-		computeBudget.computeUnitLimit = computeMaxUnits;
-		svm = svm.withComputeBudget(computeBudget);
-	}
-	svm.setAccount(greetedPubkey, {
-		executable: false,
-		owner: programId,
-		lamports: LAMPORTS_PER_SOL,
-		data: new Uint8Array([0, 0, 0, 0]),
-	});
-	svm.addProgram(programId, programBytes);
-	return [svm, programId, greetedPubkey];
+		computeBudget.computeUnitLimit = computeUnitLimit;
+		return svm.withComputeBudget(computeBudget);
+	};
+
+export const setHelloWorldProgram =
+	(programAddress: Address) => (svm: LiteSVM) =>
+		svm.addProgramFromFile(programAddress, "program_bytes/counter.so");
+
+export const setHelloWorldAccount =
+	(address: Address, programAddress: Address) => (svm: LiteSVM) => {
+		const initialData = new Uint8Array([0, 0, 0, 0]);
+		return svm.setAccount({
+			address,
+			executable: false,
+			programAddress: programAddress,
+			lamports: lamports(LAMPORTS_PER_SOL),
+			data: initialData,
+			space: BigInt(initialData.length),
+		});
+	};
+
+export function getGreetInstruction(
+	greetedAddress: Address,
+	programAddress: Address,
+): Instruction {
+	return {
+		accounts: [{ address: greetedAddress, role: AccountRole.WRITABLE }],
+		programAddress,
+		data: new Uint8Array([0]),
+	};
+}
+
+export function getCounterDecoder() {
+	return getStructDecoder([["count", getU32Decoder()]]);
 }

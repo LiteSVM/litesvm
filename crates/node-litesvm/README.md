@@ -3,6 +3,7 @@
 </div>
 
 ---
+
 # LiteSVM (NodeJS)
 
 This is the NodeJS wrapper for [LiteSVM](https://github.com/LiteSVM/litesvm). It brings best-in-class Solana testing
@@ -17,40 +18,49 @@ This example just transfers lamports from Alice to Bob without loading
 any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
 
 ```ts
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
+import { getTransferSolInstruction } from "@solana-program/system";
 import {
-	PublicKey,
-	Transaction,
-	SystemProgram,
-	Keypair,
-	LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+	appendTransactionMessageInstruction,
+	createTransactionMessage,
+	generateKeyPairSigner,
+	lamports,
+	pipe,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
+} from "@solana/kit";
+import { expect, it } from "vitest";
 
-test("one transfer", () => {
+it("transfers SOL from one wallet to another", async () => {
+	// Given a payer with 2 SOL and a recipient with 0 SOL.
 	const svm = new LiteSVM();
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const receiver = PublicKey.unique();
-	const blockhash = svm.latestBlockhash();
-	const transferLamports = 1_000_000n;
-	const ixs = [
-		SystemProgram.transfer({
-			fromPubkey: payer.publicKey,
-			toPubkey: receiver,
-			lamports: transferLamports,
-		}),
-	];
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
-	const balanceAfter = svm.getBalance(receiver);
-	assert.strictEqual(balanceAfter, transferLamports);
+	const payer = await generateKeyPairSigner();
+	const recipient = await generateKeyPairSigner();
+	svm.airdrop(payer.address, lamports(2_000_000_000n));
+
+	// When we send 1 SOL from the payer to the recipient.
+	const lifetime = svm.latestBlockhashLifetime();
+	const instruction = getTransferSolInstruction({
+		source: payer,
+		destination: recipient.address,
+		amount: lamports(1_000_000_000n),
+	});
+	const transaction = await pipe(
+		createTransactionMessage({ version: 0 }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) => setTransactionMessageLifetimeUsingBlockhash(lifetime, tx),
+		(tx) => appendTransactionMessageInstruction(instruction, tx),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
+	svm.sendTransaction(transaction);
+
+	// Then we expect the accounts to have the correct balances.
+	expect(svm.getBalance(recipient.address)).toBe(lamports(1_000_000_000n));
+	expect(svm.getBalance(payer.address)).toBeLessThan(lamports(1_000_000_000n));
 });
 ```
+
 Note: by default the `LiteSVM` instance includes some core programs such as
 the System Program and SPL Token.
 

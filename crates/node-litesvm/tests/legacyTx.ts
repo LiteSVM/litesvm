@@ -1,23 +1,28 @@
 import {
+	appendTransactionMessageInstruction,
 	assertAccountExists,
+	createTransactionMessage,
 	decodeAccount,
 	generateKeyPairSigner,
 	lamports,
+	pipe,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { LiteSVM } from "index";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
 	generateAddress,
 	getCounterDecoder,
 	getGreetInstruction,
-	getSignedTransaction,
 	LAMPORTS_PER_SOL,
 	setHelloWorldAccount,
+	setHelloWorldProgram,
 } from "./util";
 
-test("add program via setAccount", async () => {
+test("legacy tx", async () => {
 	// Given the following addresses and signers.
 	const [payer, programAddress, greetedAddress] = await Promise.all([
 		generateKeyPairSigner(),
@@ -25,11 +30,11 @@ test("add program via setAccount", async () => {
 		generateAddress(),
 	]);
 
-	// And a LiteSVM client with a hello world program loaded using `addProgram`.
+	// And a LiteSVM client with a hello world program and greeted account set up.
 	const svm = new LiteSVM()
 		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.tap(setHelloWorldAccount(greetedAddress, programAddress))
-		.addProgram(programAddress, readFileSync("program_bytes/counter.so"));
+		.tap(setHelloWorldProgram(programAddress))
+		.tap(setHelloWorldAccount(greetedAddress, programAddress));
 
 	// And given the greeted account has 0 greets.
 	const greetedAccountBefore = decodeAccount(
@@ -38,11 +43,27 @@ test("add program via setAccount", async () => {
 	);
 	assertAccountExists(greetedAccountBefore);
 	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
+	assert.deepStrictEqual(
+		greetedAccountBefore.lamports,
+		lamports(LAMPORTS_PER_SOL),
+	);
 
-	// When we send a greet instruction.
-	const transaction = await getSignedTransaction(svm, payer, [
-		getGreetInstruction(greetedAddress, programAddress),
-	]);
+	// When we send a greet instruction using a legacy transaction.
+	const transaction = await pipe(
+		createTransactionMessage({ version: "legacy" }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) =>
+			appendTransactionMessageInstruction(
+				getGreetInstruction(programAddress, greetedAddress),
+				tx,
+			),
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				svm.latestBlockhashLifetime(),
+				tx,
+			),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
 	svm.sendTransaction(transaction);
 
 	// Then the greeted account has 1 greet.
