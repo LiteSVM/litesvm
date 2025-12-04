@@ -1328,7 +1328,7 @@ impl LiteSVM {
 
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
-        self.feature_set.clone()
+        self.feature_set.clone().into()
     }
 
     fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
