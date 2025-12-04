@@ -2,16 +2,20 @@ name: node-docs-check
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
+      - loris/kitify
     paths-ignore:
       - LICENSE
-      - '**/*.gitignore'
+      - "**/*.gitignore"
       - .editorconfig
   pull_request:
-    branches: [master]
+    branches:
+      - master
+      - loris/kitify
     paths-ignore:
       - LICENSE
-      - '**/*.gitignore'
+      - "**/*.gitignore"
       - .editorconfig
 
 jobs:

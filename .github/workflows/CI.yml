@@ -2,9 +2,11 @@ on:
   push:
     branches:
       - master
+      - loris/kitify
   pull_request:
     branches:
       - master
+      - loris/kitify
 
 name: CI
 
