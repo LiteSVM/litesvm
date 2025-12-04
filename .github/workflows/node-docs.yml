@@ -2,9 +2,7 @@ name: node-docs
 
 on:
   push:
-    branches:
-      - master
-      - loris/kitify
+    branches: [master]
   workflow_dispatch:
 
 permissions:
