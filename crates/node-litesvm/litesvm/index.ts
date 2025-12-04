@@ -290,7 +290,6 @@ export class LiteSVM {
 	 * @returns The designated latest blockhash and last valid block height.
 	 */
 	latestBlockhashLifetime(): TransactionBlockhashLifetime {
-		// TODO: Check if that's okay?
 		return {
 			blockhash: this.inner.latestBlockhash() as Blockhash,
 			lastValidBlockHeight: 0n,
