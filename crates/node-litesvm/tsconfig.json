@@ -14,7 +14,8 @@
 			"litesvm": ["./"],
 			"@/*": ["../*"]
 		},
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"skipLibCheck": true
 	},
 	"include": ["litesvm/**/*"]
 }
