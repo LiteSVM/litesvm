@@ -75,10 +75,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-android-arm64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-android-arm64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-android-arm64')
+        const bindingPackageVersion = require('litesvm-android-arm64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -91,10 +91,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-android-arm-eabi')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-android-arm-eabi/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-android-arm-eabi')
+        const bindingPackageVersion = require('litesvm-android-arm-eabi/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -112,10 +112,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-win32-x64-gnu')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-win32-x64-gnu/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-win32-x64-gnu')
+        const bindingPackageVersion = require('litesvm-win32-x64-gnu/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -128,10 +128,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-win32-x64-msvc')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-win32-x64-msvc/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-win32-x64-msvc')
+        const bindingPackageVersion = require('litesvm-win32-x64-msvc/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -145,10 +145,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-win32-ia32-msvc')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-win32-ia32-msvc/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-win32-ia32-msvc')
+        const bindingPackageVersion = require('litesvm-win32-ia32-msvc/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -161,10 +161,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-win32-arm64-msvc')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-win32-arm64-msvc/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-win32-arm64-msvc')
+        const bindingPackageVersion = require('litesvm-win32-arm64-msvc/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -180,10 +180,10 @@ function requireNative() {
       loadErrors.push(e)
     }
     try {
-      const binding = require('@loris-sandbox/litesvm-kit-darwin-universal')
-      const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-darwin-universal/package.json').version
-      if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-        throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+      const binding = require('litesvm-darwin-universal')
+      const bindingPackageVersion = require('litesvm-darwin-universal/package.json').version
+      if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+        throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
       }
       return binding
     } catch (e) {
@@ -196,10 +196,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-darwin-x64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-darwin-x64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-darwin-x64')
+        const bindingPackageVersion = require('litesvm-darwin-x64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -212,10 +212,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-darwin-arm64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-darwin-arm64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-darwin-arm64')
+        const bindingPackageVersion = require('litesvm-darwin-arm64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -232,10 +232,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-freebsd-x64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-freebsd-x64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-freebsd-x64')
+        const bindingPackageVersion = require('litesvm-freebsd-x64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -248,10 +248,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-freebsd-arm64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-freebsd-arm64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-freebsd-arm64')
+        const bindingPackageVersion = require('litesvm-freebsd-arm64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -269,10 +269,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-x64-musl')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-x64-musl/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-x64-musl')
+          const bindingPackageVersion = require('litesvm-linux-x64-musl/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -285,10 +285,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-x64-gnu')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-x64-gnu/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-x64-gnu')
+          const bindingPackageVersion = require('litesvm-linux-x64-gnu/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -303,10 +303,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-arm64-musl')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-arm64-musl/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-arm64-musl')
+          const bindingPackageVersion = require('litesvm-linux-arm64-musl/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -319,10 +319,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-arm64-gnu')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-arm64-gnu/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-arm64-gnu')
+          const bindingPackageVersion = require('litesvm-linux-arm64-gnu/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -337,10 +337,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-arm-musleabihf')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-arm-musleabihf/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-arm-musleabihf')
+          const bindingPackageVersion = require('litesvm-linux-arm-musleabihf/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -353,10 +353,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-arm-gnueabihf')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-arm-gnueabihf/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-arm-gnueabihf')
+          const bindingPackageVersion = require('litesvm-linux-arm-gnueabihf/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -371,10 +371,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-loong64-musl')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-loong64-musl/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-loong64-musl')
+          const bindingPackageVersion = require('litesvm-linux-loong64-musl/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -387,10 +387,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-loong64-gnu')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-loong64-gnu/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-loong64-gnu')
+          const bindingPackageVersion = require('litesvm-linux-loong64-gnu/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -405,10 +405,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-riscv64-musl')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-riscv64-musl/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-riscv64-musl')
+          const bindingPackageVersion = require('litesvm-linux-riscv64-musl/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -421,10 +421,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@loris-sandbox/litesvm-kit-linux-riscv64-gnu')
-          const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-riscv64-gnu/package.json').version
-          if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('litesvm-linux-riscv64-gnu')
+          const bindingPackageVersion = require('litesvm-linux-riscv64-gnu/package.json').version
+          if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -438,10 +438,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-linux-ppc64-gnu')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-ppc64-gnu/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-linux-ppc64-gnu')
+        const bindingPackageVersion = require('litesvm-linux-ppc64-gnu/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -454,10 +454,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-linux-s390x-gnu')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-linux-s390x-gnu/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-linux-s390x-gnu')
+        const bindingPackageVersion = require('litesvm-linux-s390x-gnu/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -474,10 +474,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-openharmony-arm64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-openharmony-arm64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-openharmony-arm64')
+        const bindingPackageVersion = require('litesvm-openharmony-arm64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -490,10 +490,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-openharmony-x64')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-openharmony-x64/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-openharmony-x64')
+        const bindingPackageVersion = require('litesvm-openharmony-x64/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -506,10 +506,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@loris-sandbox/litesvm-kit-openharmony-arm')
-        const bindingPackageVersion = require('@loris-sandbox/litesvm-kit-openharmony-arm/package.json').version
-        if (bindingPackageVersion !== '0.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('litesvm-openharmony-arm')
+        const bindingPackageVersion = require('litesvm-openharmony-arm/package.json').version
+        if (bindingPackageVersion !== '0.4.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 0.4.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -538,7 +538,7 @@ if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
   }
   if (!nativeBinding) {
     try {
-      wasiBinding = require('@loris-sandbox/litesvm-kit-wasm32-wasi')
+      wasiBinding = require('litesvm-wasm32-wasi')
       nativeBinding = wasiBinding
     } catch (err) {
       if (process.env.NAPI_RS_FORCE_WASI) {
