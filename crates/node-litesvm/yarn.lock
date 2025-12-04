@@ -847,9 +847,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lorisleiva/litesvm-kit@workspace:.":
+"@loris-sandbox/litesvm-kit@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@lorisleiva/litesvm-kit@workspace:."
+  resolution: "@loris-sandbox/litesvm-kit@workspace:."
   dependencies:
     "@algolia/client-search": "npm:^5.45.0"
     "@napi-rs/cli": "npm:^3.4.1"

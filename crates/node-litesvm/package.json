@@ -1,9 +1,11 @@
 {
-	"name": "@lorisleiva/litesvm-kit",
+	"name": "@loris-sandbox/litesvm-kit",
 	"version": "0.1.0",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"files": ["dist/"],
+	"files": [
+		"dist/"
+	],
 	"napi": {
 		"binaryName": "litesvm",
 		"targets": [
@@ -68,11 +70,11 @@
 	},
 	"packageManager": "yarn@4.10.3",
 	"optionalDependencies": {
-		"@lorisleiva/litesvm-kit-darwin-x64": "0.1.0",
-		"@lorisleiva/litesvm-kit-linux-x64-gnu": "0.1.0",
-		"@lorisleiva/litesvm-kit-linux-x64-musl": "0.1.0",
-		"@lorisleiva/litesvm-kit-darwin-arm64": "0.1.0",
-		"@lorisleiva/litesvm-kit-linux-arm64-gnu": "0.1.0",
-		"@lorisleiva/litesvm-kit-linux-arm64-musl": "0.1.0"
+		"@loris-sandbox/litesvm-kit-darwin-x64": "0.1.0",
+		"@loris-sandbox/litesvm-kit-linux-x64-gnu": "0.1.0",
+		"@loris-sandbox/litesvm-kit-linux-x64-musl": "0.1.0",
+		"@loris-sandbox/litesvm-kit-darwin-arm64": "0.1.0",
+		"@loris-sandbox/litesvm-kit-linux-arm64-gnu": "0.1.0",
+		"@loris-sandbox/litesvm-kit-linux-arm64-musl": "0.1.0"
 	}
 }
