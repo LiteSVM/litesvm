@@ -192,8 +192,8 @@ jobs:
           - '22'
     runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     defaults:
-      run:
-        working-directory: crates/node-litesvm
+        run:
+          working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v6
       - name: Setup node
