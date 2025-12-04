@@ -2,7 +2,11 @@ import { AccountRole, generateKeyPairSigner, lamports } from "@solana/kit";
 import { LiteSVM, TransactionMetadata } from "litesvm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { generateAddress, getSignedTransaction, LAMPORTS_PER_SOL } from "./util";
+import {
+	generateAddress,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+} from "./util";
 
 test("spl logging", async () => {
 	// Given the following addresses and signers.
@@ -19,7 +23,10 @@ test("spl logging", async () => {
 
 	// When we simulate and send a transaction that calls the program.
 	const transaction = await getSignedTransaction(svm, payer, [
-		{ accounts: [{ address: loggedAddress, role: AccountRole.READONLY }], programAddress },
+		{
+			accounts: [{ address: loggedAddress, role: AccountRole.READONLY }],
+			programAddress,
+		},
 	]);
 	const simulationResult = svm.simulateTransaction(transaction);
 	const result = svm.sendTransaction(transaction);

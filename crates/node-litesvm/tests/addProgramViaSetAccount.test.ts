@@ -1,4 +1,9 @@
-import { assertAccountExists, decodeAccount, generateKeyPairSigner, lamports } from "@solana/kit";
+import {
+	assertAccountExists,
+	decodeAccount,
+	generateKeyPairSigner,
+	lamports,
+} from "@solana/kit";
 import { LiteSVM } from "index";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -27,7 +32,10 @@ test("add program via setAccount", async () => {
 		.addProgram(programAddress, readFileSync("program_bytes/counter.so"));
 
 	// And given the greeted account has 0 greets.
-	const greetedAccountBefore = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	const greetedAccountBefore = decodeAccount(
+		svm.getAccount(greetedAddress),
+		getCounterDecoder(),
+	);
 	assertAccountExists(greetedAccountBefore);
 	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
 
@@ -38,7 +46,10 @@ test("add program via setAccount", async () => {
 	svm.sendTransaction(transaction);
 
 	// Then the greeted account has 1 greet.
-	const greetedAccountAfter = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	const greetedAccountAfter = decodeAccount(
+		svm.getAccount(greetedAddress),
+		getCounterDecoder(),
+	);
 	assertAccountExists(greetedAccountAfter);
 	assert.deepStrictEqual(greetedAccountAfter.data.count, 1);
 });

@@ -1,4 +1,9 @@
-import { assertAccountExists, decodeAccount, generateKeyPairSigner, lamports } from "@solana/kit";
+import {
+	assertAccountExists,
+	decodeAccount,
+	generateKeyPairSigner,
+	lamports,
+} from "@solana/kit";
 import { LiteSVM } from "index";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -27,10 +32,16 @@ test("hello world", async () => {
 		.tap(setHelloWorldAccount(greetedAddress, programAddress));
 
 	// And given the greeted account has 0 greets.
-	const greetedAccountBefore = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	const greetedAccountBefore = decodeAccount(
+		svm.getAccount(greetedAddress),
+		getCounterDecoder(),
+	);
 	assertAccountExists(greetedAccountBefore);
 	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
-	assert.deepStrictEqual(greetedAccountBefore.lamports, lamports(LAMPORTS_PER_SOL));
+	assert.deepStrictEqual(
+		greetedAccountBefore.lamports,
+		lamports(LAMPORTS_PER_SOL),
+	);
 
 	// When we send a greet instruction.
 	const transaction = await getSignedTransaction(svm, payer, [
@@ -39,7 +50,10 @@ test("hello world", async () => {
 	svm.sendTransaction(transaction);
 
 	// Then the greeted account has 1 greet.
-	const greetedAccountAfter = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	const greetedAccountAfter = decodeAccount(
+		svm.getAccount(greetedAddress),
+		getCounterDecoder(),
+	);
 	assertAccountExists(greetedAccountAfter);
 	assert.deepStrictEqual(greetedAccountAfter.data.count, 1);
 });

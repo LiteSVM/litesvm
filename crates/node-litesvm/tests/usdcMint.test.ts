@@ -21,7 +21,10 @@ import { generateAddress, LAMPORTS_PER_SOL } from "./util";
 
 test("infinite usdc mint", async () => {
 	// Given the following addresses and signers.
-	const [payer, owner] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
+	const [payer, owner] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+	]);
 	const usdcMint = address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 
 	// And a LiteSVM client such that the payer has some balance.

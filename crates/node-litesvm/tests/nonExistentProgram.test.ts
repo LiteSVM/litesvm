@@ -3,11 +3,18 @@ import { TransactionErrorFieldless } from "internal";
 import { FailedTransactionMetadata, LiteSVM } from "litesvm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { generateAddress, getSignedTransaction, LAMPORTS_PER_SOL } from "./util";
+import {
+	generateAddress,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+} from "./util";
 
 test("non-existent program", async () => {
 	// Given the following addresses and signers.
-	const [payer, programAddress] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
+	const [payer, programAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+	]);
 
 	// And a LiteSVM client with no loaded programs.
 	const svm = new LiteSVM();
@@ -22,7 +29,10 @@ test("non-existent program", async () => {
 	// Then we expect it to fail.
 	if (result instanceof FailedTransactionMetadata) {
 		const err = result.err();
-		assert.strictEqual(err, TransactionErrorFieldless.InvalidProgramForExecution);
+		assert.strictEqual(
+			err,
+			TransactionErrorFieldless.InvalidProgramForExecution,
+		);
 	} else {
 		throw new Error("Expected transaction failure");
 	}

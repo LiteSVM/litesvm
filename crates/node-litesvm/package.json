@@ -1,11 +1,9 @@
 {
 	"name": "@lorisleiva/litesvm-kit",
-	"version": "0.4.0",
+	"version": "0.1.0",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"files": [
-		"dist/"
-	],
+	"files": ["dist/"],
 	"napi": {
 		"binaryName": "litesvm",
 		"targets": [
@@ -68,5 +66,13 @@
 		"docs:build": "vitepress build docs",
 		"docs:preview": "vitepress preview docs"
 	},
-	"packageManager": "yarn@4.10.3"
+	"packageManager": "yarn@4.10.3",
+	"optionalDependencies": {
+		"@lorisleiva/litesvm-kit-darwin-x64": "0.1.0",
+		"@lorisleiva/litesvm-kit-linux-x64-gnu": "0.1.0",
+		"@lorisleiva/litesvm-kit-linux-x64-musl": "0.1.0",
+		"@lorisleiva/litesvm-kit-darwin-arm64": "0.1.0",
+		"@lorisleiva/litesvm-kit-linux-arm64-gnu": "0.1.0",
+		"@lorisleiva/litesvm-kit-linux-arm64-musl": "0.1.0"
+	}
 }

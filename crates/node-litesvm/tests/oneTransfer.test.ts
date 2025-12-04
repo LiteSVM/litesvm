@@ -3,11 +3,18 @@ import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { LiteSVM } from "litesvm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { generateAddress, getSignedTransaction, LAMPORTS_PER_SOL } from "./util";
+import {
+	generateAddress,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+} from "./util";
 
 test("one transfer", async () => {
 	// Given the following addresses and signers.
-	const [payer, receiver] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
+	const [payer, receiver] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+	]);
 
 	// And a LiteSVM client such that the payer has some balance.
 	const svm = new LiteSVM();

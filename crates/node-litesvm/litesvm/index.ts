@@ -226,11 +226,16 @@ export class LiteSVM {
 	 * @returns The account object, if the account exists.
 	 */
 	getAccount(address: Address): MaybeEncodedAccount {
-		const inner = this.inner.getAccount(getAddressCodec().encode(address) as Uint8Array);
+		const inner = this.inner.getAccount(
+			getAddressCodec().encode(address) as Uint8Array,
+		);
 
 		return inner === null
 			? { exists: false, address }
-			: ({ exists: true, ...toEncodedAccount(address, inner) } as MaybeEncodedAccount);
+			: ({
+					exists: true,
+					...toEncodedAccount(address, inner),
+			  } as MaybeEncodedAccount);
 	}
 
 	/**
@@ -297,7 +302,9 @@ export class LiteSVM {
 	 * @param signature - The transaction signature bytes
 	 * @returns The transaction, if it is found in the history.
 	 */
-	getTransaction(signature: Signature): TransactionMetadata | FailedTransactionMetadata | null {
+	getTransaction(
+		signature: Signature,
+	): TransactionMetadata | FailedTransactionMetadata | null {
 		const signatureBytes = getBase58Encoder().encode(signature) as Uint8Array;
 		return this.inner.getTransaction(signatureBytes);
 	}
@@ -312,7 +319,10 @@ export class LiteSVM {
 		address: Address,
 		lamports: Lamports,
 	): TransactionMetadata | FailedTransactionMetadata | null {
-		return this.inner.airdrop(getAddressCodec().encode(address) as Uint8Array, lamports);
+		return this.inner.airdrop(
+			getAddressCodec().encode(address) as Uint8Array,
+			lamports,
+		);
 	}
 
 	/**
@@ -321,7 +331,10 @@ export class LiteSVM {
 	 * @param path - The path to the .so file.
 	 */
 	addProgramFromFile(programId: Address, path: string): LiteSVM {
-		this.inner.addProgramFromFile(getAddressCodec().encode(programId) as Uint8Array, path);
+		this.inner.addProgramFromFile(
+			getAddressCodec().encode(programId) as Uint8Array,
+			path,
+		);
 		return this;
 	}
 
@@ -331,7 +344,10 @@ export class LiteSVM {
 	 * @param programBytes - The raw bytes of the compiled program.
 	 */
 	addProgram(programId: Address, programBytes: Uint8Array): LiteSVM {
-		this.inner.addProgram(getAddressCodec().encode(programId) as Uint8Array, programBytes);
+		this.inner.addProgram(
+			getAddressCodec().encode(programId) as Uint8Array,
+			programBytes,
+		);
 		return this;
 	}
 
@@ -340,7 +356,9 @@ export class LiteSVM {
 	 * @param tx - The transaction to send.
 	 * @returns TransactionMetadata if the transaction succeeds, else FailedTransactionMetadata
 	 */
-	sendTransaction(tx: Transaction): TransactionMetadata | FailedTransactionMetadata {
+	sendTransaction(
+		tx: Transaction,
+	): TransactionMetadata | FailedTransactionMetadata {
 		const internal = this.inner;
 		if (internal.getSigverify()) {
 			assertIsFullySignedTransaction(tx);
@@ -365,7 +383,9 @@ export class LiteSVM {
 	 * @param tx The transaction to simulate
 	 * @returns SimulatedTransactionInfo if simulation succeeds, else FailedTransactionMetadata
 	 */
-	simulateTransaction(tx: Transaction): FailedTransactionMetadata | SimulatedTransactionInfo {
+	simulateTransaction(
+		tx: Transaction,
+	): FailedTransactionMetadata | SimulatedTransactionInfo {
 		const internal = this.inner;
 		if (internal.getSigverify()) {
 			assertIsFullySignedTransaction(tx);

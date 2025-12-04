@@ -7,7 +7,11 @@ test("sysvar", () => {
 	const rentBefore = svm.getRent();
 	assert.strictEqual(rentBefore.burnPercent, 50);
 	assert.strictEqual(rentBefore.minimumBalance(123n), 1746960n);
-	const newRent = new Rent(rentBefore.lamportsPerByteYear, rentBefore.exemptionThreshold, 0);
+	const newRent = new Rent(
+		rentBefore.lamportsPerByteYear,
+		rentBefore.exemptionThreshold,
+		0,
+	);
 	svm.setRent(newRent);
 	const rentAfter = svm.getRent();
 	assert.strictEqual(rentAfter.burnPercent, 0);

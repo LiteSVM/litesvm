@@ -1,4 +1,8 @@
-import { generateKeyPairSigner, getSignatureFromTransaction, lamports } from "@solana/kit";
+import {
+	generateKeyPairSigner,
+	getSignatureFromTransaction,
+	lamports,
+} from "@solana/kit";
 import { TransactionMetadata } from "internal";
 import assert from "node:assert/strict";
 import { test } from "node:test";

@@ -1,4 +1,9 @@
-import { assertAccountExists, decodeAccount, generateKeyPairSigner, lamports } from "@solana/kit";
+import {
+	assertAccountExists,
+	decodeAccount,
+	generateKeyPairSigner,
+	lamports,
+} from "@solana/kit";
 import { LiteSVM } from "index";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -29,7 +34,10 @@ test("many instructions", async () => {
 		.tap(setHelloWorldAccount(greetedAddress, programAddress));
 
 	// And given the greeted account has 0 greets.
-	const greetedAccountBefore = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	const greetedAccountBefore = decodeAccount(
+		svm.getAccount(greetedAddress),
+		getCounterDecoder(),
+	);
 	assertAccountExists(greetedAccountBefore);
 	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
 
@@ -41,7 +49,13 @@ test("many instructions", async () => {
 	svm.sendTransaction(transaction);
 
 	// Then we expect the greeted account to have been greeted many times.
-	const greetedAccountAfter = decodeAccount(svm.getAccount(greetedAddress), getCounterDecoder());
+	const greetedAccountAfter = decodeAccount(
+		svm.getAccount(greetedAddress),
+		getCounterDecoder(),
+	);
 	assertAccountExists(greetedAccountAfter);
-	assert.deepStrictEqual(greetedAccountAfter.data.count, NUMBER_OF_INSTRUCTIONS);
+	assert.deepStrictEqual(
+		greetedAccountAfter.data.count,
+		NUMBER_OF_INSTRUCTIONS,
+	);
 });

@@ -1,22 +1,40 @@
 import { generateKeyPairSigner, lamports } from "@solana/kit";
-import { FailedTransactionMetadata, LiteSVM, TransactionMetadata } from "litesvm";
+import {
+	FailedTransactionMetadata,
+	LiteSVM,
+	TransactionMetadata,
+} from "litesvm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { generateAddress, getSignedTransaction, LAMPORTS_PER_SOL } from "./util";
+import {
+	generateAddress,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+} from "./util";
 
 test("clock", async () => {
 	// Given the following addresses and signers.
-	const [payer, programAddress] = await Promise.all([generateKeyPairSigner(), generateAddress()]);
+	const [payer, programAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+	]);
 
 	// And a LiteSVM client with a hello world program loaded from `litesvm_clock_example.so`.
 	const svm = new LiteSVM()
 		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.addProgramFromFile(programAddress, "program_bytes/litesvm_clock_example.so");
+		.addProgramFromFile(
+			programAddress,
+			"program_bytes/litesvm_clock_example.so",
+		);
 
 	// And given two unique transactions.
 	const [firstTransaction, secondTransaction] = await Promise.all([
-		getSignedTransaction(svm, payer, [{ programAddress, data: new Uint8Array([0]) }]),
-		getSignedTransaction(svm, payer, [{ programAddress, data: new Uint8Array([1]) }]),
+		getSignedTransaction(svm, payer, [
+			{ programAddress, data: new Uint8Array([0]) },
+		]),
+		getSignedTransaction(svm, payer, [
+			{ programAddress, data: new Uint8Array([1]) },
+		]),
 	]);
 
 	// When we set the time to January 1st 2000 and send the first transaction.

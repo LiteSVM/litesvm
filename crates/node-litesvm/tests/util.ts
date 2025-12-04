@@ -29,8 +29,15 @@ export async function getSignedTransaction(
 	return await pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => (instructions ? appendTransactionMessageInstructions(instructions, tx) : tx),
-		(tx) => setTransactionMessageLifetimeUsingBlockhash(svm.latestBlockhashLifetime(), tx),
+		(tx) =>
+			instructions
+				? appendTransactionMessageInstructions(instructions, tx)
+				: tx,
+		(tx) =>
+			setTransactionMessageLifetimeUsingBlockhash(
+				svm.latestBlockhashLifetime(),
+				tx,
+			),
 		(tx) => signTransactionMessageWithSigners(tx),
 	);
 }
@@ -39,14 +46,16 @@ export async function generateAddress() {
 	return (await generateKeyPairSigner()).address;
 }
 
-export const setComputeUnitLimit = (computeUnitLimit: bigint) => (svm: LiteSVM) => {
-	const computeBudget = new ComputeBudget();
-	computeBudget.computeUnitLimit = computeUnitLimit;
-	return svm.withComputeBudget(computeBudget);
-};
+export const setComputeUnitLimit =
+	(computeUnitLimit: bigint) => (svm: LiteSVM) => {
+		const computeBudget = new ComputeBudget();
+		computeBudget.computeUnitLimit = computeUnitLimit;
+		return svm.withComputeBudget(computeBudget);
+	};
 
-export const setHelloWorldProgram = (programAddress: Address) => (svm: LiteSVM) =>
-	svm.addProgramFromFile(programAddress, "program_bytes/counter.so");
+export const setHelloWorldProgram =
+	(programAddress: Address) => (svm: LiteSVM) =>
+		svm.addProgramFromFile(programAddress, "program_bytes/counter.so");
 
 export const setHelloWorldAccount =
 	(address: Address, programAddress: Address) => (svm: LiteSVM) => {
@@ -61,7 +70,10 @@ export const setHelloWorldAccount =
 		});
 	};
 
-export function getGreetInstruction(greetedAddress: Address, programAddress: Address): Instruction {
+export function getGreetInstruction(
+	greetedAddress: Address,
+	programAddress: Address,
+): Instruction {
 	return {
 		accounts: [{ address: greetedAddress, role: AccountRole.WRITABLE }],
 		programAddress,
