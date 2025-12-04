@@ -66,13 +66,5 @@
 		"docs:build": "vitepress build docs",
 		"docs:preview": "vitepress preview docs"
 	},
-	"packageManager": "yarn@4.10.3",
-	"optionalDependencies": {
-		"@loris-sandbox/litesvm-kit-darwin-x64": "0.1.0",
-		"@loris-sandbox/litesvm-kit-linux-x64-gnu": "0.1.0",
-		"@loris-sandbox/litesvm-kit-linux-x64-musl": "0.1.0",
-		"@loris-sandbox/litesvm-kit-darwin-arm64": "0.1.0",
-		"@loris-sandbox/litesvm-kit-linux-arm64-gnu": "0.1.0",
-		"@loris-sandbox/litesvm-kit-linux-arm64-musl": "0.1.0"
-	}
+	"packageManager": "yarn@4.10.3"
 }
