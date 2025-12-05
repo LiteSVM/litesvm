@@ -10,6 +10,7 @@ readme = "../../README.md"
 
 [features]
 internal-test = []
+invocation-inspect-callback = []
 nodejs-internal = ["dep:qualifier_attr"]
 hashbrown = ["dep:hashbrown"]
 serde = []
