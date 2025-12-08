@@ -233,6 +233,34 @@ fn test_infinite_usdc_mint() {
 
 If you want to copy accounts from mainnet or devnet, you can use the `solana account` command in the Solana CLI to save account data to a file.
 
+## Register tracing
+
+`litesvm` can be instantiated with the capability to provide register tracing
+data from processed transactions. This functionality is gated behind the
+`register-tracing` feature flag, which in turn relies on the
+`invocation-inspect-callback` flag. To enable it, users can either
+construct `litesvm` with the `LiteSVM::new_debuggable` initializer - allowing
+register tracing to be configured directly - or simply set the `SBF_TRACE_DIR`
+environment variable, which `litesvm` interprets as a signal to turn tracing on
+upon instantiation. The latter allows users to take advantage of the
+functionality without actually doing any changes to their code.
+
+A default post-instruction callback is provided for storing the
+register tracing data in files. It persists the register sets,
+the SBPF instructions, and a SHA-256 hash identifying the executable that
+was used to generate the tracing data. The motivation behind providing the
+SHA-256 identifier is that files may grow in number, and consumers need a
+deterministic way to evaluate which shared object should be used when
+analyzing the tracing data.
+
+Once enabled register tracing can't be changed afterwards because in nature
+it's baked into the program executables at load time. Yet a user may want a
+more fine-grained control over when register tracing data should be
+collected - for example, only for a specific instruction. Such control could
+be achieved by resetting the invocation callback to
+`EmptyInvocationInspectCallback` and later by restoring it to
+`DefaultRegisterTracingCallback`.
+
 ## Other features
 
 Other things you can do with `litesvm` include:
@@ -253,6 +281,8 @@ much easier.
 
 */
 
+#[cfg(feature = "register-tracing")]
+use crate::register_tracing::DefaultRegisterTracingCallback;
 #[cfg(feature = "precompiles")]
 use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
@@ -347,6 +377,8 @@ mod message_processor;
 #[cfg(feature = "precompiles")]
 mod precompiles;
 mod programs;
+#[cfg(feature = "register-tracing")]
+mod register_tracing;
 mod utils;
 
 #[derive(Clone)]
@@ -362,14 +394,37 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    /// The callback which can be used to inspect invoke_context
+    /// and extract low-level information such as bpf traces, transaction
+    /// context, detailed timings, etc.
     #[cfg(feature = "invocation-inspect-callback")]
     invocation_inspect_callback: Arc<dyn InvocationInspectCallback>,
+    /// Dictates whether or not register tracing was enabled.
+    /// Provided as input to the invocation inspect callback for potential
+    /// register trace consumption.
+    #[cfg(feature = "invocation-inspect-callback")]
+    enable_register_tracing: bool,
 }
 
 impl Default for LiteSVM {
     fn default() -> Self {
+        let _enable_register_tracing = false;
+
+        // Allow users to virtually get register tracing data without
+        // doing any changes to their code provided `SBF_TRACE_DIR` is set.
+        #[cfg(feature = "register-tracing")]
+        let _enable_register_tracing = std::env::var("SBF_TRACE_DIR").is_ok();
+
+        Self::new_inner(_enable_register_tracing)
+    }
+}
+
+impl LiteSVM {
+    fn new_inner(_enable_register_tracing: bool) -> Self {
         let feature_set = FeatureSet::default();
-        Self {
+
+        #[allow(unused_mut)]
+        let mut svm = Self {
             accounts: Default::default(),
             airdrop_kp: Keypair::new().to_bytes(),
             reserved_account_keys: Self::reserved_account_keys_for_feature_set(&feature_set),
@@ -382,15 +437,21 @@ impl Default for LiteSVM {
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
             #[cfg(feature = "invocation-inspect-callback")]
+            enable_register_tracing: _enable_register_tracing,
+            #[cfg(feature = "invocation-inspect-callback")]
             invocation_inspect_callback: Arc::new(EmptyInvocationInspectCallback {}),
-        }
-    }
-}
+        };
 
-impl LiteSVM {
-    /// Creates the basic test environment.
-    pub fn new() -> Self {
-        let svm = LiteSVM::default()
+        #[cfg(feature = "register-tracing")]
+        if svm.enable_register_tracing {
+            svm.invocation_inspect_callback = Arc::new(DefaultRegisterTracingCallback::default());
+        }
+
+        svm
+    }
+
+    fn into_basic(self) -> Self {
+        let svm = self
             .with_feature_set(FeatureSet::all_enabled())
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
@@ -403,6 +464,27 @@ impl LiteSVM {
         let svm = svm.with_precompiles();
 
         svm
+    }
+
+    /// Creates the basic test environment.
+    pub fn new() -> Self {
+        LiteSVM::default().into_basic()
+    }
+
+    #[cfg(feature = "register-tracing")]
+    /// Create a test environment with debugging features.
+    ///
+    /// This constructor allows enabling low-level VM debugging capabilities,
+    /// such as register tracing, which are baked into program executables at
+    /// load time and cannot be changed afterwards.
+    ///
+    /// When `enable_register_tracing` is `true`:
+    /// - Programs are loaded with register tracing support
+    /// - A default [`DefaultRegisterTracingCallback`] is installed
+    /// - Trace data is written to `SBF_TRACE_DIR` (or `target/sbf/trace` by
+    ///   default)
+    pub fn new_debuggable(enable_register_tracing: bool) -> Self {
+        Self::new_inner(enable_register_tracing).into_basic()
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
@@ -506,6 +588,10 @@ impl LiteSVM {
             }
         });
 
+        let _enable_register_tracing = false;
+        #[cfg(feature = "register-tracing")]
+        let _enable_register_tracing = self.enable_register_tracing;
+
         let compute_budget = self
             .compute_budget
             .unwrap_or(ComputeBudget::new_with_defaults(false, false));
@@ -513,7 +599,7 @@ impl LiteSVM {
             &self.feature_set.runtime_features(),
             &compute_budget.to_budget(),
             false,
-            false,
+            _enable_register_tracing,
         )
         .unwrap();
 
@@ -1017,7 +1103,7 @@ impl LiteSVM {
 
                 #[cfg(feature = "invocation-inspect-callback")]
                 self.invocation_inspect_callback
-                    .after_invocation(&invoke_context);
+                    .after_invocation(&invoke_context, self.enable_register_tracing);
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
@@ -1562,7 +1648,7 @@ pub trait InvocationInspectCallback {
         invoke_context: &InvokeContext,
     );
 
-    fn after_invocation(&self, invoke_context: &InvokeContext);
+    fn after_invocation(&self, invoke_context: &InvokeContext, enable_register_tracing: bool);
 }
 
 #[cfg(feature = "invocation-inspect-callback")]
@@ -1573,7 +1659,7 @@ impl InvocationInspectCallback for EmptyInvocationInspectCallback {
     fn before_invocation(&self, _: &SanitizedTransaction, _: &[IndexOfAccount], _: &InvokeContext) {
     }
 
-    fn after_invocation(&self, _: &InvokeContext) {}
+    fn after_invocation(&self, _: &InvokeContext, _enable_register_tracing: bool) {}
 }
 
 #[cfg(test)]
