@@ -362,6 +362,8 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    #[cfg(feature = "invocation-inspect-callback")]
+    invocation_inspect_callback: Arc<dyn InvocationInspectCallback>,
 }
 
 impl Default for LiteSVM {
@@ -379,6 +381,8 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            #[cfg(feature = "invocation-inspect-callback")]
+            invocation_inspect_callback: Arc::new(EmptyInvocationInspectCallback {}),
         }
     }
 }
@@ -993,6 +997,14 @@ impl LiteSVM {
                     compute_budget.to_budget(),
                     SVMTransactionExecutionCost::default(),
                 );
+
+                #[cfg(feature = "invocation-inspect-callback")]
+                self.invocation_inspect_callback.before_invocation(
+                    tx,
+                    &program_indices,
+                    &invoke_context,
+                );
+
                 let mut tx_result = process_message(
                     tx.message(),
                     &program_indices,
@@ -1001,6 +1013,10 @@ impl LiteSVM {
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
+
+                #[cfg(feature = "invocation-inspect-callback")]
+                self.invocation_inspect_callback
+                    .after_invocation(&invoke_context);
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
@@ -1386,6 +1402,14 @@ impl LiteSVM {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
     }
+
+    #[cfg(feature = "invocation-inspect-callback")]
+    pub fn set_invocation_inspect_callback<C: InvocationInspectCallback + 'static>(
+        &mut self,
+        callback: C,
+    ) {
+        self.invocation_inspect_callback = Arc::new(callback);
+    }
 }
 
 struct CheckAndProcessTransactionSuccessCore {
@@ -1526,6 +1550,29 @@ where
         Ok(s_tx) => op(s_tx),
         Err(e) => e,
     }
+}
+
+#[cfg(feature = "invocation-inspect-callback")]
+pub trait InvocationInspectCallback {
+    fn before_invocation(
+        &self,
+        tx: &SanitizedTransaction,
+        program_indices: &[IndexOfAccount],
+        invoke_context: &InvokeContext,
+    );
+
+    fn after_invocation(&self, invoke_context: &InvokeContext);
+}
+
+#[cfg(feature = "invocation-inspect-callback")]
+pub struct EmptyInvocationInspectCallback;
+
+#[cfg(feature = "invocation-inspect-callback")]
+impl InvocationInspectCallback for EmptyInvocationInspectCallback {
+    fn before_invocation(&self, _: &SanitizedTransaction, _: &[IndexOfAccount], _: &InvokeContext) {
+    }
+
+    fn after_invocation(&self, _: &InvokeContext) {}
 }
 
 #[cfg(test)]
