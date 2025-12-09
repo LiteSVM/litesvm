@@ -37,11 +37,11 @@ test("test sigverify", async () => {
 	};
 
 	// And a LiteSVM client with sigverify disabled.
-	const svm = new LiteSVM()
-		.withSigverify(false)
-		.tap((svm) => svm.airdrop(fakePayer.address, lamports(LAMPORTS_PER_SOL)))
-		.tap(setHelloWorldProgram(programAddress))
-		.tap(setHelloWorldAccount(greetedAddress, programAddress));
+	const svm = new LiteSVM();
+	svm.withSigverify(false);
+	svm.airdrop(fakePayer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldProgram(svm, programAddress);
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
 
 	// And given the greeted account has 0 greets.
 	const greetedAccountBefore = decodeAccount(

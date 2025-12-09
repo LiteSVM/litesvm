@@ -28,10 +28,10 @@ test("many instructions", async () => {
 	]);
 
 	// And a LiteSVM client with a hello world program and greeted account set up.
-	const svm = new LiteSVM()
-		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.tap(setHelloWorldProgram(programAddress))
-		.tap(setHelloWorldAccount(greetedAddress, programAddress));
+	const svm = new LiteSVM();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldProgram(svm, programAddress);
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
 
 	// And given the greeted account has 0 greets.
 	const greetedAccountBefore = decodeAccount(

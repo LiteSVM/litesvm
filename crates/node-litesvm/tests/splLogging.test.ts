@@ -17,9 +17,12 @@ test("spl logging", async () => {
 	]);
 
 	// And a LiteSVM client with a logging program loaded from `spl_example_logging.so`.
-	const svm = new LiteSVM()
-		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.addProgramFromFile(programAddress, "program_bytes/spl_example_logging.so");
+	const svm = new LiteSVM();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	svm.addProgramFromFile(
+		programAddress,
+		"program_bytes/spl_example_logging.so",
+	);
 
 	// When we simulate and send a transaction that calls the program.
 	const transaction = await getSignedTransaction(svm, payer, [

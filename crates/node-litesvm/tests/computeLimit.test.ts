@@ -22,11 +22,11 @@ test("compute limit", async () => {
 	]);
 
 	// And a LiteSVM client with a CU limit set to 10.
-	const svm = new LiteSVM()
-		.tap(setComputeUnitLimit(10n))
-		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.tap(setHelloWorldProgram(programAddress))
-		.tap(setHelloWorldAccount(greetedAddress, programAddress));
+	const svm = new LiteSVM();
+	setComputeUnitLimit(svm, 10n);
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldProgram(svm, programAddress);
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
 
 	// When we send a greet instruction which uses more than 10 compute units.
 	const transaction = await getSignedTransaction(svm, payer, [

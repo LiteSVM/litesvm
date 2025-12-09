@@ -566,13 +566,4 @@ export class LiteSVM {
 		this.inner.setStakeHistory(history);
 		return this;
 	}
-
-	/**
-	 * Helper method to apply a function to the LiteSVM instance in a chain.
-	 * @param fn - The function to apply.
-	 */
-	tap(fn: (svm: LiteSVM) => void): LiteSVM {
-		fn(this);
-		return this;
-	}
 }

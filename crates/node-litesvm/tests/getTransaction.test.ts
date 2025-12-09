@@ -25,10 +25,10 @@ test("get transaction", async () => {
 	]);
 
 	// And a LiteSVM client with a hello world program and greeted account set up.
-	const svm = new LiteSVM()
-		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.tap(setHelloWorldProgram(programAddress))
-		.tap(setHelloWorldAccount(greetedAddress, programAddress));
+	const svm = new LiteSVM();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldProgram(svm, programAddress);
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
 
 	// And given we have sent a greet transaction.
 	const transaction = await getSignedTransaction(svm, payer, [

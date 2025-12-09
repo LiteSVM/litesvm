@@ -26,10 +26,10 @@ test("add program via setAccount", async () => {
 	]);
 
 	// And a LiteSVM client with a hello world program loaded using `addProgram`.
-	const svm = new LiteSVM()
-		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.tap(setHelloWorldAccount(greetedAddress, programAddress))
-		.addProgram(programAddress, readFileSync("program_bytes/counter.so"));
+	const svm = new LiteSVM();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
+	svm.addProgram(programAddress, readFileSync("program_bytes/counter.so"));
 
 	// And given the greeted account has 0 greets.
 	const greetedAccountBefore = decodeAccount(

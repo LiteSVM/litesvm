@@ -46,29 +46,30 @@ export async function generateAddress() {
 	return (await generateKeyPairSigner()).address;
 }
 
-export const setComputeUnitLimit =
-	(computeUnitLimit: bigint) => (svm: LiteSVM) => {
-		const computeBudget = new ComputeBudget();
-		computeBudget.computeUnitLimit = computeUnitLimit;
-		return svm.withComputeBudget(computeBudget);
-	};
+export const setComputeUnitLimit = (svm: LiteSVM, computeUnitLimit: bigint) => {
+	const computeBudget = new ComputeBudget();
+	computeBudget.computeUnitLimit = computeUnitLimit;
+	return svm.withComputeBudget(computeBudget);
+};
 
-export const setHelloWorldProgram =
-	(programAddress: Address) => (svm: LiteSVM) =>
-		svm.addProgramFromFile(programAddress, "program_bytes/counter.so");
+export const setHelloWorldProgram = (svm: LiteSVM, programAddress: Address) =>
+	svm.addProgramFromFile(programAddress, "program_bytes/counter.so");
 
-export const setHelloWorldAccount =
-	(address: Address, programAddress: Address) => (svm: LiteSVM) => {
-		const initialData = new Uint8Array([0, 0, 0, 0]);
-		return svm.setAccount({
-			address,
-			executable: false,
-			programAddress: programAddress,
-			lamports: lamports(LAMPORTS_PER_SOL),
-			data: initialData,
-			space: BigInt(initialData.length),
-		});
-	};
+export const setHelloWorldAccount = (
+	svm: LiteSVM,
+	address: Address,
+	programAddress: Address,
+) => {
+	const initialData = new Uint8Array([0, 0, 0, 0]);
+	return svm.setAccount({
+		address,
+		executable: false,
+		programAddress: programAddress,
+		lamports: lamports(LAMPORTS_PER_SOL),
+		data: initialData,
+		space: BigInt(initialData.length),
+	});
+};
 
 export function getGreetInstruction(
 	greetedAddress: Address,

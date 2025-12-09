@@ -20,12 +20,12 @@ test("clock", async () => {
 	]);
 
 	// And a LiteSVM client with a hello world program loaded from `litesvm_clock_example.so`.
-	const svm = new LiteSVM()
-		.tap((svm) => svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL)))
-		.addProgramFromFile(
-			programAddress,
-			"program_bytes/litesvm_clock_example.so",
-		);
+	const svm = new LiteSVM();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	svm.addProgramFromFile(
+		programAddress,
+		"program_bytes/litesvm_clock_example.so",
+	);
 
 	// And given two unique transactions.
 	const [firstTransaction, secondTransaction] = await Promise.all([
