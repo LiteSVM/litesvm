@@ -40,7 +40,6 @@ it("transfers SOL from one wallet to another", async () => {
 	svm.airdrop(payer.address, lamports(2_000_000_000n));
 
 	// When we send 1 SOL from the payer to the recipient.
-	const lifetime = svm.latestBlockhashLifetime();
 	const instruction = getTransferSolInstruction({
 		source: payer,
 		destination: recipient.address,
@@ -49,7 +48,7 @@ it("transfers SOL from one wallet to another", async () => {
 	const transaction = await pipe(
 		createTransactionMessage({ version: 0 }),
 		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
-		(tx) => setTransactionMessageLifetimeUsingBlockhash(lifetime, tx),
+		(tx) => svm.setTransactionMessageLifetimeUsingLatestBlockhash(tx),
 		(tx) => appendTransactionMessageInstruction(instruction, tx),
 		(tx) => signTransactionMessageWithSigners(tx),
 	);

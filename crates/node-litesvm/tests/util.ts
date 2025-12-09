@@ -33,11 +33,7 @@ export async function getSignedTransaction(
 			instructions
 				? appendTransactionMessageInstructions(instructions, tx)
 				: tx,
-		(tx) =>
-			setTransactionMessageLifetimeUsingBlockhash(
-				svm.latestBlockhashLifetime(),
-				tx,
-			),
+		(tx) => svm.setTransactionMessageLifetimeUsingLatestBlockhash(tx),
 		(tx) => signTransactionMessageWithSigners(tx),
 	);
 }

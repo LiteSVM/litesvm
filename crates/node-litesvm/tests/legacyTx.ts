@@ -57,11 +57,7 @@ test("legacy tx", async () => {
 				getGreetInstruction(programAddress, greetedAddress),
 				tx,
 			),
-		(tx) =>
-			setTransactionMessageLifetimeUsingBlockhash(
-				svm.latestBlockhashLifetime(),
-				tx,
-			),
+		(tx) => svm.setTransactionMessageLifetimeUsingLatestBlockhash(tx),
 		(tx) => signTransactionMessageWithSigners(tx),
 	);
 	svm.sendTransaction(transaction);

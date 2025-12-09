@@ -1,8 +1,10 @@
 import {
 	Address,
 	assertIsFullySignedTransaction,
+	BaseTransactionMessage,
 	Blockhash,
 	EncodedAccount,
+	ExcludeTransactionMessageLifetime,
 	getAddressCodec,
 	getBase58Encoder,
 	getTransactionEncoder,
@@ -10,9 +12,11 @@ import {
 	Lamports,
 	lamports,
 	MaybeEncodedAccount,
+	setTransactionMessageLifetimeUsingBlockhash,
 	Signature,
 	Transaction,
-	TransactionBlockhashLifetime,
+	TransactionMessageWithBlockhashLifetime,
+	TransactionMessageWithLifetime,
 } from "@solana/kit";
 import {
 	Account,
@@ -284,15 +288,23 @@ export class LiteSVM {
 	}
 
 	/**
-	 * Gets the latest blockhash and last valid block height.
-	 * Since LiteSVM doesn't have blocks, this is an arbitrary value controlled by LiteSVM
-	 * @returns The designated latest blockhash and last valid block height.
+	 * Sets the lifetime on a transaction message using
+	 * the latest blockhash from the LiteSVM instance.
 	 */
-	latestBlockhashLifetime(): TransactionBlockhashLifetime {
-		return {
-			blockhash: this.inner.latestBlockhash() as Blockhash,
-			lastValidBlockHeight: 0n,
-		};
+	setTransactionMessageLifetimeUsingLatestBlockhash<
+		TTransactionMessage extends BaseTransactionMessage &
+			Partial<TransactionMessageWithLifetime>,
+	>(
+		transactionMessage: TTransactionMessage,
+	): ExcludeTransactionMessageLifetime<TTransactionMessage> &
+		TransactionMessageWithBlockhashLifetime {
+		return setTransactionMessageLifetimeUsingBlockhash(
+			{
+				blockhash: this.inner.latestBlockhash() as Blockhash,
+				lastValidBlockHeight: 0n,
+			},
+			transactionMessage,
+		);
 	}
 
 	/**
