@@ -249,7 +249,7 @@ export class LiteSVM {
 	 * @param address - The address to write to.
 	 * @param account - The account object to write.
 	 */
-	setAccount(account: EncodedAccount): LiteSVM {
+	setAccount(account: EncodedAccount) {
 		this.inner.setAccount(
 			getAddressCodec().encode(account.address) as Uint8Array,
 			new Account(
@@ -260,7 +260,6 @@ export class LiteSVM {
 				0n, // rentEpoch was deprecated from the RPC response and removed from Kit.
 			),
 		);
-		return this;
 	}
 
 	/**
@@ -329,12 +328,11 @@ export class LiteSVM {
 	 * @param programId - The program ID.
 	 * @param path - The path to the .so file.
 	 */
-	addProgramFromFile(programId: Address, path: string): LiteSVM {
-		this.inner.addProgramFromFile(
+	addProgramFromFile(programId: Address, path: string) {
+		return this.inner.addProgramFromFile(
 			getAddressCodec().encode(programId) as Uint8Array,
 			path,
 		);
-		return this;
 	}
 
 	/**
@@ -342,12 +340,11 @@ export class LiteSVM {
 	 * @param programId - The program ID.
 	 * @param programBytes - The raw bytes of the compiled program.
 	 */
-	addProgram(programId: Address, programBytes: Uint8Array): LiteSVM {
-		this.inner.addProgram(
+	addProgram(programId: Address, programBytes: Uint8Array) {
+		return this.inner.addProgram(
 			getAddressCodec().encode(programId) as Uint8Array,
 			programBytes,
 		);
-		return this;
 	}
 
 	/**
@@ -416,9 +413,8 @@ export class LiteSVM {
 	 * Expires the current blockhash.
 	 * The return value of `latestBlockhash()` will be different after calling this.
 	 */
-	expireBlockhash(): LiteSVM {
+	expireBlockhash() {
 		this.inner.expireBlockhash();
-		return this;
 	}
 
 	/**
@@ -426,9 +422,8 @@ export class LiteSVM {
 	 * around `setClock()`.
 	 * @param slot - The new slot.
 	 */
-	warpToSlot(slot: bigint): LiteSVM {
+	warpToSlot(slot: bigint) {
 		this.inner.warpToSlot(slot);
-		return this;
 	}
 
 	/**
@@ -443,9 +438,8 @@ export class LiteSVM {
 	 * Overwrite the clock sysvar.
 	 * @param clock - The clock object.
 	 */
-	setClock(clock: Clock): LiteSVM {
+	setClock(clock: Clock) {
 		this.inner.setClock(clock);
-		return this;
 	}
 
 	/**
@@ -460,9 +454,8 @@ export class LiteSVM {
 	 * Overwrite the EpochRewards sysvar.
 	 * @param rewards - The EpochRewards object.
 	 */
-	setEpochRewards(rewards: EpochRewards): LiteSVM {
+	setEpochRewards(rewards: EpochRewards) {
 		this.inner.setEpochRewards(rewards);
-		return this;
 	}
 
 	/**
@@ -477,9 +470,8 @@ export class LiteSVM {
 	 * Overwrite the EpochSchedule sysvar.
 	 * @param schedule - The EpochSchedule object.
 	 */
-	setEpochSchedule(schedule: EpochSchedule): LiteSVM {
+	setEpochSchedule(schedule: EpochSchedule) {
 		this.inner.setEpochSchedule(schedule);
-		return this;
 	}
 
 	/**
@@ -494,9 +486,8 @@ export class LiteSVM {
 	 * Overwrite the last restart slot sysvar.
 	 * @param slot - The last restart slot.
 	 */
-	setLastRestartSlot(slot: bigint): LiteSVM {
+	setLastRestartSlot(slot: bigint) {
 		this.inner.setLastRestartSlot(slot);
-		return this;
 	}
 
 	/**
@@ -511,9 +502,8 @@ export class LiteSVM {
 	 * Overwrite the rent sysvar.
 	 * @param rent - The new rent object.
 	 */
-	setRent(rent: Rent): LiteSVM {
+	setRent(rent: Rent) {
 		this.inner.setRent(rent);
-		return this;
 	}
 
 	/**
@@ -528,9 +518,8 @@ export class LiteSVM {
 	 * Overwrite the SlotHashes sysvar.
 	 * @param hashes - The SlotHash array.
 	 */
-	setSlotHashes(hashes: SlotHash[]): LiteSVM {
+	setSlotHashes(hashes: SlotHash[]) {
 		this.inner.setSlotHashes(hashes);
-		return this;
 	}
 
 	/**
@@ -545,9 +534,8 @@ export class LiteSVM {
 	 * Overwrite the SlotHistory sysvar.
 	 * @param history - The SlotHistory object
 	 */
-	setSlotHistory(history: SlotHistory): LiteSVM {
+	setSlotHistory(history: SlotHistory) {
 		this.inner.setSlotHistory(history);
-		return this;
 	}
 
 	/**
@@ -562,8 +550,7 @@ export class LiteSVM {
 	 * Overwrite the StakeHistory sysvar.
 	 * @param history - The StakeHistory object
 	 */
-	setStakeHistory(history: StakeHistory): LiteSVM {
+	setStakeHistory(history: StakeHistory) {
 		this.inner.setStakeHistory(history);
-		return this;
 	}
 }
