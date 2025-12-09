@@ -18,6 +18,8 @@ This example just transfers lamports from Alice to Bob without loading
 any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
 
 ```ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { LiteSVM } from "litesvm";
 import { getTransferSolInstruction } from "@solana-program/system";
 import {
@@ -30,9 +32,8 @@ import {
 	setTransactionMessageLifetimeUsingBlockhash,
 	signTransactionMessageWithSigners,
 } from "@solana/kit";
-import { expect, it } from "vitest";
 
-it("transfers SOL from one wallet to another", async () => {
+test("it transfers SOL from one wallet to another", async () => {
 	// Given a payer with 2 SOL and a recipient with 0 SOL.
 	const svm = new LiteSVM();
 	const payer = await generateKeyPairSigner();
@@ -55,8 +56,11 @@ it("transfers SOL from one wallet to another", async () => {
 	svm.sendTransaction(transaction);
 
 	// Then we expect the accounts to have the correct balances.
-	expect(svm.getBalance(recipient.address)).toBe(lamports(1_000_000_000n));
-	expect(svm.getBalance(payer.address)).toBeLessThan(lamports(1_000_000_000n));
+	assert.strictEqual(
+		svm.getBalance(recipient.address),
+		lamports(1_000_000_000n),
+	);
+	assert(svm.getBalance(payer.address) < lamports(1_000_000_000n));
 });
 ```
 
