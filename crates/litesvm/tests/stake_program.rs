@@ -2,8 +2,7 @@
 
 use {
     litesvm::LiteSVM,
-    solana_account::{Account, ReadableAccount, WritableAccount},
-    solana_clock::Clock,
+    solana_account::Account,
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
     solana_instruction::Instruction,
@@ -15,79 +14,78 @@ use {
     solana_signer::{signers::Signers, Signer},
     solana_stake_interface::{
         self as stake,
-        error::StakeError,
         instruction::{self as ixn, LockupArgs},
-        state::{Authorized, Delegation, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
+        state::{Authorized, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
     },
     solana_system_interface::instruction as system_instruction,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
     solana_vote_interface::{
         instruction as vote_instruction,
-        state::{VoteInit, VoteStateV4, VoteStateVersions},
+        state::{VoteInit, VoteStateV4},
     },
 };
 
-// utility function, used by Stakes, tests
-fn from<T: ReadableAccount>(key: &Pubkey, account: &T) -> Option<VoteStateV4> {
-    VoteStateV4::deserialize(account.data(), key).ok()
-}
+// // utility function, used by Stakes, tests
+// fn from<T: ReadableAccount>(key: &Pubkey, account: &T) -> Option<VoteStateV4> {
+//     VoteStateV4::deserialize(account.data(), key).ok()
+// }
 
-// utility function, used by Stakes, tests
-fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
-    VoteStateV4::serialize(versioned, account.data_as_mut_slice()).ok()
-}
+// // utility function, used by Stakes, tests
+// fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
+//     VoteStateV4::serialize(versioned, account.data_as_mut_slice()).ok()
+// }
 
-fn increment_vote_account_credits(
-    svm: &mut LiteSVM,
-    vote_account_address: Pubkey,
-    number_of_credits: u64,
-) {
-    // generate some vote activity for rewards
-    let mut vote_account = svm.get_account(&vote_account_address).unwrap();
-    let mut vote_state = from(&vote_account_address, &vote_account).unwrap();
+// fn increment_vote_account_credits(
+//     svm: &mut LiteSVM,
+//     vote_account_address: Pubkey,
+//     number_of_credits: u64,
+// ) {
+//     // generate some vote activity for rewards
+//     let mut vote_account = svm.get_account(&vote_account_address).unwrap();
+//     let mut vote_state = from(&vote_account_address, &vote_account).unwrap();
 
-    let epoch = svm.get_sysvar::<Clock>().epoch;
-    // Inlined from vote program - maximum number of epoch credits to keep in history
-    const MAX_EPOCH_CREDITS_HISTORY: usize = 64;
-    for _ in 0..number_of_credits {
-        // Inline increment_credits logic from vote program.
-        let credits = 1;
+//     let epoch = svm.get_sysvar::<Clock>().epoch;
+//     // Inlined from vote program - maximum number of epoch credits to keep in history
+//     const MAX_EPOCH_CREDITS_HISTORY: usize = 64;
+//     for _ in 0..number_of_credits {
+//         // Inline increment_credits logic from vote program.
+//         let credits = 1;
 
-        // never seen a credit
-        if vote_state.epoch_credits.is_empty() {
-            vote_state.epoch_credits.push((epoch, 0, 0));
-        } else if epoch != vote_state.epoch_credits.last().unwrap().0 {
-            let (_, credits_val, prev_credits) = *vote_state.epoch_credits.last().unwrap();
+//         // never seen a credit
+//         if vote_state.epoch_credits.is_empty() {
+//             vote_state.epoch_credits.push((epoch, 0, 0));
+//         } else if epoch != vote_state.epoch_credits.last().unwrap().0 {
+//             let (_, credits_val, prev_credits) = *vote_state.epoch_credits.last().unwrap();
 
-            if credits_val != prev_credits {
-                // if credits were earned previous epoch
-                // append entry at end of list for the new epoch
-                vote_state
-                    .epoch_credits
-                    .push((epoch, credits_val, credits_val));
-            } else {
-                // else just move the current epoch
-                vote_state.epoch_credits.last_mut().unwrap().0 = epoch;
-            }
+//             if credits_val != prev_credits {
+//                 // if credits were earned previous epoch
+//                 // append entry at end of list for the new epoch
+//                 vote_state
+//                     .epoch_credits
+//                     .push((epoch, credits_val, credits_val));
+//             } else {
+//                 // else just move the current epoch
+//                 vote_state.epoch_credits.last_mut().unwrap().0 = epoch;
+//             }
 
-            // Remove too old epoch_credits
-            if vote_state.epoch_credits.len() > MAX_EPOCH_CREDITS_HISTORY {
-                vote_state.epoch_credits.remove(0);
-            }
-        }
+//             // Remove too old epoch_credits
+//             if vote_state.epoch_credits.len() > MAX_EPOCH_CREDITS_HISTORY {
+//                 vote_state.epoch_credits.remove(0);
+//             }
+//         }
 
-        vote_state.epoch_credits.last_mut().unwrap().1 = vote_state
-            .epoch_credits
-            .last()
-            .unwrap()
-            .1
-            .saturating_add(credits);
-    }
-    let versioned = VoteStateVersions::V4(Box::new(vote_state));
-    to(&versioned, &mut vote_account).unwrap();
-    svm.set_account(vote_account_address, vote_account).unwrap();
-}
+//         vote_state.epoch_credits.last_mut().unwrap().1 = vote_state
+//             .epoch_credits
+//             .last()
+//             .unwrap()
+//             .1
+//             .saturating_add(credits);
+//     }
+//     let versioned = VoteStateVersions::V4(Box::new(vote_state));
+//     to(&versioned, &mut vote_account).unwrap();
+//     svm.set_account(vote_account_address, vote_account).unwrap();
+// }
 
 #[derive(Debug, PartialEq)]
 struct Accounts {
@@ -174,16 +172,16 @@ fn create_vote(
     let _ = svm.send_transaction(transaction);
 }
 
-fn advance_epoch(svm: &mut LiteSVM) {
-    refresh_blockhash(svm);
-    let old_clock = svm.get_sysvar::<Clock>();
-    let root_slot = old_clock.slot;
-    let slots_per_epoch = svm.get_sysvar::<EpochSchedule>().slots_per_epoch;
-    svm.warp_to_slot(root_slot + slots_per_epoch);
-    let mut new_clock = old_clock;
-    new_clock.epoch += 1;
-    svm.set_sysvar::<Clock>(&new_clock)
-}
+// fn advance_epoch(svm: &mut LiteSVM) {
+//     refresh_blockhash(svm);
+//     let old_clock = svm.get_sysvar::<Clock>();
+//     let root_slot = old_clock.slot;
+//     let slots_per_epoch = svm.get_sysvar::<EpochSchedule>().slots_per_epoch;
+//     svm.warp_to_slot(root_slot + slots_per_epoch);
+//     let mut new_clock = old_clock;
+//     new_clock.epoch += 1;
+//     svm.set_sysvar::<Clock>(&new_clock)
+// }
 
 fn refresh_blockhash(svm: &mut LiteSVM) {
     svm.expire_blockhash()
@@ -209,23 +207,23 @@ fn get_stake_account_rent(svm: &mut LiteSVM) -> u64 {
     rent.minimum_balance(std::mem::size_of::<stake::state::StakeStateV2>())
 }
 
-fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
-    let transaction = Transaction::new_signed_with_payer(
-        &[stake::instruction::get_minimum_delegation()],
-        Some(&payer.pubkey()),
-        &[&payer],
-        svm.latest_blockhash(),
-    );
-    let mut data = svm
-        .simulate_transaction(transaction)
-        .unwrap()
-        .meta
-        .return_data
-        .data;
-    data.resize(8, 0);
+// fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
+//     let transaction = Transaction::new_signed_with_payer(
+//         &[stake::instruction::get_minimum_delegation()],
+//         Some(&payer.pubkey()),
+//         &[&payer],
+//         svm.latest_blockhash(),
+//     );
+//     let mut data = svm
+//         .simulate_transaction(transaction)
+//         .unwrap()
+//         .meta
+//         .return_data
+//         .data;
+//     data.resize(8, 0);
 
-    data.try_into().map(u64::from_le_bytes).unwrap()
-}
+//     data.try_into().map(u64::from_le_bytes).unwrap()
+// }
 
 fn create_independent_stake_account(
     svm: &mut LiteSVM,
