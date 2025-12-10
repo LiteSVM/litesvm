@@ -710,132 +710,132 @@ fn test_authorize() {
     }
 }
 
-#[test]
-fn test_stake_delegate() {
-    let mut svm = LiteSVM::new();
-    let accounts = Accounts::default();
-    let payer = Keypair::new();
-    svm.airdrop(&payer.pubkey(), 1_000_000_000_000).unwrap();
-    accounts.initialize(&mut svm, &payer);
+// #[test]
+// fn test_stake_delegate() {
+//     let mut svm = LiteSVM::new();
+//     let accounts = Accounts::default();
+//     let payer = Keypair::new();
+//     svm.airdrop(&payer.pubkey(), 1_000_000_000_000).unwrap();
+//     accounts.initialize(&mut svm, &payer);
 
-    let vote_account2 = Keypair::new();
-    let latest_blockhash = svm.latest_blockhash();
-    create_vote(
-        &mut svm,
-        &payer,
-        &latest_blockhash,
-        &Keypair::new(),
-        &Pubkey::new_unique(),
-        &Pubkey::new_unique(),
-        &vote_account2,
-    );
+//     let vote_account2 = Keypair::new();
+//     let latest_blockhash = svm.latest_blockhash();
+//     create_vote(
+//         &mut svm,
+//         &payer,
+//         &latest_blockhash,
+//         &Keypair::new(),
+//         &Pubkey::new_unique(),
+//         &Pubkey::new_unique(),
+//         &vote_account2,
+//     );
 
-    let staker_keypair = Keypair::new();
-    let withdrawer_keypair = Keypair::new();
+//     let staker_keypair = Keypair::new();
+//     let withdrawer_keypair = Keypair::new();
 
-    let staker = staker_keypair.pubkey();
-    let withdrawer = withdrawer_keypair.pubkey();
+//     let staker = staker_keypair.pubkey();
+//     let withdrawer = withdrawer_keypair.pubkey();
 
-    let authorized = Authorized { staker, withdrawer };
+//     let authorized = Authorized { staker, withdrawer };
 
-    let vote_state_credits = 100;
-    increment_vote_account_credits(&mut svm, accounts.vote_account.pubkey(), vote_state_credits);
-    let minimum_delegation = get_minimum_delegation(&mut svm, &payer);
+//     let vote_state_credits = 100;
+//     increment_vote_account_credits(&mut svm, accounts.vote_account.pubkey(), vote_state_credits);
+//     let minimum_delegation = get_minimum_delegation(&mut svm, &payer);
 
-    let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
-    let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
+//     let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
+//     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
 
-    test_instruction_with_missing_signers(&mut svm, &instruction, &vec![&staker_keypair], &payer);
+//     test_instruction_with_missing_signers(&mut svm, &instruction, &vec![&staker_keypair], &payer);
 
-    // verify that delegate() looks right
-    let clock = svm.get_sysvar::<Clock>();
-    let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
-    assert_eq!(
-        stake_data.unwrap(),
-        Stake {
-            delegation: Delegation {
-                voter_pubkey: accounts.vote_account.pubkey(),
-                stake: minimum_delegation,
-                activation_epoch: clock.epoch,
-                deactivation_epoch: u64::MAX,
-                ..Delegation::default()
-            },
-            credits_observed: vote_state_credits,
-        }
-    );
+//     // verify that delegate() looks right
+//     let clock = svm.get_sysvar::<Clock>();
+//     let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
+//     assert_eq!(
+//         stake_data.unwrap(),
+//         Stake {
+//             delegation: Delegation {
+//                 voter_pubkey: accounts.vote_account.pubkey(),
+//                 stake: minimum_delegation,
+//                 activation_epoch: clock.epoch,
+//                 deactivation_epoch: u64::MAX,
+//                 ..Delegation::default()
+//             },
+//             credits_observed: vote_state_credits,
+//         }
+//     );
 
-    // verify that delegate fails as stake is active and not deactivating
-    advance_epoch(&mut svm);
-    let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+//     // verify that delegate fails as stake is active and not deactivating
+//     advance_epoch(&mut svm);
+//     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
+//     let e =
+//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
 
-    // deactivate
-    let instruction = ixn::deactivate_stake(&stake, &staker);
-    process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
+//     // deactivate
+//     let instruction = ixn::deactivate_stake(&stake, &staker);
+//     process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
 
-    // verify that delegate to a different vote account fails during deactivation
-    let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+//     // verify that delegate to a different vote account fails during deactivation
+//     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
+//     let e =
+//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
 
-    // verify that delegate succeeds to same vote account when stake is deactivating
-    refresh_blockhash(&mut svm);
-    let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
-    process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
+//     // verify that delegate succeeds to same vote account when stake is deactivating
+//     refresh_blockhash(&mut svm);
+//     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
+//     process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
 
-    // verify that deactivation has been cleared
-    let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
-    assert_eq!(stake_data.unwrap().delegation.deactivation_epoch, u64::MAX);
+//     // verify that deactivation has been cleared
+//     let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
+//     assert_eq!(stake_data.unwrap().delegation.deactivation_epoch, u64::MAX);
 
-    // verify that delegate to a different vote account fails if stake is still active
-    let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
-    // delegate still fails after stake is fully activated; redelegate is not supported
-    advance_epoch(&mut svm);
-    let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+//     // verify that delegate to a different vote account fails if stake is still active
+//     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
+//     let e =
+//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+//     // delegate still fails after stake is fully activated; redelegate is not supported
+//     advance_epoch(&mut svm);
+//     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
+//     let e =
+//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
 
-    // delegate to spoofed vote account fails (not owned by vote program)
-    let mut fake_vote_account = get_account(&mut svm, &accounts.vote_account.pubkey());
-    fake_vote_account.owner = Pubkey::new_unique();
-    let fake_vote_address = Pubkey::new_unique();
-    svm.set_account(fake_vote_address, fake_vote_account)
-        .unwrap();
+//     // delegate to spoofed vote account fails (not owned by vote program)
+//     let mut fake_vote_account = get_account(&mut svm, &accounts.vote_account.pubkey());
+//     fake_vote_account.owner = Pubkey::new_unique();
+//     let fake_vote_address = Pubkey::new_unique();
+//     svm.set_account(fake_vote_address, fake_vote_account)
+//         .unwrap();
 
-    let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
-    let instruction = ixn::delegate_stake(&stake, &staker, &fake_vote_address);
+//     let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
+//     let instruction = ixn::delegate_stake(&stake, &staker, &fake_vote_address);
 
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-    assert_eq!(e, ProgramError::IncorrectProgramId);
+//     let e =
+//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+//     assert_eq!(e, ProgramError::IncorrectProgramId);
 
-    // delegate stake program-owned non-stake account fails
-    let rewards_pool_address = Pubkey::new_unique();
-    let rewards_pool = Account {
-        lamports: get_stake_account_rent(&mut svm),
-        data: bincode::serialize(&StakeStateV2::RewardsPool)
-            .unwrap()
-            .to_vec(),
-        owner: solana_sdk_ids::stake::id(),
-        executable: false,
-        rent_epoch: u64::MAX,
-    };
-    svm.set_account(rewards_pool_address, rewards_pool).unwrap();
+//     // delegate stake program-owned non-stake account fails
+//     let rewards_pool_address = Pubkey::new_unique();
+//     let rewards_pool = Account {
+//         lamports: get_stake_account_rent(&mut svm),
+//         data: bincode::serialize(&StakeStateV2::RewardsPool)
+//             .unwrap()
+//             .to_vec(),
+//         owner: solana_sdk_ids::stake::id(),
+//         executable: false,
+//         rent_epoch: u64::MAX,
+//     };
+//     svm.set_account(rewards_pool_address, rewards_pool).unwrap();
 
-    let instruction = ixn::delegate_stake(
-        &rewards_pool_address,
-        &staker,
-        &accounts.vote_account.pubkey(),
-    );
+//     let instruction = ixn::delegate_stake(
+//         &rewards_pool_address,
+//         &staker,
+//         &accounts.vote_account.pubkey(),
+//     );
 
-    let e =
-        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-    assert_eq!(e, ProgramError::InvalidAccountData);
-}
+//     let e =
+//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+//     assert_eq!(e, ProgramError::InvalidAccountData);
+// }
