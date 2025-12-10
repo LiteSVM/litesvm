@@ -354,6 +354,7 @@ pub struct LiteSVM {
     accounts: AccountsDb,
     airdrop_kp: [u8; 64],
     feature_set: FeatureSet,
+    reserved_account_keys: ReservedAccountKeys,
     latest_blockhash: Hash,
     history: TransactionHistory,
     compute_budget: Option<ComputeBudget>,
@@ -361,14 +362,18 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    #[cfg(feature = "invocation-inspect-callback")]
+    invocation_inspect_callback: Arc<dyn InvocationInspectCallback>,
 }
 
 impl Default for LiteSVM {
     fn default() -> Self {
+        let feature_set = FeatureSet::default();
         Self {
             accounts: Default::default(),
             airdrop_kp: Keypair::new().to_bytes(),
-            feature_set: Default::default(),
+            reserved_account_keys: Self::reserved_account_keys_for_feature_set(&feature_set),
+            feature_set,
             latest_blockhash: create_blockhash(b"genesis"),
             history: TransactionHistory::new(),
             compute_budget: None,
@@ -376,6 +381,8 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            #[cfg(feature = "invocation-inspect-callback")]
+            invocation_inspect_callback: Arc::new(EmptyInvocationInspectCallback {}),
         }
     }
 }
@@ -471,6 +478,13 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_feature_set(&mut self, feature_set: FeatureSet) {
         self.feature_set = feature_set;
+        self.reserved_account_keys = Self::reserved_account_keys_for_feature_set(&self.feature_set);
+    }
+
+    fn reserved_account_keys_for_feature_set(feature_set: &FeatureSet) -> ReservedAccountKeys {
+        let mut reserved_account_keys = ReservedAccountKeys::default();
+        reserved_account_keys.update_active_set(feature_set);
+        reserved_account_keys
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
@@ -776,7 +790,7 @@ impl LiteSVM {
             MessageHash::Compute,
             Some(false),
             &self.accounts,
-            &ReservedAccountKeys::empty_key_set(),
+            &self.reserved_account_keys.active,
         );
         res.inspect_err(|_| {
             log::error!("Transaction sanitization failed");
@@ -984,6 +998,14 @@ impl LiteSVM {
                     compute_budget.to_budget(),
                     SVMTransactionExecutionCost::default(),
                 );
+
+                #[cfg(feature = "invocation-inspect-callback")]
+                self.invocation_inspect_callback.before_invocation(
+                    tx,
+                    &program_indices,
+                    &invoke_context,
+                );
+
                 let mut tx_result = process_message(
                     tx.message(),
                     &program_indices,
@@ -992,6 +1014,10 @@ impl LiteSVM {
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
+
+                #[cfg(feature = "invocation-inspect-callback")]
+                self.invocation_inspect_callback
+                    .after_invocation(&invoke_context);
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
@@ -1157,7 +1183,7 @@ impl LiteSVM {
         &self,
         sanitized_tx: &SanitizedTransaction,
     ) -> Result<(), ExecutionResult> {
-        if self.history.check_transaction(sanitized_tx.signature()) {
+        if self.sigverify && self.history.check_transaction(sanitized_tx.signature()) {
             return Err(ExecutionResult {
                 tx_result: Err(TransactionError::AlreadyProcessed),
                 ..Default::default()
@@ -1318,7 +1344,7 @@ impl LiteSVM {
 
     #[cfg(feature = "internal-test")]
     pub fn get_feature_set(&self) -> Arc<FeatureSet> {
-        self.feature_set.clone()
+        self.feature_set.clone().into()
     }
 
     fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
@@ -1375,6 +1401,14 @@ impl LiteSVM {
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
         nonce_is_advanceable && self.check_message_for_nonce(tx.message())
+    }
+
+    #[cfg(feature = "invocation-inspect-callback")]
+    pub fn set_invocation_inspect_callback<C: InvocationInspectCallback + 'static>(
+        &mut self,
+        callback: C,
+    ) {
+        self.invocation_inspect_callback = Arc::new(callback);
     }
 }
 
@@ -1516,5 +1550,59 @@ where
     match res {
         Ok(s_tx) => op(s_tx),
         Err(e) => e,
+    }
+}
+
+#[cfg(feature = "invocation-inspect-callback")]
+pub trait InvocationInspectCallback {
+    fn before_invocation(
+        &self,
+        tx: &SanitizedTransaction,
+        program_indices: &[IndexOfAccount],
+        invoke_context: &InvokeContext,
+    );
+
+    fn after_invocation(&self, invoke_context: &InvokeContext);
+}
+
+#[cfg(feature = "invocation-inspect-callback")]
+pub struct EmptyInvocationInspectCallback;
+
+#[cfg(feature = "invocation-inspect-callback")]
+impl InvocationInspectCallback for EmptyInvocationInspectCallback {
+    fn before_invocation(&self, _: &SanitizedTransaction, _: &[IndexOfAccount], _: &InvokeContext) {
+    }
+
+    fn after_invocation(&self, _: &InvokeContext) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::*,
+        solana_instruction::{account_meta::AccountMeta, Instruction},
+        solana_message::{Message, VersionedMessage},
+    };
+
+    #[test]
+    fn sysvar_accounts_are_demoted_to_readonly() {
+        let payer = Keypair::new();
+        let svm = LiteSVM::new();
+        let rent_key = solana_sdk_ids::sysvar::rent::id();
+        let ix = Instruction {
+            program_id: solana_sdk_ids::system_program::id(),
+            accounts: vec![AccountMeta {
+                pubkey: rent_key,
+                is_signer: false,
+                is_writable: true,
+            }],
+            data: vec![],
+        };
+        let message = Message::new(&[ix], Some(&payer.pubkey()));
+        let tx =
+            VersionedTransaction::try_new(VersionedMessage::Legacy(message), &[&payer]).unwrap();
+        let sanitized = svm.sanitize_transaction_no_verify_inner(tx).unwrap();
+
+        assert!(!sanitized.message().is_writable(1));
     }
 }
