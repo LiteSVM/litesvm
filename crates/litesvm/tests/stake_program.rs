@@ -2,7 +2,8 @@
 
 use {
     litesvm::LiteSVM,
-    solana_account::Account,
+    solana_account::{Account, ReadableAccount, WritableAccount},
+    solana_clock::Clock,
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
     solana_instruction::Instruction,
@@ -14,78 +15,79 @@ use {
     solana_signer::{signers::Signers, Signer},
     solana_stake_interface::{
         self as stake,
+        error::StakeError,
         instruction::{self as ixn, LockupArgs},
-        state::{Authorized, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
+        state::{Authorized, Delegation, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
     },
     solana_system_interface::instruction as system_instruction,
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
     solana_vote_interface::{
         instruction as vote_instruction,
-        state::{VoteInit, VoteStateV4},
+        state::{VoteInit, VoteStateV4, VoteStateVersions},
     },
 };
 
-// // utility function, used by Stakes, tests
-// fn from<T: ReadableAccount>(key: &Pubkey, account: &T) -> Option<VoteStateV4> {
-//     VoteStateV4::deserialize(account.data(), key).ok()
-// }
+// utility function, used by Stakes, tests
+fn from<T: ReadableAccount>(key: &Pubkey, account: &T) -> Option<VoteStateV4> {
+    VoteStateV4::deserialize(account.data(), key).ok()
+}
 
-// // utility function, used by Stakes, tests
-// fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
-//     VoteStateV4::serialize(versioned, account.data_as_mut_slice()).ok()
-// }
+// utility function, used by Stakes, tests
+fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Option<()> {
+    VoteStateV4::serialize(versioned, account.data_as_mut_slice()).ok()
+}
 
-// fn increment_vote_account_credits(
-//     svm: &mut LiteSVM,
-//     vote_account_address: Pubkey,
-//     number_of_credits: u64,
-// ) {
-//     // generate some vote activity for rewards
-//     let mut vote_account = svm.get_account(&vote_account_address).unwrap();
-//     let mut vote_state = from(&vote_account_address, &vote_account).unwrap();
+fn increment_vote_account_credits(
+    svm: &mut LiteSVM,
+    vote_account_address: Pubkey,
+    number_of_credits: u64,
+) {
+    // generate some vote activity for rewards
+    let mut vote_account = svm.get_account(&vote_account_address).unwrap();
+    let mut vote_state = from(&vote_account_address, &vote_account).unwrap();
 
-//     let epoch = svm.get_sysvar::<Clock>().epoch;
-//     // Inlined from vote program - maximum number of epoch credits to keep in history
-//     const MAX_EPOCH_CREDITS_HISTORY: usize = 64;
-//     for _ in 0..number_of_credits {
-//         // Inline increment_credits logic from vote program.
-//         let credits = 1;
+    let epoch = svm.get_sysvar::<Clock>().epoch;
+    // Inlined from vote program - maximum number of epoch credits to keep in history
+    const MAX_EPOCH_CREDITS_HISTORY: usize = 64;
+    for _ in 0..number_of_credits {
+        // Inline increment_credits logic from vote program.
+        let credits = 1;
 
-//         // never seen a credit
-//         if vote_state.epoch_credits.is_empty() {
-//             vote_state.epoch_credits.push((epoch, 0, 0));
-//         } else if epoch != vote_state.epoch_credits.last().unwrap().0 {
-//             let (_, credits_val, prev_credits) = *vote_state.epoch_credits.last().unwrap();
+        // never seen a credit
+        if vote_state.epoch_credits.is_empty() {
+            vote_state.epoch_credits.push((epoch, 0, 0));
+        } else if epoch != vote_state.epoch_credits.last().unwrap().0 {
+            let (_, credits_val, prev_credits) = *vote_state.epoch_credits.last().unwrap();
 
-//             if credits_val != prev_credits {
-//                 // if credits were earned previous epoch
-//                 // append entry at end of list for the new epoch
-//                 vote_state
-//                     .epoch_credits
-//                     .push((epoch, credits_val, credits_val));
-//             } else {
-//                 // else just move the current epoch
-//                 vote_state.epoch_credits.last_mut().unwrap().0 = epoch;
-//             }
+            if credits_val != prev_credits {
+                // if credits were earned previous epoch
+                // append entry at end of list for the new epoch
+                vote_state
+                    .epoch_credits
+                    .push((epoch, credits_val, credits_val));
+            } else {
+                // else just move the current epoch
+                vote_state.epoch_credits.last_mut().unwrap().0 = epoch;
+            }
 
-//             // Remove too old epoch_credits
-//             if vote_state.epoch_credits.len() > MAX_EPOCH_CREDITS_HISTORY {
-//                 vote_state.epoch_credits.remove(0);
-//             }
-//         }
+            // Remove too old epoch_credits
+            if vote_state.epoch_credits.len() > MAX_EPOCH_CREDITS_HISTORY {
+                vote_state.epoch_credits.remove(0);
+            }
+        }
 
-//         vote_state.epoch_credits.last_mut().unwrap().1 = vote_state
-//             .epoch_credits
-//             .last()
-//             .unwrap()
-//             .1
-//             .saturating_add(credits);
-//     }
-//     let versioned = VoteStateVersions::V4(Box::new(vote_state));
-//     to(&versioned, &mut vote_account).unwrap();
-//     svm.set_account(vote_account_address, vote_account).unwrap();
-// }
+        vote_state.epoch_credits.last_mut().unwrap().1 = vote_state
+            .epoch_credits
+            .last()
+            .unwrap()
+            .1
+            .saturating_add(credits);
+    }
+    let versioned = VoteStateVersions::V4(Box::new(vote_state));
+    to(&versioned, &mut vote_account).unwrap();
+    svm.set_account(vote_account_address, vote_account).unwrap();
+}
 
 #[derive(Debug, PartialEq)]
 struct Accounts {
@@ -172,16 +174,16 @@ fn create_vote(
     let _ = svm.send_transaction(transaction);
 }
 
-// fn advance_epoch(svm: &mut LiteSVM) {
-//     refresh_blockhash(svm);
-//     let old_clock = svm.get_sysvar::<Clock>();
-//     let root_slot = old_clock.slot;
-//     let slots_per_epoch = svm.get_sysvar::<EpochSchedule>().slots_per_epoch;
-//     svm.warp_to_slot(root_slot + slots_per_epoch);
-//     let mut new_clock = old_clock;
-//     new_clock.epoch += 1;
-//     svm.set_sysvar::<Clock>(&new_clock)
-// }
+fn advance_epoch(svm: &mut LiteSVM) {
+    refresh_blockhash(svm);
+    let old_clock = svm.get_sysvar::<Clock>();
+    let root_slot = old_clock.slot;
+    let slots_per_epoch = svm.get_sysvar::<EpochSchedule>().slots_per_epoch;
+    svm.warp_to_slot(root_slot + slots_per_epoch);
+    let mut new_clock = old_clock;
+    new_clock.epoch += 1;
+    svm.set_sysvar::<Clock>(&new_clock)
+}
 
 fn refresh_blockhash(svm: &mut LiteSVM) {
     svm.expire_blockhash()
@@ -207,23 +209,23 @@ fn get_stake_account_rent(svm: &mut LiteSVM) -> u64 {
     rent.minimum_balance(std::mem::size_of::<stake::state::StakeStateV2>())
 }
 
-// fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
-//     let transaction = Transaction::new_signed_with_payer(
-//         &[stake::instruction::get_minimum_delegation()],
-//         Some(&payer.pubkey()),
-//         &[&payer],
-//         svm.latest_blockhash(),
-//     );
-//     let mut data = svm
-//         .simulate_transaction(transaction)
-//         .unwrap()
-//         .meta
-//         .return_data
-//         .data;
-//     data.resize(8, 0);
+fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
+    let transaction = Transaction::new_signed_with_payer(
+        &[stake::instruction::get_minimum_delegation()],
+        Some(&payer.pubkey()),
+        &[&payer],
+        svm.latest_blockhash(),
+    );
+    let mut data = svm
+        .simulate_transaction(transaction)
+        .unwrap()
+        .meta
+        .return_data
+        .data;
+    data.resize(8, 0);
 
-//     data.try_into().map(u64::from_le_bytes).unwrap()
-// }
+    data.try_into().map(u64::from_le_bytes).unwrap()
+}
 
 fn create_independent_stake_account(
     svm: &mut LiteSVM,
@@ -708,132 +710,132 @@ fn test_authorize() {
     }
 }
 
-// #[test]
-// fn test_stake_delegate() {
-//     let mut svm = LiteSVM::new();
-//     let accounts = Accounts::default();
-//     let payer = Keypair::new();
-//     svm.airdrop(&payer.pubkey(), 1_000_000_000_000).unwrap();
-//     accounts.initialize(&mut svm, &payer);
+#[test]
+fn test_stake_delegate() {
+    let mut svm = LiteSVM::new();
+    let accounts = Accounts::default();
+    let payer = Keypair::new();
+    svm.airdrop(&payer.pubkey(), 1_000_000_000_000).unwrap();
+    accounts.initialize(&mut svm, &payer);
 
-//     let vote_account2 = Keypair::new();
-//     let latest_blockhash = svm.latest_blockhash();
-//     create_vote(
-//         &mut svm,
-//         &payer,
-//         &latest_blockhash,
-//         &Keypair::new(),
-//         &Pubkey::new_unique(),
-//         &Pubkey::new_unique(),
-//         &vote_account2,
-//     );
+    let vote_account2 = Keypair::new();
+    let latest_blockhash = svm.latest_blockhash();
+    create_vote(
+        &mut svm,
+        &payer,
+        &latest_blockhash,
+        &Keypair::new(),
+        &Pubkey::new_unique(),
+        &Pubkey::new_unique(),
+        &vote_account2,
+    );
 
-//     let staker_keypair = Keypair::new();
-//     let withdrawer_keypair = Keypair::new();
+    let staker_keypair = Keypair::new();
+    let withdrawer_keypair = Keypair::new();
 
-//     let staker = staker_keypair.pubkey();
-//     let withdrawer = withdrawer_keypair.pubkey();
+    let staker = staker_keypair.pubkey();
+    let withdrawer = withdrawer_keypair.pubkey();
 
-//     let authorized = Authorized { staker, withdrawer };
+    let authorized = Authorized { staker, withdrawer };
 
-//     let vote_state_credits = 100;
-//     increment_vote_account_credits(&mut svm, accounts.vote_account.pubkey(), vote_state_credits);
-//     let minimum_delegation = get_minimum_delegation(&mut svm, &payer);
+    let vote_state_credits = 100;
+    increment_vote_account_credits(&mut svm, accounts.vote_account.pubkey(), vote_state_credits);
+    let minimum_delegation = get_minimum_delegation(&mut svm, &payer);
 
-//     let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
-//     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
+    let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
+    let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
 
-//     test_instruction_with_missing_signers(&mut svm, &instruction, &vec![&staker_keypair], &payer);
+    test_instruction_with_missing_signers(&mut svm, &instruction, &vec![&staker_keypair], &payer);
 
-//     // verify that delegate() looks right
-//     let clock = svm.get_sysvar::<Clock>();
-//     let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
-//     assert_eq!(
-//         stake_data.unwrap(),
-//         Stake {
-//             delegation: Delegation {
-//                 voter_pubkey: accounts.vote_account.pubkey(),
-//                 stake: minimum_delegation,
-//                 activation_epoch: clock.epoch,
-//                 deactivation_epoch: u64::MAX,
-//                 ..Delegation::default()
-//             },
-//             credits_observed: vote_state_credits,
-//         }
-//     );
+    // verify that delegate() looks right
+    let clock = svm.get_sysvar::<Clock>();
+    let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
+    assert_eq!(
+        stake_data.unwrap(),
+        Stake {
+            delegation: Delegation {
+                voter_pubkey: accounts.vote_account.pubkey(),
+                stake: minimum_delegation,
+                activation_epoch: clock.epoch,
+                deactivation_epoch: u64::MAX,
+                ..Delegation::default()
+            },
+            credits_observed: vote_state_credits,
+        }
+    );
 
-//     // verify that delegate fails as stake is active and not deactivating
-//     advance_epoch(&mut svm);
-//     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
-//     let e =
-//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+    // verify that delegate fails as stake is active and not deactivating
+    advance_epoch(&mut svm);
+    let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
+    let e =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
 
-//     // deactivate
-//     let instruction = ixn::deactivate_stake(&stake, &staker);
-//     process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
+    // deactivate
+    let instruction = ixn::deactivate_stake(&stake, &staker);
+    process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
 
-//     // verify that delegate to a different vote account fails during deactivation
-//     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
-//     let e =
-//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+    // verify that delegate to a different vote account fails during deactivation
+    let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
+    let e =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
 
-//     // verify that delegate succeeds to same vote account when stake is deactivating
-//     refresh_blockhash(&mut svm);
-//     let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
-//     process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
+    // verify that delegate succeeds to same vote account when stake is deactivating
+    refresh_blockhash(&mut svm);
+    let instruction = ixn::delegate_stake(&stake, &staker, &accounts.vote_account.pubkey());
+    process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap();
 
-//     // verify that deactivation has been cleared
-//     let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
-//     assert_eq!(stake_data.unwrap().delegation.deactivation_epoch, u64::MAX);
+    // verify that deactivation has been cleared
+    let (_, stake_data, _) = get_stake_account(&mut svm, &stake);
+    assert_eq!(stake_data.unwrap().delegation.deactivation_epoch, u64::MAX);
 
-//     // verify that delegate to a different vote account fails if stake is still active
-//     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
-//     let e =
-//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
-//     // delegate still fails after stake is fully activated; redelegate is not supported
-//     advance_epoch(&mut svm);
-//     let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
-//     let e =
-//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-//     assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+    // verify that delegate to a different vote account fails if stake is still active
+    let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
+    let e =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
+    // delegate still fails after stake is fully activated; redelegate is not supported
+    advance_epoch(&mut svm);
+    let instruction = ixn::delegate_stake(&stake, &staker, &vote_account2.pubkey());
+    let e =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    assert_eq!(e, StakeError::TooSoonToRedelegate.into());
 
-//     // delegate to spoofed vote account fails (not owned by vote program)
-//     let mut fake_vote_account = get_account(&mut svm, &accounts.vote_account.pubkey());
-//     fake_vote_account.owner = Pubkey::new_unique();
-//     let fake_vote_address = Pubkey::new_unique();
-//     svm.set_account(fake_vote_address, fake_vote_account)
-//         .unwrap();
+    // delegate to spoofed vote account fails (not owned by vote program)
+    let mut fake_vote_account = get_account(&mut svm, &accounts.vote_account.pubkey());
+    fake_vote_account.owner = Pubkey::new_unique();
+    let fake_vote_address = Pubkey::new_unique();
+    svm.set_account(fake_vote_address, fake_vote_account)
+        .unwrap();
 
-//     let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
-//     let instruction = ixn::delegate_stake(&stake, &staker, &fake_vote_address);
+    let stake = create_independent_stake_account(&mut svm, &authorized, minimum_delegation, &payer);
+    let instruction = ixn::delegate_stake(&stake, &staker, &fake_vote_address);
 
-//     let e =
-//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-//     assert_eq!(e, ProgramError::IncorrectProgramId);
+    let e =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    assert_eq!(e, ProgramError::IncorrectProgramId);
 
-//     // delegate stake program-owned non-stake account fails
-//     let rewards_pool_address = Pubkey::new_unique();
-//     let rewards_pool = Account {
-//         lamports: get_stake_account_rent(&mut svm),
-//         data: bincode::serialize(&StakeStateV2::RewardsPool)
-//             .unwrap()
-//             .to_vec(),
-//         owner: solana_sdk_ids::stake::id(),
-//         executable: false,
-//         rent_epoch: u64::MAX,
-//     };
-//     svm.set_account(rewards_pool_address, rewards_pool).unwrap();
+    // delegate stake program-owned non-stake account fails
+    let rewards_pool_address = Pubkey::new_unique();
+    let rewards_pool = Account {
+        lamports: get_stake_account_rent(&mut svm),
+        data: bincode::serialize(&StakeStateV2::RewardsPool)
+            .unwrap()
+            .to_vec(),
+        owner: solana_sdk_ids::stake::id(),
+        executable: false,
+        rent_epoch: u64::MAX,
+    };
+    svm.set_account(rewards_pool_address, rewards_pool).unwrap();
 
-//     let instruction = ixn::delegate_stake(
-//         &rewards_pool_address,
-//         &staker,
-//         &accounts.vote_account.pubkey(),
-//     );
+    let instruction = ixn::delegate_stake(
+        &rewards_pool_address,
+        &staker,
+        &accounts.vote_account.pubkey(),
+    );
 
-//     let e =
-//         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
-//     assert_eq!(e, ProgramError::InvalidAccountData);
-// }
+    let e =
+        process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
+    assert_eq!(e, ProgramError::InvalidAccountData);
+}
