@@ -127,7 +127,7 @@ fn find_executable_pre_load_hash(executable: &Executable) -> Option<String> {
                     eprintln!(
                         "Failed to read so file {} with error: {}",
                         file.to_string_lossy(),
-                        e.to_string()
+                        e
                     )
                 })
                 .ok()?;
