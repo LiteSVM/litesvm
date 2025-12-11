@@ -18,8 +18,12 @@ precompiles = ["dep:agave-precompiles"]
 
 [dependencies]
 agave-feature-set.workspace = true
-agave-precompiles = { workspace = true, optional = true }
-agave-reserved-account-keys.workspace = true
+agave-precompiles = { workspace = true, optional = true, features = [
+    "agave-unstable-api",
+] }
+agave-reserved-account-keys = { workspace = true, features = [
+    "agave-unstable-api",
+] }
 agave-syscalls.workspace = true
 ansi_term.workspace = true
 bincode.workspace = true
@@ -35,13 +39,15 @@ solana-address-lookup-table-interface = { workspace = true, features = [
     "bytemuck",
 ] }
 solana-bpf-loader-program.workspace = true
-solana-builtins.workspace = true
+solana-builtins = { workspace = true, features = ["agave-unstable-api"] }
 solana-clock.workspace = true
 solana-compute-budget.workspace = true
-solana-compute-budget-instruction.workspace = true
+solana-compute-budget-instruction = { workspace = true, features = [
+    "agave-unstable-api",
+] }
 solana-epoch-rewards.workspace = true
 solana-epoch-schedule.workspace = true
-solana-fee.workspace = true
+solana-fee = { workspace = true, features = ["agave-unstable-api"] }
 solana-fee-structure.workspace = true
 solana-hash.workspace = true
 solana-instruction.workspace = true

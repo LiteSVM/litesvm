@@ -508,7 +508,7 @@ impl LiteSVM {
 
         let compute_budget = self
             .compute_budget
-            .unwrap_or(ComputeBudget::new_with_defaults(false));
+            .unwrap_or(ComputeBudget::new_with_defaults(false, false));
         let program_runtime_v1 = create_program_runtime_environment_v1(
             &self.feature_set.runtime_features(),
             &compute_budget.to_budget(),
@@ -520,8 +520,8 @@ impl LiteSVM {
         let program_runtime_v2 =
             create_program_runtime_environment_v2(&compute_budget.to_budget(), true);
 
-        self.accounts.programs_cache.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
-        self.accounts.programs_cache.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
+        self.accounts.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
+        self.accounts.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
     }
 
     /// Changes the default builtins.
@@ -756,11 +756,7 @@ impl LiteSVM {
             account.owner(),
             account.data().len(),
             current_slot,
-            self.accounts
-                .programs_cache
-                .environments
-                .program_runtime_v1
-                .clone(),
+            self.accounts.environments.program_runtime_v1.clone(),
             false,
         )
         .unwrap_or_default();
@@ -776,7 +772,7 @@ impl LiteSVM {
         &self,
         compute_budget: ComputeBudget,
         accounts: Vec<(Pubkey, AccountSharedData)>,
-    ) -> TransactionContext {
+    ) -> TransactionContext<'_> {
         TransactionContext::new(
             accounts,
             self.get_sysvar(),
@@ -834,22 +830,25 @@ impl LiteSVM {
         Ok(tx)
     }
 
-    fn process_transaction(
-        &self,
-        tx: &SanitizedTransaction,
+    fn process_transaction<'a, 'b>(
+        &'a self,
+        tx: &'b SanitizedTransaction,
         compute_budget_limits: ComputeBudgetLimits,
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> (
         Result<(), TransactionError>,
         u64,
-        Option<TransactionContext>,
+        Option<TransactionContext<'b>>,
         u64,
         Option<Pubkey>,
-    ) {
+    )
+    where
+        'a: 'b,
+    {
         let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
             compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
             heap_size: compute_budget_limits.updated_heap_bytes,
-            ..ComputeBudget::new_with_defaults(false)
+            ..ComputeBudget::new_with_defaults(false, false)
         });
         let blockhash = tx.message().recent_blockhash();
         //reload program cache
@@ -991,6 +990,8 @@ impl LiteSVM {
                         self.fee_structure.lamports_per_signature,
                         self,
                         &feature_set,
+                        &self.accounts.environments,
+                        &self.accounts.environments,
                         &self.accounts.sysvar_cache,
                     ),
                     Some(log_collector),
@@ -1053,10 +1054,13 @@ impl LiteSVM {
                     .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
 
                 if !account.data().is_empty() {
-                    let post_rent_state = get_account_rent_state(&rent, &account);
+                    let post_rent_state =
+                        get_account_rent_state(&rent, account.lamports(), account.data().len());
+                    let pre_account = self.accounts.get_account(pubkey).unwrap_or_default();
                     let pre_rent_state = get_account_rent_state(
                         &rent,
-                        &self.accounts.get_account(pubkey).unwrap_or_default(),
+                        pre_account.lamports(),
+                        pre_account.data().len(),
                     );
 
                     check_rent_state_with_account(
@@ -1077,7 +1081,7 @@ impl LiteSVM {
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
-            self.execute_sanitized_transaction(s_tx, log_collector)
+            self.execute_sanitized_transaction(&s_tx, log_collector)
         })
     }
 
@@ -1087,13 +1091,13 @@ impl LiteSVM {
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
-            self.execute_sanitized_transaction(s_tx, log_collector)
+            self.execute_sanitized_transaction(&s_tx, log_collector)
         })
     }
 
     fn execute_sanitized_transaction(
         &mut self,
-        sanitized_tx: SanitizedTransaction,
+        sanitized_tx: &SanitizedTransaction,
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
         let CheckAndProcessTransactionSuccess {
@@ -1105,13 +1109,21 @@ impl LiteSVM {
                 },
             fee,
             payer_key,
-        } = match self.check_and_process_transaction(&sanitized_tx, log_collector) {
+        } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
             Ok(value) => value,
             Err(value) => return value,
         };
         if let Some(ctx) = context {
-            let tx_result = self.check_tx_result(result, payer_key, fee);
-            execution_result_if_context(sanitized_tx, ctx, tx_result, compute_units_consumed)
+            let mut exec_result =
+                execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed);
+
+            if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
+                exec_result.tx_result = self
+                    .accounts
+                    .withdraw(&payer, fee)
+                    .and(exec_result.tx_result);
+            }
+            exec_result
         } else {
             ExecutionResult::result_and_compute_units(result, compute_units_consumed)
         }
@@ -1119,7 +1131,7 @@ impl LiteSVM {
 
     fn execute_sanitized_transaction_readonly(
         &self,
-        sanitized_tx: SanitizedTransaction,
+        sanitized_tx: &SanitizedTransaction,
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
         let CheckAndProcessTransactionSuccess {
@@ -1130,7 +1142,7 @@ impl LiteSVM {
                     context,
                 },
             ..
-        } = match self.check_and_process_transaction(&sanitized_tx, log_collector) {
+        } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
             Ok(value) => value,
             Err(value) => return value,
         };
@@ -1141,26 +1153,14 @@ impl LiteSVM {
         }
     }
 
-    fn check_tx_result(
-        &mut self,
-        result: Result<(), TransactionError>,
-        payer_key: Option<Pubkey>,
-        fee: u64,
-    ) -> Result<(), TransactionError> {
-        if result.is_ok() {
-            result
-        } else if let Some(payer) = payer_key {
-            self.accounts.withdraw(&payer, fee).and(result)
-        } else {
-            result
-        }
-    }
-
-    fn check_and_process_transaction(
-        &self,
-        sanitized_tx: &SanitizedTransaction,
+    fn check_and_process_transaction<'a, 'b>(
+        &'a self,
+        sanitized_tx: &'b SanitizedTransaction,
         log_collector: Rc<RefCell<LogCollector>>,
-    ) -> Result<CheckAndProcessTransactionSuccess, ExecutionResult> {
+    ) -> Result<CheckAndProcessTransactionSuccess<'b>, ExecutionResult>
+    where
+        'a: 'b,
+    {
         self.maybe_blockhash_check(sanitized_tx)?;
         let compute_budget_limits = get_compute_budget_limits(sanitized_tx, &self.feature_set)?;
         self.maybe_history_check(sanitized_tx)?;
@@ -1208,7 +1208,7 @@ impl LiteSVM {
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
-            self.execute_sanitized_transaction_readonly(s_tx, log_collector)
+            self.execute_sanitized_transaction_readonly(&s_tx, log_collector)
         })
     }
 
@@ -1218,7 +1218,7 @@ impl LiteSVM {
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
         map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
-            self.execute_sanitized_transaction_readonly(s_tx, log_collector)
+            self.execute_sanitized_transaction_readonly(&s_tx, log_collector)
         })
     }
 
@@ -1412,20 +1412,20 @@ impl LiteSVM {
     }
 }
 
-struct CheckAndProcessTransactionSuccessCore {
+struct CheckAndProcessTransactionSuccessCore<'ix_data> {
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
-    context: Option<TransactionContext>,
+    context: Option<TransactionContext<'ix_data>>,
 }
 
-struct CheckAndProcessTransactionSuccess {
-    core: CheckAndProcessTransactionSuccessCore,
+struct CheckAndProcessTransactionSuccess<'ix_data> {
+    core: CheckAndProcessTransactionSuccessCore<'ix_data>,
     fee: u64,
     payer_key: Option<Pubkey>,
 }
 
 fn execution_result_if_context(
-    sanitized_tx: SanitizedTransaction,
+    sanitized_tx: &SanitizedTransaction,
     ctx: TransactionContext,
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
@@ -1444,7 +1444,7 @@ fn execution_result_if_context(
 }
 
 fn execute_tx_helper(
-    sanitized_tx: SanitizedTransaction,
+    sanitized_tx: &SanitizedTransaction,
     ctx: TransactionContext,
 ) -> (
     Signature,
@@ -1526,11 +1526,12 @@ fn validate_fee_payer(
             TransactionError::InsufficientFundsForFee
         })?;
 
-    let payer_pre_rent_state = get_account_rent_state(rent, payer_account);
+    let payer_len = payer_account.data().len();
+    let payer_pre_rent_state = get_account_rent_state(rent, payer_account.lamports(), payer_len);
     // we already checked above if we have sufficient balance so this should never error.
     payer_account.checked_sub_lamports(fee).unwrap();
 
-    let payer_post_rent_state = get_account_rent_state(rent, payer_account);
+    let payer_post_rent_state = get_account_rent_state(rent, payer_account.lamports(), payer_len);
     check_rent_state_with_account(
         &payer_pre_rent_state,
         &payer_post_rent_state,
