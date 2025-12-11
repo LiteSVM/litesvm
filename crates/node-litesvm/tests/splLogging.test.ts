@@ -1,39 +1,43 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { AccountRole, generateKeyPairSigner, lamports } from "@solana/kit";
 import { LiteSVM, TransactionMetadata } from "litesvm";
+import assert from "node:assert/strict";
+import { test } from "node:test";
 import {
-	Keypair,
+	generateAddress,
+	getSignedTransaction,
 	LAMPORTS_PER_SOL,
-	PublicKey,
-	Transaction,
-	TransactionInstruction,
-} from "@solana/web3.js";
+} from "./util";
 
-test("spl logging", () => {
-	const programId = PublicKey.unique();
+test("spl logging", async () => {
+	// Given the following addresses and signers.
+	const [payer, programAddress, loggedAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+		generateAddress(),
+	]);
+
+	// And a LiteSVM client with a logging program loaded from `spl_example_logging.so`.
 	const svm = new LiteSVM();
-	svm.addProgramFromFile(programId, "program_bytes/spl_example_logging.so");
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
-	const ixs = [
-		new TransactionInstruction({
-			programId,
-			keys: [
-				{ pubkey: PublicKey.unique(), isSigner: false, isWritable: false },
-			],
-		}),
-	];
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(...ixs);
-	tx.sign(payer);
-	// let's sim it first
-	const simRes = svm.simulateTransaction(tx);
-	const sendRes = svm.sendTransaction(tx);
-	if (sendRes instanceof TransactionMetadata) {
-		assert.deepStrictEqual(simRes.meta().logs(), sendRes.logs());
-		assert.strictEqual(sendRes.logs()[1], "Program log: static string");
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	svm.addProgramFromFile(
+		programAddress,
+		"program_bytes/spl_example_logging.so",
+	);
+
+	// When we simulate and send a transaction that calls the program.
+	const transaction = await getSignedTransaction(svm, payer, [
+		{
+			accounts: [{ address: loggedAddress, role: AccountRole.READONLY }],
+			programAddress,
+		},
+	]);
+	const simulationResult = svm.simulateTransaction(transaction);
+	const result = svm.sendTransaction(transaction);
+
+	// Then we expect the logs from simulation and execution to match.
+	if (result instanceof TransactionMetadata) {
+		assert.deepStrictEqual(simulationResult.meta().logs(), result.logs());
+		assert.strictEqual(result.logs()[1], "Program log: static string");
 	} else {
 		throw new Error("Unexpected tx failure");
 	}
