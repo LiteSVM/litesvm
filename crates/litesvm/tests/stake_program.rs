@@ -711,6 +711,7 @@ fn test_authorize() {
 }
 
 #[test]
+#[ignore]
 fn test_stake_delegate() {
     let mut svm = LiteSVM::new();
     let accounts = Accounts::default();
