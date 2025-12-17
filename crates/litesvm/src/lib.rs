@@ -862,11 +862,12 @@ impl LiteSVM {
             .flat_map(|instruction| &instruction.accounts)
             .unique()
             .collect::<Vec<&u8>>();
+        let prioritization_fee = compute_budget_limits.get_prioritization_fee();
         let fee = solana_fee::calculate_fee(
             message,
             false,
             self.fee_structure.lamports_per_signature,
-            0,
+            prioritization_fee,
             FeeFeatures::from(&self.feature_set),
         );
         let mut validated_fee_payer = false;
