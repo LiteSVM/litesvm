@@ -1116,7 +1116,7 @@ impl LiteSVM {
         };
         if let Some(ctx) = context {
             let mut exec_result =
-                execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed);
+                execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed, fee);
 
             if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
                 exec_result.tx_result = self
@@ -1126,7 +1126,12 @@ impl LiteSVM {
             }
             exec_result
         } else {
-            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
+            ExecutionResult {
+                tx_result: result,
+                compute_units_consumed,
+                fee,
+                ..Default::default()
+            }
         }
     }
 
@@ -1142,15 +1147,21 @@ impl LiteSVM {
                     compute_units_consumed,
                     context,
                 },
+            fee,
             ..
         } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
             Ok(value) => value,
             Err(value) => return value,
         };
         if let Some(ctx) = context {
-            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed)
+            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed, fee)
         } else {
-            ExecutionResult::result_and_compute_units(result, compute_units_consumed)
+            ExecutionResult {
+                tx_result: result,
+                compute_units_consumed,
+                fee,
+                ..Default::default()
+            }
         }
     }
 
@@ -1239,6 +1250,7 @@ impl LiteSVM {
             inner_instructions,
             return_data,
             included,
+            fee,
         } = if self.sigverify {
             self.execute_transaction(vtx, log_collector.clone())
         } else {
@@ -1253,6 +1265,7 @@ impl LiteSVM {
             compute_units_consumed,
             return_data,
             signature,
+            fee,
         };
 
         if let Err(tx_err) = tx_result {
@@ -1289,6 +1302,7 @@ impl LiteSVM {
             compute_units_consumed,
             inner_instructions,
             return_data,
+            fee,
             ..
         } = if self.sigverify {
             self.execute_transaction_readonly(tx.into(), log_collector.clone())
@@ -1304,6 +1318,7 @@ impl LiteSVM {
             inner_instructions,
             compute_units_consumed,
             return_data,
+            fee,
         };
 
         if let Err(tx_err) = tx_result {
@@ -1430,6 +1445,7 @@ fn execution_result_if_context(
     ctx: TransactionContext,
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
+    fee: u64,
 ) -> ExecutionResult {
     let (signature, return_data, inner_instructions, post_accounts) =
         execute_tx_helper(sanitized_tx, ctx);
@@ -1441,6 +1457,7 @@ fn execution_result_if_context(
         compute_units_consumed,
         return_data,
         included: true,
+        fee,
     }
 }
 

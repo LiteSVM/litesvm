@@ -104,6 +104,15 @@ fn test_priority_fee_is_charged() {
     let tx_res = svm.send_transaction(tx);
     assert!(tx_res.is_ok(), "Transaction should succeed");
 
+    let meta = tx_res.unwrap();
+
+    // Verify the fee is correctly reported in transaction metadata
+    assert_eq!(
+        meta.fee, total_fee,
+        "Transaction metadata should report correct fee (base {} + priority {})",
+        base_fee, expected_priority_fee
+    );
+
     // Check that fee payer balance is reduced by total fee (base + priority)
     // Note: get_balance returns None if account doesn't exist (0 balance accounts may be pruned)
     let final_balance = svm.get_balance(&from).unwrap_or(0);
