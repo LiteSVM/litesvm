@@ -1572,7 +1572,7 @@ where
 }
 
 #[cfg(feature = "invocation-inspect-callback")]
-pub trait InvocationInspectCallback {
+pub trait InvocationInspectCallback: Send + Sync {
     fn before_invocation(
         &self,
         tx: &SanitizedTransaction,
