@@ -303,7 +303,7 @@ use {
         },
         utils::{
             create_blockhash,
-            rent::{check_rent_state_with_account, get_account_rent_state},
+            rent::{check_rent_state_with_account, get_account_rent_state, RentState},
         },
     },
     agave_feature_set::FeatureSet,
@@ -727,7 +727,7 @@ impl LiteSVM {
 
     /// Gets the balance of the provided account pubkey.
     pub fn get_balance(&self, pubkey: &Pubkey) -> Option<u64> {
-        self.accounts.get_account(pubkey).map(|x| x.lamports())
+        self.accounts.get_account_ref(pubkey).map(|x| x.lamports())
     }
 
     /// Gets the latest blockhash.
@@ -750,7 +750,7 @@ impl LiteSVM {
     where
         T: Sysvar + SysvarId + DeserializeOwned,
     {
-        bincode::deserialize(self.accounts.get_account(&T::id()).unwrap().data()).unwrap()
+        bincode::deserialize(self.accounts.get_account_ref(&T::id()).unwrap().data()).unwrap()
     }
 
     /// Gets a transaction from the transaction history.
@@ -936,11 +936,12 @@ impl LiteSVM {
             heap_size: compute_budget_limits.updated_heap_bytes,
             ..ComputeBudget::new_with_defaults(false, false)
         });
-        let blockhash = tx.message().recent_blockhash();
+        let rent = self.accounts.sysvar_cache.get_rent().unwrap();
+        let message = tx.message();
+        let blockhash = message.recent_blockhash();
         //reload program cache
         let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
         let mut accumulated_consume_units = 0;
-        let message = tx.message();
         let account_keys = message.account_keys();
         let instruction_accounts = message
             .instructions()
@@ -962,7 +963,6 @@ impl LiteSVM {
             .iter()
             .enumerate()
             .map(|(i, key)| {
-                let mut account_found = true;
                 let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
                 } else {
@@ -978,7 +978,6 @@ impl LiteSVM {
                         self.accounts.get_account(key).unwrap()
                     } else {
                         self.accounts.get_account(key).unwrap_or_else(|| {
-                            account_found = false;
                             let mut default_account = AccountSharedData::default();
                             default_account.set_rent_epoch(0);
                             default_account
@@ -987,13 +986,7 @@ impl LiteSVM {
                     if !validated_fee_payer
                         && (!message.is_invoked(i) || message.is_instruction_account(i))
                     {
-                        validate_fee_payer(
-                            key,
-                            &mut account,
-                            i as IndexOfAccount,
-                            &self.accounts.sysvar_cache.get_rent().unwrap(),
-                            fee,
-                        )?;
+                        validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
                         validated_fee_payer = true;
                         payer_key = Some(*key);
                     }
@@ -1094,7 +1087,7 @@ impl LiteSVM {
                 );
 
                 let mut tx_result = process_message(
-                    tx.message(),
+                    message,
                     &program_indices,
                     &mut invoke_context,
                     &mut ExecuteTimings::default(),
@@ -1106,7 +1099,7 @@ impl LiteSVM {
                 self.invocation_inspect_callback
                     .after_invocation(&invoke_context, self.enable_register_tracing);
 
-                if let Err(err) = self.check_accounts_rent(tx, &context) {
+                if let Err(err) = self.check_accounts_rent(tx, &context, &rent) {
                     tx_result = Err(err);
                 };
 
@@ -1126,8 +1119,8 @@ impl LiteSVM {
         &self,
         tx: &SanitizedTransaction,
         context: &TransactionContext,
+        rent: &Rent,
     ) -> Result<(), TransactionError> {
-        let rent = self.accounts.sysvar_cache.get_rent().unwrap_or_default();
         let message = tx.message();
         for index in 0..message.account_keys().len() {
             if message.is_writable(index) {
@@ -1142,13 +1135,12 @@ impl LiteSVM {
 
                 if !account.data().is_empty() {
                     let post_rent_state =
-                        get_account_rent_state(&rent, account.lamports(), account.data().len());
-                    let pre_account = self.accounts.get_account(pubkey).unwrap_or_default();
-                    let pre_rent_state = get_account_rent_state(
-                        &rent,
-                        pre_account.lamports(),
-                        pre_account.data().len(),
-                    );
+                        get_account_rent_state(rent, account.lamports(), account.data().len());
+                    let pre_rent_state = self
+                        .accounts
+                        .get_account_ref(pubkey)
+                        .map(|acc| get_account_rent_state(rent, acc.lamports(), acc.data().len()))
+                        .unwrap_or(RentState::Uninitialized);
 
                     check_rent_state_with_account(
                         &pre_rent_state,
@@ -1482,10 +1474,10 @@ impl LiteSVM {
     fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
         message
             .get_durable_nonce()
-            .and_then(|nonce_address| self.accounts.get_account(nonce_address))
+            .and_then(|nonce_address| self.accounts.get_account_ref(nonce_address))
             .and_then(|nonce_account| {
                 solana_nonce_account::verify_nonce_account(
-                    &nonce_account,
+                    nonce_account,
                     message.recent_blockhash(),
                 )
             })

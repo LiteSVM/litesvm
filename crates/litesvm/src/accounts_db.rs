@@ -74,8 +74,12 @@ pub struct AccountsDb {
 }
 
 impl AccountsDb {
+    pub fn get_account_ref(&self, pubkey: &Pubkey) -> Option<&AccountSharedData> {
+        self.inner.get(pubkey)
+    }
+
     pub fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
-        self.inner.get(pubkey).map(|acc| acc.to_owned())
+        self.get_account_ref(pubkey).cloned()
     }
 
     /// We should only use this when we know we're not touching any executable or sysvar accounts,
@@ -239,7 +243,7 @@ impl AccountsDb {
         let program_runtime_v1 = self.environments.program_runtime_v1.clone();
         let slot = self.sysvar_cache.get_clock().unwrap().slot;
 
-        if bpf_loader::check_id(owner) | bpf_loader_deprecated::check_id(owner) {
+        if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
             ProgramCacheEntry::new(
                 owner,
                 program_runtime_v1,
@@ -247,7 +251,7 @@ impl AccountsDb {
                 slot,
                 program_account.data(),
                 program_account.data().len(),
-                &mut LoadProgramMetrics::default(),
+                metrics,
             )
             .map_err(|e| {
                 error!("Failed to load program: {e:?}");
@@ -263,10 +267,11 @@ impl AccountsDb {
                 );
                 return Err(InstructionError::InvalidAccountData);
             };
-            let programdata_account = self.get_account(&programdata_address).ok_or_else(|| {
-                error!("Program data account {programdata_address} not found");
-                InstructionError::MissingAccount
-            })?;
+            let programdata_account =
+                self.get_account_ref(&programdata_address).ok_or_else(|| {
+                    error!("Program data account {programdata_address} not found");
+                    InstructionError::MissingAccount
+                })?;
             let program_data = programdata_account.data();
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
@@ -322,7 +327,7 @@ impl AccountsDb {
         address_table_lookup: &MessageAddressTableLookup,
     ) -> std::result::Result<LoadedAddresses, AddressLookupError> {
         let table_account = self
-            .get_account(&address_table_lookup.account_key)
+            .get_account_ref(&address_table_lookup.account_key)
             .ok_or(AddressLookupError::LookupTableAccountNotFound)?;
 
         if table_account.owner() == &solana_sdk_ids::address_lookup_table::id() {
