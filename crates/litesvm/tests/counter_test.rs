@@ -176,7 +176,10 @@ fn test_register_tracing_handler() {
         solana_program_runtime::invoke_context::{Executable, InvokeContext, RegisterTrace},
         solana_transaction::{sanitized::SanitizedTransaction, Address},
         solana_transaction_context::{IndexOfAccount, InstructionContext},
-        std::{cell::RefCell, collections::HashMap, rc::Rc},
+        std::{
+            collections::HashMap,
+            sync::{Arc, Mutex},
+        },
     };
 
     let enable_register_tracing = true;
@@ -189,7 +192,7 @@ fn test_register_tracing_handler() {
     }
 
     struct CustomRegisterTracingCallback {
-        tracing_data: Rc<RefCell<HashMap<Pubkey, TracingData>>>,
+        tracing_data: Arc<Mutex<HashMap<Pubkey, TracingData>>>,
     }
 
     impl CustomRegisterTracingCallback {
@@ -199,7 +202,7 @@ fn test_register_tracing_handler() {
             executable: &Executable,
             register_trace: RegisterTrace,
         ) -> Result<(), Box<dyn std::error::Error>> {
-            let mut tracing_data = self.tracing_data.try_borrow_mut()?;
+            let mut tracing_data = self.tracing_data.lock().unwrap();
 
             let program_id = instruction_context.get_program_key().unwrap();
             let (_vm_addr, program) = executable.get_text_bytes();
@@ -262,9 +265,9 @@ fn test_register_tracing_handler() {
 
     // Have a custom register tracing handler counting the total number of executed
     // jump instructions per program_id.
-    let tracing_data = Rc::new(RefCell::new(HashMap::<Pubkey, TracingData>::new()));
+    let tracing_data = Arc::new(Mutex::new(HashMap::<Pubkey, TracingData>::new()));
     svm.set_invocation_inspect_callback(CustomRegisterTracingCallback {
-        tracing_data: Rc::clone(&tracing_data),
+        tracing_data: Arc::clone(&tracing_data),
     });
 
     let payer_kp = Keypair::new();
@@ -302,8 +305,8 @@ fn test_register_tracing_handler() {
     let executed_jump_instruction_count_from_phase1;
     // Let's check the outcome of the custom register tracing callback.
     {
-        assert_eq!(tracing_data.borrow().len(), 1);
-        let td = tracing_data.borrow();
+        assert_eq!(tracing_data.lock().unwrap().len(), 1);
+        let td = tracing_data.lock().unwrap();
         let collected_data = td.get(&program_id).unwrap();
 
         // Check it's the program_id only on our list.
@@ -321,7 +324,7 @@ fn test_register_tracing_handler() {
     {
         // Clear the tracing data collected so far.
         {
-            let mut td = tracing_data.borrow_mut();
+            let mut td = tracing_data.lock().unwrap();
             td.clear();
         }
 
@@ -329,7 +332,7 @@ fn test_register_tracing_handler() {
         let mut svm_no_tracing = LiteSVM::new_debuggable(/* enable_register_tracing */ false);
         let counter_address = init_svm(&mut svm_no_tracing);
         svm_no_tracing.set_invocation_inspect_callback(CustomRegisterTracingCallback {
-            tracing_data: Rc::clone(&tracing_data),
+            tracing_data: Arc::clone(&tracing_data),
         });
 
         // Execute the same transaction again.
@@ -344,7 +347,7 @@ fn test_register_tracing_handler() {
         );
         let _ = svm_no_tracing.send_transaction(tx).unwrap();
 
-        let td = tracing_data.borrow();
+        let td = tracing_data.lock().unwrap();
         // We expect it to be empty since tracing was disabled!
         assert!(td.is_empty());
     }
@@ -356,7 +359,7 @@ fn test_register_tracing_handler() {
         let mut svm_with_tracing = LiteSVM::new_debuggable(/* enable_register_tracing */ true);
         let counter_address = init_svm(&mut svm_with_tracing);
         svm_with_tracing.set_invocation_inspect_callback(CustomRegisterTracingCallback {
-            tracing_data: Rc::clone(&tracing_data),
+            tracing_data: Arc::clone(&tracing_data),
         });
 
         // Execute the same transaction again.
@@ -371,7 +374,7 @@ fn test_register_tracing_handler() {
         );
         let _ = svm_with_tracing.send_transaction(tx).unwrap();
 
-        let td = tracing_data.borrow();
+        let td = tracing_data.lock().unwrap();
         let collected_data = td.get(&program_id).unwrap();
 
         // Check again it's the program_id only on our list.
