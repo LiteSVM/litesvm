@@ -1506,6 +1506,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
 name = "hmac"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1796,12 +1802,14 @@ dependencies = [
  "criterion",
  "ed25519-dalek 1.0.1",
  "hashbrown 0.16.1",
+ "hex",
  "indexmap",
  "itertools 0.14.0",
  "libsecp256k1 0.7.2",
  "log",
  "qualifier_attr",
  "serde",
+ "sha2 0.10.9",
  "solana-account",
  "solana-address-lookup-table-interface",
  "solana-bpf-loader-program",

@@ -6,6 +6,10 @@ include = ["/src", "build.rs"]
 repository = "https://github.com/LiteSVM/litesvm"
 license = "MIT"
 
+[features]
+default = []
+register-tracing = ["litesvm/register-tracing"]
+
 [lib]
 crate-type = ["cdylib"]
 
