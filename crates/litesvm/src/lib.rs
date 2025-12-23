@@ -306,7 +306,9 @@ use {
             rent::{check_rent_state_with_account, get_account_rent_state, RentState},
         },
     },
-    agave_feature_set::FeatureSet,
+    agave_feature_set::{
+        increase_cpi_account_info_limit, raise_cpi_nesting_limit_to_8, FeatureSet,
+    },
     agave_reserved_account_keys::ReservedAccountKeys,
     agave_syscalls::{
         create_program_runtime_environment_v1, create_program_runtime_environment_v2,
@@ -594,7 +596,12 @@ impl LiteSVM {
 
         let compute_budget = self
             .compute_budget
-            .unwrap_or(ComputeBudget::new_with_defaults(false, false));
+            .unwrap_or(ComputeBudget::new_with_defaults(
+                self.feature_set
+                    .is_active(&raise_cpi_nesting_limit_to_8::ID),
+                self.feature_set
+                    .is_active(&increase_cpi_account_info_limit::ID),
+            ));
         let program_runtime_v1 = create_program_runtime_environment_v1(
             &self.feature_set.runtime_features(),
             &compute_budget.to_budget(),
@@ -934,7 +941,12 @@ impl LiteSVM {
         let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
             compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
             heap_size: compute_budget_limits.updated_heap_bytes,
-            ..ComputeBudget::new_with_defaults(false, false)
+            ..ComputeBudget::new_with_defaults(
+                self.feature_set
+                    .is_active(&raise_cpi_nesting_limit_to_8::ID),
+                self.feature_set
+                    .is_active(&increase_cpi_account_info_limit::ID),
+            )
         });
         let rent = self.accounts.sysvar_cache.get_rent().unwrap();
         let message = tx.message();
