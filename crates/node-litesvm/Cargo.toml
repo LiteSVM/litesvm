@@ -38,6 +38,10 @@ solana-stake-interface.workspace = true
 solana-transaction.workspace = true
 solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
+spl-token-interface.workspace = true
+spl-token-2022-interface.workspace = true
+solana-program-option.workspace = true
+solana-program-pack.workspace = true
 
 [build-dependencies]
 napi-build.workspace = true
