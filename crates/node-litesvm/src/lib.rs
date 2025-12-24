@@ -40,11 +40,11 @@ use {
 mod account;
 mod compute_budget;
 mod feature_set;
+mod native_mint;
 mod sysvar;
 mod transaction_error;
 mod transaction_metadata;
 mod util;
-mod native_mint;
 
 #[macro_use]
 extern crate napi_derive;

@@ -3,8 +3,8 @@ use {
     solana_account::Account,
     solana_program_option::COption,
     solana_program_pack::Pack,
-    solana_rent::Rent,
     solana_pubkey::Pubkey,
+    solana_rent::Rent,
     spl_token_interface::{native_mint::DECIMALS, state::Mint},
 };
 
@@ -26,14 +26,21 @@ fn create_native_mint_with_program_id(svm: &mut LiteSVM, address: Pubkey, token_
         rent_epoch: 0,
     };
 
-    svm.set_account(address, account)
-        .unwrap();
+    svm.set_account(address, account).unwrap();
 }
 
 pub fn create_native_mint(svm: &mut LiteSVM) {
-    create_native_mint_with_program_id(svm, spl_token_interface::native_mint::ID, spl_token_interface::ID);
+    create_native_mint_with_program_id(
+        svm,
+        spl_token_interface::native_mint::ID,
+        spl_token_interface::ID,
+    );
 }
 
 pub fn create_native_mint_2022(svm: &mut LiteSVM) {
-    create_native_mint_with_program_id(svm, spl_token_2022_interface::native_mint::ID, spl_token_2022_interface::ID);
+    create_native_mint_with_program_id(
+        svm,
+        spl_token_2022_interface::native_mint::ID,
+        spl_token_2022_interface::ID,
+    );
 }
