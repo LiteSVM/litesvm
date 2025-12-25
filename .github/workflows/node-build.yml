@@ -62,11 +62,11 @@ jobs:
           - host: macos-latest
             target: x86_64-apple-darwin
             build: yarn build --target x86_64-apple-darwin
-            lto: thin
+            lto: "false"
           - host: macos-latest
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
-            lto: thin
+            lto: "false"
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             build: yarn build --target x86_64-unknown-linux-gnu --use-napi-cross
@@ -78,11 +78,11 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             build: yarn build --target x86_64-unknown-linux-musl -x
-            lto: fat
+            lto: "false"
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             build: yarn build --target aarch64-unknown-linux-musl -x
-            lto: fat
+            lto: "false"
     name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
     defaults:
