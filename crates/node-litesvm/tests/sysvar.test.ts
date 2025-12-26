@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { Clock, LiteSVM, Rent } from "litesvm";
 import assert from "node:assert/strict";
-import { LiteSVM, Rent, Clock } from "litesvm";
+import { test } from "node:test";
 
 test("sysvar", () => {
 	const svm = new LiteSVM();
