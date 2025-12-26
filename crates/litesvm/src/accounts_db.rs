@@ -48,16 +48,17 @@ fn handle_sysvar<T>(
     cache: &mut SysvarCache,
     err_variant: InvalidSysvarDataError,
     account: &AccountSharedData,
-    mut accounts_clone: HashMap<Pubkey, AccountSharedData>,
+    accounts: &HashMap<Pubkey, AccountSharedData>,
     address: Pubkey,
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar + DeserializeOwned,
 {
-    accounts_clone.insert(address, account.clone());
     cache.reset();
     cache.fill_missing_entries(|pubkey, set_sysvar| {
-        if let Some(acc) = accounts_clone.get(pubkey) {
+        if *pubkey == address {
+            set_sysvar(account.data())
+        } else if let Some(acc) = accounts.get(pubkey) {
             set_sysvar(acc.data())
         }
     });
@@ -141,7 +142,7 @@ impl AccountsDb {
                     cache,
                     EpochRewards,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
@@ -150,7 +151,7 @@ impl AccountsDb {
                     cache,
                     EpochSchedule,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
@@ -159,7 +160,7 @@ impl AccountsDb {
                     cache,
                     Fees,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
@@ -168,7 +169,7 @@ impl AccountsDb {
                     cache,
                     LastRestartSlot,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
@@ -177,25 +178,19 @@ impl AccountsDb {
                     cache,
                     RecentBlockhashes,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
             RENT_ID => {
-                handle_sysvar::<solana_rent::Rent>(
-                    cache,
-                    Rent,
-                    account,
-                    self.inner.clone(),
-                    pubkey,
-                )?;
+                handle_sysvar::<solana_rent::Rent>(cache, Rent, account, &self.inner, pubkey)?;
             }
             SLOT_HASHES_ID => {
                 handle_sysvar::<solana_slot_hashes::SlotHashes>(
                     cache,
                     SlotHashes,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
@@ -204,7 +199,7 @@ impl AccountsDb {
                     cache,
                     StakeHistory,
                     account,
-                    self.inner.clone(),
+                    &self.inner,
                     pubkey,
                 )?;
             }
