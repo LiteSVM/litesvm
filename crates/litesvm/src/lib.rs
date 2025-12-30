@@ -971,8 +971,8 @@ impl LiteSVM {
                 let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
                     construct_instructions_account(message)
                 } else {
-                    let instruction_account = message.is_instruction_account(i);
-                    let mut account = if !instruction_account
+                    let is_instruction_account = message.is_instruction_account(i);
+                    let mut account = if !is_instruction_account
                         && !message.is_writable(i)
                         && self.accounts.programs_cache.find(key).is_some()
                     {
@@ -986,9 +986,7 @@ impl LiteSVM {
                             default_account
                         })
                     };
-                    if !validated_fee_payer
-                        && (!message.is_invoked(i) || message.is_instruction_account(i))
-                    {
+                    if !validated_fee_payer && (!message.is_invoked(i) || is_instruction_account) {
                         validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
                         validated_fee_payer = true;
                         payer_key = Some(*key);
