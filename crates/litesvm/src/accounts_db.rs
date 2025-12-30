@@ -222,13 +222,59 @@ impl AccountsDb {
             x.1.owner() == &bpf_loader_upgradeable::id()
                 && x.1.data().first().is_some_and(|byte| *byte == 3)
         });
-        for (pubkey, acc) in accounts {
+
+        for (pubkey, mut acc) in accounts {
+            // For BPF Loader Upgradeable V3 program accounts, the executable flag may not be set
+            // during deployment. We need to check if this is a Program account and manually set executable=true
+            if acc.owner() == &bpf_loader_upgradeable::id() && !acc.executable() {
+                if let Ok(UpgradeableLoaderState::Program { .. }) = acc.state() {
+                    // This is a Program account - ensure it's marked executable
+                    acc.set_executable(true);
+                }
+            }
+
             self.add_account(pubkey, acc)?;
         }
+
+        // After syncing accounts, check for any executable program accounts that weren't explicitly loaded
+        // This handles the case where deployment creates program+programdata, but only programdata is in ExecutionRecord
+        self.load_all_existing_programs()?;
+
         Ok(())
     }
 
-    fn load_program(
+    /// Loads all existing executable programs into the program cache.
+    ///
+    /// This scans the account database for executable program accounts that haven't been
+    /// loaded into the program cache and loads them. This is useful when:
+    /// - Programs are deployed but only their ProgramData accounts appear in ExecutionRecord
+    /// - Restoring state where programs exist as accounts but aren't cached
+    /// - Ensuring all programs are available for execution after account sync
+    pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
+        let accounts_snapshot: Vec<(Pubkey, AccountSharedData)> = self
+            .inner
+            .iter()
+            .filter(|(pubkey, acc)| {
+                let is_executable = acc.executable();
+                let is_loadable_program = acc.owner() == &bpf_loader_upgradeable::id()
+                    || acc.owner() == &bpf_loader::id()
+                    || acc.owner() == &bpf_loader_deprecated::id();
+                let in_cache = self.programs_cache.find(pubkey).is_some();
+                is_executable && is_loadable_program && !in_cache
+            })
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+
+        for (program_pubkey, program_acc) in accounts_snapshot {
+            let loaded_program = self.load_program(&program_acc)?;
+            self.programs_cache
+                .replenish(program_pubkey, Arc::new(loaded_program));
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn load_program(
         &self,
         program_account: &AccountSharedData,
     ) -> Result<ProgramCacheEntry, InstructionError> {

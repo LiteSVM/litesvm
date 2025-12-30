@@ -341,7 +341,7 @@ use {
     },
     solana_pubkey::Pubkey,
     solana_rent::Rent,
-    solana_sdk_ids::{bpf_loader, native_loader, system_program},
+    solana_sdk_ids::{bpf_loader, bpf_loader_upgradeable, native_loader, system_program},
     solana_signature::Signature,
     solana_signer::Signer,
     solana_slot_hashes::SlotHashes,
@@ -860,6 +860,19 @@ impl LiteSVM {
         Ok(())
     }
 
+    /// Loads all existing executable programs into the program cache.
+    ///
+    /// This should be called during initialization to ensure programs that exist in the
+    /// account database (e.g., from previous test runs or deployed via upgradeable loader)
+    /// are available for execution.
+    ///
+    /// This is particularly important when using LiteSVM with persistent state across
+    /// test runs, as programs deployed in previous runs will exist as accounts but may
+    /// not be loaded into the program cache.
+    pub fn load_existing_programs(&mut self) -> Result<(), LiteSVMError> {
+        self.accounts.load_all_existing_programs()
+    }
+
     fn create_transaction_context(
         &self,
         compute_budget: ComputeBudget,
@@ -954,6 +967,31 @@ impl LiteSVM {
         let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
         let mut accumulated_consume_units = 0;
         let account_keys = message.account_keys();
+
+        // Auto-load any programs referenced in this transaction that aren't in the cache
+        // This handles the case where upgradeable programs were deployed but their program accounts
+        // weren't synced into the cache (because only programdata was in ExecutionRecord)
+        for instruction in message.instructions().iter() {
+            let program_id = &account_keys[instruction.program_id_index as usize];
+
+            if program_cache_for_tx_batch.find(program_id).is_none() {
+                // Program not in cache - check if it exists in account database
+                if let Some(program_account) = self.accounts.get_account(program_id) {
+                    if program_account.executable() {
+                        match self.accounts.load_program(&program_account) {
+                            Ok(loaded_program) => {
+                                program_cache_for_tx_batch
+                                    .replenish(*program_id, Arc::new(loaded_program));
+                            }
+                            Err(e) => {
+                                log::warn!("Failed to auto-load program {}: {:?}", program_id, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         let prioritization_fee = compute_budget_limits.get_prioritization_fee();
         let fee = solana_fee::calculate_fee(
             message,
@@ -1551,18 +1589,44 @@ fn execute_tx_helper(
 ) {
     let signature = sanitized_tx.signature().to_owned();
     let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
+
     let ExecutionRecord {
         accounts,
         return_data,
         touched_account_count: _,
         accounts_resize_delta: _,
     } = ctx.into();
+
     let msg = sanitized_tx.message();
-    let post_accounts = accounts
+
+    let num_message_accounts = msg.account_keys().len();
+    let post_accounts: Vec<(Pubkey, AccountSharedData)> = accounts
         .into_iter()
         .enumerate()
-        .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
+        .filter_map(|(idx, pair)| {
+            // Check if this account was writable in the original message
+            // For accounts beyond the message (created via CPI), they should always be synced
+            let is_writable = if idx < num_message_accounts {
+                msg.is_writable(idx)
+            } else {
+                // Account was created during execution (e.g., via bpf_loader_upgradeable deploy)
+                // Always sync these accounts
+                true
+            };
+
+            // Also sync BPF loader accounts even if not writable
+            // This ensures BPF Loader V2/V3 program accounts are synced after deployment
+            let is_bpf_loader_account = pair.1.owner() == &bpf_loader_upgradeable::id()
+                || pair.1.owner() == &bpf_loader::id();
+
+            if is_writable || is_bpf_loader_account {
+                Some(pair)
+            } else {
+                None
+            }
+        })
         .collect();
+
     (signature, return_data, inner_instructions, post_accounts)
 }
 
