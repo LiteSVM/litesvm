@@ -1904,6 +1904,8 @@ dependencies = [
  "solana-instruction",
  "solana-last-restart-slot",
  "solana-message",
+ "solana-program-option",
+ "solana-program-pack",
  "solana-pubkey 3.0.0",
  "solana-rent",
  "solana-signature",
@@ -1913,6 +1915,8 @@ dependencies = [
  "solana-transaction",
  "solana-transaction-context",
  "solana-transaction-error",
+ "spl-token-2022-interface",
+ "spl-token-interface",
 ]
 
 [[package]]
