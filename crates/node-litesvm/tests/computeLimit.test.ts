@@ -1,38 +1,42 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { FailedTransactionMetadata } from "litesvm";
-import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
-import { helloworldProgram } from "./util";
+import { generateKeyPairSigner, lamports } from "@solana/kit";
 import { TransactionErrorFieldless } from "internal";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import {
+	generateAddress,
+	getGreetInstruction,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+	setComputeUnitLimit,
+	setHelloWorldAccount,
+	setHelloWorldProgram,
+} from "./util";
 
-test("compute limit", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram(10n);
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
-	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(
-		greetedAccountBefore.data,
-		new Uint8Array([0, 0, 0, 0]),
-	);
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(ix);
-	tx.sign(payer);
-	const res = svm.sendTransaction(tx);
-	if (res instanceof FailedTransactionMetadata) {
-		assert.strictEqual(res.err(), TransactionErrorFieldless.AccountNotFound);
+test("compute limit", async () => {
+	// Given the following addresses and signers.
+	const [payer, programAddress, greetedAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+		generateAddress(),
+	]);
+
+	// And a LiteSVM client with a CU limit set to 10.
+	const svm = new LiteSVM();
+	setComputeUnitLimit(svm, 10n);
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldProgram(svm, programAddress);
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
+
+	// When we send a greet instruction which uses more than 10 compute units.
+	const transaction = await getSignedTransaction(svm, payer, [
+		getGreetInstruction(greetedAddress, programAddress),
+	]);
+	const result = svm.sendTransaction(transaction);
+
+	// Then we expect it to fail.
+	if (result instanceof FailedTransactionMetadata) {
+		assert.strictEqual(result.err(), TransactionErrorFieldless.AccountNotFound);
 	} else {
 		throw new Error("Expected transaction failure");
 	}
