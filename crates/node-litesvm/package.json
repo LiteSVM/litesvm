@@ -23,12 +23,12 @@
 		"fastestsmallesttextencoderdecoder": "^1.0.22"
 	},
 	"devDependencies": {
-		"@algolia/client-search": "^5.45.0",
-		"@napi-rs/cli": "^3.4.1",
+		"@algolia/client-search": "^5.46.2",
+		"@napi-rs/cli": "^3.5.1",
 		"@solana/spl-token": "^0.4.14",
 		"@types/fastestsmallesttextencoderdecoder": "^1.0.2",
 		"@types/markdown-it": "^14.1.2",
-		"@types/node": "22.19.1",
+		"@types/node": "22.19.3",
 		"@types/node-fetch": "^2.6.13",
 		"markdown-it": "^14.1.0",
 		"markdown-it-include": "^2.0.0",
