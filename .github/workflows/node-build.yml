@@ -146,7 +146,8 @@ jobs:
       
       - name: Integrate vcpkg
         if: runner.os == 'Windows'
-        run: &$env:USERPROFILE\vcpkg\vcpkg integrate install
+        run: |
+          &$env:USERPROFILE\vcpkg\vcpkg integrate install
       - name: Install dependencies
         run: yarn install
       - name: Build
