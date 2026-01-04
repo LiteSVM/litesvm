@@ -130,6 +130,23 @@ jobs:
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+      - name: Install vcpkg
+        if: runner.os == 'Windows'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git $env:USERPROFILE\vcpkg
+          &$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat
+      
+      - name: Install OpenSSL via vcpkg
+        if: runner.os == 'Windows'
+        run: |
+          &$env:USERPROFILE\vcpkg\vcpkg install openssl:x64-windows-static --triplet x64-windows-static-md
+          &$env:USERPROFILE\vcpkg\vcpkg install openssl:x86-windows-static --triplet x86-windows-static-md
+          # For aarch64 (if needed; may require additional triplet support)
+          &$env:USERPROFILE\vcpkg\vcpkg install openssl:arm64-windows-static --triplet arm64-windows-static-md
+      
+      - name: Integrate vcpkg
+        if: runner.os == 'Windows'
+        run: &$env:USERPROFILE\vcpkg\vcpkg integrate install
       - name: Install dependencies
         run: yarn install
       - name: Build
