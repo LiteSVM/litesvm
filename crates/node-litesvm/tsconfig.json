@@ -11,16 +11,11 @@
 		"allowJs": true,
 		"baseUrl": "./litesvm",
 		"paths": {
-			"litesvm": [
-				"./"
-			],
-			"@/*": [
-				"../*"
-			]
+			"litesvm": ["./"],
+			"@/*": ["../*"]
 		},
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"skipLibCheck": true
 	},
-	"include": [
-		"litesvm/**/*"
-	]
+	"include": ["litesvm/**/*"]
 }
