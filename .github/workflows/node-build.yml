@@ -65,6 +65,15 @@ jobs:
           - host: macos-latest
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
+          - host: windows-latest
+            build: yarn build --target x86_64-pc-windows-msvc
+            target: x86_64-pc-windows-msvc
+          - host: windows-latest
+            build: yarn build --target i686-pc-windows-msvc
+            target: i686-pc-windows-msvc
+          - host: windows-latest
+            target: aarch64-pc-windows-msvc
+            build: yarn build --target aarch64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             build: yarn build --target x86_64-unknown-linux-gnu --use-napi-cross
@@ -121,6 +130,24 @@ jobs:
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+      - name: Install vcpkg
+        if: runner.os == 'Windows'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git $env:USERPROFILE\vcpkg
+          &$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat
+      
+      - name: Install OpenSSL via vcpkg
+        if: runner.os == 'Windows'
+        run: |
+          &$env:USERPROFILE\vcpkg\vcpkg install openssl:x64-windows-static --triplet x64-windows-static-md
+          &$env:USERPROFILE\vcpkg\vcpkg install openssl:x86-windows-static --triplet x86-windows-static-md
+          # For aarch64 (if needed; may require additional triplet support)
+          &$env:USERPROFILE\vcpkg\vcpkg install openssl:arm64-windows-static --triplet arm64-windows-static-md
+      
+      - name: Integrate vcpkg
+        if: runner.os == 'Windows'
+        run: |
+          &$env:USERPROFILE\vcpkg\vcpkg integrate install
       - name: Install dependencies
         run: yarn install
       - name: Build
@@ -132,7 +159,7 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: crates/node-litesvm/litesvm/litesvm.*.node
           if-no-files-found: error
-  test-macOS-binding:
+  test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:
       - build
@@ -140,6 +167,9 @@ jobs:
       fail-fast: false
       matrix:
         settings:
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            architecture: x64
           - host: macos-latest
             target: aarch64-apple-darwin
             architecture: arm64
@@ -165,7 +195,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: bindings-${{ matrix.settings.target }}
           path: crates/node-litesvm/litesvm
@@ -227,7 +257,7 @@ jobs:
           yarn config set --json supportedArchitectures.libc '["current", "musl", "gnu"]'
           yarn install
       - name: Download artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7s
         with:
           name: bindings-${{ matrix.target }}
           path: crates/node-litesvm/litesvm
