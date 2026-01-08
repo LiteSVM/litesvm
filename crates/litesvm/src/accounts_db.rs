@@ -380,6 +380,56 @@ impl AccountsDb {
             }
         }
     }
+
+    /// Returns a borrowed slice of ELF bytes for this account.
+    /// Fails if the account is not a program account.
+    pub fn try_program_elf_bytes<'a>(
+        &'a self,
+        program_key: &Pubkey,
+    ) -> std::result::Result<&'a [u8], InstructionError> {
+        let program_account = self
+            .get_account_ref(program_key)
+            .ok_or(InstructionError::MissingAccount)?;
+        let owner = program_account.owner();
+
+        if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
+            Ok(program_account.data())
+        } else if bpf_loader_upgradeable::check_id(owner) {
+            let Ok(UpgradeableLoaderState::Program {
+                programdata_address,
+            }) = program_account.state()
+            else {
+                return Err(InstructionError::InvalidAccountData);
+            };
+            let programdata_account =
+                self.get_account_ref(&programdata_address).ok_or_else(|| {
+                    error!("Program data account {programdata_address} not found");
+                    InstructionError::MissingAccount
+                })?;
+            let program_data = programdata_account.data();
+            if let Some(programdata) =
+                program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
+            {
+                Ok(programdata)
+            } else {
+                error!("Index out of bounds using bpf_loader_upgradeable.");
+                Err(InstructionError::InvalidAccountData)
+            }
+        } else if loader_v4::check_id(owner) {
+            if let Some(elf_bytes) = program_account
+                .data()
+                .get(LoaderV4State::program_data_offset()..)
+            {
+                Ok(elf_bytes)
+            } else {
+                error!("Index out of bounds using loader_v4.");
+                Err(InstructionError::InvalidAccountData)
+            }
+        } else {
+            error!("Owner does not match any expected loader.");
+            Err(InstructionError::IncorrectProgramId)
+        }
+    }
 }
 
 fn into_address_loader_error(err: AddressLookupError) -> AddressLoaderError {

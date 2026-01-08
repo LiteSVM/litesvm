@@ -237,13 +237,19 @@ fn test_register_tracing_handler() {
     impl InvocationInspectCallback for CustomRegisterTracingCallback {
         fn before_invocation(
             &self,
+            _: &LiteSVM,
             _: &SanitizedTransaction,
             _: &[IndexOfAccount],
             _: &InvokeContext,
         ) {
         }
 
-        fn after_invocation(&self, invoke_context: &InvokeContext, register_tracing_enabled: bool) {
+        fn after_invocation(
+            &self,
+            _: &LiteSVM,
+            invoke_context: &InvokeContext,
+            register_tracing_enabled: bool,
+        ) {
             // Only process traces if register tracing was enabled.
             if register_tracing_enabled {
                 invoke_context.iterate_vm_traces(
