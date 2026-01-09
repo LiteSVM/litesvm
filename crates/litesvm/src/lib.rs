@@ -379,7 +379,7 @@ mod message_processor;
 mod precompiles;
 mod programs;
 #[cfg(feature = "register-tracing")]
-mod register_tracing;
+pub mod register_tracing;
 mod utils;
 
 #[derive(Clone)]
