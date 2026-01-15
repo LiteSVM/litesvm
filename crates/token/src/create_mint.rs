@@ -8,8 +8,8 @@ use {
         TOKEN_ID,
     },
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_address::Address,
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_system_interface::instruction::create_account,
     solana_transaction::Transaction,
@@ -26,10 +26,10 @@ use {
 pub struct CreateMint<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    authority: Option<&'a Pubkey>,
-    freeze_authority: Option<&'a Pubkey>,
+    authority: Option<&'a Address>,
+    freeze_authority: Option<&'a Address>,
     decimals: Option<u8>,
-    token_program_id: Option<&'a Pubkey>,
+    token_program_id: Option<&'a Address>,
 }
 
 impl<'a> CreateMint<'a> {
@@ -46,13 +46,13 @@ impl<'a> CreateMint<'a> {
     }
 
     /// Sets the authority of the mint.
-    pub fn authority(mut self, authority: &'a Pubkey) -> Self {
+    pub fn authority(mut self, authority: &'a Address) -> Self {
         self.authority = Some(authority);
         self
     }
 
     /// Sets the freeze authority of the mint.
-    pub fn freeze_authority(mut self, freeze_authority: &'a Pubkey) -> Self {
+    pub fn freeze_authority(mut self, freeze_authority: &'a Address) -> Self {
         self.freeze_authority = Some(freeze_authority);
         self
     }
@@ -64,13 +64,13 @@ impl<'a> CreateMint<'a> {
     }
 
     /// Sets the token program id of the mint account.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+    pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
         self
     }
 
     /// Sends the transaction.
-    pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
+    pub fn send(self) -> Result<Address, FailedTransactionMetadata> {
         #[cfg(feature = "token-2022")]
         let mint_size = ExtensionType::try_calculate_account_len::<Mint>(&[])?;
         #[cfg(not(feature = "token-2022"))]

@@ -1,8 +1,9 @@
 use {
-    litesvm::LiteSVM, solana_compute_budget::compute_budget::ComputeBudget,
+    litesvm::LiteSVM, solana_address::Address,
+    solana_compute_budget::compute_budget::ComputeBudget,
     solana_compute_budget_interface::ComputeBudgetInstruction,
     solana_instruction::error::InstructionError, solana_keypair::Keypair, solana_message::Message,
-    solana_pubkey::Pubkey, solana_signer::Signer, solana_system_interface::instruction::transfer,
+    solana_signer::Signer, solana_system_interface::instruction::transfer,
     solana_transaction::Transaction, solana_transaction_error::TransactionError,
 };
 
@@ -11,7 +12,7 @@ fn test_set_compute_budget() {
     // see that the tx fails if we set a tiny limit
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
@@ -39,7 +40,7 @@ fn test_set_compute_unit_limit() {
     // see that the tx fails if we set a tiny limit
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
@@ -70,7 +71,7 @@ fn test_set_compute_unit_limit() {
 fn test_priority_fee_is_charged() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     let mut svm = LiteSVM::new();
 

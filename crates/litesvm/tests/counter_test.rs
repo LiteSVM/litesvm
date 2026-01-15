@@ -1,6 +1,7 @@
 use {
     litesvm::LiteSVM,
     solana_account::Account,
+    solana_address::{address, Address},
     solana_address_lookup_table_interface::instruction::{
         create_lookup_table, extend_lookup_table,
     },
@@ -9,7 +10,6 @@ use {
     solana_message::{
         v0::Message as MessageV0, AddressLookupTableAccount, Message, VersionedMessage,
     },
-    solana_pubkey::{pubkey, Pubkey},
     solana_signer::Signer,
     solana_transaction::{versioned::VersionedTransaction, Transaction},
     solana_transaction_error::TransactionError,
@@ -27,12 +27,12 @@ pub fn integration_test() {
     let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let program_id = address!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
     svm.add_program(program_id, &read_counter_program())
         .unwrap();
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
-    let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    let counter_address = address!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
     let _ = svm.set_account(
         counter_address,
         Account {
@@ -65,9 +65,9 @@ pub fn integration_test() {
 }
 
 fn make_tx(
-    program_id: Pubkey,
-    counter_address: Pubkey,
-    payer_pk: &Pubkey,
+    program_id: Address,
+    counter_address: Address,
+    payer_pk: &Address,
     blockhash: solana_hash::Hash,
     payer_kp: &Keypair,
     deduper: u8,
@@ -89,12 +89,12 @@ fn test_address_lookup_table() {
     let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let program_id = address!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
     svm.add_program(program_id, &read_counter_program())
         .unwrap();
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
-    let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    let counter_address = address!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
     let _ = svm.set_account(
         counter_address,
         Account {
@@ -140,10 +140,10 @@ pub fn test_nonexistent_program() {
     let mut svm = LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let program_id = address!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
     svm.airdrop(&payer_pk, 1000000000).unwrap();
     let blockhash = svm.latest_blockhash();
-    let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    let counter_address = address!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
     svm.set_account(
         counter_address,
         Account {
@@ -187,12 +187,12 @@ fn test_register_tracing_handler() {
     let mut svm = LiteSVM::new_debuggable(enable_register_tracing);
 
     struct TracingData {
-        program_id: Pubkey,
+        program_id: Address,
         executed_jump_instructions_count: usize,
     }
 
     struct CustomRegisterTracingCallback {
-        tracing_data: Arc<Mutex<HashMap<Pubkey, TracingData>>>,
+        tracing_data: Arc<Mutex<HashMap<Address, TracingData>>>,
     }
 
     impl CustomRegisterTracingCallback {
@@ -265,20 +265,20 @@ fn test_register_tracing_handler() {
 
     // Have a custom register tracing handler counting the total number of executed
     // jump instructions per program_id.
-    let tracing_data = Arc::new(Mutex::new(HashMap::<Pubkey, TracingData>::new()));
+    let tracing_data = Arc::new(Mutex::new(HashMap::<Address, TracingData>::new()));
     svm.set_invocation_inspect_callback(CustomRegisterTracingCallback {
         tracing_data: Arc::clone(&tracing_data),
     });
 
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let program_id = address!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
 
     let init_svm = |svm: &mut LiteSVM| -> Address {
         svm.add_program(program_id, &read_counter_program())
             .unwrap();
         svm.airdrop(&payer_pk, 1000000000).unwrap();
-        let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+        let counter_address = address!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
         let _ = svm.set_account(
             counter_address,
             Account {

@@ -4,13 +4,13 @@ use {
     litesvm::LiteSVM,
     serde::{Deserialize, Serialize},
     solana_account::{Account, ReadableAccount},
+    solana_address::Address,
     solana_config_interface::{
         instruction::{create_account_with_max_config_space, store},
         state::ConfigKeys,
     },
     solana_instruction::{error::InstructionError, AccountMeta},
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_rent::Rent,
     solana_signer::Signer,
     solana_transaction::Transaction,
@@ -55,7 +55,7 @@ fn setup_test_context() -> TestContext {
 }
 
 fn get_config_space(key_len: usize) -> usize {
-    let entry_size = bincode::serialized_size(&(Pubkey::default(), true)).unwrap() as usize;
+    let entry_size = bincode::serialized_size(&(Address::default(), true)).unwrap() as usize;
     bincode::serialized_size(&(ConfigKeys::default(), MyConfig::default())).unwrap() as usize
         + key_len * entry_size
 }
@@ -63,7 +63,7 @@ fn get_config_space(key_len: usize) -> usize {
 fn create_config_account(
     ctx: &mut TestContext,
     config_keypair: &Keypair,
-    keys: Vec<(Pubkey, bool)>,
+    keys: Vec<(Address, bool)>,
 ) {
     let payer = &ctx.payer;
 
@@ -196,7 +196,7 @@ fn test_process_store_with_additional_signers() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let signer1 = Keypair::new();
     let keys = vec![
@@ -235,7 +235,7 @@ fn test_process_store_bad_config_account() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![(pubkey, false), (signer0.pubkey(), true)];
     let my_config = MyConfig::new(42);
@@ -327,7 +327,7 @@ fn test_config_updates() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let signer1 = Keypair::new();
     let signer2 = Keypair::new();
@@ -423,7 +423,7 @@ fn test_config_initialize_contains_duplicates_fails() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![
         (pubkey, false),
@@ -459,7 +459,7 @@ fn test_config_update_contains_duplicates_fails() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let signer1 = Keypair::new();
     let keys = vec![
@@ -513,7 +513,7 @@ fn test_config_updates_requiring_config() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![
         (pubkey, false),
@@ -621,7 +621,7 @@ fn test_config_bad_owner() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Pubkey::new_unique();
+    let pubkey = Address::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![
         (pubkey, false),
@@ -637,7 +637,7 @@ fn test_config_bad_owner() {
         .svm
         .set_account(
             config_keypair.pubkey(),
-            Account::new(lamports, 0, &Pubkey::new_unique()),
+            Account::new(lamports, 0, &Address::new_unique()),
         )
         .unwrap();
 
@@ -663,7 +663,7 @@ fn test_config_bad_owner() {
 #[test]
 fn test_maximum_keys_input() {
     // `limited_deserialize` allows up to 1232 bytes of input.
-    // One config key is `Pubkey` + `bool` = 32 + 1 = 33 bytes.
+    // One config key is `Address` + `bool` = 32 + 1 = 33 bytes.
     // 1232 / 33 = 37 keys max.
     let mut context = setup_test_context();
 
@@ -672,7 +672,7 @@ fn test_maximum_keys_input() {
     // First store with 37 keys.
     let mut keys = vec![];
     for _ in 0..37 {
-        keys.push((Pubkey::new_unique(), false));
+        keys.push((Address::new_unique(), false));
     }
     let my_config = MyConfig::new(42);
 
@@ -711,7 +711,7 @@ fn test_maximum_keys_input() {
         .unwrap();
 
     // Now try to store with 38 keys.
-    keys.push((Pubkey::new_unique(), false));
+    keys.push((Address::new_unique(), false));
     let my_config = MyConfig::new(42);
     let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
 

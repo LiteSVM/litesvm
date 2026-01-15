@@ -1,13 +1,13 @@
 use {
     litesvm::LiteSVM,
     solana_account::{state_traits::StateMut, ReadableAccount},
+    solana_address::Address,
     solana_keypair::Keypair,
     solana_message::Message,
     solana_nonce::{
         state::{Data, State as NonceState},
         versions::Versions,
     },
-    solana_pubkey::Pubkey,
     solana_rent::Rent,
     solana_signer::Signer,
     solana_system_interface::instruction::{advance_nonce_account, transfer},
@@ -35,7 +35,7 @@ fn state_from_account<T: ReadableAccount + StateMut<Versions>>(account: &T) -> N
 fn test_invalid_blockhash() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     let mut svm = LiteSVM::new();
 
@@ -56,7 +56,7 @@ fn test_invalid_blockhash() {
 fn test_durable_nonce() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
     let nonce_kp = Keypair::new();
 
     let mut svm = LiteSVM::new();

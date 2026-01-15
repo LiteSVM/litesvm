@@ -1,9 +1,9 @@
 use {
     litesvm::LiteSVM,
+    solana_address::Address,
     solana_keypair::Keypair,
     solana_message::Message,
     solana_native_token::LAMPORTS_PER_SOL,
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_system_interface::instruction::{allocate, create_account, transfer},
     solana_transaction::Transaction,
@@ -13,7 +13,7 @@ use {
 fn system_transfer() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     let mut svm = LiteSVM::new();
     let expected_fee = 5000;
@@ -101,7 +101,7 @@ fn test_airdrop_pubkey() {
     let initial_balance = svm.get_balance(&airdrop_pubkey).unwrap();
     assert_eq!(initial_balance, funding_amount);
 
-    let recipient = Pubkey::new_unique();
+    let recipient = Address::new_unique();
     let airdrop_amount = 100_000;
     svm.airdrop(&recipient, airdrop_amount).unwrap();
 
@@ -115,7 +115,7 @@ fn test_airdrop_pubkey() {
     assert_eq!(svm.get_balance(&recipient).unwrap(), airdrop_amount);
     assert_eq!(svm.airdrop_pubkey(), airdrop_pubkey);
 
-    let recipient2 = Pubkey::new_unique();
+    let recipient2 = Address::new_unique();
     svm.airdrop(&recipient2, airdrop_amount).unwrap();
     assert_eq!(svm.get_balance(&recipient2).unwrap(), airdrop_amount);
 }

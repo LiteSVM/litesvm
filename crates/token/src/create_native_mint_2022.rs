@@ -1,7 +1,7 @@
 use {
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_address::Address,
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
     spl_token_2022_interface::instruction::create_native_mint,
@@ -12,7 +12,7 @@ use {
 pub struct CreateNativeMint<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    token_program_id: Option<&'a Pubkey>,
+    token_program_id: Option<&'a Address>,
 }
 
 impl<'a> CreateNativeMint<'a> {
@@ -26,7 +26,7 @@ impl<'a> CreateNativeMint<'a> {
     }
 
     /// Sets the token program id for the instruction.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+    pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
         self
     }
