@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-01-15
+
+### Changed
+
+- Replace `solana-pubkey` dependency with `solana-address` ([#280](https://github.com/LiteSVM/litesvm/pull/280)).
+
 ## [0.9.0] - 2026-01-05
 
 ### Changed
@@ -171,7 +177,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/LiteSVM/litesvm/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/LiteSVM/litesvm/compare/v0.8.2...v0.9.0
 [0.8.2]: https://github.com/LiteSVM/litesvm/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/LiteSVM/litesvm/compare/v0.8.0...v0.8.1
