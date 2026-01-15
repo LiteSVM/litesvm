@@ -7,6 +7,7 @@ use {
     log::error,
     serde::de::DeserializeOwned,
     solana_account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
+    solana_address::Address,
     solana_address_lookup_table_interface::{error::AddressLookupError, state::AddressLookupTable},
     solana_clock::Clock,
     solana_instruction::error::InstructionError,
@@ -24,7 +25,6 @@ use {
         },
         sysvar_cache::SysvarCache,
     },
-    solana_pubkey::Pubkey,
     solana_sdk_ids::{
         bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, loader_v4, native_loader,
         sysvar::{
@@ -40,16 +40,16 @@ use {
     std::sync::Arc,
 };
 
-const FEES_ID: Pubkey = solana_pubkey::pubkey!("SysvarFees111111111111111111111111111111111");
-const RECENT_BLOCKHASHES_ID: Pubkey =
-    solana_pubkey::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
+const FEES_ID: Address = Address::from_str_const("SysvarFees111111111111111111111111111111111");
+const RECENT_BLOCKHASHES_ID: Address =
+    Address::from_str_const("SysvarRecentB1ockHashes11111111111111111111");
 
 fn handle_sysvar<T>(
     cache: &mut SysvarCache,
     err_variant: InvalidSysvarDataError,
     account: &AccountSharedData,
-    accounts: &HashMap<Pubkey, AccountSharedData>,
-    address: Pubkey,
+    accounts: &HashMap<Address, AccountSharedData>,
+    address: Address,
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar + DeserializeOwned,
@@ -68,34 +68,34 @@ where
 
 #[derive(Clone, Default)]
 pub struct AccountsDb {
-    pub inner: HashMap<Pubkey, AccountSharedData>,
+    pub inner: HashMap<Address, AccountSharedData>,
     pub programs_cache: ProgramCacheForTxBatch,
     pub sysvar_cache: SysvarCache,
     pub environments: ProgramRuntimeEnvironments,
 }
 
 impl AccountsDb {
-    pub fn get_account_ref(&self, pubkey: &Pubkey) -> Option<&AccountSharedData> {
+    pub fn get_account_ref(&self, pubkey: &Address) -> Option<&AccountSharedData> {
         self.inner.get(pubkey)
     }
 
-    pub fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
+    pub fn get_account(&self, pubkey: &Address) -> Option<AccountSharedData> {
         self.get_account_ref(pubkey).cloned()
     }
 
     /// We should only use this when we know we're not touching any executable or sysvar accounts,
     /// or have already handled such cases.
-    pub(crate) fn add_account_no_checks(&mut self, pubkey: Pubkey, account: AccountSharedData) {
+    pub(crate) fn add_account_no_checks(&mut self, pubkey: Address, account: AccountSharedData) {
         self.inner.insert(pubkey, account);
     }
 
     pub(crate) fn add_account(
         &mut self,
-        pubkey: Pubkey,
+        pubkey: Address,
         account: AccountSharedData,
     ) -> Result<(), LiteSVMError> {
         if account.executable()
-            && pubkey != Pubkey::default()
+            && pubkey != Address::default()
             && account.owner() != &native_loader::ID
         {
             let loaded_program = self.load_program(&account)?;
@@ -114,7 +114,7 @@ impl AccountsDb {
 
     fn maybe_handle_sysvar_account(
         &mut self,
-        pubkey: Pubkey,
+        pubkey: Address,
         account: &AccountSharedData,
     ) -> Result<(), InvalidSysvarDataError> {
         use InvalidSysvarDataError::{
@@ -209,21 +209,21 @@ impl AccountsDb {
     }
 
     /// Skip the executable() checks for builtin accounts
-    pub(crate) fn add_builtin_account(&mut self, pubkey: Pubkey, data: AccountSharedData) {
-        self.inner.insert(pubkey, data);
+    pub(crate) fn add_builtin_account(&mut self, address: Address, data: AccountSharedData) {
+        self.inner.insert(address, data);
     }
 
     pub(crate) fn sync_accounts(
         &mut self,
-        mut accounts: Vec<(Pubkey, AccountSharedData)>,
+        mut accounts: Vec<(Address, AccountSharedData)>,
     ) -> Result<(), LiteSVMError> {
         // need to add programdata accounts first if there are any
         itertools::partition(&mut accounts, |x| {
             x.1.owner() == &bpf_loader_upgradeable::id()
                 && x.1.data().first().is_some_and(|byte| *byte == 3)
         });
-        for (pubkey, acc) in accounts {
-            self.add_account(pubkey, acc)?;
+        for (address, acc) in accounts {
+            self.add_account(address, acc)?;
         }
         Ok(())
     }
@@ -350,10 +350,10 @@ impl AccountsDb {
 
     pub(crate) fn withdraw(
         &mut self,
-        pubkey: &Pubkey,
+        address: &Address,
         lamports: u64,
     ) -> solana_transaction_error::TransactionResult<()> {
-        match self.inner.get_mut(pubkey) {
+        match self.inner.get_mut(address) {
             Some(account) => {
                 let min_balance = match get_system_account_kind(account) {
                     Some(SystemAccountKind::Nonce) => self
@@ -375,7 +375,7 @@ impl AccountsDb {
                 Ok(())
             }
             None => {
-                error!("Account {pubkey} not found when trying to withdraw fee.");
+                error!("Account {address} not found when trying to withdraw fee.");
                 Err(TransactionError::AccountNotFound)
             }
         }

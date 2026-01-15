@@ -21,6 +21,7 @@ litesvm = { workspace = true, features = ["nodejs-internal", "precompiles"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive.workspace = true
 solana-account.workspace = true
+solana-address.workspace = true
 solana-clock.workspace = true
 solana-compute-budget.workspace = true
 solana-epoch-rewards.workspace = true
@@ -29,7 +30,6 @@ solana-hash.workspace = true
 solana-instruction.workspace = true
 solana-last-restart-slot.workspace = true
 solana-message.workspace = true
-solana-pubkey.workspace = true
 solana-rent.workspace = true
 solana-signature.workspace = true
 solana-slot-hashes.workspace = true
