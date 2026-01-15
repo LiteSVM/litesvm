@@ -1,8 +1,14 @@
 import {
+	appendTransactionMessageInstruction,
 	assertAccountExists,
+	createTransactionMessage,
 	decodeAccount,
 	generateKeyPairSigner,
 	lamports,
+	pipe,
+	setTransactionMessageFeePayerSigner,
+	setTransactionMessageLifetimeUsingBlockhash,
+	signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { LiteSVM } from "index";
 import assert from "node:assert/strict";
@@ -11,15 +17,12 @@ import {
 	generateAddress,
 	getCounterDecoder,
 	getGreetInstruction,
-	getSignedTransaction,
 	LAMPORTS_PER_SOL,
 	setHelloWorldAccount,
 	setHelloWorldProgram,
 } from "./util";
 
-const NUMBER_OF_INSTRUCTIONS = 64;
-
-test("many instructions", async () => {
+test("legacy tx", async () => {
 	// Given the following addresses and signers.
 	const [payer, programAddress, greetedAddress] = await Promise.all([
 		generateKeyPairSigner(),
@@ -40,22 +43,30 @@ test("many instructions", async () => {
 	);
 	assertAccountExists(greetedAccountBefore);
 	assert.deepStrictEqual(greetedAccountBefore.data.count, 0);
-
-	// When we send a transaction with many greet instructions.
-	const instructions = Array(NUMBER_OF_INSTRUCTIONS).fill(
-		getGreetInstruction(greetedAddress, programAddress),
+	assert.deepStrictEqual(
+		greetedAccountBefore.lamports,
+		lamports(LAMPORTS_PER_SOL),
 	);
-	const transaction = await getSignedTransaction(svm, payer, instructions);
+
+	// When we send a greet instruction using a legacy transaction.
+	const transaction = await pipe(
+		createTransactionMessage({ version: "legacy" }),
+		(tx) => setTransactionMessageFeePayerSigner(payer, tx),
+		(tx) =>
+			appendTransactionMessageInstruction(
+				getGreetInstruction(programAddress, greetedAddress),
+				tx,
+			),
+		(tx) => svm.setTransactionMessageLifetimeUsingLatestBlockhash(tx),
+		(tx) => signTransactionMessageWithSigners(tx),
+	);
 	svm.sendTransaction(transaction);
 
-	// Then we expect the greeted account to have been greeted many times.
+	// Then the greeted account has 1 greet.
 	const greetedAccountAfter = decodeAccount(
 		svm.getAccount(greetedAddress),
 		getCounterDecoder(),
 	);
 	assertAccountExists(greetedAccountAfter);
-	assert.deepStrictEqual(
-		greetedAccountAfter.data.count,
-		NUMBER_OF_INSTRUCTIONS,
-	);
+	assert.deepStrictEqual(greetedAccountAfter.data.count, 1);
 });

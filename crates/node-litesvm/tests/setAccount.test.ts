@@ -1,18 +1,29 @@
-import { test } from "node:test";
+import { EncodedAccount, lamports } from "@solana/kit";
+import { LiteSVM } from "litesvm";
 import assert from "node:assert/strict";
-import { LiteSVM, AccountInfoBytes } from "litesvm";
-import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { test } from "node:test";
+import { generateAddress, LAMPORTS_PER_SOL } from "./util";
 
-test("set account", () => {
+test("set account", async () => {
+	// Given the following addresses.
+	const [accountAddress, programAddress] = await Promise.all([
+		generateAddress(),
+		generateAddress(),
+	]);
+
+	// When we set an account in the LiteSVM.
 	const svm = new LiteSVM();
-	const address = new PublicKey("5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj");
-	const toSet: AccountInfoBytes = {
+	const account: EncodedAccount = {
+		address: accountAddress,
 		executable: false,
-		owner: PublicKey.default,
-		lamports: LAMPORTS_PER_SOL,
+		lamports: lamports(LAMPORTS_PER_SOL),
+		programAddress,
 		data: new Uint8Array([0, 1]),
+		space: 2n,
 	};
-	svm.setAccount(address, toSet);
-	const fetched = svm.getAccount(address);
-	assert.deepStrictEqual(fetched.data, new Uint8Array([0, 1]));
+	svm.setAccount(account);
+
+	// Then we can fetch the account and it matches what we set.
+	const fetched = svm.getAccount(accountAddress);
+	assert.deepStrictEqual(fetched, { exists: true, ...account });
 });

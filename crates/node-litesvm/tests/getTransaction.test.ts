@@ -1,43 +1,45 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import {
-	LAMPORTS_PER_SOL,
-	Transaction,
-	TransactionInstruction,
-	Keypair,
-} from "@solana/web3.js";
-import { helloworldProgram, getLamports } from "./util";
+	generateKeyPairSigner,
+	getSignatureFromTransaction,
+	lamports,
+} from "@solana/kit";
 import { TransactionMetadata } from "internal";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import {
+	generateAddress,
+	getGreetInstruction,
+	getSignedTransaction,
+	LAMPORTS_PER_SOL,
+	setHelloWorldAccount,
+	setHelloWorldProgram,
+} from "./util";
+import { LiteSVM } from "index";
 
-test("hello world", () => {
-	const [svm, programId, greetedPubkey] = helloworldProgram();
-	const lamports = getLamports(svm, greetedPubkey);
-	assert.strictEqual(lamports, LAMPORTS_PER_SOL);
-	const payer = new Keypair();
-	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
-	const blockhash = svm.latestBlockhash();
-	const greetedAccountBefore = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountBefore, null);
-	assert.deepStrictEqual(
-		greetedAccountBefore?.data,
-		new Uint8Array([0, 0, 0, 0]),
-	);
-	const ix = new TransactionInstruction({
-		keys: [{ pubkey: greetedPubkey, isSigner: false, isWritable: true }],
-		programId,
-		data: Buffer.from([0]),
-	});
-	const tx = new Transaction();
-	tx.recentBlockhash = blockhash;
-	tx.add(ix);
-	tx.sign(payer);
-	svm.sendTransaction(tx);
-	const greetedAccountAfter = svm.getAccount(greetedPubkey);
-	assert.notStrictEqual(greetedAccountAfter, null);
-	assert.deepStrictEqual(
-		greetedAccountAfter?.data,
-		new Uint8Array([1, 0, 0, 0]),
-	);
-	const fetched = svm.getTransaction(tx.signature);
+test("get transaction", async () => {
+	// Given the following addresses and signers.
+	const [payer, programAddress, greetedAddress] = await Promise.all([
+		generateKeyPairSigner(),
+		generateAddress(),
+		generateAddress(),
+	]);
+
+	// And a LiteSVM client with a hello world program and greeted account set up.
+	const svm = new LiteSVM();
+	svm.airdrop(payer.address, lamports(LAMPORTS_PER_SOL));
+	setHelloWorldProgram(svm, programAddress);
+	setHelloWorldAccount(svm, greetedAddress, programAddress);
+
+	// And given we have sent a greet transaction.
+	const transaction = await getSignedTransaction(svm, payer, [
+		getGreetInstruction(greetedAddress, programAddress),
+	]);
+	svm.sendTransaction(transaction);
+
+	// When we fetch the transaction by its signature.
+	const signature = getSignatureFromTransaction(transaction);
+	const fetched = svm.getTransaction(signature);
+
+	// Then we expect to get its transaction metadata.
 	assert.ok(fetched instanceof TransactionMetadata);
 });
