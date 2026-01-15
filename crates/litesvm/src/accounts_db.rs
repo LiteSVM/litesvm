@@ -385,7 +385,7 @@ impl AccountsDb {
     /// Fails if the account is not a program account.
     pub fn try_program_elf_bytes<'a>(
         &'a self,
-        program_key: &Pubkey,
+        program_key: &Address,
     ) -> std::result::Result<&'a [u8], InstructionError> {
         let program_account = self
             .get_account_ref(program_key)
