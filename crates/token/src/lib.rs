@@ -59,7 +59,10 @@ pub fn get_spl_account<T: Pack + IsInitialized>(
     Ok(account)
 }
 
-fn get_multisig_signers<'a>(authority: &Address, signing_pubkeys: &'a [Address]) -> Vec<&'a Address> {
+fn get_multisig_signers<'a>(
+    authority: &Address,
+    signing_pubkeys: &'a [Address],
+) -> Vec<&'a Address> {
     if signing_pubkeys == [*authority] {
         vec![]
     } else {

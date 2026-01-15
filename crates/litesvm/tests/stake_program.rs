@@ -3,13 +3,13 @@
 use {
     litesvm::LiteSVM,
     solana_account::{Account, ReadableAccount, WritableAccount},
+    solana_address::Address,
     solana_clock::Clock,
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
     solana_instruction::Instruction,
     solana_keypair::Keypair,
     solana_program_error::{ProgramError, ProgramResult},
-    solana_address::Address,
     solana_rent::Rent,
     solana_sdk_ids::system_program,
     solana_signer::{signers::Signers, Signer},
@@ -378,7 +378,8 @@ fn test_stake_checked_instructions() {
     let custodian = custodian_keypair.pubkey();
 
     let seed = "test seed";
-    let seeded_address = Address::create_with_seed(&seed_base, seed, &system_program::id()).unwrap();
+    let seeded_address =
+        Address::create_with_seed(&seed_base, seed, &system_program::id()).unwrap();
 
     // Test InitializeChecked with non-signing withdrawer
     let stake = create_blank_stake_account(&mut svm, &payer);

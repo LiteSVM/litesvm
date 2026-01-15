@@ -1,9 +1,9 @@
 use {
     litesvm::LiteSVM,
+    solana_address::Address,
     solana_keypair::Keypair,
     solana_message::Message,
     solana_native_token::LAMPORTS_PER_SOL,
-    solana_address::Address,
     solana_signer::Signer,
     solana_system_interface::instruction::{allocate, create_account, transfer},
     solana_transaction::Transaction,
