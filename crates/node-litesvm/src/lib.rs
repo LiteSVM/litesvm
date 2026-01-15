@@ -401,7 +401,7 @@ impl LiteSvm {
             .0
             .accounts_db()
             .inner
-            .contains_key(&spl_token_interface::ID)
+            .contains_key(&native_mint::inline_spl::SPL_TOKEN_PROGRAM_ID)
         {
             native_mint::create_native_mint(&mut self.0);
         }
@@ -410,7 +410,7 @@ impl LiteSvm {
             .0
             .accounts_db()
             .inner
-            .contains_key(&spl_token_2022_interface::ID)
+            .contains_key(&native_mint::inline_spl::SPL_TOKEN_2022_PROGRAM_ID)
         {
             native_mint::create_native_mint_2022(&mut self.0);
         }

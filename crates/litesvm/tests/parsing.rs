@@ -1,11 +1,11 @@
 use {
     litesvm::LiteSVM,
+    solana_address::Address,
     solana_address_lookup_table_interface::instruction::{
         create_lookup_table, extend_lookup_table,
     },
     solana_keypair::Keypair,
     solana_message::Message,
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
 };
@@ -22,7 +22,7 @@ fn test_inner_instruction_parsing() {
         lookup_table_address,
         payer_pk,
         Some(payer_pk),
-        vec![Pubkey::new_unique()],
+        vec![Address::new_unique()],
     );
     let lookup_msg = Message::new(&[lookup_table_ix, extend_ix], Some(&payer_pk));
     let lookup_tx = Transaction::new(&[&payer_kp], lookup_msg, blockhash);

@@ -23,8 +23,8 @@ In a further break from tradition, it has an ergonomic API with sane defaults an
 
 ```rust
 use litesvm::LiteSVM;
+use solana_address::Address;
 use solana_message::Message;
-use solana_pubkey::Pubkey;
 use solana_system_interface::instruction::transfer;
 use solana_keypair::Keypair;
 use solana_signer::Signer;
@@ -32,7 +32,7 @@ use solana_transaction::Transaction;
 
 let from_keypair = Keypair::new();
 let from = from_keypair.pubkey();
-let to = Pubkey::new_unique();
+let to = Address::new_unique();
 
 let mut svm = LiteSVM::new();
 svm.airdrop(&from, 10_000).unwrap();
@@ -66,18 +66,18 @@ from the Solana Program Library that just does some logging:
 ```rust
 use {
     litesvm::LiteSVM,
+    solana_address::{address, Address},
     solana_instruction::{account_meta::AccountMeta, Instruction},
     solana_keypair::Keypair,
-    solana_pubkey::{pubkey, Pubkey},
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
 };
 
 fn test_logging() {
-    let program_id = pubkey!("Logging111111111111111111111111111111111111");
+    let program_id = address!("Logging111111111111111111111111111111111111");
     let account_meta = AccountMeta {
-        pubkey: Pubkey::new_unique(),
+        pubkey: Address::new_unique(),
         is_signer: false,
         is_writable: true,
     };
@@ -115,17 +115,17 @@ Here's an example using a program that panics if `clock.unix_timestamp` is great
 ```rust
 use {
     litesvm::LiteSVM,
+    solana_address::Address,
     solana_clock::Clock,
     solana_instruction::Instruction,
     solana_keypair::Keypair,
     solana_message::{Message, VersionedMessage},
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
 };
 
 fn test_set_clock() {
-    let program_id = Pubkey::new_unique();
+    let program_id = Address::new_unique();
     let mut svm = LiteSVM::new();
     let bytes = include_bytes!("../../node-litesvm/program_bytes/litesvm_clock_example.so");
     svm.add_program(program_id, bytes);
@@ -181,9 +181,9 @@ work with fake USDC in our tests:
 use {
     litesvm::LiteSVM,
     solana_account::Account,
+    solana_address::{address, Address},
     solana_program_option::COption,
     solana_program_pack::Pack,
-    solana_pubkey::{pubkey, Pubkey},
     spl_associated_token_account_interface::address::get_associated_token_address,
     spl_token_interface::{
         state::{Account as TokenAccount, AccountState},
@@ -192,8 +192,8 @@ use {
 };
 
 fn test_infinite_usdc_mint() {
-    let owner = Pubkey::new_unique();
-    let usdc_mint = pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    let owner = Address::new_unique();
+    let usdc_mint = address!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
     let ata = get_associated_token_address(&owner, &usdc_mint);
     let usdc_to_own = 1_000_000_000_000;
     let token_acc = TokenAccount {
@@ -316,6 +316,7 @@ use {
     log::error,
     serde::de::DeserializeOwned,
     solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
+    solana_address::Address,
     solana_builtins::BUILTINS,
     solana_clock::Clock,
     solana_compute_budget::{
@@ -339,7 +340,6 @@ use {
         invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
         loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
     },
-    solana_pubkey::Pubkey,
     solana_rent::Rent,
     solana_sdk_ids::{bpf_loader, native_loader, system_program},
     solana_signature::Signature,
@@ -700,13 +700,13 @@ impl LiteSVM {
     }
 
     /// Returns all information associated with the account of the provided pubkey.
-    pub fn get_account(&self, pubkey: &Pubkey) -> Option<Account> {
-        self.accounts.get_account(pubkey).map(Into::into)
+    pub fn get_account(&self, address: &Address) -> Option<Account> {
+        self.accounts.get_account(address).map(Into::into)
     }
 
     /// Sets all information associated with the account of the provided pubkey.
-    pub fn set_account(&mut self, pubkey: Pubkey, data: Account) -> Result<(), LiteSVMError> {
-        self.accounts.add_account(pubkey, data.into())
+    pub fn set_account(&mut self, address: Address, data: Account) -> Result<(), LiteSVMError> {
+        self.accounts.add_account(address, data.into())
     }
 
     /// **⚠️ ADVANCED USE ONLY ⚠️**
@@ -732,8 +732,8 @@ impl LiteSVM {
     }
 
     /// Gets the balance of the provided account pubkey.
-    pub fn get_balance(&self, pubkey: &Pubkey) -> Option<u64> {
-        self.accounts.get_account_ref(pubkey).map(|x| x.lamports())
+    pub fn get_balance(&self, address: &Address) -> Option<u64> {
+        self.accounts.get_account_ref(address).map(|x| x.lamports())
     }
 
     /// Gets the latest blockhash.
@@ -765,20 +765,20 @@ impl LiteSVM {
     }
 
     /// Returns the pubkey of the internal airdrop account.
-    pub fn airdrop_pubkey(&self) -> Pubkey {
+    pub fn airdrop_pubkey(&self) -> Address {
         Keypair::try_from(self.airdrop_kp.as_slice())
             .unwrap()
             .pubkey()
     }
 
     /// Airdrops the account with the lamports specified.
-    pub fn airdrop(&mut self, pubkey: &Pubkey, lamports: u64) -> TransactionResult {
+    pub fn airdrop(&mut self, address: &Address, lamports: u64) -> TransactionResult {
         let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[solana_system_interface::instruction::transfer(
                     &payer.pubkey(),
-                    pubkey,
+                    address,
                     lamports,
                 )],
                 Some(&payer.pubkey()),
@@ -792,7 +792,7 @@ impl LiteSVM {
     }
 
     /// Adds a builtin program to the test environment.
-    pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
+    pub fn add_builtin(&mut self, program_id: Address, entrypoint: BuiltinFunctionWithContext) {
         let builtin = ProgramCacheEntry::new_builtin(
             self.accounts
                 .sysvar_cache
@@ -815,7 +815,7 @@ impl LiteSVM {
     /// Adds an SBF program to the test environment from the file specified.
     pub fn add_program_from_file(
         &mut self,
-        program_id: impl Into<Pubkey>,
+        program_id: impl Into<Address>,
         path: impl AsRef<Path>,
     ) -> Result<(), LiteSVMError> {
         let bytes = std::fs::read(path)?;
@@ -826,7 +826,7 @@ impl LiteSVM {
     /// Adds am SBF program to the test environment.
     pub fn add_program(
         &mut self,
-        program_id: impl Into<Pubkey>,
+        program_id: impl Into<Address>,
         program_bytes: &[u8],
     ) -> Result<(), LiteSVMError> {
         let program_id = program_id.into();
@@ -863,7 +863,7 @@ impl LiteSVM {
     fn create_transaction_context(
         &self,
         compute_budget: ComputeBudget,
-        accounts: Vec<(Pubkey, AccountSharedData)>,
+        accounts: Vec<(Address, AccountSharedData)>,
     ) -> TransactionContext<'_> {
         TransactionContext::new(
             accounts,
@@ -932,7 +932,7 @@ impl LiteSVM {
         u64,
         Option<TransactionContext<'b>>,
         u64,
-        Option<Pubkey>,
+        Option<Address>,
     )
     where
         'a: 'b,
@@ -1516,7 +1516,7 @@ struct CheckAndProcessTransactionSuccessCore<'ix_data> {
 struct CheckAndProcessTransactionSuccess<'ix_data> {
     core: CheckAndProcessTransactionSuccessCore<'ix_data>,
     fee: u64,
-    payer_key: Option<Pubkey>,
+    payer_key: Option<Address>,
 }
 
 fn execution_result_if_context(
@@ -1547,7 +1547,7 @@ fn execute_tx_helper(
     Signature,
     solana_transaction_context::TransactionReturnData,
     InnerInstructionsList,
-    Vec<(Pubkey, AccountSharedData)>,
+    Vec<(Address, AccountSharedData)>,
 ) {
     let signature = sanitized_tx.signature().to_owned();
     let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
@@ -1587,7 +1587,7 @@ fn get_compute_budget_limits(
 /// balance of lamports. If the payer_acount is not able to pay the
 /// fee a specific error is returned.
 fn validate_fee_payer(
-    payer_address: &Pubkey,
+    payer_address: &Address,
     payer_account: &mut AccountSharedData,
     payer_index: IndexOfAccount,
     rent: &Rent,

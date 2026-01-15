@@ -6,8 +6,8 @@ use {
     },
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
     smallvec::{smallvec, SmallVec},
+    solana_address::Address,
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_signer::{signers::Signers, Signer},
     solana_transaction::Transaction,
 };
@@ -23,14 +23,14 @@ use {
 pub struct TransferChecked<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    mint: &'a Pubkey,
-    source: Option<&'a Pubkey>,
-    destination: &'a Pubkey,
-    token_program_id: Option<&'a Pubkey>,
+    mint: &'a Address,
+    source: Option<&'a Address>,
+    destination: &'a Address,
+    token_program_id: Option<&'a Address>,
     amount: u64,
     decimals: Option<u8>,
     signers: SmallVec<[&'a Keypair; 1]>,
-    owner: Option<Pubkey>,
+    owner: Option<Address>,
 }
 
 impl<'a> TransferChecked<'a> {
@@ -38,8 +38,8 @@ impl<'a> TransferChecked<'a> {
     pub fn new(
         svm: &'a mut LiteSVM,
         payer: &'a Keypair,
-        mint: &'a Pubkey,
-        destination: &'a Pubkey,
+        mint: &'a Address,
+        destination: &'a Address,
         amount: u64,
     ) -> Self {
         TransferChecked {
@@ -57,7 +57,7 @@ impl<'a> TransferChecked<'a> {
     }
 
     /// Sets the token program id for the instruction.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+    pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
         self
     }
@@ -69,7 +69,7 @@ impl<'a> TransferChecked<'a> {
     }
 
     /// Sets the token account source.
-    pub fn source(mut self, source: &'a Pubkey) -> Self {
+    pub fn source(mut self, source: &'a Address) -> Self {
         self.source = Some(source);
         self
     }
@@ -82,7 +82,7 @@ impl<'a> TransferChecked<'a> {
     }
 
     /// Sets the owner of the account with multisig owner.
-    pub fn multisig(mut self, multisig: &'a Pubkey, signers: &'a [&'a Keypair]) -> Self {
+    pub fn multisig(mut self, multisig: &'a Address, signers: &'a [&'a Keypair]) -> Self {
         self.owner = Some(*multisig);
         self.signers = SmallVec::from(signers);
         self

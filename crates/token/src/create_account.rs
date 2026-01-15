@@ -8,8 +8,8 @@ use {
         TOKEN_ID,
     },
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_address::Address,
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_system_interface::instruction::create_account,
     solana_transaction::Transaction,
@@ -24,17 +24,17 @@ use {
 pub struct CreateAccount<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    mint: &'a Pubkey,
-    owner: Option<&'a Pubkey>,
+    mint: &'a Address,
+    owner: Option<&'a Address>,
     account_kp: Option<Keypair>,
-    token_program_id: Option<&'a Pubkey>,
+    token_program_id: Option<&'a Address>,
     #[cfg(feature = "token-2022")]
     extensions: Vec<ExtensionType>,
 }
 
 impl<'a> CreateAccount<'a> {
     /// Creates a new instance of the [`initialize_account3`] instruction.
-    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, mint: &'a Pubkey) -> Self {
+    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, mint: &'a Address) -> Self {
         CreateAccount {
             svm,
             payer,
@@ -48,7 +48,7 @@ impl<'a> CreateAccount<'a> {
     }
 
     /// Sets the owner of the spl account.
-    pub fn owner(mut self, owner: &'a Pubkey) -> Self {
+    pub fn owner(mut self, owner: &'a Address) -> Self {
         self.owner = Some(owner);
         self
     }
@@ -60,13 +60,13 @@ impl<'a> CreateAccount<'a> {
     }
 
     /// Sets the token program id of the spl account.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+    pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
         self
     }
 
     /// Sends the transaction.
-    pub fn send(self) -> Result<Pubkey, FailedTransactionMetadata> {
+    pub fn send(self) -> Result<Address, FailedTransactionMetadata> {
         #[cfg(feature = "token-2022")]
         let account_len = ExtensionType::try_calculate_account_len::<Account>(&self.extensions)?;
         #[cfg(not(feature = "token-2022"))]

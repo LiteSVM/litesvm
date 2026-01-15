@@ -2,10 +2,10 @@ use {
     criterion::{criterion_group, criterion_main, Criterion},
     litesvm::LiteSVM,
     solana_account::Account,
+    solana_address::Address,
     solana_instruction::{account_meta::AccountMeta, Instruction},
     solana_keypair::Keypair,
     solana_message::Message,
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
     std::path::PathBuf,
@@ -14,9 +14,9 @@ use {
 const NUM_GREETINGS: u8 = 255;
 
 fn make_tx(
-    program_id: Pubkey,
-    counter_address: Pubkey,
-    payer_pk: &Pubkey,
+    program_id: Address,
+    counter_address: Address,
+    payer_pk: &Address,
     blockhash: solana_hash::Hash,
     payer_kp: &Keypair,
     deduper: u8,
@@ -40,12 +40,12 @@ fn criterion_benchmark(c: &mut Criterion) {
         .with_transaction_history(0);
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = Pubkey::new_unique();
+    let program_id = Address::new_unique();
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     so_path.push("test_programs/target/deploy/counter.so");
     svm.add_program_from_file(program_id, &so_path).unwrap();
     svm.airdrop(&payer_pk, 100_000_000_000).unwrap();
-    let counter_address = Pubkey::new_unique();
+    let counter_address = Address::new_unique();
     let latest_blockhash = svm.latest_blockhash();
     let tx = make_tx(
         program_id,
@@ -70,7 +70,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-fn counter_acc(program_id: Pubkey) -> solana_account::Account {
+fn counter_acc(program_id: Address) -> solana_account::Account {
     Account {
         lamports: 5,
         data: vec![0_u8; std::mem::size_of::<u32>()],
