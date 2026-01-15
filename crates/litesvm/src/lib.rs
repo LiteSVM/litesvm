@@ -23,8 +23,8 @@ In a further break from tradition, it has an ergonomic API with sane defaults an
 
 ```rust
 use litesvm::LiteSVM;
+use solana_address::Address;
 use solana_message::Message;
-use solana_pubkey::Pubkey;
 use solana_system_interface::instruction::transfer;
 use solana_keypair::Keypair;
 use solana_signer::Signer;
@@ -32,7 +32,7 @@ use solana_transaction::Transaction;
 
 let from_keypair = Keypair::new();
 let from = from_keypair.pubkey();
-let to = Pubkey::new_unique();
+let to = Address::new_unique();
 
 let mut svm = LiteSVM::new();
 svm.airdrop(&from, 10_000).unwrap();
@@ -66,18 +66,18 @@ from the Solana Program Library that just does some logging:
 ```rust
 use {
     litesvm::LiteSVM,
+    solana_address::{address, Address},
     solana_instruction::{account_meta::AccountMeta, Instruction},
     solana_keypair::Keypair,
-    solana_pubkey::{pubkey, Pubkey},
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
 };
 
 fn test_logging() {
-    let program_id = pubkey!("Logging111111111111111111111111111111111111");
+    let program_id = address!("Logging111111111111111111111111111111111111");
     let account_meta = AccountMeta {
-        pubkey: Pubkey::new_unique(),
+        pubkey: Address::new_unique(),
         is_signer: false,
         is_writable: true,
     };
@@ -115,17 +115,17 @@ Here's an example using a program that panics if `clock.unix_timestamp` is great
 ```rust
 use {
     litesvm::LiteSVM,
+    solana_address::Address,
     solana_clock::Clock,
     solana_instruction::Instruction,
     solana_keypair::Keypair,
     solana_message::{Message, VersionedMessage},
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
 };
 
 fn test_set_clock() {
-    let program_id = Pubkey::new_unique();
+    let program_id = Address::new_unique();
     let mut svm = LiteSVM::new();
     let bytes = include_bytes!("../../node-litesvm/program_bytes/litesvm_clock_example.so");
     svm.add_program(program_id, bytes);
@@ -181,9 +181,9 @@ work with fake USDC in our tests:
 use {
     litesvm::LiteSVM,
     solana_account::Account,
+    solana_address::{address, Address},
     solana_program_option::COption,
     solana_program_pack::Pack,
-    solana_pubkey::{pubkey, Pubkey},
     spl_associated_token_account_interface::address::get_associated_token_address,
     spl_token_interface::{
         state::{Account as TokenAccount, AccountState},
@@ -192,8 +192,8 @@ use {
 };
 
 fn test_infinite_usdc_mint() {
-    let owner = Pubkey::new_unique();
-    let usdc_mint = pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    let owner = Address::new_unique();
+    let usdc_mint = address!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
     let ata = get_associated_token_address(&owner, &usdc_mint);
     let usdc_to_own = 1_000_000_000_000;
     let token_acc = TokenAccount {
