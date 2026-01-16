@@ -183,6 +183,15 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Adds the native mint accounts for SPL Token and Token-2022, if the programs are loaded.
+	 * @returns The modified LiteSVM instance
+	 */
+	withNativeMints(): LiteSVM {
+		this.inner.withNativeMints();
+		return this;
+	}
+
+	/**
 	 * Changes the capacity of the transaction history.
 	 * @param capacity - How many transactions to store in history.
 	 * Set this to 0 to disable transaction history and allow duplicate transactions.

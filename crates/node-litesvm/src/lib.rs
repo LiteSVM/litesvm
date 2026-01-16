@@ -40,6 +40,7 @@ use {
 mod account;
 mod compute_budget;
 mod feature_set;
+mod native_mint;
 mod sysvar;
 mod transaction_error;
 mod transaction_metadata;
@@ -392,5 +393,26 @@ impl LiteSvm {
     #[napi]
     pub fn set_stake_history(&mut self, history: &StakeHistory) {
         self.0.set_sysvar::<StakeHistoryOriginal>(&history.0)
+    }
+
+    #[napi]
+    pub fn with_native_mints(&mut self) {
+        if self
+            .0
+            .accounts_db()
+            .inner
+            .contains_key(&native_mint::inline_spl::SPL_TOKEN_PROGRAM_ID)
+        {
+            native_mint::create_native_mint(&mut self.0);
+        }
+
+        if self
+            .0
+            .accounts_db()
+            .inner
+            .contains_key(&native_mint::inline_spl::SPL_TOKEN_2022_PROGRAM_ID)
+        {
+            native_mint::create_native_mint_2022(&mut self.0);
+        }
     }
 }
