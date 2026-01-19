@@ -379,7 +379,7 @@ mod message_processor;
 mod precompiles;
 mod programs;
 #[cfg(feature = "register-tracing")]
-mod register_tracing;
+pub mod register_tracing;
 mod utils;
 
 #[derive(Clone)]
@@ -1082,6 +1082,7 @@ impl LiteSVM {
 
                 #[cfg(feature = "invocation-inspect-callback")]
                 self.invocation_inspect_callback.before_invocation(
+                    self,
                     tx,
                     &program_indices,
                     &invoke_context,
@@ -1097,8 +1098,11 @@ impl LiteSVM {
                 .map(|_| ());
 
                 #[cfg(feature = "invocation-inspect-callback")]
-                self.invocation_inspect_callback
-                    .after_invocation(&invoke_context, self.enable_register_tracing);
+                self.invocation_inspect_callback.after_invocation(
+                    self,
+                    &invoke_context,
+                    self.enable_register_tracing,
+                );
 
                 if let Err(err) = self.check_accounts_rent(tx, &context, &rent) {
                     tx_result = Err(err);
@@ -1654,12 +1658,18 @@ where
 pub trait InvocationInspectCallback: Send + Sync {
     fn before_invocation(
         &self,
+        svm: &LiteSVM,
         tx: &SanitizedTransaction,
         program_indices: &[IndexOfAccount],
         invoke_context: &InvokeContext,
     );
 
-    fn after_invocation(&self, invoke_context: &InvokeContext, enable_register_tracing: bool);
+    fn after_invocation(
+        &self,
+        svm: &LiteSVM,
+        invoke_context: &InvokeContext,
+        enable_register_tracing: bool,
+    );
 }
 
 #[cfg(feature = "invocation-inspect-callback")]
@@ -1667,10 +1677,16 @@ pub struct EmptyInvocationInspectCallback;
 
 #[cfg(feature = "invocation-inspect-callback")]
 impl InvocationInspectCallback for EmptyInvocationInspectCallback {
-    fn before_invocation(&self, _: &SanitizedTransaction, _: &[IndexOfAccount], _: &InvokeContext) {
+    fn before_invocation(
+        &self,
+        _: &LiteSVM,
+        _: &SanitizedTransaction,
+        _: &[IndexOfAccount],
+        _: &InvokeContext,
+    ) {
     }
 
-    fn after_invocation(&self, _: &InvokeContext, _enable_register_tracing: bool) {}
+    fn after_invocation(&self, _: &LiteSVM, _: &InvokeContext, _enable_register_tracing: bool) {}
 }
 
 #[cfg(test)]
