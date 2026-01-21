@@ -251,6 +251,8 @@ export declare class FeatureSet {
   static allEnabled(): FeatureSet
   isActive(featureId: Uint8Array): boolean
   activatedSlot(featureId: Uint8Array): bigint | null
+  activate(featureId: Uint8Array, slot: bigint): void
+  deactivate(featureId: Uint8Array): void
   toString(): string
 }
 
