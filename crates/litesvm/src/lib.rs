@@ -1077,7 +1077,7 @@ impl LiteSVM {
                     ),
                     Some(log_collector),
                     compute_budget.to_budget(),
-                    SVMTransactionExecutionCost::default(),
+                    compute_budget.to_cost(),
                 );
 
                 #[cfg(feature = "invocation-inspect-callback")]
