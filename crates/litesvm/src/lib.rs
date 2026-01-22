@@ -320,8 +320,7 @@ use {
     solana_builtins::BUILTINS,
     solana_clock::Clock,
     solana_compute_budget::{
-        compute_budget::{ComputeBudget, SVMTransactionExecutionCost},
-        compute_budget_limits::ComputeBudgetLimits,
+        compute_budget::ComputeBudget, compute_budget_limits::ComputeBudgetLimits,
     },
     solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
     solana_epoch_rewards::EpochRewards,
@@ -1077,7 +1076,7 @@ impl LiteSVM {
                     ),
                     Some(log_collector),
                     compute_budget.to_budget(),
-                    SVMTransactionExecutionCost::default(),
+                    compute_budget.to_cost(),
                 );
 
                 #[cfg(feature = "invocation-inspect-callback")]
