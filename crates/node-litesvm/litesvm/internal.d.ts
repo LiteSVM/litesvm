@@ -253,6 +253,10 @@ export declare class FeatureSet {
   activatedSlot(featureId: Uint8Array): bigint | null
   activate(featureId: Uint8Array, slot: bigint): void
   deactivate(featureId: Uint8Array): void
+  getActiveFeatures(): Array<Buffer>
+  getInactiveFeatures(): Array<Buffer>
+  getActiveFeaturesCount(): number
+  getInactiveFeaturesCount(): number
   toString(): string
 }
 
