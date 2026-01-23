@@ -48,6 +48,8 @@ jobs:
 
       - name: List packages
         run: cd crates/node-litesvm/ && ls -R ./npm
+      
+      - run: npm whoami
 
       - name: Publish
         env:
