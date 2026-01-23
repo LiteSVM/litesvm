@@ -34,6 +34,7 @@ jobs:
         run: cd crates/node-litesvm/ && ls -R ./npm
       - name: Publish
         run: |
+          cd crates/node-litesvm/
           npm config set provenance true
           TAG_NAME="${GITHUB_REF_NAME}"
           if printf "%s" "$TAG_NAME" | grep "^node-v[0-9]\+\.[0-9]\+\.[0-9]\+$";
