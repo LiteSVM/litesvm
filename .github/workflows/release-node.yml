@@ -31,6 +31,9 @@ jobs:
           corepack enable
           yarn install
 
+      - name: Disable napi GitHub release
+        run: echo "NAPI_SKIP_GITHUB_RELEASE=true" >> $GITHUB_ENV
+
       - name: Create npm dirs
         run: cd crates/node-litesvm/ && yarn napi create-npm-dirs
 
