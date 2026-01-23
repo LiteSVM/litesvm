@@ -1,5 +1,6 @@
 name: release NodeJS
-
+permissions:
+  id-token: write
 on:
   push:
     tags:
