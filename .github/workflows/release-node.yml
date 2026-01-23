@@ -35,16 +35,17 @@ jobs:
       - name: Publish
         run: |
           npm config set provenance true
-          if git log -1 --pretty=%B | grep "^node-v[0-9]\+\.[0-9]\+\.[0-9]\+$";
+          TAG_NAME="${GITHUB_REF_NAME}"
+          if printf "%s" "$TAG_NAME" | grep "^node-v[0-9]\+\.[0-9]\+\.[0-9]\+$";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --access public
-          elif git log -1 --pretty=%B | grep "^node-v[0-9]\+\.[0-9]\+\.[0-9]\+";
+          elif printf "%s" "$TAG_NAME" | grep "^node-v[0-9]\+\.[0-9]\+\.[0-9]\+";
           then
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
             npm publish --tag next --access public
           else
-            echo "Not a release, skipping publish"
+            echo "Not a release, skipping publish (tag: $TAG_NAME)"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
