@@ -608,8 +608,10 @@ impl LiteSVM {
         )
         .unwrap();
 
-        let program_runtime_v2 =
-            create_program_runtime_environment_v2(&compute_budget.to_budget(), true);
+        let program_runtime_v2 = create_program_runtime_environment_v2(
+            &compute_budget.to_budget(),
+            _enable_register_tracing,
+        );
 
         self.accounts.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
         self.accounts.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
