@@ -919,6 +919,7 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
+        SanitizedTransaction::validate_account_locks(tx.message(), 64)?;
 
         Ok(tx)
     }
