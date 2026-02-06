@@ -318,7 +318,7 @@ use {
     solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
     solana_address::Address,
     solana_builtins::BUILTINS,
-    solana_clock::Clock,
+    solana_clock::{Clock, MAX_RECENT_BLOCKHASHES},
     solana_compute_budget::{
         compute_budget::ComputeBudget, compute_budget_limits::ComputeBudgetLimits,
     },
@@ -1420,11 +1420,28 @@ impl LiteSVM {
     pub fn expire_blockhash(&mut self) {
         self.latest_blockhash = create_blockhash(&self.latest_blockhash.to_bytes());
         #[allow(deprecated)]
-        self.set_sysvar(&RecentBlockhashes::from_iter([IterItem(
-            0,
-            &self.latest_blockhash,
-            self.fee_structure.lamports_per_signature,
-        )]));
+        {
+            let blockhashes = self.get_sysvar::<RecentBlockhashes>();
+            let max_entries_len = blockhashes.len().min(MAX_RECENT_BLOCKHASHES);
+            let mut entries = Vec::with_capacity(max_entries_len);
+            entries.push(IterItem(
+                0,
+                &self.latest_blockhash,
+                self.fee_structure.lamports_per_signature,
+            ));
+            for (i, entry) in blockhashes.iter().enumerate() {
+                if i == MAX_RECENT_BLOCKHASHES - 1 {
+                    break;
+                }
+                entries.push(IterItem(
+                    i as u64 + 1,
+                    &entry.blockhash,
+                    entry.fee_calculator.lamports_per_signature,
+                ));
+            }
+
+            self.set_sysvar(&RecentBlockhashes::from_iter(entries));
+        }
     }
 
     /// Warps the clock to the specified slot.
@@ -1461,7 +1478,7 @@ impl LiteSVM {
         tx: &SanitizedTransaction,
     ) -> solana_transaction_error::TransactionResult<()> {
         let recent_blockhash = tx.message().recent_blockhash();
-        if recent_blockhash == &self.latest_blockhash
+        if self.check_blockhash_is_recent(recent_blockhash)
             || self.check_transaction_for_nonce(
                 tx,
                 &DurableNonce::from_blockhash(&self.latest_blockhash),
@@ -1476,6 +1493,13 @@ impl LiteSVM {
             );
             Err(TransactionError::BlockhashNotFound)
         }
+    }
+
+    fn check_blockhash_is_recent(&self, recent_blockhash: &Hash) -> bool {
+        #[allow(deprecated)]
+        self.get_sysvar::<RecentBlockhashes>()
+            .iter()
+            .any(|entry| entry.blockhash == *recent_blockhash)
     }
 
     fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
