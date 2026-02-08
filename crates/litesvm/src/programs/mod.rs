@@ -1,7 +1,7 @@
 use {
     crate::LiteSVM,
     solana_address::address,
-    solana_sdk_ids::{address_lookup_table, config},
+    solana_sdk_ids::{address_lookup_table, config, stake},
 };
 
 pub fn load_default_programs(svm: &mut LiteSVM) {
@@ -37,9 +37,6 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
         include_bytes!("elf/address_lookup_table.so"),
     )
     .unwrap();
-    svm.add_program(
-        address!("Stake11111111111111111111111111111111111111"),
-        include_bytes!("elf/core_bpf_stake-1.0.1.so"),
-    )
-    .unwrap()
+    svm.add_program(stake::ID, include_bytes!("elf/core_bpf_stake-1.0.1.so"))
+        .unwrap()
 }
