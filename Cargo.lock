@@ -62,7 +62,7 @@ dependencies = [
  "bincode",
  "digest 0.10.7",
  "ed25519-dalek 1.0.1",
- "libsecp256k1 0.6.0",
+ "libsecp256k1",
  "openssl",
  "sha3",
  "solana-ed25519-program",
@@ -92,7 +92,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "580e09664e6b9fb15cc40bc073ab3271a4a67893d2e25a74594b9ee51a39d9a5"
 dependencies = [
  "bincode",
- "libsecp256k1 0.6.0",
+ "libsecp256k1",
  "num-traits",
  "solana-account",
  "solana-account-info",
@@ -793,9 +793,9 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d883447757bb0ee46f233e9dc22eb84d93a9508c9b868687b274fc431d886bf"
+checksum = "950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3"
 dependencies = [
  "alloca",
  "anes",
@@ -818,9 +818,9 @@ dependencies = [
 
 [[package]]
 name = "criterion-plot"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed943f81ea2faa8dcecbbfa50164acf95d555afec96a27871663b300e387b2e4"
+checksum = "d8d80a2f4f5b554395e47b5d8305bc3d27813bacb73493eb1001e8f76dae29ea"
 dependencies = [
  "cast",
  "itertools 0.13.0",
@@ -1691,29 +1691,10 @@ dependencies = [
  "base64 0.12.3",
  "digest 0.9.0",
  "hmac-drbg",
- "libsecp256k1-core 0.2.2",
- "libsecp256k1-gen-ecmult 0.2.1",
- "libsecp256k1-gen-genmult 0.2.1",
+ "libsecp256k1-core",
+ "libsecp256k1-gen-ecmult",
+ "libsecp256k1-gen-genmult",
  "rand 0.7.3",
- "serde",
- "sha2 0.9.9",
- "typenum",
-]
-
-[[package]]
-name = "libsecp256k1"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e79019718125edc905a079a70cfa5f3820bc76139fc91d6f9abc27ea2a887139"
-dependencies = [
- "arrayref",
- "base64 0.22.1",
- "digest 0.9.0",
- "hmac-drbg",
- "libsecp256k1-core 0.3.0",
- "libsecp256k1-gen-ecmult 0.3.0",
- "libsecp256k1-gen-genmult 0.3.0",
- "rand 0.8.5",
  "serde",
  "sha2 0.9.9",
  "typenum",
@@ -1731,32 +1712,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "libsecp256k1-core"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5be9b9bb642d8522a44d533eab56c16c738301965504753b03ad1de3425d5451"
-dependencies = [
- "crunchy",
- "digest 0.9.0",
- "subtle",
-]
-
-[[package]]
 name = "libsecp256k1-gen-ecmult"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccab96b584d38fac86a83f07e659f0deafd0253dc096dab5a36d53efe653c5c3"
 dependencies = [
- "libsecp256k1-core 0.2.2",
-]
-
-[[package]]
-name = "libsecp256k1-gen-ecmult"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3038c808c55c87e8a172643a7d87187fc6c4174468159cb3090659d55bcb4809"
-dependencies = [
- "libsecp256k1-core 0.3.0",
+ "libsecp256k1-core",
 ]
 
 [[package]]
@@ -1765,16 +1726,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67abfe149395e3aa1c48a2beb32b068e2334402df8181f818d3aee2b304c4f5d"
 dependencies = [
- "libsecp256k1-core 0.2.2",
-]
-
-[[package]]
-name = "libsecp256k1-gen-genmult"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3db8d6ba2cec9eacc40e6e8ccc98931840301f1006e95647ceb2dd5c3aa06f7c"
-dependencies = [
- "libsecp256k1-core 0.3.0",
+ "libsecp256k1-core",
 ]
 
 [[package]]
@@ -1817,7 +1769,7 @@ dependencies = [
  "hex",
  "indexmap",
  "itertools 0.14.0",
- "libsecp256k1 0.7.2",
+ "libsecp256k1",
  "log",
  "qualifier_attr",
  "serde",
@@ -1837,7 +1789,7 @@ dependencies = [
  "solana-epoch-schedule",
  "solana-fee",
  "solana-fee-structure",
- "solana-hash 4.0.1",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-instructions-sysvar",
  "solana-keypair",
@@ -1866,7 +1818,7 @@ dependencies = [
  "solana-svm-log-collector",
  "solana-svm-timings",
  "solana-svm-transaction",
- "solana-system-interface 3.0.0",
+ "solana-system-interface 2.0.0",
  "solana-system-program",
  "solana-sysvar",
  "solana-sysvar-id",
@@ -1913,7 +1865,7 @@ dependencies = [
  "solana-compute-budget",
  "solana-epoch-rewards",
  "solana-epoch-schedule",
- "solana-hash 4.0.1",
+ "solana-hash 3.1.0",
  "solana-instruction",
  "solana-last-restart-slot",
  "solana-message",
@@ -1941,7 +1893,7 @@ dependencies = [
  "solana-program-pack",
  "solana-rent",
  "solana-signer",
- "solana-system-interface 3.0.0",
+ "solana-system-interface 2.0.0",
  "solana-transaction",
  "solana-transaction-error",
  "spl-associated-token-account-interface",
