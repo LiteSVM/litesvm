@@ -825,7 +825,7 @@ impl LiteSVM {
     }
 
     /// Adds am SBF program to the test environment.
-    pub fn add_program(
+    fn add_program_internal<const PREVERIFIED: bool>(
         &mut self,
         program_id: impl Into<Address>,
         program_bytes: &[u8],
@@ -850,15 +850,36 @@ impl LiteSVM {
             account.data().len(),
             current_slot,
             self.accounts.environments.program_runtime_v1.clone(),
-            false,
+            PREVERIFIED,
         )
-        .unwrap_or_default();
+        .map_err(LiteSVMError::from)?;
         loaded_program.effective_slot = current_slot;
-        self.accounts.add_account(program_id, account)?;
+
+        // We already loaded and validated (or explicitly trusted) the executable above.
+        // Insert the account directly to avoid a second program load.
+        self.accounts.add_account_no_checks(program_id, account);
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
         Ok(())
+    }
+
+    /// Adds an SBF program to the test environment.
+    pub fn add_program(
+        &mut self,
+        program_id: impl Into<Address>,
+        program_bytes: &[u8],
+    ) -> Result<(), LiteSVMError> {
+        self.add_program_internal::<false>(program_id, program_bytes)
+    }
+
+    /// Adds an SBF program that is known-good and already verified.
+    pub(crate) fn add_program_preverified(
+        &mut self,
+        program_id: impl Into<Address>,
+        program_bytes: &[u8],
+    ) -> Result<(), LiteSVMError> {
+        self.add_program_internal::<true>(program_id, program_bytes)
     }
 
     fn create_transaction_context(
