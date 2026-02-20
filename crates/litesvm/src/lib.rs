@@ -248,7 +248,9 @@ functionality without actually doing any changes to their code.
 A default post-instruction callback is provided for storing the
 register tracing data in files. It persists the register sets,
 the SBPF instructions, and a SHA-256 hash identifying the executable that
-was used to generate the tracing data. The motivation behind providing the
+was used to generate the tracing data. If the `SBF_TRACE_DISASSEMBLE`
+environment variable is set, a disassembled register trace will also be
+produced for each collected register trace. The motivation behind providing the
 SHA-256 identifier is that files may grow in number, and consumers need a
 deterministic way to evaluate which shared object should be used when
 analyzing the tracing data.
