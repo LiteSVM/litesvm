@@ -3,6 +3,7 @@ use {
     solana_address::address,
     solana_sdk_ids::{
         address_lookup_table, bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, config,
+        stake,
     },
 };
 
@@ -50,9 +51,9 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
     )
     .unwrap();
     svm.add_program_preverified(
-        address!("Stake11111111111111111111111111111111111111"),
+        stake::ID,
         include_bytes!("elf/core_bpf_stake-1.0.1.so"),
         &bpf_loader_upgradeable::id(),
     )
-    .unwrap()
+    .unwrap();
 }
