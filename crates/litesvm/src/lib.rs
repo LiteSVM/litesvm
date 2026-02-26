@@ -332,6 +332,7 @@ use {
     solana_hash::Hash,
     solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
+    solana_loader_v3_interface::state::UpgradeableLoaderState,
     solana_message::{
         inner_instruction::InnerInstructionsList, Message, SanitizedMessage, VersionedMessage,
     },
@@ -342,7 +343,7 @@ use {
         loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
     },
     solana_rent::Rent,
-    solana_sdk_ids::{bpf_loader, native_loader, system_program},
+    solana_sdk_ids::{bpf_loader, bpf_loader_upgradeable, native_loader, system_program},
     solana_signature::Signature,
     solana_signer::Signer,
     solana_slot_hashes::SlotHashes,
@@ -826,30 +827,64 @@ impl LiteSVM {
         Ok(())
     }
 
-    /// Adds am SBF program to the test environment.
     fn add_program_internal<const PREVERIFIED: bool>(
         &mut self,
         program_id: impl Into<Address>,
         program_bytes: &[u8],
     ) -> Result<(), LiteSVMError> {
         let program_id = program_id.into();
-        let program_len = program_bytes.len();
-        let lamports = self.minimum_balance_for_rent_exemption(program_len);
-        let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
-        account.set_executable(true);
-        account.set_data_from_slice(program_bytes);
         let current_slot = self
             .accounts
             .sysvar_cache
             .get_clock()
             .unwrap_or_default()
             .slot;
+
+        let (programdata_address, _bump) =
+            Address::find_program_address(&[program_id.as_ref()], &bpf_loader_upgradeable::id());
+
+        let programdata_metadata_len = UpgradeableLoaderState::size_of_programdata_metadata();
+        let programdata_len = programdata_metadata_len + program_bytes.len();
+        let mut programdata_data = vec![0u8; programdata_len];
+
+        bincode::serialize_into(
+            &mut programdata_data[..programdata_metadata_len],
+            &UpgradeableLoaderState::ProgramData {
+                slot: current_slot,
+                upgrade_authority_address: None,
+            },
+        )
+        .expect("UpgradeableLoaderState::ProgramData serialization should never fail");
+
+        programdata_data[programdata_metadata_len..].copy_from_slice(program_bytes);
+
+        let programdata_lamports = self.minimum_balance_for_rent_exemption(programdata_len);
+        let mut programdata_account = AccountSharedData::new(
+            programdata_lamports,
+            programdata_len,
+            &bpf_loader_upgradeable::id(),
+        );
+        programdata_account.set_data_from_slice(&programdata_data);
+
+        let program_account_data = bincode::serialize(&UpgradeableLoaderState::Program {
+            programdata_address,
+        })
+        .expect("UpgradeableLoaderState::Program serialization should never fail");
+
+        let program_lamports = self.minimum_balance_for_rent_exemption(program_account_data.len());
+        let mut program_account = AccountSharedData::new(
+            program_lamports,
+            program_account_data.len(),
+            &bpf_loader_upgradeable::id(),
+        );
+        program_account.set_executable(true);
+        program_account.set_data_from_slice(&program_account_data);
         let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
             None,
             &mut LoadProgramMetrics::default(),
-            account.data(),
-            account.owner(),
-            account.data().len(),
+            program_bytes,
+            &bpf_loader_upgradeable::id(),
+            programdata_len,
             current_slot,
             self.accounts.environments.program_runtime_v1.clone(),
             PREVERIFIED,
@@ -857,12 +892,14 @@ impl LiteSVM {
         .map_err(LiteSVMError::from)?;
         loaded_program.effective_slot = current_slot;
 
-        // We already loaded and validated (or explicitly trusted) the executable above.
-        // Insert the account directly to avoid a second program load.
-        self.accounts.add_account_no_checks(program_id, account);
+        self.accounts
+            .add_account_no_checks(programdata_address, programdata_account);
+        self.accounts
+            .add_account_no_checks(program_id, program_account);
         self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
+
         Ok(())
     }
 
