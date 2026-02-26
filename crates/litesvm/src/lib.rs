@@ -343,7 +343,9 @@ use {
         loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
     },
     solana_rent::Rent,
-    solana_sdk_ids::{bpf_loader, bpf_loader_upgradeable, native_loader, system_program},
+    solana_sdk_ids::{
+        bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, native_loader, system_program,
+    },
     solana_signature::Signature,
     solana_signer::Signer,
     solana_slot_hashes::SlotHashes,
@@ -831,6 +833,7 @@ impl LiteSVM {
         &mut self,
         program_id: impl Into<Address>,
         program_bytes: &[u8],
+        loader_id: &Address,
     ) -> Result<(), LiteSVMError> {
         let program_id = program_id.into();
         let current_slot = self
@@ -840,51 +843,69 @@ impl LiteSVM {
             .unwrap_or_default()
             .slot;
 
-        let (programdata_address, _bump) =
-            Address::find_program_address(&[program_id.as_ref()], &bpf_loader_upgradeable::id());
+        let program_size = if bpf_loader_upgradeable::check_id(loader_id) {
+            let (programdata_address, _bump) =
+                Address::find_program_address(&[program_id.as_ref()], loader_id);
 
-        let programdata_metadata_len = UpgradeableLoaderState::size_of_programdata_metadata();
-        let programdata_len = programdata_metadata_len + program_bytes.len();
-        let mut programdata_data = vec![0u8; programdata_len];
+            let programdata_metadata_len = UpgradeableLoaderState::size_of_programdata_metadata();
+            let programdata_len = programdata_metadata_len + program_bytes.len();
+            let mut programdata_data = vec![0u8; programdata_len];
 
-        bincode::serialize_into(
-            &mut programdata_data[..programdata_metadata_len],
-            &UpgradeableLoaderState::ProgramData {
-                slot: current_slot,
-                upgrade_authority_address: None,
-            },
-        )
-        .expect("UpgradeableLoaderState::ProgramData serialization should never fail");
+            bincode::serialize_into(
+                &mut programdata_data[..programdata_metadata_len],
+                &UpgradeableLoaderState::ProgramData {
+                    slot: current_slot,
+                    upgrade_authority_address: None,
+                },
+            )
+            .expect("UpgradeableLoaderState::ProgramData serialization should never fail");
+            programdata_data[programdata_metadata_len..].copy_from_slice(program_bytes);
 
-        programdata_data[programdata_metadata_len..].copy_from_slice(program_bytes);
+            let programdata_lamports = self.minimum_balance_for_rent_exemption(programdata_len);
+            let mut programdata_account =
+                AccountSharedData::new(programdata_lamports, programdata_len, loader_id);
+            programdata_account.set_data_from_slice(&programdata_data);
 
-        let programdata_lamports = self.minimum_balance_for_rent_exemption(programdata_len);
-        let mut programdata_account = AccountSharedData::new(
-            programdata_lamports,
-            programdata_len,
-            &bpf_loader_upgradeable::id(),
-        );
-        programdata_account.set_data_from_slice(&programdata_data);
+            let program_account_data = bincode::serialize(&UpgradeableLoaderState::Program {
+                programdata_address,
+            })
+            .expect("UpgradeableLoaderState::Program serialization should never fail");
 
-        let program_account_data = bincode::serialize(&UpgradeableLoaderState::Program {
-            programdata_address,
-        })
-        .expect("UpgradeableLoaderState::Program serialization should never fail");
+            let program_lamports =
+                self.minimum_balance_for_rent_exemption(program_account_data.len());
+            let mut program_account =
+                AccountSharedData::new(program_lamports, program_account_data.len(), loader_id);
+            program_account.set_executable(true);
+            program_account.set_data_from_slice(&program_account_data);
 
-        let program_lamports = self.minimum_balance_for_rent_exemption(program_account_data.len());
-        let mut program_account = AccountSharedData::new(
-            program_lamports,
-            program_account_data.len(),
-            &bpf_loader_upgradeable::id(),
-        );
-        program_account.set_executable(true);
-        program_account.set_data_from_slice(&program_account_data);
+            self.accounts
+                .add_account_no_checks(programdata_address, programdata_account);
+            self.accounts
+                .add_account_no_checks(program_id, program_account);
+
+            programdata_len
+        } else if bpf_loader::check_id(loader_id) || bpf_loader_deprecated::check_id(loader_id) {
+            let program_len = program_bytes.len();
+            let lamports = self.minimum_balance_for_rent_exemption(program_len);
+            let mut account = AccountSharedData::new(lamports, program_len, loader_id);
+            account.set_executable(true);
+            account.set_data_from_slice(program_bytes);
+
+            self.accounts.add_account_no_checks(program_id, account);
+
+            program_len
+        } else {
+            return Err(LiteSVMError::InvalidLoader(format!(
+                "Unsupported loader: {loader_id}"
+            )));
+        };
+
         let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
             None,
             &mut LoadProgramMetrics::default(),
             program_bytes,
-            &bpf_loader_upgradeable::id(),
-            programdata_len,
+            loader_id,
+            program_size,
             current_slot,
             self.accounts.environments.program_runtime_v1.clone(),
             PREVERIFIED,
@@ -893,10 +914,6 @@ impl LiteSVM {
         loaded_program.effective_slot = current_slot;
 
         self.accounts
-            .add_account_no_checks(programdata_address, programdata_account);
-        self.accounts
-            .add_account_no_checks(program_id, program_account);
-        self.accounts
             .programs_cache
             .replenish(program_id, Arc::new(loaded_program));
 
@@ -904,12 +921,27 @@ impl LiteSVM {
     }
 
     /// Adds an SBF program to the test environment.
+    ///
+    /// Uses `BPFLoaderUpgradeable` by default for the loader.
     pub fn add_program(
         &mut self,
         program_id: impl Into<Address>,
         program_bytes: &[u8],
     ) -> Result<(), LiteSVMError> {
-        self.add_program_internal::<false>(program_id, program_bytes)
+        self.add_program_internal::<false>(program_id, program_bytes, &bpf_loader_upgradeable::id())
+    }
+
+    /// Adds an SBF program with a specific loader to match mainnet CU behavior.
+    ///
+    /// Use `bpf_loader::id()` for BPFLoader2, `bpf_loader_deprecated::id()` for BPFLoader1,
+    /// or `bpf_loader_upgradeable::id()` for the upgradeable loader.
+    pub fn add_program_with_loader(
+        &mut self,
+        program_id: impl Into<Address>,
+        program_bytes: &[u8],
+        loader_id: Address,
+    ) -> Result<(), LiteSVMError> {
+        self.add_program_internal::<false>(program_id, program_bytes, &loader_id)
     }
 
     /// Adds an SBF program that is known-good and already verified.
@@ -917,8 +949,9 @@ impl LiteSVM {
         &mut self,
         program_id: impl Into<Address>,
         program_bytes: &[u8],
+        loader_id: &Address,
     ) -> Result<(), LiteSVMError> {
-        self.add_program_internal::<true>(program_id, program_bytes)
+        self.add_program_internal::<true>(program_id, program_bytes, loader_id)
     }
 
     fn create_transaction_context(
