@@ -321,6 +321,8 @@ export declare class LiteSvm {
   addProgramFromFile(programId: Uint8Array, path: string): void
   /** Adds am SBF program to the test environment. */
   addProgram(programId: Uint8Array, programBytes: Uint8Array): void
+  /** Adds an SBF program with a specific loader. */
+  addProgramWithLoader(programId: Uint8Array, programBytes: Uint8Array, loaderId: Uint8Array): void
   sendLegacyTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata
   sendVersionedTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata
   simulateLegacyTransaction(txBytes: Uint8Array): SimulatedTransactionInfo | FailedTransactionMetadata

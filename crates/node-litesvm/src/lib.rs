@@ -248,6 +248,28 @@ impl LiteSvm {
             })
     }
 
+    #[napi]
+    /// Adds an SBF program with a specific loader.
+    pub fn add_program_with_loader(
+        &mut self,
+        program_id: &[u8],
+        program_bytes: &[u8],
+        loader_id: &[u8],
+    ) -> Result<()> {
+        self.0
+            .add_program_with_loader(
+                convert_pubkey(program_id),
+                program_bytes,
+                convert_pubkey(loader_id),
+            )
+            .map_err(|e| {
+                Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to add program: {e}"),
+                )
+            })
+    }
+
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
     pub fn send_legacy_transaction(&mut self, tx_bytes: &[u8]) -> TransactionResult {
         let tx: Transaction = deserialize(tx_bytes).unwrap();

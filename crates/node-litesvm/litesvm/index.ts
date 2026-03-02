@@ -317,6 +317,24 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Adds an SBF program with a specific loader.
+	 * @param programId - The program ID.
+	 * @param programBytes - The raw bytes of the compiled program.
+	 * @param loaderId - The loader program ID.
+	 */
+	addProgramWithLoader(
+		programId: PublicKey,
+		programBytes: Uint8Array,
+		loaderId: PublicKey,
+	) {
+		return this.inner.addProgramWithLoader(
+			programId.toBytes(),
+			programBytes,
+			loaderId.toBytes(),
+		);
+	}
+
+	/**
 	 * Processes a transaction and returns the result.
 	 * @param tx - The transaction to send.
 	 * @returns TransactionMetadata if the transaction succeeds, else FailedTransactionMetadata
