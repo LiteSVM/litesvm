@@ -27,9 +27,9 @@ itertools = "0.14"
 libsecp256k1 = "0.6.0"
 litesvm = { path = "crates/litesvm", version = "0.10" }
 log = "0.4"
-napi = { version = "3.5.2", default-features = false }
+napi = { version = "3.8.3", default-features = false }
 napi-build = "2.3.1"
-napi-derive = "3.3.3"
+napi-derive = "3.5.2"
 qualifier_attr = "0.2.2"
 serde = "1.0.203"
 sha2 = "0.10.9"
