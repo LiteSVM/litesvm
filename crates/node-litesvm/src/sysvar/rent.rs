@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use {
     crate::{
         to_string_js,

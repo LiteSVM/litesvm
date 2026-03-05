@@ -2,8 +2,8 @@ use {
     super::{get_multisig_signers, spl_token::instruction::approve, TOKEN_ID},
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
     smallvec::{smallvec, SmallVec},
+    solana_address::Address,
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_signer::{signers::Signers, Signer},
     solana_transaction::Transaction,
 };
@@ -18,12 +18,12 @@ use {
 pub struct Approve<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    delegate: &'a Pubkey,
-    source: &'a Pubkey,
+    delegate: &'a Address,
+    source: &'a Address,
     amount: u64,
     signers: SmallVec<[&'a Keypair; 1]>,
-    owner: Option<Pubkey>,
-    token_program_id: Option<&'a Pubkey>,
+    owner: Option<Address>,
+    token_program_id: Option<&'a Address>,
 }
 
 impl<'a> Approve<'a> {
@@ -31,8 +31,8 @@ impl<'a> Approve<'a> {
     pub fn new(
         svm: &'a mut LiteSVM,
         payer: &'a Keypair,
-        delegate: &'a Pubkey,
-        source: &'a Pubkey,
+        delegate: &'a Address,
+        source: &'a Address,
         amount: u64,
     ) -> Self {
         Approve {
@@ -48,13 +48,13 @@ impl<'a> Approve<'a> {
     }
 
     // /// Sets the token account source.
-    // pub fn source(mut self, source: &'a Pubkey) -> Self {
+    // pub fn source(mut self, source: &'a Address) -> Self {
     //     self.source = Some(source);
     //     self
     // }
 
     /// Sets the token program id.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+    pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
         self
     }
@@ -67,7 +67,7 @@ impl<'a> Approve<'a> {
     }
 
     /// Sets the owner of the account with multisig owner.
-    pub fn multisig(mut self, multisig: &'a Pubkey, signers: &'a [&'a Keypair]) -> Self {
+    pub fn multisig(mut self, multisig: &'a Address, signers: &'a [&'a Keypair]) -> Self {
         self.owner = Some(*multisig);
         self.signers = SmallVec::from(signers);
         self

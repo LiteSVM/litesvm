@@ -2,7 +2,7 @@ use {
     crate::{to_string_js, util::bigint_to_u64},
     napi::bindgen_prelude::*,
     solana_account::Account as AccountOriginal,
-    solana_pubkey::Pubkey,
+    solana_address::Address,
 };
 
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ impl Account {
         Ok(Self(AccountOriginal {
             lamports: bigint_to_u64(&lamports)?,
             data: data.to_vec(),
-            owner: Pubkey::try_from(owner.as_ref()).unwrap(),
+            owner: Address::try_from(owner.as_ref()).unwrap(),
             executable,
             rent_epoch: bigint_to_u64(&rent_epoch)?,
         }))

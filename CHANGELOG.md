@@ -2,6 +2,54 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-26
+
+### Added
+
+- Add register trace disassembly dumps when `SBF_TRACE_DISASSEMBLE` is set ([#296](https://github.com/LiteSVM/litesvm/pull/296)).
+
+### Changed
+
+- Load register-tracing ELF bytes from accounts instead of walking directories ([#278](https://github.com/LiteSVM/litesvm/pull/278)).
+- Sync dependencies with mainnet ([#294](https://github.com/LiteSVM/litesvm/pull/294)).
+- Document the `SBF_TRACE_DISASSEMBLE` environment variable in docs ([#298](https://github.com/LiteSVM/litesvm/pull/298)).
+
+### Fixed
+
+- Fix CUs discrepancy ([#299](https://github.com/LiteSVM/litesvm/pull/299)).
+- Avoid double-loading trusted default programs ([#295](https://github.com/LiteSVM/litesvm/pull/295)).
+- Validate account locks when sanitizing transactions ([#293](https://github.com/LiteSVM/litesvm/pull/293)).
+- Disable debugging for runtime v2 by default ([#292](https://github.com/LiteSVM/litesvm/pull/292)).
+- Use `ComputeBudget::to_cost` in `InvokeContext` instead of defaults ([#288](https://github.com/LiteSVM/litesvm/pull/288)).
+
+## [0.9.1] - 2026-01-15
+
+### Changed
+
+- Replace `solana-pubkey` dependency with `solana-address` ([#280](https://github.com/LiteSVM/litesvm/pull/280)).
+
+## [0.9.0] - 2026-01-05
+
+### Changed
+
+- Bump Solana dependencies to v3.1 ([#246](https://github.com/LiteSVM/litesvm/pull/246)).
+- Update `spl_token_2022` to version 10.0.0 ([#271](https://github.com/LiteSVM/litesvm/pull/271)).
+- Use `AccountSharedData` instead of `Account` ([#254](https://github.com/LiteSVM/litesvm/pull/254)).
+
+### Added
+
+- Introduce invocation inspect callback feature for pre/post transaction callbacks ([#259](https://github.com/LiteSVM/litesvm/pull/259)).
+- Add `register-tracing` feature for tracing transaction execution ([#261](https://github.com/LiteSVM/litesvm/pull/261)).
+- Add `fee` field to `TransactionMetadata` ([#264](https://github.com/LiteSVM/litesvm/pull/264)).
+
+### Fixed
+
+- Charge priority fees to fee payer ([#264](https://github.com/LiteSVM/litesvm/pull/264)).
+- Fix compute budget initialization by incorporating feature set checks ([#267](https://github.com/LiteSVM/litesvm/pull/267)).
+- Respect reserved sysvar accounts during sanitization ([#255](https://github.com/LiteSVM/litesvm/pull/255)).
+- Disable history check if sigverify is disabled ([#253](https://github.com/LiteSVM/litesvm/pull/253)).
+- Restore `Send` and `Sync` traits on `LiteSVM` struct ([#266](https://github.com/LiteSVM/litesvm/pull/266)).
+
 ## [0.8.2] - 2025-11-19
 
 ### Fixed
@@ -149,7 +197,10 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/LiteSVM/litesvm/compare/v0.9.1...v0.10.0
+[0.9.1]: https://github.com/LiteSVM/litesvm/compare/v0.9.0...v0.9.1
+[0.9.0]: https://github.com/LiteSVM/litesvm/compare/v0.8.2...v0.9.0
 [0.8.2]: https://github.com/LiteSVM/litesvm/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/LiteSVM/litesvm/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/LiteSVM/litesvm/compare/v0.7.1...v0.8.0

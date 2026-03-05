@@ -1,6 +1,6 @@
 use {
     criterion::{criterion_group, criterion_main, Criterion},
-    solana_pubkey::Pubkey,
+    solana_address::Address,
     std::{
         hash::{BuildHasher, BuildHasherDefault, DefaultHasher},
         hint::black_box,
@@ -8,13 +8,13 @@ use {
 };
 
 #[inline(never)]
-fn std_default(address: &Pubkey, hash_builder: &BuildHasherDefault<DefaultHasher>) -> u64 {
+fn std_default(address: &Address, hash_builder: &BuildHasherDefault<DefaultHasher>) -> u64 {
     hash_builder.hash_one(address)
 }
 
 #[cfg(feature = "hashbrown")]
 #[inline(never)]
-fn hashbrown(address: &Pubkey, hash_builder: &hashbrown::DefaultHashBuilder) -> u64 {
+fn hashbrown(address: &Address, hash_builder: &hashbrown::DefaultHashBuilder) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = hash_builder.build_hasher();
     address.hash(&mut hasher);
@@ -22,7 +22,7 @@ fn hashbrown(address: &Pubkey, hash_builder: &hashbrown::DefaultHashBuilder) -> 
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let address = Pubkey::new_unique();
+    let address = Address::new_unique();
 
     let mut group = c.benchmark_group("hashers");
 

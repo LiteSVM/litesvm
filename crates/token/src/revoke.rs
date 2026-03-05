@@ -2,8 +2,8 @@ use {
     super::{get_multisig_signers, spl_token::instruction::revoke, TOKEN_ID},
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
     smallvec::{smallvec, SmallVec},
+    solana_address::Address,
     solana_keypair::Keypair,
-    solana_pubkey::Pubkey,
     solana_signer::{signers::Signers, Signer},
     solana_transaction::Transaction,
 };
@@ -13,15 +13,15 @@ use {
 pub struct Revoke<'a> {
     svm: &'a mut LiteSVM,
     payer: &'a Keypair,
-    source: &'a Pubkey,
+    source: &'a Address,
     signers: SmallVec<[&'a Keypair; 1]>,
-    owner: Option<Pubkey>,
-    token_program_id: Option<&'a Pubkey>,
+    owner: Option<Address>,
+    token_program_id: Option<&'a Address>,
 }
 
 impl<'a> Revoke<'a> {
     /// Creates a new instance of [`revoke`] instruction.
-    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, source: &'a Pubkey) -> Self {
+    pub fn new(svm: &'a mut LiteSVM, payer: &'a Keypair, source: &'a Address) -> Self {
         Revoke {
             svm,
             payer,
@@ -38,14 +38,14 @@ impl<'a> Revoke<'a> {
         self
     }
 
-    pub fn multisig(mut self, multisig: &'a Pubkey, signers: &'a [&'a Keypair]) -> Self {
+    pub fn multisig(mut self, multisig: &'a Address, signers: &'a [&'a Keypair]) -> Self {
         self.owner = Some(*multisig);
         self.signers = SmallVec::from(signers);
         self
     }
 
     /// Sets the token program id for the instruction.
-    pub fn token_program_id(mut self, program_id: &'a Pubkey) -> Self {
+    pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
         self
     }

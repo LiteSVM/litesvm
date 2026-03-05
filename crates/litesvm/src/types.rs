@@ -1,10 +1,10 @@
 use {
     crate::format_logs::format_logs,
     solana_account::AccountSharedData,
+    solana_address::Address,
     solana_instruction::error::InstructionError,
     solana_message::inner_instruction::InnerInstructionsList,
     solana_program_error::ProgramError,
-    solana_pubkey::Pubkey,
     solana_signature::Signature,
     solana_transaction_context::TransactionReturnData,
     solana_transaction_error::{TransactionError, TransactionResult as Result},
@@ -19,6 +19,7 @@ pub struct TransactionMetadata {
     pub inner_instructions: InnerInstructionsList,
     pub compute_units_consumed: u64,
     pub return_data: TransactionReturnData,
+    pub fee: u64,
 }
 
 impl TransactionMetadata {
@@ -31,7 +32,7 @@ impl TransactionMetadata {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SimulatedTransactionInfo {
     pub meta: TransactionMetadata,
-    pub post_accounts: Vec<(Pubkey, AccountSharedData)>,
+    pub post_accounts: Vec<(Address, AccountSharedData)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,7 +57,7 @@ impl From<ProgramError> for FailedTransactionMetadata {
 pub type TransactionResult = std::result::Result<TransactionMetadata, FailedTransactionMetadata>;
 
 pub(crate) struct ExecutionResult {
-    pub(crate) post_accounts: Vec<(Pubkey, AccountSharedData)>,
+    pub(crate) post_accounts: Vec<(Address, AccountSharedData)>,
     pub(crate) tx_result: Result<()>,
     pub(crate) signature: Signature,
     pub(crate) compute_units_consumed: u64,
@@ -64,6 +65,7 @@ pub(crate) struct ExecutionResult {
     pub(crate) return_data: TransactionReturnData,
     /// Whether the transaction can be included in a block
     pub(crate) included: bool,
+    pub(crate) fee: u64,
 }
 
 impl Default for ExecutionResult {
@@ -76,19 +78,7 @@ impl Default for ExecutionResult {
             inner_instructions: Default::default(),
             return_data: Default::default(),
             included: false,
-        }
-    }
-}
-
-impl ExecutionResult {
-    pub(crate) fn result_and_compute_units(
-        tx_result: Result<()>,
-        compute_units_consumed: u64,
-    ) -> Self {
-        Self {
-            tx_result,
-            compute_units_consumed,
-            ..Default::default()
+            fee: 0,
         }
     }
 }

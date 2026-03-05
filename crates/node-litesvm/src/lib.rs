@@ -40,6 +40,7 @@ use {
 mod account;
 mod compute_budget;
 mod feature_set;
+mod native_mint;
 mod sysvar;
 mod transaction_error;
 mod transaction_metadata;
@@ -247,6 +248,28 @@ impl LiteSvm {
             })
     }
 
+    #[napi]
+    /// Adds an SBF program with a specific loader.
+    pub fn add_program_with_loader(
+        &mut self,
+        program_id: &[u8],
+        program_bytes: &[u8],
+        loader_id: &[u8],
+    ) -> Result<()> {
+        self.0
+            .add_program_with_loader(
+                convert_pubkey(program_id),
+                program_bytes,
+                convert_pubkey(loader_id),
+            )
+            .map_err(|e| {
+                Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to add program: {e}"),
+                )
+            })
+    }
+
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
     pub fn send_legacy_transaction(&mut self, tx_bytes: &[u8]) -> TransactionResult {
         let tx: Transaction = deserialize(tx_bytes).unwrap();
@@ -392,5 +415,26 @@ impl LiteSvm {
     #[napi]
     pub fn set_stake_history(&mut self, history: &StakeHistory) {
         self.0.set_sysvar::<StakeHistoryOriginal>(&history.0)
+    }
+
+    #[napi]
+    pub fn with_native_mints(&mut self) {
+        if self
+            .0
+            .accounts_db()
+            .inner
+            .contains_key(&native_mint::inline_spl::SPL_TOKEN_PROGRAM_ID)
+        {
+            native_mint::create_native_mint(&mut self.0);
+        }
+
+        if self
+            .0
+            .accounts_db()
+            .inner
+            .contains_key(&native_mint::inline_spl::SPL_TOKEN_2022_PROGRAM_ID)
+        {
+            native_mint::create_native_mint_2022(&mut self.0);
+        }
     }
 }

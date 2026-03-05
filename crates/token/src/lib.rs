@@ -36,16 +36,16 @@ pub use {
 };
 use {
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_address::Address,
     solana_program_pack::{IsInitialized, Pack},
-    solana_pubkey::Pubkey,
     solana_transaction_error::TransactionError,
 };
 
-pub const TOKEN_ID: Pubkey = spl_token::ID;
+pub const TOKEN_ID: Address = spl_token::ID;
 
 pub fn get_spl_account<T: Pack + IsInitialized>(
     svm: &LiteSVM,
-    account: &Pubkey,
+    account: &Address,
 ) -> Result<T, FailedTransactionMetadata> {
     let account = T::unpack(
         &svm.get_account(account)
@@ -59,7 +59,10 @@ pub fn get_spl_account<T: Pack + IsInitialized>(
     Ok(account)
 }
 
-fn get_multisig_signers<'a>(authority: &Pubkey, signing_pubkeys: &'a [Pubkey]) -> Vec<&'a Pubkey> {
+fn get_multisig_signers<'a>(
+    authority: &Address,
+    signing_pubkeys: &'a [Address],
+) -> Vec<&'a Address> {
     if signing_pubkeys == [*authority] {
         vec![]
     } else {

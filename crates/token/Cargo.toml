@@ -15,10 +15,10 @@ token-2022 = ["dep:spl-token-2022-interface"]
 litesvm.workspace = true
 smallvec.workspace = true
 solana-account = { workspace = true, optional = true }
+solana-address.workspace = true
 solana-keypair.workspace = true
 solana-program-option.workspace = true
 solana-program-pack.workspace = true
-solana-pubkey.workspace = true
 solana-rent = { workspace = true, optional = true }
 solana-signer.workspace = true
 solana-system-interface.workspace = true

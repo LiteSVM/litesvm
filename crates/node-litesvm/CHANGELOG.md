@@ -1,5 +1,26 @@
 # LiteSVM (NodeJS) Changelog
 
+## [Unreleased]
+
+## [0.6.0] - 2026-03-02
+
+### Added
+
+- Add `FeatureSet` activate/deactivate helpers to Node bindings [(#289)](https://github.com/LiteSVM/litesvm/pull/289)
+- Add `addProgramWithLoader` method to `node-litesvm`
+
+## [0.5.0] - 2026-01-16
+
+### Added
+
+- Add `withNativeMints` in `node-litesvm` [(#252)](https://github.com/LiteSVM/litesvm/pull/252)
+
+### Changed
+
+- Bump Solana dependencies to v3.1 [(#246)](https://github.com/LiteSVM/litesvm/pull/246)
+- Register tracing support on top of Solana 3.1 [(#261)](https://github.com/LiteSVM/litesvm/pull/261)
+- Replace `solana-pubkey` with `solana-address` [(#280)](https://github.com/LiteSVM/litesvm/pull/280)
+
 ## [0.4.0] - 2025-11-29
 
 ### Added

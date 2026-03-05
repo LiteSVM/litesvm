@@ -185,6 +185,15 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Adds the native mint accounts for SPL Token and Token-2022, if the programs are loaded.
+	 * @returns The modified LiteSVM instance
+	 */
+	withNativeMints(): LiteSVM {
+		this.inner.withNativeMints();
+		return this;
+	}
+
+	/**
 	 * Changes the capacity of the transaction history.
 	 * @param capacity - How many transactions to store in history.
 	 * Set this to 0 to disable transaction history and allow duplicate transactions.
@@ -356,6 +365,24 @@ export class LiteSVM {
 		return this.inner.addProgram(
 			getAddressCodec().encode(programId) as Uint8Array,
 			programBytes,
+		);
+	}
+
+	/**
+	 * Adds an SBF program with a specific loader.
+	 * @param programId - The program ID.
+	 * @param programBytes - The raw bytes of the compiled program.
+	 * @param loaderId - The loader program ID.
+	 */
+	addProgramWithLoader(
+		programId: PublicKey,
+		programBytes: Uint8Array,
+		loaderId: PublicKey,
+	) {
+		return this.inner.addProgramWithLoader(
+			programId.toBytes(),
+			programBytes,
+			loaderId.toBytes(),
 		);
 	}
 

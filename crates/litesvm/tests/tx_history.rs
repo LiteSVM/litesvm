@@ -1,5 +1,5 @@
 use {
-    litesvm::LiteSVM, solana_keypair::Keypair, solana_pubkey::Pubkey, solana_signer::Signer,
+    litesvm::LiteSVM, solana_address::Address, solana_keypair::Keypair, solana_signer::Signer,
     solana_system_interface::instruction::transfer, solana_transaction::Transaction,
 };
 
@@ -8,7 +8,7 @@ fn test_tx_history_base_case() {
     // Create a key for our test transactions
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     // Create the VM and airdrop funds
     let mut svm = LiteSVM::new()
@@ -39,7 +39,7 @@ fn test_tx_history_disable_later() {
     // Create a key for our test transactions
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Pubkey::new_unique();
+    let to = Address::new_unique();
 
     // Create the VM and airdrop funds
     let mut svm = LiteSVM::new()

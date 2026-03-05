@@ -1,10 +1,10 @@
 use {
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
+    solana_address::Address,
     solana_keypair::Keypair,
     solana_loader_v3_interface::{
         instruction as bpf_loader_upgradeable, state::UpgradeableLoaderState,
     },
-    solana_pubkey::Pubkey,
     solana_signer::Signer,
     solana_transaction::Transaction,
 };
@@ -14,15 +14,15 @@ const CHUNK_SIZE: usize = 512;
 pub fn set_upgrade_authority(
     svm: &mut LiteSVM,
     from_keypair: &Keypair,
-    program_pubkey: &Pubkey,
+    program_address: &Address,
     current_authority_keypair: &Keypair,
-    new_authority_pubkey: Option<&Pubkey>,
+    new_authority_address: Option<&Address>,
 ) -> Result<(), FailedTransactionMetadata> {
     let tx = Transaction::new_signed_with_payer(
         &[bpf_loader_upgradeable::set_upgrade_authority(
-            program_pubkey,
+            program_address,
             &current_authority_keypair.pubkey(),
-            new_authority_pubkey,
+            new_authority_address,
         )],
         Some(&from_keypair.pubkey()),
         &[&from_keypair],
@@ -38,7 +38,7 @@ fn load_upgradeable_buffer(
     svm: &mut LiteSVM,
     payer_kp: &Keypair,
     program_bytes: &[u8],
-) -> Result<Pubkey, FailedTransactionMetadata> {
+) -> Result<Address, FailedTransactionMetadata> {
     let payer_pk = payer_kp.pubkey();
     let buffer_kp = Keypair::new();
     let buffer_pk = buffer_kp.pubkey();
