@@ -375,14 +375,14 @@ export class LiteSVM {
 	 * @param loaderId - The loader program ID.
 	 */
 	addProgramWithLoader(
-		programId: PublicKey,
+		programId: Address,
 		programBytes: Uint8Array,
-		loaderId: PublicKey,
+		loaderId: Address,
 	) {
 		return this.inner.addProgramWithLoader(
-			programId.toBytes(),
+			getAddressCodec().encode(programId) as Uint8Array,
 			programBytes,
-			loaderId.toBytes(),
+			getAddressCodec().encode(loaderId) as Uint8Array,
 		);
 	}
 
