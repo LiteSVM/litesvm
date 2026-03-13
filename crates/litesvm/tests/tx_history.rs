@@ -16,6 +16,7 @@ fn test_tx_history_base_case() {
         .with_blockhash_check(false)
         .with_transaction_history(0);
     svm.airdrop(&from, 10_000_000).unwrap();
+    svm.airdrop(&to, 10_000_000).unwrap();
 
     // Try to create and send two identical transactions
     let instruction = transfer(&from, &to, 100);
@@ -46,6 +47,7 @@ fn test_tx_history_disable_later() {
         .with_sigverify(false)
         .with_blockhash_check(false);
     svm.airdrop(&from, 10_000_000).unwrap();
+    svm.airdrop(&to, 10_000_000).unwrap();
 
     // Try to create and send two identical transactions
     let instruction = transfer(&from, &to, 100);

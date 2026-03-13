@@ -17,9 +17,12 @@ fn system_transfer() {
 
     let mut svm = LiteSVM::new();
     let expected_fee = 5000;
-    svm.airdrop(&from, 100 + expected_fee).unwrap();
+    let original_balance = LAMPORTS_PER_SOL;
+    svm.airdrop(&from, original_balance).unwrap();
+    svm.airdrop(&to, original_balance).unwrap();
 
-    let instruction = transfer(&from, &to, 64);
+    let transfer_amount = 64;
+    let instruction = transfer(&from, &to, transfer_amount);
     let tx = Transaction::new(
         &[&from_keypair],
         Message::new(&[instruction], Some(&from)),
@@ -31,8 +34,14 @@ fn system_transfer() {
     let to_account = svm.get_account(&to);
 
     assert!(tx_res.is_ok());
-    assert_eq!(from_account.unwrap().lamports, 36);
-    assert_eq!(to_account.unwrap().lamports, 64);
+    assert_eq!(
+        from_account.unwrap().lamports,
+        original_balance - expected_fee - transfer_amount
+    );
+    assert_eq!(
+        to_account.unwrap().lamports,
+        original_balance + transfer_amount
+    );
 }
 
 #[test_log::test]
@@ -102,7 +111,7 @@ fn test_airdrop_pubkey() {
     assert_eq!(initial_balance, funding_amount);
 
     let recipient = Address::new_unique();
-    let airdrop_amount = 100_000;
+    let airdrop_amount = LAMPORTS_PER_SOL;
     svm.airdrop(&recipient, airdrop_amount).unwrap();
 
     let after_airdrop = svm.get_balance(&airdrop_pubkey).unwrap();

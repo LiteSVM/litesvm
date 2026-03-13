@@ -35,7 +35,8 @@ let from = from_keypair.pubkey();
 let to = Address::new_unique();
 
 let mut svm = LiteSVM::new();
-svm.airdrop(&from, 10_000).unwrap();
+svm.airdrop(&from, 1_000_000_000).unwrap();
+svm.airdrop(&to, 1_000_000_000).unwrap();
 
 let instruction = transfer(&from, &to, 64);
 let tx = Transaction::new(
@@ -47,8 +48,8 @@ let tx_res = svm.send_transaction(tx).unwrap();
 
 let from_account = svm.get_account(&from);
 let to_account = svm.get_account(&to);
-assert_eq!(from_account.unwrap().lamports, 4936);
-assert_eq!(to_account.unwrap().lamports, 64);
+assert_eq!(from_account.unwrap().lamports, 999994936);
+assert_eq!(to_account.unwrap().lamports, 1000000064);
 ```
 
 ## Deploying Programs
@@ -1233,22 +1234,20 @@ impl LiteSVM {
                     .get_key_of_account_at_index(index as IndexOfAccount)
                     .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
 
-                if !account.data().is_empty() {
-                    let post_rent_state =
-                        get_account_rent_state(rent, account.lamports(), account.data().len());
-                    let pre_rent_state = self
-                        .accounts
-                        .get_account_ref(pubkey)
-                        .map(|acc| get_account_rent_state(rent, acc.lamports(), acc.data().len()))
-                        .unwrap_or(RentState::Uninitialized);
+                let post_rent_state =
+                    get_account_rent_state(rent, account.lamports(), account.data().len());
+                let pre_rent_state = self
+                    .accounts
+                    .get_account_ref(pubkey)
+                    .map(|acc| get_account_rent_state(rent, acc.lamports(), acc.data().len()))
+                    .unwrap_or(RentState::Uninitialized);
 
-                    check_rent_state_with_account(
-                        &pre_rent_state,
-                        &post_rent_state,
-                        pubkey,
-                        index as IndexOfAccount,
-                    )?;
-                }
+                check_rent_state_with_account(
+                    &pre_rent_state,
+                    &post_rent_state,
+                    pubkey,
+                    index as IndexOfAccount,
+                )?;
             }
         }
         Ok(())
