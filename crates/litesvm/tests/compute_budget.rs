@@ -3,8 +3,9 @@ use {
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_compute_budget_interface::ComputeBudgetInstruction,
     solana_instruction::error::InstructionError, solana_keypair::Keypair, solana_message::Message,
-    solana_signer::Signer, solana_system_interface::instruction::transfer,
-    solana_transaction::Transaction, solana_transaction_error::TransactionError,
+    solana_native_token::LAMPORTS_PER_SOL, solana_rent::Rent, solana_signer::Signer,
+    solana_system_interface::instruction::transfer, solana_transaction::Transaction,
+    solana_transaction_error::TransactionError,
 };
 
 #[test_log::test]
@@ -16,7 +17,13 @@ fn test_set_compute_budget() {
 
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
-    svm.airdrop(&from, tx_fee + 100).unwrap();
+    svm.airdrop(
+        &from,
+        svm.get_sysvar::<Rent>().minimum_balance(0) + tx_fee + 100,
+    )
+    .unwrap();
+    svm.airdrop(&to, LAMPORTS_PER_SOL).unwrap();
+
     // need to set the low compute budget after the airdrop tx
     let mut compute_budget = ComputeBudget::new_with_defaults(false, false);
     compute_budget.compute_unit_limit = 10;
@@ -45,7 +52,12 @@ fn test_set_compute_unit_limit() {
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
 
-    svm.airdrop(&from, tx_fee + 100).unwrap();
+    svm.airdrop(
+        &from,
+        svm.get_sysvar::<Rent>().minimum_balance(0) + tx_fee + 100,
+    )
+    .unwrap();
+    svm.airdrop(&to, LAMPORTS_PER_SOL).unwrap();
 
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(
@@ -86,8 +98,10 @@ fn test_priority_fee_is_charged() {
     let total_fee = base_fee + expected_priority_fee;
     let transfer_amount: u64 = 100;
 
-    let initial_balance = total_fee + transfer_amount;
+    let initial_balance = svm.get_sysvar::<Rent>().minimum_balance(0) + total_fee + transfer_amount;
     svm.airdrop(&from, initial_balance).unwrap();
+    let initial_recipient_balance = LAMPORTS_PER_SOL;
+    svm.airdrop(&to, initial_recipient_balance).unwrap();
 
     let instruction = transfer(&from, &to, transfer_amount);
     let tx = Transaction::new(
@@ -118,12 +132,14 @@ fn test_priority_fee_is_charged() {
     // Note: get_balance returns None if account doesn't exist (0 balance accounts may be pruned)
     let final_balance = svm.get_balance(&from).unwrap_or(0);
     assert_eq!(
-        final_balance, 0,
-        "Fee payer should have 0 balance after paying total_fee ({}) + transfer ({})",
-        total_fee, transfer_amount
+        final_balance, initial_balance - total_fee - transfer_amount,
+        "Fee payer should have 0 balance after paying total_fee ({total_fee}) + transfer ({transfer_amount})"
     );
 
     // Verify recipient received the transfer
     let recipient_balance = svm.get_balance(&to).unwrap();
-    assert_eq!(recipient_balance, transfer_amount);
+    assert_eq!(
+        recipient_balance,
+        initial_recipient_balance + transfer_amount
+    );
 }

@@ -13,7 +13,7 @@ use {
 };
 
 #[test_log::test]
-fn test_insufficient_funds_for_rent() {
+fn test_fee_payer_insufficient_funds_for_rent() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
     let to = Address::new_unique();
@@ -21,6 +21,8 @@ fn test_insufficient_funds_for_rent() {
     let mut svm = LiteSVM::new();
 
     svm.airdrop(&from, svm.get_sysvar::<Rent>().minimum_balance(0))
+        .unwrap();
+    svm.airdrop(&to, svm.get_sysvar::<Rent>().minimum_balance(0))
         .unwrap();
     let instruction = transfer(&from, &to, 1);
     let tx = Transaction::new(

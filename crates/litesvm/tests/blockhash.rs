@@ -62,6 +62,7 @@ fn test_durable_nonce() {
     let mut svm = LiteSVM::new();
 
     svm.airdrop(&from, 1_000_000_000).unwrap();
+    svm.airdrop(&to, 1_000_000_000).unwrap();
     let create_nonce_ixns = solana_system_interface::instruction::create_nonce_account(
         &from,
         &nonce_kp.pubkey(),
