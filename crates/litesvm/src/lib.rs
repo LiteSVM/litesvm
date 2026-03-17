@@ -545,7 +545,22 @@ impl LiteSVM {
             &latest_blockhash,
             fees.fee_calculator.lamports_per_signature,
         )]));
-        self.set_sysvar(&Rent::default());
+
+        // Rent account differs based off feature gating
+        #[allow(deprecated)]
+        {
+            let mut rent_account = Rent::default();
+            if self
+                .feature_set
+                .is_active(&agave_feature_set::deprecate_rent_exemption_threshold::id())
+            {
+                println!("Deprecate rent exemption feature enabled; updating exemption threshold");
+                rent_account.exemption_threshold = 1.0;
+            } else {
+                println!("Deprecate rent exemption feature disabled");
+            }
+            self.set_sysvar(&rent_account);
+        }
         self.set_sysvar(&SlotHashes::new(&[(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
             latest_blockhash,
