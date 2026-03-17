@@ -554,10 +554,7 @@ impl LiteSVM {
                 .feature_set
                 .is_active(&agave_feature_set::deprecate_rent_exemption_threshold::id())
             {
-                println!("Deprecate rent exemption feature enabled; updating exemption threshold");
                 rent_account.exemption_threshold = 1.0;
-            } else {
-                println!("Deprecate rent exemption feature disabled");
             }
             self.set_sysvar(&rent_account);
         }
