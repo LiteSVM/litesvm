@@ -751,6 +751,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-program-custom-syscall"
+version = "0.1.0"
+dependencies = [
+ "solana-account-info",
+ "solana-program-entrypoint",
+ "solana-program-error",
+ "solana-pubkey 3.0.0",
+]
+
+[[package]]
 name = "tinyvec"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

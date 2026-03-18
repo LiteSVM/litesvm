@@ -343,6 +343,7 @@ use {
     solana_program_runtime::{
         invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
         loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
+        solana_sbpf::program::BuiltinFunction,
     },
     solana_rent::Rent,
     solana_sdk_ids::{
@@ -1621,6 +1622,38 @@ impl LiteSVM {
         callback: C,
     ) {
         self.invocation_inspect_callback = Arc::new(callback);
+    }
+
+    /// Registers a custom syscall in both program runtime environments (v1 and v2).
+    ///
+    /// **Must be called after `with_builtins()`** (which recreates the environments
+    /// from scratch) and **before `with_default_programs()`** (which clones the
+    /// environment Arcs into program cache entries, preventing further mutation).
+    #[allow(unused_mut)]
+    pub fn with_custom_syscall(
+        mut self,
+        name: &str,
+        syscall: BuiltinFunction<InvokeContext<'static, 'static>>,
+    ) -> Self {
+        let (Some(mut program_runtime_v1), Some(mut program_runtime_v2)) = (
+            Arc::get_mut(&mut self.accounts.environments.program_runtime_v1),
+            Arc::get_mut(&mut self.accounts.environments.program_runtime_v2),
+        ) else {
+            panic!("with_custom_syscall: can't mutate program runtimes");
+        };
+
+        // Once unregister_function is available, users could replace existing built-in
+        // syscalls.
+
+        // TODO: uncomment once https://github.com/anza-xyz/sbpf/pull/153 is available.
+        // let _ = program_runtime_v1.unregister_function(name);
+        program_runtime_v1.register_function(name, syscall).unwrap();
+
+        // TODO: uncomment once https://github.com/anza-xyz/sbpf/pull/153 is available.
+        // let _ = program_runtime_v2.unregister_function(name);
+        program_runtime_v2.register_function(name, syscall).unwrap();
+
+        self
     }
 }
 
