@@ -579,8 +579,7 @@ impl LiteSVM {
             };
             let lamports = self.minimum_balance_for_rent_exemption(Feature::size_of());
             let account = feature_gate::create_account(&feature_account, lamports);
-            self.accounts
-                .add_account_no_checks((*feature_id).into(), account);
+            self.accounts.add_account_no_checks(*feature_id, account);
         }
     }
 

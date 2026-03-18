@@ -8,10 +8,9 @@ use {
 fn new_initializes_accounts_for_enabled_features() {
     let svm = LiteSVM::new();
     let feature_id = raise_cpi_nesting_limit_to_8::id();
-    let feature_address = feature_id.into();
 
     let account = svm
-        .get_account(&feature_address)
+        .get_account(&feature_id)
         .expect("active feature account should exist");
     let feature = feature_gate::from_account(&account).expect("feature account should deserialize");
 
