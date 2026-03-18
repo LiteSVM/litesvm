@@ -555,6 +555,7 @@ impl LiteSVM {
                 .is_active(&agave_feature_set::deprecate_rent_exemption_threshold::id())
             {
                 rent_account.exemption_threshold = 1.0;
+                rent_account.lamports_per_byte_year = solana_rent::DEFAULT_LAMPORTS_PER_BYTE
             }
             self.set_sysvar(&rent_account);
         }
