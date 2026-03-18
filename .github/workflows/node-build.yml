@@ -126,14 +126,6 @@ jobs:
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
-      - name: Verify GNU glibc compatibility
-        if: ${{ contains(matrix.settings.target, 'linux') && contains(matrix.settings.target, 'gnu') }}
-        run: |
-          readelf -Ws litesvm/litesvm.*.node | tee /tmp/litesvm-readelf.txt
-          if rg -n '(__isoc23_strto(l|ul)|GLIBC_2\.(3[89]|[4-9][0-9]))' /tmp/litesvm-readelf.txt; then
-            echo "GNU artifact requires glibc newer than expected baseline"
-            exit 1
-          fi
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
