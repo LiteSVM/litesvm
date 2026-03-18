@@ -13,7 +13,6 @@ use {
 #[test]
 fn test_inner_instruction_parsing() {
     let mut svm = LiteSVM::new();
-
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     svm.airdrop(&payer_pk, 1000000000).unwrap();
