@@ -17,7 +17,7 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
     {
         svm.add_program_preverified(
             address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-            include_bytes!("elf/pinocchio_token_program-0.0.0.so"),
+            include_bytes!("elf/pinocchio_token_program.so"),
             &bpf_loader_upgradeable::id(),
         )
         .unwrap();
