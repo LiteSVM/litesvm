@@ -1633,13 +1633,12 @@ impl LiteSVM {
     /// Panics if the runtime environments cannot be mutated or if registration
     /// fails. This is intentional — a misconfigured syscall should fail loudly
     /// rather than silently.
-    #[allow(unused_mut)]
     pub fn with_custom_syscall(
         mut self,
         name: &str,
         syscall: BuiltinFunction<InvokeContext<'static, 'static>>,
     ) -> Self {
-        let (Some(mut program_runtime_v1), Some(mut program_runtime_v2)) = (
+        let (Some(program_runtime_v1), Some(program_runtime_v2)) = (
             Arc::get_mut(&mut self.accounts.environments.program_runtime_v1),
             Arc::get_mut(&mut self.accounts.environments.program_runtime_v2),
         ) else {
