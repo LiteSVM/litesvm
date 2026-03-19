@@ -50,6 +50,7 @@ solana-compute-budget-instruction = { workspace = true, features = [
 solana-epoch-rewards.workspace = true
 solana-epoch-schedule.workspace = true
 solana-fee = { workspace = true, features = ["agave-unstable-api"] }
+solana-feature-gate-interface = { workspace = true, features = ["bincode"] }
 solana-fee-structure.workspace = true
 solana-hash.workspace = true
 solana-instruction.workspace = true

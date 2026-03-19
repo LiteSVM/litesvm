@@ -328,6 +328,7 @@ use {
     solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
     solana_epoch_rewards::EpochRewards,
     solana_epoch_schedule::EpochSchedule,
+    solana_feature_gate_interface::{self as feature_gate, Feature},
     solana_fee::FeeFeatures,
     solana_fee_structure::FeeStructure,
     solana_hash::Hash,
@@ -462,6 +463,7 @@ impl LiteSVM {
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
+            .with_feature_accounts()
             .with_default_programs()
             .with_sigverify(true)
             .with_blockhash_check(true);
@@ -567,6 +569,23 @@ impl LiteSVM {
     fn set_feature_set(&mut self, feature_set: FeatureSet) {
         self.feature_set = feature_set;
         self.reserved_account_keys = Self::reserved_account_keys_for_feature_set(&self.feature_set);
+    }
+
+    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
+    fn set_feature_accounts(&mut self) {
+        for (feature_id, activation_slot) in self.feature_set.active() {
+            let feature_account = Feature {
+                activated_at: Some(*activation_slot),
+            };
+            let lamports = self.minimum_balance_for_rent_exemption(Feature::size_of());
+            let account = feature_gate::create_account(&feature_account, lamports);
+            self.accounts.add_account_no_checks(*feature_id, account);
+        }
+    }
+
+    pub fn with_feature_accounts(mut self) -> Self {
+        self.set_feature_accounts();
+        self
     }
 
     fn reserved_account_keys_for_feature_set(feature_set: &FeatureSet) -> ReservedAccountKeys {
