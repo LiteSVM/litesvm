@@ -20,8 +20,8 @@ use {
     solana_nonce as nonce,
     solana_program_runtime::{
         loaded_programs::{
-            LoadProgramMetrics, ProgramCacheEntry, ProgramCacheForTxBatch,
-            ProgramRuntimeEnvironments,
+            LoadProgramMetrics, ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType,
+            ProgramCacheForTxBatch, ProgramRuntimeEnvironments,
         },
         sysvar_cache::SysvarCache,
     },
@@ -262,11 +262,13 @@ impl AccountsDb {
                 );
                 return Err(InstructionError::InvalidAccountData);
             };
-            let programdata_account =
-                self.get_account_ref(&programdata_address).ok_or_else(|| {
-                    error!("Program data account {programdata_address} not found");
-                    InstructionError::MissingAccount
-                })?;
+            let Some(programdata_account) = self.get_account_ref(&programdata_address) else {
+                return Ok(ProgramCacheEntry::new_tombstone(
+                    slot,
+                    ProgramCacheEntryOwner::LoaderV3,
+                    ProgramCacheEntryType::Closed,
+                ));
+            };
             let program_data = programdata_account.data();
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
