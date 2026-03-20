@@ -1,5 +1,6 @@
 use {
     crate::LiteSVM,
+    agave_feature_set::replace_spl_token_with_p_token,
     solana_address::address,
     solana_sdk_ids::{
         address_lookup_table, bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, config,
@@ -8,12 +9,27 @@ use {
 };
 
 pub fn load_default_programs(svm: &mut LiteSVM) {
-    svm.add_program_preverified(
-        address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-        include_bytes!("elf/spl_token-3.5.0.so"),
-        &bpf_loader::id(),
-    )
-    .unwrap();
+    // if replace spl-token with p-token feature is enabled, the SPL token contract is loaded from
+    // a different .so
+    if svm
+        .feature_set
+        .is_active(&replace_spl_token_with_p_token::id())
+    {
+        svm.add_program_preverified(
+            address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+            include_bytes!("elf/pinocchio_token_program.so"),
+            &bpf_loader_upgradeable::id(),
+        )
+        .unwrap();
+    } else {
+        svm.add_program_preverified(
+            address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+            include_bytes!("elf/spl_token-3.5.0.so"),
+            &bpf_loader::id(),
+        )
+        .unwrap();
+    }
+
     svm.add_program_preverified(
         address!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
         include_bytes!("elf/spl_token_2022-10.0.0.so"),
