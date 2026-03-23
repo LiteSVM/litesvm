@@ -361,7 +361,7 @@ use {
     solana_sysvar::{Sysvar, SysvarSerialize},
     solana_sysvar_id::SysvarId,
     solana_transaction::{
-        sanitized::{MessageHash, SanitizedTransaction},
+        sanitized::{MessageHash, SanitizedTransaction, MAX_TX_ACCOUNT_LOCKS},
         versioned::VersionedTransaction,
     },
     solana_transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
@@ -1046,7 +1046,10 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
-        SanitizedTransaction::validate_account_locks(tx.message(), 64)?;
+        SanitizedTransaction::validate_account_locks(
+            tx.message(),
+            get_transaction_account_lock_limit(self),
+        )?;
 
         Ok(tx)
     }
@@ -1748,6 +1751,18 @@ fn get_compute_budget_limits(
         tx_result: Err(e),
         ..Default::default()
     })
+}
+
+/// Get the max number of accounts that a transaction may lock in this block
+fn get_transaction_account_lock_limit(svm: &LiteSVM) -> usize {
+    if svm
+        .feature_set
+        .is_active(&agave_feature_set::increase_tx_account_lock_limit::id())
+    {
+        MAX_TX_ACCOUNT_LOCKS
+    } else {
+        64
+    }
 }
 
 /// Lighter version of the one in the solana-svm crate.
