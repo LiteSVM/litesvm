@@ -7,7 +7,7 @@ use {
     solana_message::{Message, MessageHeader},
     solana_sdk_ids::system_program,
     solana_signer::Signer,
-    solana_transaction::{CompiledInstruction, Transaction},
+    solana_transaction::{sanitized::MAX_TX_ACCOUNT_LOCKS, CompiledInstruction, Transaction},
     solana_transaction_error::TransactionError,
 };
 
@@ -84,7 +84,7 @@ fn test_too_many_account_locks() {
             1_000_000,
         );
     let mut instructions: Vec<Instruction> = vec![compute_budget_ix];
-    for _ in 0..64 {
+    for _ in 0..MAX_TX_ACCOUNT_LOCKS {
         let recipient = Address::new_unique();
         let ix = transfer(&payer_pk, &recipient, 1_000_000);
         instructions.push(ix);
