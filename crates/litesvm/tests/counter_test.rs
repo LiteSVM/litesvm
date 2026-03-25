@@ -235,18 +235,29 @@ fn test_register_tracing_handler() {
     }
 
     impl InvocationInspectCallback for CustomRegisterTracingCallback {
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+
+        fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+            self
+        }
+
         fn before_invocation(
             &self,
             _: &LiteSVM,
             _: &SanitizedTransaction,
             _: &[IndexOfAccount],
-            _: &InvokeContext,
+            _: &mut InvokeContext,
+            _register_tracing_enabled: bool,
         ) {
         }
 
         fn after_invocation(
             &self,
             _: &LiteSVM,
+            _: &SanitizedTransaction,
+            _: &[IndexOfAccount],
             invoke_context: &InvokeContext,
             register_tracing_enabled: bool,
         ) {

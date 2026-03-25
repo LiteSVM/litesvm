@@ -409,6 +409,8 @@ mod precompiles;
 mod programs;
 #[cfg(feature = "register-tracing")]
 pub mod register_tracing;
+#[cfg(feature = "register-tracing")]
+pub mod register_tracing_filter;
 mod utils;
 
 #[derive(Clone)]
@@ -1310,7 +1312,8 @@ impl LiteSVM {
                     self,
                     tx,
                     &program_indices,
-                    &invoke_context,
+                    &mut invoke_context,
+                    self.enable_register_tracing,
                 );
 
                 let mut tx_result = process_message(
@@ -1325,6 +1328,8 @@ impl LiteSVM {
                 #[cfg(feature = "invocation-inspect-callback")]
                 self.invocation_inspect_callback.after_invocation(
                     self,
+                    tx,
+                    &program_indices,
                     &invoke_context,
                     self.enable_register_tracing,
                 );
@@ -2016,15 +2021,21 @@ pub trait InvocationInspectCallback: Send + Sync {
         svm: &LiteSVM,
         tx: &SanitizedTransaction,
         program_indices: &[IndexOfAccount],
-        invoke_context: &InvokeContext,
+        invoke_context: &mut InvokeContext,
+        enable_register_tracing: bool,
     );
 
     fn after_invocation(
         &self,
         svm: &LiteSVM,
+        tx: &SanitizedTransaction,
+        program_indices: &[IndexOfAccount],
         invoke_context: &InvokeContext,
         enable_register_tracing: bool,
     );
+
+    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 #[cfg(feature = "invocation-inspect-callback")]
@@ -2037,11 +2048,28 @@ impl InvocationInspectCallback for EmptyInvocationInspectCallback {
         _: &LiteSVM,
         _: &SanitizedTransaction,
         _: &[IndexOfAccount],
-        _: &InvokeContext,
+        _: &mut InvokeContext,
+        _enable_register_tracing: bool,
     ) {
     }
 
-    fn after_invocation(&self, _: &LiteSVM, _: &InvokeContext, _enable_register_tracing: bool) {}
+    fn after_invocation(
+        &self,
+        _: &LiteSVM,
+        _: &SanitizedTransaction,
+        _: &[IndexOfAccount],
+        _: &InvokeContext,
+        _enable_register_tracing: bool,
+    ) {
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
 }
 
 #[cfg(test)]

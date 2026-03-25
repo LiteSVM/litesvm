@@ -13,14 +13,16 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
+default = ["sbpf-debugger"]
 internal-test = []
 invocation-inspect-callback = []
 nodejs-internal = ["dep:qualifier_attr"]
 hashbrown = ["dep:hashbrown"]
+sbpf-debugger = ["register-tracing"]
 serde = []
 persistence-internal = ["serde"]
 precompiles = ["dep:agave-precompiles"]
-register-tracing = ["invocation-inspect-callback", "dep:hex", "dep:sha2"]
+register-tracing = ["invocation-inspect-callback", "dep:hex", "dep:sha2", "dep:nom"]
 
 [dependencies]
 agave-feature-set.workspace = true
@@ -94,6 +96,7 @@ solana-transaction-error.workspace = true
 thiserror.workspace = true
 sha2 = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
+nom = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true

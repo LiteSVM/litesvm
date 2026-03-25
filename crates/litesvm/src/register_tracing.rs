@@ -1,18 +1,27 @@
 use {
-    crate::{InvocationInspectCallback, LiteSVM},
+    crate::{
+        register_tracing_filter::{eval, expr},
+        InvocationInspectCallback, LiteSVM,
+    },
     sha2::{Digest, Sha256},
     solana_address::Address,
     solana_program_runtime::invoke_context::{Executable, InvokeContext, RegisterTrace},
+    solana_svm_transaction::svm_message::SVMMessage,
     solana_transaction::sanitized::SanitizedTransaction,
     solana_transaction_context::{instruction::InstructionContext, IndexOfAccount},
-    std::{fs::File, io::Write},
+    std::{collections::HashMap, fs::File, io::Write},
 };
 
 const DEFAULT_PATH: &str = "target/sbf/trace";
+#[cfg(feature = "sbpf-debugger")]
+const DEFAULT_DEBUG_PORT: Option<u16> = None;
 
 pub struct DefaultRegisterTracingCallback {
     pub sbf_trace_dir: String,
     pub sbf_trace_disassemble: bool,
+    pub sbf_trace_filter: String,
+    #[cfg(feature = "sbpf-debugger")]
+    pub sbf_debug_port: Option<u16>,
 }
 
 impl Default for DefaultRegisterTracingCallback {
@@ -21,6 +30,13 @@ impl Default for DefaultRegisterTracingCallback {
             // User can override default path with `SBF_TRACE_DIR` environment variable.
             sbf_trace_dir: std::env::var("SBF_TRACE_DIR").unwrap_or(DEFAULT_PATH.to_string()),
             sbf_trace_disassemble: std::env::var("SBF_TRACE_DISASSEMBLE").is_ok(),
+            sbf_trace_filter: std::env::var("SBF_TRACE_FILTER").unwrap_or_default(),
+            // The port that will be used for debugging.
+            // Will invoke the debugger if set.
+            #[cfg(feature = "sbpf-debugger")]
+            sbf_debug_port: std::env::var("SBF_DEBUG_PORT")
+                .map(|port| port.parse::<u16>().ok())
+                .unwrap_or(DEFAULT_DEBUG_PORT),
         }
     }
 }
@@ -47,15 +63,61 @@ impl DefaultRegisterTracingCallback {
         }
     }
 
-    pub fn handler(
+    pub fn match_filter(&self, tx_signatures: Vec<String>, program_ids: Vec<String>) -> bool {
+        let Ok(ast) = expr(&self.sbf_trace_filter) else {
+            return true;
+        };
+        let row = HashMap::from([("txsig", tx_signatures), ("program_id", program_ids)]);
+        eval(&ast, &row)
+    }
+
+    pub fn pre_handler(
         &self,
         svm: &LiteSVM,
+        tx: &SanitizedTransaction,
+        program_indices: &[IndexOfAccount],
+        invoke_context: &InvokeContext,
+    ) {
+        #[cfg(feature = "sbpf-debugger")]
+        {
+            // Collect pre-load hashes for these accounts.
+            // We need them later to judge what object to
+            // load in the debugger client.
+            let _ = self.tx_accounts_to_elf_sha256(svm, tx, program_indices, invoke_context);
+
+            if let Some(_debug_port) = self.sbf_debug_port {
+                let program_ids: Vec<_> = program_indices
+                    .iter()
+                    .filter_map(|program_index| tx.account_keys().get(*program_index as usize))
+                    .map(|program_key| program_key.to_string())
+                    .collect();
+                let signatures: Vec<_> =
+                    tx.signatures().iter().map(|sig| sig.to_string()).collect();
+                if self.match_filter(signatures, program_ids) {
+                    // invoke_context.debug_port = Some(debug_port); // TODO
+                }
+            }
+        }
+    }
+
+    pub fn post_handler(
+        &self,
+        svm: &LiteSVM,
+        tx: &SanitizedTransaction,
         instruction_context: InstructionContext,
         executable: &Executable,
         register_trace: RegisterTrace,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if register_trace.is_empty() {
             // Can't do much with an empty trace.
+            return Ok(());
+        }
+
+        // Get program_id.
+        let program_id = instruction_context.get_program_key()?;
+        let signatures: Vec<_> = tx.signatures().iter().map(|sig| sig.to_string()).collect();
+        if !self.match_filter(signatures, vec![program_id.to_string()]) {
+            // Skip this one since no filter has matched.
             return Ok(());
         }
 
@@ -68,9 +130,6 @@ impl DefaultRegisterTracingCallback {
         let mut regs_file = File::create(base_fname.with_extension("regs"))?;
         let mut insns_file = File::create(base_fname.with_extension("insns"))?;
         let mut program_id_file = File::create(base_fname.with_extension("program_id"))?;
-
-        // Get program_id.
-        let program_id = instruction_context.get_program_key()?;
 
         // Persist a full trace disassembly if requested.
         if self.sbf_trace_disassemble {
@@ -109,21 +168,52 @@ impl DefaultRegisterTracingCallback {
 
         Ok(())
     }
+
+    pub fn tx_accounts_to_elf_sha256(
+        &self,
+        svm: &LiteSVM,
+        tx: &SanitizedTransaction,
+        program_indices: &[IndexOfAccount],
+        _invoke_context: &InvokeContext,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let current_dir = std::env::current_dir()?;
+        let sbf_trace_dir = current_dir.join(&self.sbf_trace_dir);
+        std::fs::create_dir_all(&sbf_trace_dir)?;
+        let base_fname = sbf_trace_dir.join("program_ids");
+        let mut program_ids_file = File::create(base_fname.with_extension("exec.sha256"))?;
+
+        program_indices.iter().for_each(|program_index| {
+            if let Some(key) = tx.account_keys().get(*program_index as usize) {
+                if let Ok(elf_data) = svm.accounts_db().try_program_elf_bytes(key) {
+                    let _ = program_ids_file
+                        .write(format!("{}={}", key, compute_hash(elf_data)).as_bytes());
+                }
+            }
+        });
+
+        Ok(())
+    }
 }
 
 impl InvocationInspectCallback for DefaultRegisterTracingCallback {
     fn before_invocation(
         &self,
-        _: &LiteSVM,
-        _: &SanitizedTransaction,
-        _: &[IndexOfAccount],
-        _: &InvokeContext,
+        svm: &LiteSVM,
+        tx: &SanitizedTransaction,
+        program_indices: &[IndexOfAccount],
+        invoke_context: &mut InvokeContext,
+        register_tracing_enabled: bool,
     ) {
+        if register_tracing_enabled {
+            self.pre_handler(svm, tx, program_indices, invoke_context);
+        }
     }
 
     fn after_invocation(
         &self,
         svm: &LiteSVM,
+        tx: &SanitizedTransaction,
+        _: &[IndexOfAccount],
         invoke_context: &InvokeContext,
         register_tracing_enabled: bool,
     ) {
@@ -134,13 +224,21 @@ impl InvocationInspectCallback for DefaultRegisterTracingCallback {
                   executable: &Executable,
                   register_trace: RegisterTrace| {
                     if let Err(e) =
-                        self.handler(svm, instruction_context, executable, register_trace)
+                        self.post_handler(svm, tx, instruction_context, executable, register_trace)
                     {
                         eprintln!("Error collecting the register tracing: {}", e);
                     }
                 },
             );
         }
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }
 
