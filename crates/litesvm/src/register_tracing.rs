@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+use solana_account::ReadableAccount;
 use {
     crate::{
         register_tracing_filter::{eval, expr},
@@ -76,25 +78,63 @@ impl DefaultRegisterTracingCallback {
         svm: &LiteSVM,
         tx: &SanitizedTransaction,
         program_indices: &[IndexOfAccount],
-        invoke_context: &InvokeContext,
+        invoke_context: &mut InvokeContext,
     ) {
         #[cfg(feature = "sbpf-debugger")]
         {
             // Collect pre-load hashes for these accounts.
             // We need them later to judge what object to
             // load in the debugger client.
-            let _ = self.tx_accounts_to_elf_sha256(svm, tx, program_indices, invoke_context);
+            let _ = self.elf_accounts_to_sha256(svm, tx);
 
             if let Some(_debug_port) = self.sbf_debug_port {
-                let program_ids: Vec<_> = program_indices
-                    .iter()
-                    .filter_map(|program_index| tx.account_keys().get(*program_index as usize))
-                    .map(|program_key| program_key.to_string())
+                let mut program_ids = Vec::new();
+
+                // Programs directly invoked by the transaction's instructions.
+                let top_level_program_ids: Vec<_> = tx
+                    .message()
+                    .program_instructions_iter()
+                    .map(|(pid, _)| pid.to_string())
                     .collect();
+                program_ids.extend(top_level_program_ids);
+
+                // Collect executable accounts from non-system/non-loader instructions.
+                // These are potential CPI targets that won't appear in program_indices.
+                // This may produce false positives triggering the debugger (an executable
+                // account included in the instruction but never actually CPI'd into).
+                // Without wrapping the CPI syscall (possible with anza-xyz/sbpf#153),
+                // this can't be made more granular.
+                let might_cpi_program_ids: Vec<String> = tx
+                    .message()
+                    .program_instructions_iter()
+                    .zip(program_indices.iter())
+                    .filter(|((program_id, _), _)| {
+                        !solana_sdk_ids::bpf_loader_upgradeable::check_id(program_id)
+                            && !solana_sdk_ids::bpf_loader::check_id(program_id)
+                            && !solana_sdk_ids::bpf_loader_deprecated::check_id(program_id)
+                            && !solana_sdk_ids::system_program::check_id(program_id)
+                    })
+                    .flat_map(|((_, instruction), _)| {
+                        instruction
+                            .accounts
+                            .iter()
+                            .filter_map(|index| tx.account_keys().get(*index as usize))
+                    })
+                    .filter(|addr| {
+                        svm.accounts_db()
+                            .get_account(addr)
+                            .is_some_and(|acc| acc.executable())
+                    })
+                    .map(|addr| addr.to_string())
+                    .collect();
+                program_ids.extend(might_cpi_program_ids);
+
                 let signatures: Vec<_> =
                     tx.signatures().iter().map(|sig| sig.to_string()).collect();
                 if self.match_filter(signatures, program_ids) {
                     // invoke_context.debug_port = Some(debug_port); // TODO
+                    eprintln!("WILL INVOKE THE DEBUGGER FOR TXSIG:{}", tx.signatures()[0]);
+                    std::thread::sleep(std::time::Duration::from_secs(2));
                 }
             }
         }
@@ -169,33 +209,52 @@ impl DefaultRegisterTracingCallback {
         Ok(())
     }
 
-    pub fn tx_accounts_to_elf_sha256(
+    /// Persists a mapping of program_id -> SHA-256(ELF) for all programs
+    /// referenced in the transaction (top-level and instruction accounts).
+    /// Used by the debugger client to resolve which debug symbols to load.
+    pub fn elf_accounts_to_sha256(
         &self,
         svm: &LiteSVM,
         tx: &SanitizedTransaction,
-        program_indices: &[IndexOfAccount],
-        _invoke_context: &InvokeContext,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let current_dir = std::env::current_dir()?;
         let sbf_trace_dir = current_dir.join(&self.sbf_trace_dir);
         std::fs::create_dir_all(&sbf_trace_dir)?;
         let base_fname = sbf_trace_dir.join("program_ids");
-        let mut program_ids_file = File::create(base_fname.with_extension("exec.sha256"))?;
+        let mut program_ids_file = File::create(base_fname.with_extension("map"))?;
 
-        program_indices.iter().for_each(|program_index| {
-            if let Some(key) = tx.account_keys().get(*program_index as usize) {
-                if let Ok(elf_data) = svm.accounts_db().try_program_elf_bytes(key) {
-                    let _ = program_ids_file
-                        .write(format!("{}={}", key, compute_hash(elf_data)).as_bytes());
-                }
+        let persist_elf_sha256 = |file: &mut File, pubkey: &Address| {
+            if let Ok(elf_data) = svm.accounts_db().try_program_elf_bytes(pubkey) {
+                let _ = file.write(format!("{}={}\n", pubkey, compute_hash(elf_data)).as_bytes());
             }
-        });
+        };
+
+        for (program_id, instruction) in tx.message().program_instructions_iter() {
+            // Map the top-level program being invoked.
+            persist_elf_sha256(&mut program_ids_file, program_id);
+            // Map any instruction accounts that are programs (potential CPI targets).
+            instruction
+                .accounts
+                .iter()
+                .filter_map(|index| tx.account_keys().get(*index as usize))
+                .for_each(|key| {
+                    persist_elf_sha256(&mut program_ids_file, key);
+                });
+        }
 
         Ok(())
     }
 }
 
 impl InvocationInspectCallback for DefaultRegisterTracingCallback {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn before_invocation(
         &self,
         svm: &LiteSVM,
@@ -232,20 +291,12 @@ impl InvocationInspectCallback for DefaultRegisterTracingCallback {
             );
         }
     }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
 }
 
 pub(crate) fn as_bytes<T>(slice: &[T]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, std::mem::size_of_val(slice)) }
 }
 
-fn compute_hash(slice: &[u8]) -> String {
+pub fn compute_hash(slice: &[u8]) -> String {
     hex::encode(Sha256::digest(slice).as_slice())
 }
