@@ -1,20 +1,20 @@
 // ported from https://github.com/solana-program/config/blob/main/program/tests/functional.rs
 use {
-    bincode::{deserialize, serialized_size},
+    bincode::deserialize,
+    jupnet_config_program::{
+        config_instruction::{create_account as create_config_account_ixs, store},
+        ConfigKeys, ConfigState,
+    },
+    jupnet_sdk::{
+        account::{Account, ReadableAccount},
+        instruction::{AccountMeta, InstructionError},
+        pubkey::Pubkey,
+        rent::Rent,
+        signer::{keypair::Keypair, Signer},
+        transaction::{Transaction, TransactionError},
+    },
     litesvm::LiteSVM,
     serde::{Deserialize, Serialize},
-    solana_account::{Account, ReadableAccount},
-    solana_address::Address,
-    solana_config_interface::{
-        instruction::{create_account_with_max_config_space, store},
-        state::ConfigKeys,
-    },
-    solana_instruction::{error::InstructionError, AccountMeta},
-    solana_keypair::Keypair,
-    solana_rent::Rent,
-    solana_signer::Signer,
-    solana_transaction::Transaction,
-    solana_transaction_error::TransactionError,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -32,6 +32,12 @@ impl MyConfig {
     }
     pub fn deserialize(input: &[u8]) -> Option<Self> {
         deserialize(input).ok()
+    }
+}
+
+impl ConfigState for MyConfig {
+    fn max_space() -> u64 {
+        8
     }
 }
 
@@ -55,7 +61,7 @@ fn setup_test_context() -> TestContext {
 }
 
 fn get_config_space(key_len: usize) -> usize {
-    let entry_size = bincode::serialized_size(&(Address::default(), true)).unwrap() as usize;
+    let entry_size = bincode::serialized_size(&(Pubkey::default(), true)).unwrap() as usize;
     bincode::serialized_size(&(ConfigKeys::default(), MyConfig::default())).unwrap() as usize
         + key_len * entry_size
 }
@@ -63,18 +69,18 @@ fn get_config_space(key_len: usize) -> usize {
 fn create_config_account(
     ctx: &mut TestContext,
     config_keypair: &Keypair,
-    keys: Vec<(Address, bool)>,
+    keys: Vec<(Pubkey, bool)>,
 ) {
     let payer = &ctx.payer;
 
-    let space = get_config_space(keys.len());
-    let max_space = serialized_size(&MyConfig::default()).unwrap();
-    let lamports = ctx.svm.get_sysvar::<Rent>().minimum_balance(space);
-    let instructions = create_account_with_max_config_space::<MyConfig>(
+    let lamports = ctx
+        .svm
+        .get_sysvar::<Rent>()
+        .minimum_balance(get_config_space(keys.len()));
+    let instructions = create_config_account_ixs::<MyConfig>(
         &payer.pubkey(),
         &config_keypair.pubkey(),
         lamports,
-        max_space,
         keys,
     );
 
@@ -196,7 +202,7 @@ fn test_process_store_with_additional_signers() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let signer1 = Keypair::new();
     let keys = vec![
@@ -235,7 +241,7 @@ fn test_process_store_bad_config_account() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![(pubkey, false), (signer0.pubkey(), true)];
     let my_config = MyConfig::new(42);
@@ -244,7 +250,7 @@ fn test_process_store_bad_config_account() {
         .svm
         .set_account(
             signer0.pubkey(),
-            Account::new(100_000, 0, &solana_config_interface::id()),
+            Account::new(100_000, 0, &jupnet_config_program::id()),
         )
         .unwrap();
 
@@ -327,7 +333,7 @@ fn test_config_updates() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let signer1 = Keypair::new();
     let signer2 = Keypair::new();
@@ -423,7 +429,7 @@ fn test_config_initialize_contains_duplicates_fails() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![
         (pubkey, false),
@@ -459,7 +465,7 @@ fn test_config_update_contains_duplicates_fails() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let signer1 = Keypair::new();
     let keys = vec![
@@ -513,7 +519,7 @@ fn test_config_updates_requiring_config() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![
         (pubkey, false),
@@ -587,13 +593,15 @@ fn test_config_initialize_no_panic() {
     let config_keypair = Keypair::new();
     create_config_account(&mut context, &config_keypair, vec![]);
     let payer = &context.payer;
-    let max_space = serialized_size(&MyConfig::default()).unwrap();
 
-    let instructions = create_account_with_max_config_space::<MyConfig>(
+    let lamports = context
+        .svm
+        .get_sysvar::<Rent>()
+        .minimum_balance(get_config_space(0));
+    let instructions = create_config_account_ixs::<MyConfig>(
         &payer.pubkey(),
         &config_keypair.pubkey(),
-        1,
-        max_space,
+        lamports,
         vec![],
     );
     let mut instruction = instructions[1].clone();
@@ -621,7 +629,7 @@ fn test_config_bad_owner() {
 
     let config_keypair = Keypair::new();
 
-    let pubkey = Address::new_unique();
+    let pubkey = Pubkey::new_unique();
     let signer0 = Keypair::new();
     let keys = vec![
         (pubkey, false),
@@ -637,7 +645,7 @@ fn test_config_bad_owner() {
         .svm
         .set_account(
             config_keypair.pubkey(),
-            Account::new(lamports, 0, &Address::new_unique()),
+            Account::new(lamports, 0, &Pubkey::new_unique()),
         )
         .unwrap();
 
@@ -663,7 +671,7 @@ fn test_config_bad_owner() {
 #[test]
 fn test_maximum_keys_input() {
     // `limited_deserialize` allows up to 1232 bytes of input.
-    // One config key is `Address` + `bool` = 32 + 1 = 33 bytes.
+    // One config key is `Pubkey` + `bool` = 32 + 1 = 33 bytes.
     // 1232 / 33 = 37 keys max.
     let mut context = setup_test_context();
 
@@ -672,7 +680,7 @@ fn test_maximum_keys_input() {
     // First store with 37 keys.
     let mut keys = vec![];
     for _ in 0..37 {
-        keys.push((Address::new_unique(), false));
+        keys.push((Pubkey::new_unique(), false));
     }
     let my_config = MyConfig::new(42);
 
@@ -711,7 +719,7 @@ fn test_maximum_keys_input() {
         .unwrap();
 
     // Now try to store with 38 keys.
-    keys.push((Address::new_unique(), false));
+    keys.push((Pubkey::new_unique(), false));
     let my_config = MyConfig::new(42);
     let instruction = store(&config_keypair.pubkey(), true, keys, &my_config);
 

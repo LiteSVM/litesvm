@@ -1,20 +1,18 @@
 use {
     crate::format_logs::format_logs,
-    solana_account::AccountSharedData,
-    solana_address::Address,
-    solana_instruction::error::InstructionError,
-    solana_message::inner_instruction::InnerInstructionsList,
-    solana_program_error::ProgramError,
-    solana_signature::Signature,
-    solana_transaction_context::TransactionReturnData,
-    solana_transaction_error::{TransactionError, TransactionResult as Result},
+    jupnet_sdk::{
+        account::AccountSharedData, inner_instruction::InnerInstructionsList,
+        instruction::InstructionError, program_error::ProgramError, pubkey::Pubkey,
+        signature::TypedSignature, transaction_context::TransactionReturnData,
+    },
+    jupnet_transaction_error::TransactionError,
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TransactionMetadata {
     #[cfg_attr(feature = "serde", serde(with = "crate::utils::serde_with_str"))]
-    pub signature: Signature,
+    pub signature: TypedSignature,
     pub logs: Vec<String>,
     pub inner_instructions: InnerInstructionsList,
     pub compute_units_consumed: u64,
@@ -32,7 +30,7 @@ impl TransactionMetadata {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SimulatedTransactionInfo {
     pub meta: TransactionMetadata,
-    pub post_accounts: Vec<(Address, AccountSharedData)>,
+    pub post_accounts: Vec<(Pubkey, AccountSharedData)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -57,9 +55,9 @@ impl From<ProgramError> for FailedTransactionMetadata {
 pub type TransactionResult = std::result::Result<TransactionMetadata, FailedTransactionMetadata>;
 
 pub(crate) struct ExecutionResult {
-    pub(crate) post_accounts: Vec<(Address, AccountSharedData)>,
-    pub(crate) tx_result: Result<()>,
-    pub(crate) signature: Signature,
+    pub(crate) post_accounts: Vec<(Pubkey, AccountSharedData)>,
+    pub(crate) tx_result: Result<(), TransactionError>,
+    pub(crate) signature: TypedSignature,
     pub(crate) compute_units_consumed: u64,
     pub(crate) inner_instructions: InnerInstructionsList,
     pub(crate) return_data: TransactionReturnData,

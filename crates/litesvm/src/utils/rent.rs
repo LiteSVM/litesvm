@@ -1,10 +1,8 @@
 //! this code is taken from https://github.com/anza-xyz/agave/blob/master/svm/src/rent_calculator.rs
 //! Commit 6fbbaf67837e2dc973822be9e1c20e1fed58e8eb
 use {
-    solana_address::Address,
-    solana_rent::Rent,
-    solana_transaction_context::IndexOfAccount,
-    solana_transaction_error::{TransactionError, TransactionResult},
+    jupnet_sdk::{incinerator, pubkey::Pubkey, rent::Rent, transaction_context::IndexOfAccount},
+    jupnet_transaction_error::TransactionError,
 };
 
 /// Rent state of a Solana account.
@@ -29,12 +27,10 @@ pub enum RentState {
 pub fn check_rent_state_with_account(
     pre_rent_state: &RentState,
     post_rent_state: &RentState,
-    address: &Address,
+    address: &Pubkey,
     account_index: IndexOfAccount,
-) -> TransactionResult<()> {
-    if !solana_sdk_ids::incinerator::check_id(address)
-        && !transition_allowed(pre_rent_state, post_rent_state)
-    {
+) -> Result<(), TransactionError> {
+    if !incinerator::check_id(address) && !transition_allowed(pre_rent_state, post_rent_state) {
         let account_index = account_index as u8;
         Err(TransactionError::InsufficientFundsForRent { account_index })
     } else {

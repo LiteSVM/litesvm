@@ -1,16 +1,18 @@
 use {
-    agave_feature_set::FeatureSet,
-    litesvm::LiteSVM,
-    solana_address::address,
-    solana_keypair::Keypair,
-    solana_message::{Instruction, Message},
-    solana_native_token::LAMPORTS_PER_SOL,
-    solana_program_runtime::{
+    jupnet_feature_set::FeatureSet,
+    jupnet_program_runtime::{
         invoke_context::InvokeContext,
-        solana_sbpf::{declare_builtin_function, memory_region::MemoryMapping},
+        jupnet_rbpf::{declare_builtin_function, memory_region::MemoryMapping},
     },
-    solana_signer::Signer,
-    solana_transaction::Transaction,
+    jupnet_sdk::{
+        instruction::Instruction,
+        message::Message,
+        native_token::MOTES_PER_JUP,
+        pubkey,
+        signer::{keypair::Keypair, Signer},
+        transaction::Transaction,
+    },
+    litesvm::LiteSVM,
     std::path::PathBuf,
 };
 
@@ -45,7 +47,7 @@ fn litesvm_ctor() -> LiteSVM {
         .with_feature_set(FeatureSet::all_enabled())
         .with_builtins()
         .with_custom_syscall("sol_burn_cus", SyscallBurnCus::vm)
-        .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
+        .with_lamports(1_000_000u64.wrapping_mul(MOTES_PER_JUP))
         .with_sysvars()
         .with_default_programs()
         .with_sigverify(true)
@@ -57,7 +59,7 @@ pub fn test_custom_syscall() {
     let mut svm = litesvm_ctor();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    let program_id = address!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
     svm.add_program(program_id, &read_custom_syscall_program())
         .unwrap();
     svm.airdrop(&payer_pk, 1000000000).unwrap();

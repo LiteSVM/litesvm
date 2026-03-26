@@ -1,10 +1,7 @@
-use {
-    solana_instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
-    solana_message::{
-        compiled_instruction::CompiledInstruction,
-        inner_instruction::{InnerInstruction, InnerInstructionsList},
-    },
-    solana_transaction_context::TransactionContext,
+use jupnet_sdk::{
+    inner_instruction::{InnerInstruction, InnerInstructionsList},
+    instruction::{CompiledInstruction, TRANSACTION_LEVEL_STACK_HEIGHT},
+    transaction_context::TransactionContext,
 };
 
 /// Pulled verbatim from `solana-svm` crate, `transaction_processor.rs`
@@ -28,7 +25,11 @@ pub fn inner_instructions_list_from_instruction_trace(
                 let stack_height = u8::try_from(stack_height).unwrap_or(u8::MAX);
                 let instruction = CompiledInstruction::new_from_raw_parts(
                     instruction_context
-                        .get_index_of_program_account_in_transaction()
+                        .get_index_of_program_account_in_transaction(
+                            instruction_context
+                                .get_number_of_program_accounts()
+                                .saturating_sub(1),
+                        )
                         .unwrap_or_default() as u8,
                     instruction_context.get_instruction_data().to_vec(),
                     (0..instruction_context.get_number_of_instruction_accounts())

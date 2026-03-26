@@ -1,5 +1,5 @@
-use borsh::{BorshDeserialize, BorshSerialize};
 use {
+    borsh::{BorshDeserialize, BorshSerialize},
     solana_account_info::{next_account_info, AccountInfo},
     solana_msg::msg,
     solana_program_error::{ProgramError, ProgramResult},

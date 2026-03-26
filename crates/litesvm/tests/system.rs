@@ -1,23 +1,25 @@
 use {
+    jupnet_sdk::{
+        message::Message,
+        native_token::MOTES_PER_JUP,
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+        system_instruction::{allocate, create_account, transfer},
+        system_program,
+        transaction::Transaction,
+    },
     litesvm::LiteSVM,
-    solana_address::Address,
-    solana_keypair::Keypair,
-    solana_message::Message,
-    solana_native_token::LAMPORTS_PER_SOL,
-    solana_signer::Signer,
-    solana_system_interface::instruction::{allocate, create_account, transfer},
-    solana_transaction::Transaction,
 };
 
 #[test_log::test]
 fn system_transfer() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Address::new_unique();
+    let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
     let expected_fee = 5000;
-    let original_balance = LAMPORTS_PER_SOL;
+    let original_balance = MOTES_PER_JUP;
     svm.airdrop(&from, original_balance).unwrap();
     svm.airdrop(&to, original_balance).unwrap();
 
@@ -62,7 +64,7 @@ fn system_create_account() {
         &new_account.pubkey(),
         rent_amount,
         space as u64,
-        &solana_sdk_ids::system_program::id(),
+        &system_program::id(),
     );
     let tx = Transaction::new(
         &[&from_keypair, &new_account],
@@ -75,7 +77,7 @@ fn system_create_account() {
 
     assert_eq!(account.lamports, rent_amount);
     assert_eq!(account.data.len(), space);
-    assert_eq!(account.owner, solana_sdk_ids::system_program::id());
+    assert_eq!(account.owner, system_program::id());
 }
 
 #[test_log::test]
@@ -86,7 +88,7 @@ fn system_allocate_account() {
     let new_account = new_account_keypair.pubkey();
 
     let mut svm = LiteSVM::new();
-    svm.airdrop(&from, 10 * LAMPORTS_PER_SOL).unwrap();
+    svm.airdrop(&from, 10 * MOTES_PER_JUP).unwrap();
 
     let instruction = allocate(&new_account, 10);
 
@@ -102,7 +104,7 @@ fn system_allocate_account() {
 
 #[test_log::test]
 fn test_airdrop_pubkey() {
-    let funding_amount = 10 * LAMPORTS_PER_SOL;
+    let funding_amount = 10 * MOTES_PER_JUP;
     let mut svm = LiteSVM::new().with_lamports(funding_amount);
 
     let airdrop_pubkey = svm.airdrop_pubkey();
@@ -110,8 +112,8 @@ fn test_airdrop_pubkey() {
     let initial_balance = svm.get_balance(&airdrop_pubkey).unwrap();
     assert_eq!(initial_balance, funding_amount);
 
-    let recipient = Address::new_unique();
-    let airdrop_amount = LAMPORTS_PER_SOL;
+    let recipient = Pubkey::new_unique();
+    let airdrop_amount = MOTES_PER_JUP;
     svm.airdrop(&recipient, airdrop_amount).unwrap();
 
     let after_airdrop = svm.get_balance(&airdrop_pubkey).unwrap();
@@ -124,7 +126,7 @@ fn test_airdrop_pubkey() {
     assert_eq!(svm.get_balance(&recipient).unwrap(), airdrop_amount);
     assert_eq!(svm.airdrop_pubkey(), airdrop_pubkey);
 
-    let recipient2 = Address::new_unique();
+    let recipient2 = Pubkey::new_unique();
     svm.airdrop(&recipient2, airdrop_amount).unwrap();
     assert_eq!(svm.get_balance(&recipient2).unwrap(), airdrop_amount);
 }

@@ -1,7 +1,7 @@
-use {crate::types::TransactionResult, indexmap::IndexMap, solana_signature::Signature};
+use {crate::types::TransactionResult, indexmap::IndexMap, jupnet_sdk::signature::TypedSignature};
 
 #[derive(Clone)]
-pub struct TransactionHistory(IndexMap<Signature, TransactionResult>);
+pub struct TransactionHistory(IndexMap<TypedSignature, TransactionResult>);
 
 impl TransactionHistory {
     pub fn new() -> Self {
@@ -17,11 +17,11 @@ impl TransactionHistory {
         }
     }
 
-    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
+    pub fn get_transaction(&self, signature: &TypedSignature) -> Option<&TransactionResult> {
         self.0.get(signature)
     }
 
-    pub fn add_new_transaction(&mut self, signature: Signature, result: TransactionResult) {
+    pub fn add_new_transaction(&mut self, signature: TypedSignature, result: TransactionResult) {
         let capacity = self.0.capacity();
         if capacity != 0 {
             if self.0.len() == capacity {
@@ -31,7 +31,7 @@ impl TransactionHistory {
         }
     }
 
-    pub fn check_transaction(&self, signature: &Signature) -> bool {
+    pub fn check_transaction(&self, signature: &TypedSignature) -> bool {
         self.0.contains_key(signature)
     }
 }

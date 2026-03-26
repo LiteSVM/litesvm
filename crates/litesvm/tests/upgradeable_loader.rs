@@ -1,20 +1,18 @@
 use {
     bincode::{deserialize, serialize},
-    litesvm::LiteSVM,
-    solana_account::Account,
-    solana_address::{address, Address},
-    solana_clock::Clock,
-    solana_instruction::{account_meta::AccountMeta, Instruction},
-    solana_keypair::Keypair,
-    solana_loader_v3_interface::{
-        get_program_data_address, instruction::UpgradeableLoaderInstruction,
-        state::UpgradeableLoaderState,
+    jupnet_sdk::{
+        account::Account,
+        bpf_loader_upgradeable::{self, get_program_data_address, UpgradeableLoaderState},
+        clock::Clock,
+        instruction::{AccountMeta, Instruction},
+        loader_upgradeable_instruction::UpgradeableLoaderInstruction,
+        message::Message,
+        native_token::MOTES_PER_JUP,
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+        transaction::Transaction,
     },
-    solana_message::Message,
-    solana_native_token::LAMPORTS_PER_SOL,
-    solana_sdk_ids::bpf_loader_upgradeable,
-    solana_signer::Signer,
-    solana_transaction::Transaction,
+    litesvm::LiteSVM,
     std::path::PathBuf,
 };
 
@@ -26,9 +24,9 @@ fn read_counter_program() -> Vec<u8> {
 
 fn set_program_upgrade_authority(
     svm: &mut LiteSVM,
-    program_id: Address,
-    authority: Address,
-) -> Address {
+    program_id: Pubkey,
+    authority: Pubkey,
+) -> Pubkey {
     let programdata_address = get_program_data_address(&program_id);
     let mut programdata_account = svm.get_account(&programdata_address).unwrap();
     let metadata_len = UpgradeableLoaderState::size_of_programdata_metadata();
@@ -54,8 +52,8 @@ fn set_program_upgrade_authority(
 
 fn invoke_counter(
     svm: &mut LiteSVM,
-    program_id: Address,
-    counter_address: Address,
+    program_id: Pubkey,
+    counter_address: Pubkey,
     payer: &Keypair,
     deduper: u8,
 ) {
@@ -80,11 +78,11 @@ fn invoke_counter(
 fn close_upgradeable_program_keeps_vm_usable() {
     let authority_kp = Keypair::new();
     let authority = authority_kp.pubkey();
-    let program_id = address!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
-    let counter_address = address!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    let program_id = Pubkey::from_str_const("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let counter_address = Pubkey::from_str_const("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
 
     let mut svm = LiteSVM::new();
-    svm.airdrop(&authority, LAMPORTS_PER_SOL).unwrap();
+    svm.airdrop(&authority, MOTES_PER_JUP).unwrap();
     svm.add_program(program_id, &read_counter_program())
         .unwrap();
 

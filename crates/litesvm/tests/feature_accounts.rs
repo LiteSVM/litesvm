@@ -1,20 +1,19 @@
 use {
-    agave_feature_set::raise_cpi_nesting_limit_to_8,
+    jupnet_sdk::feature::{self as feature_gate, Feature},
     litesvm::LiteSVM,
-    solana_feature_gate_interface::{self as feature_gate, Feature},
 };
 
 #[test_log::test]
 fn new_initializes_accounts_for_enabled_features() {
     let svm = LiteSVM::new();
-    let feature_id = raise_cpi_nesting_limit_to_8::id();
+    let feature_id = jupnet_feature_set::add_new_reserved_account_keys::id();
 
     let account = svm
         .get_account(&feature_id)
         .expect("active feature account should exist");
     let feature = feature_gate::from_account(&account).expect("feature account should deserialize");
 
-    assert_eq!(account.owner, solana_sdk_ids::feature::id());
+    assert_eq!(account.owner, jupnet_sdk::feature::id());
     assert_eq!(
         feature,
         Feature {

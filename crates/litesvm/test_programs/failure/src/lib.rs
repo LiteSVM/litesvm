@@ -1,8 +1,9 @@
 // This program just returns an error.
 
-use solana_program_entrypoint::entrypoint;
 use {
-    solana_account_info::AccountInfo, solana_program_error::{ProgramError, ProgramResult},
+    solana_account_info::AccountInfo,
+    solana_program_entrypoint::entrypoint,
+    solana_program_error::{ProgramError, ProgramResult},
     solana_pubkey::{declare_id, Pubkey},
 };
 

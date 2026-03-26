@@ -1,11 +1,17 @@
 use {
-    litesvm::LiteSVM, solana_address::Address,
-    solana_compute_budget::compute_budget::ComputeBudget,
-    solana_compute_budget_interface::ComputeBudgetInstruction,
-    solana_instruction::error::InstructionError, solana_keypair::Keypair, solana_message::Message,
-    solana_native_token::LAMPORTS_PER_SOL, solana_rent::Rent, solana_signer::Signer,
-    solana_system_interface::instruction::transfer, solana_transaction::Transaction,
-    solana_transaction_error::TransactionError,
+    jupnet_compute_budget::compute_budget::ComputeBudget,
+    jupnet_sdk::{
+        compute_budget::ComputeBudgetInstruction,
+        instruction::InstructionError,
+        message::Message,
+        native_token::MOTES_PER_JUP,
+        pubkey::Pubkey,
+        rent::Rent,
+        signer::{keypair::Keypair, Signer},
+        system_instruction::transfer,
+        transaction::{Transaction, TransactionError},
+    },
+    litesvm::LiteSVM,
 };
 
 #[test_log::test]
@@ -13,7 +19,7 @@ fn test_set_compute_budget() {
     // see that the tx fails if we set a tiny limit
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Address::new_unique();
+    let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
@@ -22,11 +28,13 @@ fn test_set_compute_budget() {
         svm.get_sysvar::<Rent>().minimum_balance(0) + tx_fee + 100,
     )
     .unwrap();
-    svm.airdrop(&to, LAMPORTS_PER_SOL).unwrap();
+    svm.airdrop(&to, MOTES_PER_JUP).unwrap();
 
     // need to set the low compute budget after the airdrop tx
-    let mut compute_budget = ComputeBudget::new_with_defaults(false, false);
-    compute_budget.compute_unit_limit = 10;
+    let compute_budget = ComputeBudget {
+        compute_unit_limit: 10,
+        ..Default::default()
+    };
     svm = svm.with_compute_budget(compute_budget);
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(
@@ -47,7 +55,7 @@ fn test_set_compute_unit_limit() {
     // see that the tx fails if we set a tiny limit
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Address::new_unique();
+    let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
     let tx_fee = 5000;
@@ -57,7 +65,7 @@ fn test_set_compute_unit_limit() {
         svm.get_sysvar::<Rent>().minimum_balance(0) + tx_fee + 100,
     )
     .unwrap();
-    svm.airdrop(&to, LAMPORTS_PER_SOL).unwrap();
+    svm.airdrop(&to, MOTES_PER_JUP).unwrap();
 
     let instruction = transfer(&from, &to, 64);
     let tx = Transaction::new(
@@ -83,7 +91,7 @@ fn test_set_compute_unit_limit() {
 fn test_priority_fee_is_charged() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Address::new_unique();
+    let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
 
@@ -100,7 +108,7 @@ fn test_priority_fee_is_charged() {
 
     let initial_balance = svm.get_sysvar::<Rent>().minimum_balance(0) + total_fee + transfer_amount;
     svm.airdrop(&from, initial_balance).unwrap();
-    let initial_recipient_balance = LAMPORTS_PER_SOL;
+    let initial_recipient_balance = MOTES_PER_JUP;
     svm.airdrop(&to, initial_recipient_balance).unwrap();
 
     let instruction = transfer(&from, &to, transfer_amount);

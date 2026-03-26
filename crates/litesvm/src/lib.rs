@@ -1,38 +1,29 @@
 /*!
-<div align="center">
-    <img src="https://raw.githubusercontent.com/litesvm/litesvm/master/logo.jpeg" width="50%" height="50%">
-</div>
-
----
 
 # LiteSVM
 
-[<img alt="github" src="https://img.shields.io/badge/github-LiteSVM/litesvm-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/LiteSVM/litesvm)
-[<img alt="crates.io" src="https://img.shields.io/crates/v/litesvm.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/litesvm)
-[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-litesvm-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/litesvm/latest/litesvm/)
-[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/LiteSVM/litesvm/CI.yml?branch=master&style=for-the-badge" height="20">](https://github.com/LiteSVM/litesvm/actions?query=branch%3Amaster)
+## Overview
 
-## 📍 Overview
+`litesvm` is a fast and lightweight library for testing Jupnet programs.
+It works by creating an in-process Jupnet VM optimized for program developers.
+This makes it much faster to run and compile than a full validator.
+It has an ergonomic API with sane defaults and extensive configurability for those who want it.
 
-`litesvm` is a fast and lightweight library for testing Solana programs.
-It works by creating an in-process Solana VM optimized for program developers.
-This makes it much faster to run and compile than alternatives like `solana-program-test` and `solana-test-validator`.
-In a further break from tradition, it has an ergonomic API with sane defaults and extensive configurability for those who want it.
+### Minimal Example
 
-### 🤖 Minimal Example
-
-```rust
+```rust,no_run
 use litesvm::LiteSVM;
-use solana_address::Address;
-use solana_message::Message;
-use solana_system_interface::instruction::transfer;
-use solana_keypair::Keypair;
-use solana_signer::Signer;
-use solana_transaction::Transaction;
+use jupnet_sdk::{
+    message::Message,
+    pubkey::Pubkey,
+    signer::{keypair::Keypair, Signer},
+    system_instruction::transfer,
+    transaction::Transaction,
+};
 
 let from_keypair = Keypair::new();
 let from = from_keypair.pubkey();
-let to = Address::new_unique();
+let to = Pubkey::new_unique();
 
 let mut svm = LiteSVM::new();
 svm.airdrop(&from, 1_000_000_000).unwrap();
@@ -48,8 +39,6 @@ let tx_res = svm.send_transaction(tx).unwrap();
 
 let from_account = svm.get_account(&from);
 let to_account = svm.get_account(&to);
-assert_eq!(from_account.unwrap().lamports, 999994936);
-assert_eq!(to_account.unwrap().lamports, 1000000064);
 ```
 
 ## Deploying Programs
@@ -57,28 +46,26 @@ assert_eq!(to_account.unwrap().lamports, 1000000064);
 Most of the time we want to do more than just mess around with token transfers -
 we want to test our own programs.
 
-**Tip**: if you want to pull a Solana program from mainnet or devnet, use the `solana program dump` command from the Solana CLI.
-
 To add a compiled program to our tests we can use [`.add_program_from_file`](LiteSVM::add_program_from_file).
 
-Here's an example using a [simple program](https://github.com/solana-labs/solana-program-library/tree/bd216c8103cd8eb9f5f32e742973e7afb52f3b81/examples/rust/logging)
-from the Solana Program Library that just does some logging:
+Here's an example that deploys a program and sends a transaction to it:
 
-```rust
+```rust,no_run
 use {
     litesvm::LiteSVM,
-    solana_address::{address, Address},
-    solana_instruction::{account_meta::AccountMeta, Instruction},
-    solana_keypair::Keypair,
-    solana_message::{Message, VersionedMessage},
-    solana_signer::Signer,
-    solana_transaction::versioned::VersionedTransaction,
+    jupnet_sdk::{
+        instruction::{AccountMeta, Instruction},
+        message::{Message, VersionedMessage},
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+        transaction::VersionedTransaction,
+    },
 };
 
 fn test_logging() {
-    let program_id = address!("Logging111111111111111111111111111111111111");
+    let program_id = Pubkey::from_str_const("Logging111111111111111111111111111111111111");
     let account_meta = AccountMeta {
-        pubkey: Address::new_unique(),
+        pubkey: Pubkey::new_unique(),
         is_signer: false,
         is_writable: true,
     };
@@ -89,18 +76,15 @@ fn test_logging() {
     };
     let mut svm = LiteSVM::new();
     let payer = Keypair::new();
-    let bytes = include_bytes!("../../node-litesvm/program_bytes/spl_example_logging.so");
-    svm.add_program(program_id, bytes);
+    let bytes = std::fs::read("path/to/program.so").unwrap();
+    svm.add_program(program_id, &bytes).unwrap();
     svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
     let blockhash = svm.latest_blockhash();
     let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
     let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[payer]).unwrap();
-    // let's sim it first
     let sim_res = svm.simulate_transaction(tx.clone()).unwrap();
     let meta = svm.send_transaction(tx).unwrap();
     assert_eq!(sim_res.meta, meta);
-    assert_eq!(meta.logs[1], "Program log: static string");
-    assert!(meta.compute_units_consumed < 10_000) // not being precise here in case it changes
 }
 
 ```
@@ -113,23 +97,25 @@ using [`svm.set_sysvar::<Clock>()`](LiteSVM::set_sysvar).
 Here's an example using a program that panics if `clock.unix_timestamp` is greater than 100
 (which is on January 1st 1970):
 
-```rust
+```rust,no_run
 use {
     litesvm::LiteSVM,
-    solana_address::Address,
-    solana_clock::Clock,
-    solana_instruction::Instruction,
-    solana_keypair::Keypair,
-    solana_message::{Message, VersionedMessage},
-    solana_signer::Signer,
-    solana_transaction::versioned::VersionedTransaction,
+    jupnet_sdk::{
+        clock::Clock,
+        instruction::Instruction,
+        message::{Message, VersionedMessage},
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+        sysvar::Sysvar,
+        transaction::VersionedTransaction,
+    },
 };
 
 fn test_set_clock() {
-    let program_id = Address::new_unique();
+    let program_id = Pubkey::new_unique();
     let mut svm = LiteSVM::new();
-    let bytes = include_bytes!("../../node-litesvm/program_bytes/litesvm_clock_example.so");
-    svm.add_program(program_id, bytes);
+    let bytes = std::fs::read("path/to/clock_example.so").unwrap();
+    svm.add_program(program_id, &bytes).unwrap();
     let payer = Keypair::new();
     let payer_address = payer.pubkey();
     svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
@@ -154,7 +140,7 @@ fn test_set_clock() {
     svm.set_sysvar::<Clock>(&clock);
     let ixs2 = [Instruction {
         program_id,
-        data: vec![1], // unused, this is just to dedup the transaction
+        data: vec![1],
         accounts: vec![],
     }];
     let msg2 = Message::new_with_blockhash(&ixs2, Some(&payer_address), &blockhash);
@@ -173,66 +159,36 @@ See also: [`warp_to_slot`](LiteSVM::warp_to_slot), which lets you jump to a futu
 LiteSVM lets you write any account data you want, regardless of
 whether the account state would even be possible.
 
-Here's an example where we give an account a bunch of USDC,
-even though we don't have the USDC mint keypair. This is
-convenient for testing because it means we don't have to
-work with fake USDC in our tests:
-
-```rust
+```rust,no_run
 use {
     litesvm::LiteSVM,
-    solana_account::Account,
-    solana_address::{address, Address},
-    solana_program_option::COption,
-    solana_program_pack::Pack,
-    spl_associated_token_account_interface::address::get_associated_token_address,
-    spl_token_interface::{
-        state::{Account as TokenAccount, AccountState},
-        ID as TOKEN_PROGRAM_ID,
+    jupnet_sdk::{
+        account::Account,
+        pubkey::Pubkey,
     },
 };
 
-fn test_infinite_usdc_mint() {
-    let owner = Address::new_unique();
-    let usdc_mint = address!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-    let ata = get_associated_token_address(&owner, &usdc_mint);
-    let usdc_to_own = 1_000_000_000_000;
-    let token_acc = TokenAccount {
-        mint: usdc_mint,
-        owner: owner,
-        amount: usdc_to_own,
-        delegate: COption::None,
-        state: AccountState::Initialized,
-        is_native: COption::None,
-        delegated_amount: 0,
-        close_authority: COption::None,
-    };
+fn test_write_account() {
+    let owner = Pubkey::new_unique();
+    let account_key = Pubkey::new_unique();
     let mut svm = LiteSVM::new();
-    let mut token_acc_bytes = [0u8; TokenAccount::LEN];
-    TokenAccount::pack(token_acc, &mut token_acc_bytes).unwrap();
     svm.set_account(
-        ata,
+        account_key,
         Account {
             lamports: 1_000_000_000,
-            data: token_acc_bytes.to_vec(),
-            owner: TOKEN_PROGRAM_ID,
+            data: vec![1, 2, 3, 4],
+            owner,
             executable: false,
             rent_epoch: 0,
         },
     )
     .unwrap();
-    let raw_account = svm.get_account(&ata).unwrap();
-    assert_eq!(
-        TokenAccount::unpack(&raw_account.data).unwrap().amount,
-        usdc_to_own
-    )
+    let raw_account = svm.get_account(&account_key).unwrap();
+    assert_eq!(raw_account.data, vec![1, 2, 3, 4]);
+    assert_eq!(raw_account.owner, owner);
 }
 
 ```
-
-## Copying Accounts from a live environment
-
-If you want to copy accounts from mainnet or devnet, you can use the `solana account` command in the Solana CLI to save account data to a file.
 
 ## Register tracing
 
@@ -272,28 +228,14 @@ Other things you can do with `litesvm` include:
 * Disable transaction signature checking using [`.with_sigverify(false)`](LiteSVM::with_sigverify).
 * Find previous transactions using [`.get_transaction`](`LiteSVM::get_transaction`).
 
-## When should I use `solana-test-validator`?
-
-While `litesvm` is faster and more convenient, it is also less like a real RPC node.
-So `solana-test-validator` is still useful when you need to call RPC methods that LiteSVM
-doesn't support, or when you want to test something that depends on real-life validator behaviour
-rather than just testing your program and client code.
-
-In general though it is recommended to use `litesvm` wherever possible, as it will make your life
-much easier.
-
 */
 
-#[cfg(feature = "register-tracing")]
-use crate::register_tracing::DefaultRegisterTracingCallback;
-#[cfg(feature = "precompiles")]
-use precompiles::load_precompiles;
+#[allow(deprecated)]
+use jupnet_sdk::sysvar::recent_blockhashes::IterItem;
+#[allow(deprecated)]
+use jupnet_sdk::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
-#[allow(deprecated)]
-use solana_sysvar::recent_blockhashes::IterItem;
-#[allow(deprecated)]
-use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use {
     crate::{
         accounts_db::AccountsDb,
@@ -305,67 +247,59 @@ use {
             ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult,
         },
         utils::{
+            builtins::BUILTINS,
             create_blockhash,
             rent::{check_rent_state_with_account, get_account_rent_state, RentState},
         },
     },
-    agave_feature_set::{
-        increase_cpi_account_info_limit, raise_cpi_nesting_limit_to_8, FeatureSet,
+    jupnet_bpf_loader_program::{
+        load_program_from_bytes,
+        syscalls::{create_program_runtime_environment_v1, create_program_runtime_environment_v2},
     },
-    agave_reserved_account_keys::ReservedAccountKeys,
-    agave_syscalls::{
-        create_program_runtime_environment_v1, create_program_runtime_environment_v2,
-    },
-    log::error,
-    serde::de::DeserializeOwned,
-    solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
-    solana_address::Address,
-    solana_builtins::BUILTINS,
-    solana_clock::Clock,
-    solana_compute_budget::{
+    jupnet_compute_budget::{
         compute_budget::ComputeBudget, compute_budget_limits::ComputeBudgetLimits,
     },
-    solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
-    solana_epoch_rewards::EpochRewards,
-    solana_epoch_schedule::EpochSchedule,
-    solana_feature_gate_interface::{self as feature_gate, Feature},
-    solana_fee::FeeFeatures,
-    solana_fee_structure::FeeStructure,
-    solana_hash::Hash,
-    solana_keypair::Keypair,
-    solana_last_restart_slot::LastRestartSlot,
-    solana_loader_v3_interface::state::UpgradeableLoaderState,
-    solana_message::{
-        inner_instruction::InnerInstructionsList, Message, SanitizedMessage, VersionedMessage,
-    },
-    solana_native_token::LAMPORTS_PER_SOL,
-    solana_nonce::{state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
-    solana_program_runtime::{
+    jupnet_log_collector::LogCollector,
+    jupnet_program_runtime::{
         invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
+        jupnet_rbpf::program::BuiltinFunction,
         loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
-        solana_sbpf::program::BuiltinFunction,
     },
-    solana_rent::Rent,
-    solana_sdk_ids::{
-        bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, native_loader, system_program,
+    jupnet_sdk::{
+        account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
+        bpf_loader, bpf_loader_deprecated,
+        bpf_loader_upgradeable::{self, UpgradeableLoaderState},
+        clock::Clock,
+        epoch_rewards::EpochRewards,
+        epoch_schedule::EpochSchedule,
+        feature::{self, Feature},
+        feature_set::FeatureSet,
+        fee::FeeStructure,
+        hash::Hash,
+        inner_instruction::InnerInstructionsList,
+        message::{Message, VersionedMessage},
+        native_loader,
+        native_token::MOTES_PER_JUP,
+        nonce::state::DurableNonce,
+        pubkey::Pubkey,
+        rent::Rent,
+        reserved_account_keys::ReservedAccountKeys,
+        signature::TypedSignature,
+        signer::{keypair::Keypair, Signer},
+        slot_hashes::SlotHashes,
+        slot_history::SlotHistory,
+        stake_history::StakeHistory,
+        system_program,
+        sysvar::{last_restart_slot::LastRestartSlot, Sysvar, SysvarId},
+        transaction::{MessageHash, SanitizedTransaction, VersionedTransaction},
+        transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
     },
-    solana_signature::Signature,
-    solana_signer::Signer,
-    solana_slot_hashes::SlotHashes,
-    solana_slot_history::SlotHistory,
-    solana_stake_interface::stake_history::StakeHistory,
-    solana_svm_log_collector::LogCollector,
-    solana_svm_timings::ExecuteTimings,
-    solana_svm_transaction::svm_message::SVMMessage,
-    solana_system_program::{get_system_account_kind, SystemAccountKind},
-    solana_sysvar::{Sysvar, SysvarSerialize},
-    solana_sysvar_id::SysvarId,
-    solana_transaction::{
-        sanitized::{MessageHash, SanitizedTransaction},
-        versioned::VersionedTransaction,
-    },
-    solana_transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
-    solana_transaction_error::TransactionError,
+    jupnet_svm_transaction::svm_message::{SVMExecutionMessage, SVMMessage},
+    jupnet_system_program::{get_system_account_kind, SystemAccountKind},
+    jupnet_timings::ExecuteTimings,
+    jupnet_transaction_error::TransactionError,
+    log::error,
+    serde::de::DeserializeOwned,
     std::{cell::RefCell, path::Path, rc::Rc, sync::Arc},
     types::SimulatedTransactionInfo,
     utils::{
@@ -377,16 +311,14 @@ use {
 pub mod error;
 pub mod types;
 
+type TransactionAccount = (Pubkey, AccountSharedData);
+type TransactionProgramIndices = Vec<Vec<IndexOfAccount>>;
+
 mod accounts_db;
-mod callback;
 mod format_logs;
 mod history;
 mod message_processor;
-#[cfg(feature = "precompiles")]
-mod precompiles;
 mod programs;
-#[cfg(feature = "register-tracing")]
-pub mod register_tracing;
 mod utils;
 
 #[derive(Clone)]
@@ -402,26 +334,11 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
-    /// The callback which can be used to inspect invoke_context
-    /// and extract low-level information such as bpf traces, transaction
-    /// context, detailed timings, etc.
-    #[cfg(feature = "invocation-inspect-callback")]
-    invocation_inspect_callback: Arc<dyn InvocationInspectCallback>,
-    /// Dictates whether or not register tracing was enabled.
-    /// Provided as input to the invocation inspect callback for potential
-    /// register trace consumption.
-    #[cfg(feature = "invocation-inspect-callback")]
-    enable_register_tracing: bool,
 }
 
 impl Default for LiteSVM {
     fn default() -> Self {
         let _enable_register_tracing = false;
-
-        // Allow users to virtually get register tracing data without
-        // doing any changes to their code provided `SBF_TRACE_DIR` is set.
-        #[cfg(feature = "register-tracing")]
-        let _enable_register_tracing = std::env::var("SBF_TRACE_DIR").is_ok();
 
         Self::new_inner(_enable_register_tracing)
     }
@@ -444,56 +361,25 @@ impl LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
-            #[cfg(feature = "invocation-inspect-callback")]
-            enable_register_tracing: _enable_register_tracing,
-            #[cfg(feature = "invocation-inspect-callback")]
-            invocation_inspect_callback: Arc::new(EmptyInvocationInspectCallback {}),
         };
-
-        #[cfg(feature = "register-tracing")]
-        if svm.enable_register_tracing {
-            svm.invocation_inspect_callback = Arc::new(DefaultRegisterTracingCallback::default());
-        }
 
         svm
     }
 
     fn into_basic(self) -> Self {
-        let svm = self
-            .with_feature_set(FeatureSet::all_enabled())
+        self.with_feature_set(FeatureSet::all_enabled())
             .with_builtins()
-            .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
+            .with_lamports(1_000_000u64.wrapping_mul(MOTES_PER_JUP))
             .with_sysvars()
             .with_feature_accounts()
             .with_default_programs()
             .with_sigverify(true)
-            .with_blockhash_check(true);
-
-        #[cfg(feature = "precompiles")]
-        let svm = svm.with_precompiles();
-
-        svm
+            .with_blockhash_check(true)
     }
 
     /// Creates the basic test environment.
     pub fn new() -> Self {
         LiteSVM::default().into_basic()
-    }
-
-    #[cfg(feature = "register-tracing")]
-    /// Create a test environment with debugging features.
-    ///
-    /// This constructor allows enabling low-level VM debugging capabilities,
-    /// such as register tracing, which are baked into program executables at
-    /// load time and cannot be changed afterwards.
-    ///
-    /// When `enable_register_tracing` is `true`:
-    /// - Programs are loaded with register tracing support
-    /// - A default [`DefaultRegisterTracingCallback`] is installed
-    /// - Trace data is written to `SBF_TRACE_DIR` (or `target/sbf/trace` by
-    ///   default)
-    pub fn new_debuggable(enable_register_tracing: bool) -> Self {
-        Self::new_inner(enable_register_tracing).into_basic()
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
@@ -546,19 +432,7 @@ impl LiteSVM {
             fees.fee_calculator.lamports_per_signature,
         )]));
 
-        // Rent account differs based off feature gating
-        #[allow(deprecated)]
-        {
-            let mut rent_account = Rent::default();
-            if self
-                .feature_set
-                .is_active(&agave_feature_set::deprecate_rent_exemption_threshold::id())
-            {
-                rent_account.exemption_threshold = 1.0;
-                rent_account.lamports_per_byte_year = solana_rent::DEFAULT_LAMPORTS_PER_BYTE
-            }
-            self.set_sysvar(&rent_account);
-        }
+        self.set_sysvar(&Rent::default());
         self.set_sysvar(&SlotHashes::new(&[(
             self.accounts.sysvar_cache.get_clock().unwrap().slot,
             latest_blockhash,
@@ -587,12 +461,15 @@ impl LiteSVM {
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_feature_accounts(&mut self) {
-        for (feature_id, activation_slot) in self.feature_set.active() {
+        for (feature_id, activation_slot) in &self.feature_set.active {
             let feature_account = Feature {
                 activated_at: Some(*activation_slot),
             };
             let lamports = self.minimum_balance_for_rent_exemption(Feature::size_of());
-            let account = feature_gate::create_account(&feature_account, lamports);
+            let data_len = Feature::size_of()
+                .max(bincode::serialized_size(&feature_account).unwrap() as usize);
+            let mut account = AccountSharedData::new(lamports, data_len, &feature::id());
+            bincode::serialize_into(account.data_as_mut_slice(), &feature_account).ok();
             self.accounts.add_account_no_checks(*feature_id, account);
         }
     }
@@ -628,29 +505,18 @@ impl LiteSVM {
         });
 
         let _enable_register_tracing = false;
-        #[cfg(feature = "register-tracing")]
-        let _enable_register_tracing = self.enable_register_tracing;
 
-        let compute_budget = self
-            .compute_budget
-            .unwrap_or(ComputeBudget::new_with_defaults(
-                self.feature_set
-                    .is_active(&raise_cpi_nesting_limit_to_8::ID),
-                self.feature_set
-                    .is_active(&increase_cpi_account_info_limit::ID),
-            ));
+        let compute_budget = self.compute_budget.unwrap_or_default();
         let program_runtime_v1 = create_program_runtime_environment_v1(
-            &self.feature_set.runtime_features(),
-            &compute_budget.to_budget(),
+            &self.feature_set,
+            &compute_budget,
             false,
             _enable_register_tracing,
         )
         .unwrap();
 
-        let program_runtime_v2 = create_program_runtime_environment_v2(
-            &compute_budget.to_budget(),
-            _enable_register_tracing,
-        );
+        let program_runtime_v2 =
+            create_program_runtime_environment_v2(&compute_budget, _enable_register_tracing);
 
         self.accounts.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
         self.accounts.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
@@ -667,7 +533,7 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
-            Keypair::try_from(self.airdrop_kp.as_slice())
+            Keypair::from_bytes(self.airdrop_kp.as_slice())
                 .unwrap()
                 .pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
@@ -713,21 +579,6 @@ impl LiteSVM {
         self
     }
 
-    #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
-    #[cfg(feature = "precompiles")]
-    fn set_precompiles(&mut self) {
-        load_precompiles(self);
-    }
-
-    /// Adds the standard precompiles to the VM.
-    //
-    // Use `with_feature_set` beforehand to change change what precompiles are added.
-    #[cfg(feature = "precompiles")]
-    pub fn with_precompiles(mut self) -> Self {
-        self.set_precompiles();
-        self
-    }
-
     /// Returns minimum balance required to make an account with specified data length rent exempt.
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
         1.max(
@@ -740,12 +591,12 @@ impl LiteSVM {
     }
 
     /// Returns all information associated with the account of the provided pubkey.
-    pub fn get_account(&self, address: &Address) -> Option<Account> {
+    pub fn get_account(&self, address: &Pubkey) -> Option<Account> {
         self.accounts.get_account(address).map(Into::into)
     }
 
     /// Sets all information associated with the account of the provided pubkey.
-    pub fn set_account(&mut self, address: Address, data: Account) -> Result<(), LiteSVMError> {
+    pub fn set_account(&mut self, address: Pubkey, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(address, data.into())
     }
 
@@ -772,7 +623,7 @@ impl LiteSVM {
     }
 
     /// Gets the balance of the provided account pubkey.
-    pub fn get_balance(&self, address: &Address) -> Option<u64> {
+    pub fn get_balance(&self, address: &Pubkey) -> Option<u64> {
         self.accounts.get_account_ref(address).map(|x| x.lamports())
     }
 
@@ -784,9 +635,9 @@ impl LiteSVM {
     /// Sets the sysvar to the test environment.
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
-        T: Sysvar + SysvarId + SysvarSerialize,
+        T: Sysvar + SysvarId,
     {
-        let mut account = AccountSharedData::new(1, T::size_of(), &solana_sdk_ids::sysvar::id());
+        let mut account = AccountSharedData::new(1, T::size_of(), &jupnet_sdk::sysvar::id());
         account.serialize_data(sysvar).unwrap();
         self.accounts.add_account(T::id(), account).unwrap();
     }
@@ -800,23 +651,23 @@ impl LiteSVM {
     }
 
     /// Gets a transaction from the transaction history.
-    pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
+    pub fn get_transaction(&self, signature: &TypedSignature) -> Option<&TransactionResult> {
         self.history.get_transaction(signature)
     }
 
     /// Returns the pubkey of the internal airdrop account.
-    pub fn airdrop_pubkey(&self) -> Address {
-        Keypair::try_from(self.airdrop_kp.as_slice())
+    pub fn airdrop_pubkey(&self) -> Pubkey {
+        Keypair::from_bytes(self.airdrop_kp.as_slice())
             .unwrap()
             .pubkey()
     }
 
     /// Airdrops the account with the lamports specified.
-    pub fn airdrop(&mut self, address: &Address, lamports: u64) -> TransactionResult {
-        let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
+    pub fn airdrop(&mut self, address: &Pubkey, lamports: u64) -> TransactionResult {
+        let payer = Keypair::from_bytes(self.airdrop_kp.as_slice()).unwrap();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
-                &[solana_system_interface::instruction::transfer(
+                &[jupnet_sdk::system_instruction::transfer(
                     &payer.pubkey(),
                     address,
                     lamports,
@@ -832,7 +683,7 @@ impl LiteSVM {
     }
 
     /// Adds a builtin program to the test environment.
-    pub fn add_builtin(&mut self, program_id: Address, entrypoint: BuiltinFunctionWithContext) {
+    pub fn add_builtin(&mut self, program_id: Pubkey, entrypoint: BuiltinFunctionWithContext) {
         let builtin = ProgramCacheEntry::new_builtin(
             self.accounts
                 .sysvar_cache
@@ -855,7 +706,7 @@ impl LiteSVM {
     /// Adds an SBF program to the test environment from the file specified.
     pub fn add_program_from_file(
         &mut self,
-        program_id: impl Into<Address>,
+        program_id: impl Into<Pubkey>,
         path: impl AsRef<Path>,
     ) -> Result<(), LiteSVMError> {
         let bytes = std::fs::read(path)?;
@@ -865,9 +716,9 @@ impl LiteSVM {
 
     fn add_program_internal<const PREVERIFIED: bool>(
         &mut self,
-        program_id: impl Into<Address>,
+        program_id: impl Into<Pubkey>,
         program_bytes: &[u8],
-        loader_id: &Address,
+        loader_id: &Pubkey,
     ) -> Result<(), LiteSVMError> {
         let program_id = program_id.into();
         let current_slot = self
@@ -879,7 +730,7 @@ impl LiteSVM {
 
         let program_size = if bpf_loader_upgradeable::check_id(loader_id) {
             let (programdata_address, _bump) =
-                Address::find_program_address(&[program_id.as_ref()], loader_id);
+                Pubkey::find_program_address(&[program_id.as_ref()], loader_id);
 
             let programdata_metadata_len = UpgradeableLoaderState::size_of_programdata_metadata();
             let programdata_len = programdata_metadata_len + program_bytes.len();
@@ -934,7 +785,7 @@ impl LiteSVM {
             )));
         };
 
-        let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
+        let mut loaded_program = load_program_from_bytes(
             None,
             &mut LoadProgramMetrics::default(),
             program_bytes,
@@ -959,7 +810,7 @@ impl LiteSVM {
     /// Uses `BPFLoaderUpgradeable` by default for the loader.
     pub fn add_program(
         &mut self,
-        program_id: impl Into<Address>,
+        program_id: impl Into<Pubkey>,
         program_bytes: &[u8],
     ) -> Result<(), LiteSVMError> {
         self.add_program_internal::<false>(program_id, program_bytes, &bpf_loader_upgradeable::id())
@@ -971,9 +822,9 @@ impl LiteSVM {
     /// or `bpf_loader_upgradeable::id()` for the upgradeable loader.
     pub fn add_program_with_loader(
         &mut self,
-        program_id: impl Into<Address>,
+        program_id: impl Into<Pubkey>,
         program_bytes: &[u8],
-        loader_id: Address,
+        loader_id: Pubkey,
     ) -> Result<(), LiteSVMError> {
         self.add_program_internal::<false>(program_id, program_bytes, &loader_id)
     }
@@ -981,24 +832,11 @@ impl LiteSVM {
     /// Adds an SBF program that is known-good and already verified.
     pub(crate) fn add_program_preverified(
         &mut self,
-        program_id: impl Into<Address>,
+        program_id: impl Into<Pubkey>,
         program_bytes: &[u8],
-        loader_id: &Address,
+        loader_id: &Pubkey,
     ) -> Result<(), LiteSVMError> {
         self.add_program_internal::<true>(program_id, program_bytes, loader_id)
-    }
-
-    fn create_transaction_context(
-        &self,
-        compute_budget: ComputeBudget,
-        accounts: Vec<(Address, AccountSharedData)>,
-    ) -> TransactionContext<'_> {
-        TransactionContext::new(
-            accounts,
-            self.get_sysvar(),
-            compute_budget.max_instruction_stack_depth,
-            compute_budget.max_instruction_trace_length,
-        )
     }
 
     fn sanitize_transaction_no_verify_inner(
@@ -1009,7 +847,6 @@ impl LiteSVM {
             tx,
             MessageHash::Compute,
             Some(false),
-            &self.accounts,
             &self.reserved_account_keys.active,
         );
         res.inspect_err(|_| {
@@ -1046,207 +883,275 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
-        SanitizedTransaction::validate_account_locks(tx.message(), 64)?;
+        SanitizedTransaction::validate_account_locks(tx.message(), 10, 128, 4096)?;
 
         Ok(tx)
     }
 
-    fn process_transaction<'a, 'b>(
-        &'a self,
-        tx: &'b SanitizedTransaction,
+    fn process_transaction(
+        &self,
+        tx: &SanitizedTransaction,
         compute_budget_limits: ComputeBudgetLimits,
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> (
         Result<(), TransactionError>,
         u64,
-        Option<TransactionContext<'b>>,
+        Option<TransactionContext>,
         u64,
-        Option<Address>,
-    )
-    where
-        'a: 'b,
-    {
-        let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
-            compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
-            heap_size: compute_budget_limits.updated_heap_bytes,
-            ..ComputeBudget::new_with_defaults(
-                self.feature_set
-                    .is_active(&raise_cpi_nesting_limit_to_8::ID),
-                self.feature_set
-                    .is_active(&increase_cpi_account_info_limit::ID),
-            )
-        });
-        let rent = self.accounts.sysvar_cache.get_rent().unwrap();
+        Option<Pubkey>,
+    ) {
         let message = tx.message();
-        let blockhash = message.recent_blockhash();
-        //reload program cache
-        let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
-        let mut accumulated_consume_units = 0;
         let account_keys = message.account_keys();
-        let prioritization_fee = compute_budget_limits.get_prioritization_fee();
-        let fee = solana_fee::calculate_fee(
-            message,
-            false,
-            self.fee_structure.lamports_per_signature,
-            prioritization_fee,
-            FeeFeatures::from(&self.feature_set),
-        );
-        let mut validated_fee_payer = false;
-        let mut payer_key = None;
-        let maybe_accounts = account_keys
-            .iter()
-            .enumerate()
-            .map(|(i, key)| {
-                let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
-                    construct_instructions_account(message)
-                } else {
-                    let is_instruction_account = message.is_instruction_account(i);
-                    let mut account = if !is_instruction_account
-                        && !message.is_writable(i)
-                        && self.accounts.programs_cache.find(key).is_some()
-                    {
-                        // Optimization to skip loading of accounts which are only used as
-                        // programs in top-level instructions and not passed as instruction accounts.
-                        self.accounts.get_account(key).unwrap()
-                    } else {
-                        self.accounts.get_account(key).unwrap_or_else(|| {
-                            let mut default_account = AccountSharedData::default();
-                            default_account.set_rent_epoch(0);
-                            default_account
-                        })
-                    };
-                    if !validated_fee_payer && (!message.is_invoked(i) || is_instruction_account) {
-                        validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
-                        validated_fee_payer = true;
-                        payer_key = Some(*key);
-                    }
-                    account
-                };
 
-                Ok((*key, account))
+        let mut transaction_accounts: Vec<(Pubkey, AccountSharedData)> = account_keys
+            .iter()
+            .map(|key| {
+                let account = self.accounts.get_account(key).unwrap_or_default();
+                (*key, account)
             })
-            .collect::<solana_transaction_error::TransactionResult<Vec<_>>>();
-        let mut accounts = match maybe_accounts {
-            Ok(accs) => accs,
-            Err(e) => {
-                return (Err(e), accumulated_consume_units, None, fee, payer_key);
-            }
-        };
-        if !validated_fee_payer {
-            error!("Failed to validate fee payer");
-            return (
-                Err(TransactionError::AccountNotFound),
-                accumulated_consume_units,
-                None,
+            .collect();
+
+        let base_fee = self
+            .fee_structure
+            .lamports_per_signature
+            .saturating_mul(SVMMessage::num_fee_paying_signatures(tx));
+        let prioritization_fee = compute_budget_limits
+            .compute_unit_price
+            .saturating_mul(u64::from(compute_budget_limits.compute_unit_limit))
+            .saturating_div(1_000_000);
+        let fee = base_fee.saturating_add(prioritization_fee);
+
+        let payer_address = *message.fee_payer();
+        let rent: Rent = self.get_sysvar();
+
+        if let Err(err) = validate_fee_payer(
+            &payer_address,
+            &mut transaction_accounts[0].1,
+            0,
+            &rent,
+            fee,
+        ) {
+            return (Err(err), 0, None, fee, Some(payer_address));
+        }
+
+        let compute_budget = self
+            .compute_budget
+            .unwrap_or_else(|| ComputeBudget::from(compute_budget_limits));
+
+        let has_instructions_sysvar_account_index = transaction_accounts
+            .iter()
+            .position(|(pk, _)| jupnet_sdk::sysvar::instructions::check_id(pk));
+        if let Some(idx) = has_instructions_sysvar_account_index {
+            transaction_accounts[idx].1 = construct_instructions_account(message);
+        }
+
+        let execution_messages = SVMMessage::get_execution_messages(tx);
+
+        if !SVMMessage::is_batched_message(tx) {
+            self.process_single_message(
+                tx,
+                &execution_messages[0],
+                transaction_accounts,
+                compute_budget,
+                log_collector,
+                &rent,
                 fee,
-                payer_key,
-            );
+                payer_address,
+            )
+        } else {
+            self.process_batched_messages(
+                tx,
+                &execution_messages,
+                transaction_accounts,
+                compute_budget,
+                log_collector,
+                &rent,
+                fee,
+                payer_address,
+            )
         }
-        let builtins_start_index = accounts.len();
-        let maybe_program_indices = tx
-            .message()
-            .instructions()
-            .iter()
-            .map(|c| {
-                let program_index = c.program_id_index as usize;
-                // This may never error, because the transaction is sanitized
-                let (program_id, program_account) = accounts.get(program_index).unwrap();
-                if native_loader::check_id(program_id) {
-                    return Ok(program_index as IndexOfAccount);
-                }
-                if !program_account.executable() {
-                    error!("Program account {program_id} is not executable.");
-                    return Err(TransactionError::InvalidProgramForExecution);
-                }
+    }
 
-                let owner_id = program_account.owner();
-                if native_loader::check_id(owner_id) {
-                    return Ok(program_index as IndexOfAccount);
-                }
+    #[allow(clippy::too_many_arguments)]
+    fn process_single_message(
+        &self,
+        tx: &SanitizedTransaction,
+        exec_message: &SVMExecutionMessage,
+        mut transaction_accounts: Vec<(Pubkey, AccountSharedData)>,
+        compute_budget: ComputeBudget,
+        log_collector: Rc<RefCell<LogCollector>>,
+        rent: &Rent,
+        fee: u64,
+        payer_address: Pubkey,
+    ) -> (
+        Result<(), TransactionError>,
+        u64,
+        Option<TransactionContext>,
+        u64,
+        Option<Pubkey>,
+    ) {
+        let program_indices = match calculate_program_indices(
+            exec_message,
+            &mut transaction_accounts,
+            &self.accounts,
+        ) {
+            Ok(indices) => indices,
+            Err(e) => return (Err(e), 0, None, fee, Some(payer_address)),
+        };
 
-                if !accounts
-                    .get(builtins_start_index..)
-                    .ok_or(TransactionError::ProgramAccountNotFound)?
-                    .iter()
-                    .any(|(key, _)| key == owner_id)
-                {
-                    let owner_account = self.accounts.get_account(owner_id).unwrap();
-                    if !native_loader::check_id(owner_account.owner()) {
-                        error!(
-                            "Owner account {owner_id} is not owned by the native loader program."
-                        );
-                        return Err(TransactionError::InvalidProgramForExecution);
+        let mut transaction_context = TransactionContext::new(
+            transaction_accounts,
+            rent.clone(),
+            compute_budget.max_instruction_stack_depth,
+            compute_budget.max_instruction_trace_length,
+        );
+        #[cfg(debug_assertions)]
+        transaction_context.set_signature(&tx.signature().get_signature());
+
+        let mut programs_cache = self.accounts.programs_cache.clone();
+        let mut executed_units = 0u64;
+
+        let mut invoke_context = InvokeContext::new(
+            &mut transaction_context,
+            &mut programs_cache,
+            EnvironmentConfig::new(
+                self.latest_blockhash,
+                None,
+                None,
+                None,
+                Arc::new(self.feature_set.clone()),
+                self.fee_structure.lamports_per_signature,
+                &self.accounts.sysvar_cache,
+            ),
+            Some(log_collector),
+            compute_budget,
+        );
+        let result = process_message(
+            exec_message,
+            &program_indices,
+            &mut invoke_context,
+            &mut ExecuteTimings::default(),
+            &mut executed_units,
+        );
+        drop(invoke_context);
+
+        let result = result.and_then(|_| self.check_accounts_rent(tx, &transaction_context, rent));
+
+        (
+            result,
+            executed_units,
+            Some(transaction_context),
+            fee,
+            Some(payer_address),
+        )
+    }
+
+    /// Processes a batched transaction containing multiple execution steps.
+    ///
+    /// Each step is executed in isolation: successful steps propagate their
+    /// account changes to the next step, while failed steps are discarded
+    /// without affecting subsequent steps.
+    #[allow(clippy::too_many_arguments)]
+    fn process_batched_messages(
+        &self,
+        tx: &SanitizedTransaction,
+        execution_messages: &[SVMExecutionMessage],
+        mut transaction_accounts: Vec<(Pubkey, AccountSharedData)>,
+        compute_budget: ComputeBudget,
+        log_collector: Rc<RefCell<LogCollector>>,
+        rent: &Rent,
+        fee: u64,
+        payer_address: Pubkey,
+    ) -> (
+        Result<(), TransactionError>,
+        u64,
+        Option<TransactionContext>,
+        u64,
+        Option<Pubkey>,
+    ) {
+        let signatures = tx.signatures();
+        let mut total_executed_units = 0u64;
+
+        for exec_message in execution_messages {
+            let step_budget = match exec_message.compute_unit_limit {
+                Some(limit) => {
+                    let mut budget = compute_budget;
+                    budget.compute_unit_limit = u64::from(limit);
+                    budget
+                }
+                None => compute_budget,
+            };
+
+            let mut step_accounts = transaction_accounts.clone();
+            let program_indices =
+                match calculate_program_indices(exec_message, &mut step_accounts, &self.accounts) {
+                    Ok(indices) => indices,
+                    Err(e) => {
+                        return (Err(e), total_executed_units, None, fee, Some(payer_address))
                     }
-                    if !owner_account.executable() {
-                        error!("Owner account {owner_id} is not executable");
-                        return Err(TransactionError::InvalidProgramForExecution);
-                    }
-                    //Add program_id to the stuff
-                    accounts.push((*owner_id, owner_account));
-                }
-                Ok(program_index as IndexOfAccount)
-            })
-            .collect::<Result<Vec<u16>, TransactionError>>();
-
-        match maybe_program_indices {
-            Ok(program_indices) => {
-                let mut context = self.create_transaction_context(compute_budget, accounts);
-                let feature_set = self.feature_set.runtime_features();
-                let mut invoke_context = InvokeContext::new(
-                    &mut context,
-                    &mut program_cache_for_tx_batch,
-                    EnvironmentConfig::new(
-                        *blockhash,
-                        self.fee_structure.lamports_per_signature,
-                        self,
-                        &feature_set,
-                        &self.accounts.environments,
-                        &self.accounts.environments,
-                        &self.accounts.sysvar_cache,
-                    ),
-                    Some(log_collector),
-                    compute_budget.to_budget(),
-                    compute_budget.to_cost(),
-                );
-
-                #[cfg(feature = "invocation-inspect-callback")]
-                self.invocation_inspect_callback.before_invocation(
-                    self,
-                    tx,
-                    &program_indices,
-                    &invoke_context,
-                );
-
-                let mut tx_result = process_message(
-                    message,
-                    &program_indices,
-                    &mut invoke_context,
-                    &mut ExecuteTimings::default(),
-                    &mut accumulated_consume_units,
-                )
-                .map(|_| ());
-
-                #[cfg(feature = "invocation-inspect-callback")]
-                self.invocation_inspect_callback.after_invocation(
-                    self,
-                    &invoke_context,
-                    self.enable_register_tracing,
-                );
-
-                if let Err(err) = self.check_accounts_rent(tx, &context, &rent) {
-                    tx_result = Err(err);
                 };
 
-                (
-                    tx_result,
-                    accumulated_consume_units,
-                    Some(context),
-                    fee,
-                    payer_key,
-                )
+            let mut step_context = TransactionContext::new(
+                step_accounts,
+                rent.clone(),
+                step_budget.max_instruction_stack_depth,
+                step_budget.max_instruction_trace_length,
+            );
+            #[cfg(debug_assertions)]
+            step_context.set_signature(&signatures[exec_message.signature_index].get_signature());
+
+            let mut programs_cache = self.accounts.programs_cache.clone();
+            let mut executed_units = 0u64;
+
+            let mut invoke_context = InvokeContext::new(
+                &mut step_context,
+                &mut programs_cache,
+                EnvironmentConfig::new(
+                    self.latest_blockhash,
+                    None,
+                    None,
+                    None,
+                    Arc::new(self.feature_set.clone()),
+                    self.fee_structure.lamports_per_signature,
+                    &self.accounts.sysvar_cache,
+                ),
+                Some(Rc::clone(&log_collector)),
+                step_budget,
+            );
+            let step_result = process_message(
+                exec_message,
+                &program_indices,
+                &mut invoke_context,
+                &mut ExecuteTimings::default(),
+                &mut executed_units,
+            );
+            drop(invoke_context);
+
+            total_executed_units += executed_units;
+
+            let step_result =
+                step_result.and_then(|_| self.check_accounts_rent(tx, &step_context, rent));
+
+            if step_result.is_ok() {
+                let ExecutionRecord { accounts, .. } = step_context.into();
+                transaction_accounts = accounts;
             }
-            Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
         }
+
+        let final_context = TransactionContext::new(
+            transaction_accounts,
+            rent.clone(),
+            compute_budget.max_instruction_stack_depth,
+            compute_budget.max_instruction_trace_length,
+        );
+
+        (
+            Ok(()),
+            total_executed_units,
+            Some(final_context),
+            fee,
+            Some(payer_address),
+        )
     }
 
     fn check_accounts_rent(
@@ -1379,7 +1284,7 @@ impl LiteSVM {
         &'a self,
         sanitized_tx: &'b SanitizedTransaction,
         log_collector: Rc<RefCell<LogCollector>>,
-    ) -> Result<CheckAndProcessTransactionSuccess<'b>, ExecutionResult>
+    ) -> Result<CheckAndProcessTransactionSuccess, ExecutionResult>
     where
         'a: 'b,
     {
@@ -1474,7 +1379,7 @@ impl LiteSVM {
             inner_instructions,
             compute_units_consumed,
             return_data,
-            signature,
+            signature: signature.clone(),
             fee,
         };
 
@@ -1584,7 +1489,7 @@ impl LiteSVM {
     fn check_transaction_age_inner(
         &self,
         tx: &SanitizedTransaction,
-    ) -> solana_transaction_error::TransactionResult<()> {
+    ) -> Result<(), TransactionError> {
         let recent_blockhash = tx.message().recent_blockhash();
         if recent_blockhash == &self.latest_blockhash
             || self.check_transaction_for_nonce(
@@ -1603,38 +1508,13 @@ impl LiteSVM {
         }
     }
 
-    fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
-        message
-            .get_durable_nonce()
-            .and_then(|nonce_address| self.accounts.get_account_ref(nonce_address))
-            .and_then(|nonce_account| {
-                solana_nonce_account::verify_nonce_account(
-                    nonce_account,
-                    message.recent_blockhash(),
-                )
-            })
-            .is_some_and(|nonce_data| {
-                message
-                    .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
-                    .any(|signer| signer == &nonce_data.authority)
-            })
-    }
-
     fn check_transaction_for_nonce(
         &self,
         tx: &SanitizedTransaction,
         next_durable_nonce: &DurableNonce,
     ) -> bool {
         let nonce_is_advanceable = tx.message().recent_blockhash() != next_durable_nonce.as_hash();
-        nonce_is_advanceable && self.check_message_for_nonce(tx.message())
-    }
-
-    #[cfg(feature = "invocation-inspect-callback")]
-    pub fn set_invocation_inspect_callback<C: InvocationInspectCallback + 'static>(
-        &mut self,
-        callback: C,
-    ) {
-        self.invocation_inspect_callback = Arc::new(callback);
+        nonce_is_advanceable
     }
 
     /// Registers a custom syscall in both program runtime environments (v1 and v2).
@@ -1649,7 +1529,7 @@ impl LiteSVM {
     pub fn with_custom_syscall(
         mut self,
         name: &str,
-        syscall: BuiltinFunction<InvokeContext<'static, 'static>>,
+        syscall: BuiltinFunction<InvokeContext<'static>>,
     ) -> Self {
         let (Some(program_runtime_v1), Some(program_runtime_v2)) = (
             Arc::get_mut(&mut self.accounts.environments.program_runtime_v1),
@@ -1661,14 +1541,12 @@ impl LiteSVM {
         // Once unregister_function is available, users could replace existing built-in
         // syscalls.
 
-        // TODO: uncomment once https://github.com/anza-xyz/sbpf/pull/153 is available.
-        // let _ = program_runtime_v1.unregister_function(name);
+        let _ = program_runtime_v1.unregister_function(name);
         program_runtime_v1
             .register_function(name, syscall)
             .unwrap_or_else(|e| panic!("failed to register syscall '{name}' in runtime_v1: {e}"));
 
-        // TODO: uncomment once https://github.com/anza-xyz/sbpf/pull/153 is available.
-        // let _ = program_runtime_v2.unregister_function(name);
+        let _ = program_runtime_v2.unregister_function(name);
         program_runtime_v2
             .register_function(name, syscall)
             .unwrap_or_else(|e| panic!("failed to register syscall '{name}' in runtime_v2: {e}"));
@@ -1677,16 +1555,16 @@ impl LiteSVM {
     }
 }
 
-struct CheckAndProcessTransactionSuccessCore<'ix_data> {
+struct CheckAndProcessTransactionSuccessCore {
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
-    context: Option<TransactionContext<'ix_data>>,
+    context: Option<TransactionContext>,
 }
 
-struct CheckAndProcessTransactionSuccess<'ix_data> {
-    core: CheckAndProcessTransactionSuccessCore<'ix_data>,
+struct CheckAndProcessTransactionSuccess {
+    core: CheckAndProcessTransactionSuccessCore,
     fee: u64,
-    payer_key: Option<Address>,
+    payer_key: Option<Pubkey>,
 }
 
 fn execution_result_if_context(
@@ -1714,10 +1592,10 @@ fn execute_tx_helper(
     sanitized_tx: &SanitizedTransaction,
     ctx: TransactionContext,
 ) -> (
-    Signature,
-    solana_transaction_context::TransactionReturnData,
+    TypedSignature,
+    jupnet_sdk::transaction_context::TransactionReturnData,
     InnerInstructionsList,
-    Vec<(Address, AccountSharedData)>,
+    Vec<(Pubkey, AccountSharedData)>,
 ) {
     let signature = sanitized_tx.signature().to_owned();
     let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
@@ -1738,16 +1616,70 @@ fn execute_tx_helper(
 
 fn get_compute_budget_limits(
     sanitized_tx: &SanitizedTransaction,
-    feature_set: &FeatureSet,
+    _feature_set: &FeatureSet,
 ) -> Result<ComputeBudgetLimits, ExecutionResult> {
-    process_compute_budget_instructions(
-        SVMMessage::program_instructions_iter(sanitized_tx),
-        feature_set,
-    )
-    .map_err(|e| ExecutionResult {
+    SVMMessage::get_compute_budget_limits(sanitized_tx).map_err(|e| ExecutionResult {
         tx_result: Err(e),
         ..Default::default()
     })
+}
+
+fn calculate_program_indices(
+    message: &SVMExecutionMessage,
+    transaction_accounts: &mut Vec<TransactionAccount>,
+    accounts_db: &AccountsDb,
+) -> Result<TransactionProgramIndices, TransactionError> {
+    let builtins_start_index = transaction_accounts.len();
+    message
+        .instructions
+        .iter()
+        .map(|instruction| {
+            let mut account_indices = Vec::with_capacity(1);
+            let program_index = instruction.program_id_index;
+
+            let (program_id, is_executable, owner_id) = {
+                let (id, account) = transaction_accounts
+                    .get(program_index)
+                    .expect("program id index must be valid");
+                (*id, account.executable(), *account.owner())
+            };
+
+            if native_loader::check_id(&program_id) {
+                return Ok(account_indices);
+            }
+
+            if !is_executable {
+                error!("Program account {program_id} is not executable.");
+                return Err(TransactionError::InvalidProgramForExecution);
+            }
+
+            if native_loader::check_id(&owner_id) {
+                account_indices.push(program_index as IndexOfAccount);
+                return Ok(account_indices);
+            }
+
+            if !transaction_accounts
+                .get(builtins_start_index..)
+                .ok_or(TransactionError::ProgramAccountNotFound)?
+                .iter()
+                .any(|(key, _)| *key == owner_id)
+            {
+                let owner_account = accounts_db.get_account(&owner_id).unwrap();
+                if !native_loader::check_id(owner_account.owner()) {
+                    error!("Owner account {owner_id} is not owned by the native loader program.");
+                    return Err(TransactionError::InvalidProgramForExecution);
+                }
+                if !owner_account.executable() {
+                    error!("Owner account {owner_id} is not executable");
+                    return Err(TransactionError::InvalidProgramForExecution);
+                }
+                transaction_accounts.push((owner_id, owner_account));
+            }
+
+            account_indices.push(program_index as IndexOfAccount);
+            Ok(account_indices)
+        })
+        .collect()
 }
 
 /// Lighter version of the one in the solana-svm crate.
@@ -1757,12 +1689,12 @@ fn get_compute_budget_limits(
 /// balance of lamports. If the payer_acount is not able to pay the
 /// fee a specific error is returned.
 fn validate_fee_payer(
-    payer_address: &Address,
+    payer_address: &Pubkey,
     payer_account: &mut AccountSharedData,
     payer_index: IndexOfAccount,
     rent: &Rent,
     fee: u64,
-) -> solana_transaction_error::TransactionResult<()> {
+) -> Result<(), TransactionError> {
     if payer_account.lamports() == 0 {
         error!("Payer account {payer_address} not found.");
         return Err(TransactionError::AccountNotFound);
@@ -1776,7 +1708,7 @@ fn validate_fee_payer(
         SystemAccountKind::Nonce => {
             // Should we ever allow a fees charge to zero a nonce account's
             // balance. The state MUST be set to uninitialized in that case
-            rent.minimum_balance(solana_nonce::state::State::size())
+            rent.minimum_balance(jupnet_sdk::nonce::state::State::size())
         }
     };
 
@@ -1859,17 +1791,16 @@ impl InvocationInspectCallback for EmptyInvocationInspectCallback {
 mod tests {
     use {
         super::*,
-        solana_instruction::{account_meta::AccountMeta, Instruction},
-        solana_message::{Message, VersionedMessage},
+        jupnet_sdk::instruction::{AccountMeta, Instruction},
     };
 
     #[test]
     fn sysvar_accounts_are_demoted_to_readonly() {
         let payer = Keypair::new();
         let svm = LiteSVM::new();
-        let rent_key = solana_sdk_ids::sysvar::rent::id();
+        let rent_key = jupnet_sdk::sysvar::rent::id();
         let ix = Instruction {
-            program_id: solana_sdk_ids::system_program::id(),
+            program_id: system_program::id(),
             accounts: vec![AccountMeta {
                 pubkey: rent_key,
                 is_signer: false,

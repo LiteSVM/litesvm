@@ -1,9 +1,6 @@
 use {
-    solana_account_info::AccountInfo,
-    solana_clock::Clock,
-    solana_program_error::ProgramResult,
-    solana_pubkey::Pubkey,
-    solana_sysvar::Sysvar,
+    solana_account_info::AccountInfo, solana_clock::Clock, solana_program_error::ProgramResult,
+    solana_pubkey::Pubkey, solana_sysvar::Sysvar,
 };
 
 solana_program_entrypoint::entrypoint!(process_instruction);

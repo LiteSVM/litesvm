@@ -4,52 +4,46 @@ use hashbrown::HashMap;
 use std::collections::HashMap;
 use {
     crate::error::{InvalidSysvarDataError, LiteSVMError},
-    log::error,
-    serde::de::DeserializeOwned,
-    solana_account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
-    solana_address::Address,
-    solana_address_lookup_table_interface::{error::AddressLookupError, state::AddressLookupTable},
-    solana_clock::Clock,
-    solana_instruction::error::InstructionError,
-    solana_loader_v3_interface::state::UpgradeableLoaderState,
-    solana_loader_v4_interface::state::LoaderV4State,
-    solana_message::{
-        v0::{LoadedAddresses, MessageAddressTableLookup},
-        AddressLoader,
-    },
-    solana_nonce as nonce,
-    solana_program_runtime::{
+    jupnet_program_runtime::{
         loaded_programs::{
             LoadProgramMetrics, ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType,
             ProgramCacheForTxBatch, ProgramRuntimeEnvironments,
         },
         sysvar_cache::SysvarCache,
     },
-    solana_sdk_ids::{
-        bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, loader_v4, native_loader,
+    jupnet_sdk::{
+        account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
+        bpf_loader, bpf_loader_deprecated,
+        bpf_loader_upgradeable::{self, UpgradeableLoaderState},
+        clock::Clock,
+        instruction::InstructionError,
+        loader_v4, native_loader, nonce,
+        pubkey::Pubkey,
         sysvar::{
-            clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
+            self, clock::ID as CLOCK_ID, epoch_rewards::ID as EPOCH_REWARDS_ID,
             epoch_schedule::ID as EPOCH_SCHEDULE_ID, last_restart_slot::ID as LAST_RESTART_SLOT_ID,
             rent::ID as RENT_ID, slot_hashes::ID as SLOT_HASHES_ID,
-            stake_history::ID as STAKE_HISTORY_ID,
+            stake_history::ID as STAKE_HISTORY_ID, Sysvar,
         },
     },
-    solana_system_program::{get_system_account_kind, SystemAccountKind},
-    solana_sysvar::Sysvar,
-    solana_transaction_error::{AddressLoaderError, TransactionError},
+    jupnet_system_program::{get_system_account_kind, SystemAccountKind},
+    jupnet_transaction_error::TransactionError,
+    loader_v4::LoaderV4State,
+    log::error,
+    serde::de::DeserializeOwned,
     std::sync::Arc,
 };
 
-const FEES_ID: Address = Address::from_str_const("SysvarFees111111111111111111111111111111111");
-const RECENT_BLOCKHASHES_ID: Address =
-    Address::from_str_const("SysvarRecentB1ockHashes11111111111111111111");
+const FEES_ID: Pubkey = Pubkey::from_str_const("SysvarFees111111111111111111111111111111111");
+const RECENT_BLOCKHASHES_ID: Pubkey =
+    Pubkey::from_str_const("SysvarRecentB1ockHashes11111111111111111111");
 
 fn handle_sysvar<T>(
     cache: &mut SysvarCache,
     err_variant: InvalidSysvarDataError,
     account: &AccountSharedData,
-    accounts: &HashMap<Address, AccountSharedData>,
-    address: Address,
+    accounts: &HashMap<Pubkey, AccountSharedData>,
+    address: Pubkey,
 ) -> Result<(), InvalidSysvarDataError>
 where
     T: Sysvar + DeserializeOwned,
@@ -68,34 +62,34 @@ where
 
 #[derive(Clone, Default)]
 pub struct AccountsDb {
-    pub inner: HashMap<Address, AccountSharedData>,
+    pub inner: HashMap<Pubkey, AccountSharedData>,
     pub programs_cache: ProgramCacheForTxBatch,
     pub sysvar_cache: SysvarCache,
     pub environments: ProgramRuntimeEnvironments,
 }
 
 impl AccountsDb {
-    pub fn get_account_ref(&self, pubkey: &Address) -> Option<&AccountSharedData> {
+    pub fn get_account_ref(&self, pubkey: &Pubkey) -> Option<&AccountSharedData> {
         self.inner.get(pubkey)
     }
 
-    pub fn get_account(&self, pubkey: &Address) -> Option<AccountSharedData> {
+    pub fn get_account(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
         self.get_account_ref(pubkey).cloned()
     }
 
     /// We should only use this when we know we're not touching any executable or sysvar accounts,
     /// or have already handled such cases.
-    pub(crate) fn add_account_no_checks(&mut self, pubkey: Address, account: AccountSharedData) {
+    pub(crate) fn add_account_no_checks(&mut self, pubkey: Pubkey, account: AccountSharedData) {
         self.inner.insert(pubkey, account);
     }
 
     pub(crate) fn add_account(
         &mut self,
-        pubkey: Address,
+        pubkey: Pubkey,
         account: AccountSharedData,
     ) -> Result<(), LiteSVMError> {
         if account.executable()
-            && pubkey != Address::default()
+            && pubkey != Pubkey::default()
             && account.owner() != &native_loader::ID
         {
             let loaded_program = self.load_program(&account)?;
@@ -114,7 +108,7 @@ impl AccountsDb {
 
     fn maybe_handle_sysvar_account(
         &mut self,
-        pubkey: Address,
+        pubkey: Pubkey,
         account: &AccountSharedData,
     ) -> Result<(), InvalidSysvarDataError> {
         use InvalidSysvarDataError::{
@@ -138,7 +132,7 @@ impl AccountsDb {
                 });
             }
             EPOCH_REWARDS_ID => {
-                handle_sysvar::<solana_epoch_rewards::EpochRewards>(
+                handle_sysvar::<sysvar::epoch_rewards::EpochRewards>(
                     cache,
                     EpochRewards,
                     account,
@@ -147,7 +141,7 @@ impl AccountsDb {
                 )?;
             }
             EPOCH_SCHEDULE_ID => {
-                handle_sysvar::<solana_epoch_schedule::EpochSchedule>(
+                handle_sysvar::<sysvar::epoch_schedule::EpochSchedule>(
                     cache,
                     EpochSchedule,
                     account,
@@ -156,16 +150,10 @@ impl AccountsDb {
                 )?;
             }
             FEES_ID => {
-                handle_sysvar::<solana_sysvar::fees::Fees>(
-                    cache,
-                    Fees,
-                    account,
-                    &self.inner,
-                    pubkey,
-                )?;
+                handle_sysvar::<sysvar::fees::Fees>(cache, Fees, account, &self.inner, pubkey)?;
             }
             LAST_RESTART_SLOT_ID => {
-                handle_sysvar::<solana_sysvar::last_restart_slot::LastRestartSlot>(
+                handle_sysvar::<sysvar::last_restart_slot::LastRestartSlot>(
                     cache,
                     LastRestartSlot,
                     account,
@@ -174,7 +162,7 @@ impl AccountsDb {
                 )?;
             }
             RECENT_BLOCKHASHES_ID => {
-                handle_sysvar::<solana_sysvar::recent_blockhashes::RecentBlockhashes>(
+                handle_sysvar::<sysvar::recent_blockhashes::RecentBlockhashes>(
                     cache,
                     RecentBlockhashes,
                     account,
@@ -183,10 +171,10 @@ impl AccountsDb {
                 )?;
             }
             RENT_ID => {
-                handle_sysvar::<solana_rent::Rent>(cache, Rent, account, &self.inner, pubkey)?;
+                handle_sysvar::<jupnet_sdk::rent::Rent>(cache, Rent, account, &self.inner, pubkey)?;
             }
             SLOT_HASHES_ID => {
-                handle_sysvar::<solana_slot_hashes::SlotHashes>(
+                handle_sysvar::<jupnet_sdk::slot_hashes::SlotHashes>(
                     cache,
                     SlotHashes,
                     account,
@@ -195,7 +183,7 @@ impl AccountsDb {
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar::<solana_stake_interface::stake_history::StakeHistory>(
+                handle_sysvar::<jupnet_sdk::stake_history::StakeHistory>(
                     cache,
                     StakeHistory,
                     account,
@@ -209,13 +197,13 @@ impl AccountsDb {
     }
 
     /// Skip the executable() checks for builtin accounts
-    pub(crate) fn add_builtin_account(&mut self, address: Address, data: AccountSharedData) {
+    pub(crate) fn add_builtin_account(&mut self, address: Pubkey, data: AccountSharedData) {
         self.inner.insert(address, data);
     }
 
     pub(crate) fn sync_accounts(
         &mut self,
-        mut accounts: Vec<(Address, AccountSharedData)>,
+        mut accounts: Vec<(Pubkey, AccountSharedData)>,
     ) -> Result<(), LiteSVMError> {
         // need to add programdata accounts first if there are any
         itertools::partition(&mut accounts, |x| {
@@ -319,42 +307,11 @@ impl AccountsDb {
         }
     }
 
-    fn load_lookup_table_addresses(
-        &self,
-        address_table_lookup: &MessageAddressTableLookup,
-    ) -> std::result::Result<LoadedAddresses, AddressLookupError> {
-        let table_account = self
-            .get_account_ref(&address_table_lookup.account_key)
-            .ok_or(AddressLookupError::LookupTableAccountNotFound)?;
-
-        if table_account.owner() == &solana_sdk_ids::address_lookup_table::id() {
-            let slot_hashes = self.sysvar_cache.get_slot_hashes().unwrap();
-            let current_slot = self.sysvar_cache.get_clock().unwrap().slot;
-            let lookup_table = AddressLookupTable::deserialize(table_account.data())
-                .map_err(|_ix_err| AddressLookupError::InvalidAccountData)?;
-
-            Ok(LoadedAddresses {
-                writable: lookup_table.lookup(
-                    current_slot,
-                    &address_table_lookup.writable_indexes,
-                    &slot_hashes,
-                )?,
-                readonly: lookup_table.lookup(
-                    current_slot,
-                    &address_table_lookup.readonly_indexes,
-                    &slot_hashes,
-                )?,
-            })
-        } else {
-            Err(AddressLookupError::InvalidAccountOwner)
-        }
-    }
-
     pub(crate) fn withdraw(
         &mut self,
-        address: &Address,
+        address: &Pubkey,
         lamports: u64,
-    ) -> solana_transaction_error::TransactionResult<()> {
+    ) -> Result<(), TransactionError> {
         match self.inner.get_mut(address) {
             Some(account) => {
                 let min_balance = match get_system_account_kind(account) {
@@ -387,7 +344,7 @@ impl AccountsDb {
     /// Fails if the account is not a program account.
     pub fn try_program_elf_bytes<'a>(
         &'a self,
-        program_key: &Address,
+        program_key: &Pubkey,
     ) -> std::result::Result<&'a [u8], InstructionError> {
         let program_account = self
             .get_account_ref(program_key)
@@ -431,31 +388,5 @@ impl AccountsDb {
             error!("Owner does not match any expected loader.");
             Err(InstructionError::IncorrectProgramId)
         }
-    }
-}
-
-fn into_address_loader_error(err: AddressLookupError) -> AddressLoaderError {
-    match err {
-        AddressLookupError::LookupTableAccountNotFound => {
-            AddressLoaderError::LookupTableAccountNotFound
-        }
-        AddressLookupError::InvalidAccountOwner => AddressLoaderError::InvalidAccountOwner,
-        AddressLookupError::InvalidAccountData => AddressLoaderError::InvalidAccountData,
-        AddressLookupError::InvalidLookupIndex => AddressLoaderError::InvalidLookupIndex,
-    }
-}
-
-impl AddressLoader for &AccountsDb {
-    fn load_addresses(
-        self,
-        lookups: &[MessageAddressTableLookup],
-    ) -> Result<LoadedAddresses, AddressLoaderError> {
-        lookups
-            .iter()
-            .map(|lookup| {
-                self.load_lookup_table_addresses(lookup)
-                    .map_err(into_address_loader_error)
-            })
-            .collect()
     }
 }

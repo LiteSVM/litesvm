@@ -1,14 +1,14 @@
 use {
+    jupnet_sdk::{
+        instruction::{Instruction, InstructionError},
+        message::Message,
+        pubkey::Pubkey,
+        rent::Rent,
+        signer::{keypair::Keypair, Signer},
+        system_instruction::transfer,
+        transaction::{Transaction, TransactionError},
+    },
     litesvm::LiteSVM,
-    solana_address::{address, Address},
-    solana_instruction::{error::InstructionError, Instruction},
-    solana_keypair::Keypair,
-    solana_message::Message,
-    solana_rent::Rent,
-    solana_signer::Signer,
-    solana_system_interface::instruction::transfer,
-    solana_transaction::Transaction,
-    solana_transaction_error::TransactionError,
     std::path::PathBuf,
 };
 
@@ -16,7 +16,7 @@ use {
 fn test_fee_payer_insufficient_funds_for_rent() {
     let from_keypair = Keypair::new();
     let from = from_keypair.pubkey();
-    let to = Address::new_unique();
+    let to = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
 
@@ -30,7 +30,7 @@ fn test_fee_payer_insufficient_funds_for_rent() {
         Message::new(&[instruction], Some(&from)),
         svm.latest_blockhash(),
     );
-    let signature = tx.signatures[0];
+    let signature = tx.signatures[0].clone();
     let tx_res = svm.send_transaction(tx);
 
     assert_eq!(
@@ -46,7 +46,7 @@ fn test_fees_failed_transaction() {
     let from = from_keypair.pubkey();
 
     let mut svm = LiteSVM::new();
-    let program_id = address!("HvrRMSshMx3itvsyWDnWg2E3cy5h57iMaR7oVxSZJDSA");
+    let program_id = Pubkey::from_str_const("HvrRMSshMx3itvsyWDnWg2E3cy5h57iMaR7oVxSZJDSA");
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     so_path.push("test_programs/target/deploy/failure.so");
     svm.add_program_from_file(program_id, &so_path).unwrap();
@@ -62,7 +62,7 @@ fn test_fees_failed_transaction() {
         Message::new(&[instruction], Some(&from)),
         svm.latest_blockhash(),
     );
-    let signature = tx.signatures[0];
+    let signature = tx.signatures[0].clone();
     let tx_res = svm.send_transaction(tx);
 
     assert_eq!(
