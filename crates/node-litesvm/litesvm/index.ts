@@ -1,7 +1,7 @@
 import {
 	Address,
 	assertIsFullySignedTransaction,
-	BaseTransactionMessage,
+	TransactionMessage,
 	Blockhash,
 	EncodedAccount,
 	ExcludeTransactionMessageLifetime,
@@ -246,9 +246,9 @@ export class LiteSVM {
 		return inner === null
 			? { exists: false, address }
 			: ({
-					exists: true,
-					...toEncodedAccount(address, inner),
-			  } as MaybeEncodedAccount);
+				exists: true,
+				...toEncodedAccount(address, inner),
+			} as MaybeEncodedAccount);
 	}
 
 	/**
@@ -301,8 +301,8 @@ export class LiteSVM {
 	 * the latest blockhash from the LiteSVM instance.
 	 */
 	setTransactionMessageLifetimeUsingLatestBlockhash<
-		TTransactionMessage extends BaseTransactionMessage &
-			Partial<TransactionMessageWithLifetime>,
+		TTransactionMessage extends TransactionMessage &
+		Partial<TransactionMessageWithLifetime>,
 	>(
 		transactionMessage: TTransactionMessage,
 	): ExcludeTransactionMessageLifetime<TTransactionMessage> &
