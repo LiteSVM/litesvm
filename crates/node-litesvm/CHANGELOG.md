@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-30
+
+### Changed
+
+- Update `node-litesvm` to bundle `litesvm` v0.11.0.
+
 ## [0.6.0] - 2026-03-02
 
 ### Added
