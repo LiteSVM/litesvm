@@ -4,7 +4,7 @@ members = ["crates/*"]
 exclude = ["crates/node-litesvm/tests/clock-example"]
 
 [workspace.package]
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/LiteSVM/litesvm"
@@ -25,7 +25,7 @@ hex = "0.4.3"
 indexmap = "2.12"
 itertools = "0.14"
 libsecp256k1 = "0.6.0"
-litesvm = { path = "crates/litesvm", version = "0.10" }
+litesvm = { path = "crates/litesvm", version = "0.11" }
 log = "0.4"
 napi = { version = "3.8.3", default-features = false }
 napi-build = "2.3.1"
