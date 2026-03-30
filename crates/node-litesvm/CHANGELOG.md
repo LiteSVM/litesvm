@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-30
+
+### Changed
+
+- Make `node-litesvm` compatible with the JS Client Kit [(#258)](https://github.com/LiteSVM/litesvm/pull/258)
+- Update Node package dependencies [(#313)](https://github.com/LiteSVM/litesvm/pull/313)
+
 ## [0.6.0] - 2026-03-02
 
 ### Added
