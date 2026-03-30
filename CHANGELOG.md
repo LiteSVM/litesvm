@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-03-30
+
+### Added
+
+- Add feature gate account support ([#308](https://github.com/LiteSVM/litesvm/pull/308)).
+- Add custom syscall registration ([#309](https://github.com/LiteSVM/litesvm/pull/309)).
+
+### Fixed
+
+- Align rent checks and assertions with Solana behavior ([#304](https://github.com/LiteSVM/litesvm/pull/304)).
+- Update `rent.exemption_threshold` based on feature gating ([#307](https://github.com/LiteSVM/litesvm/pull/307)).
+- Load the `p-token` binary instead of `spl-token` when the feature gate is enabled ([#310](https://github.com/LiteSVM/litesvm/pull/310)).
+- Treat upgradeable v3 programs without program data as `Closed` ([#311](https://github.com/LiteSVM/litesvm/pull/311)).
+- Update transaction account lock limits based on the active feature set ([#312](https://github.com/LiteSVM/litesvm/pull/312)).
+
 ## [0.10.0] - 2026-02-26
 
 ### Added
@@ -197,7 +212,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/LiteSVM/litesvm/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/LiteSVM/litesvm/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/LiteSVM/litesvm/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/LiteSVM/litesvm/compare/v0.8.2...v0.9.0
