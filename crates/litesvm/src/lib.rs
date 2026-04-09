@@ -374,6 +374,9 @@ use {
     },
 };
 
+#[cfg(feature = "persistence-internal")]
+use indexmap::IndexMap;
+
 pub mod error;
 pub mod types;
 
@@ -1677,6 +1680,90 @@ impl LiteSVM {
             .unwrap_or_else(|e| panic!("failed to register syscall '{name}' in runtime_v2: {e}"));
 
         self
+    }
+
+    // ── persistence-internal: getters ──────────────────────────────────
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn airdrop_keypair_bytes(&self) -> &[u8; 64] {
+        &self.airdrop_kp
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_blockhash_check(&self) -> bool {
+        self.blockhash_check
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_fee_structure(&self) -> &FeeStructure {
+        &self.fee_structure
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_log_bytes_limit(&self) -> Option<usize> {
+        self.log_bytes_limit
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_feature_set_ref(&self) -> &FeatureSet {
+        &self.feature_set
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn transaction_history_entries(&self) -> &IndexMap<Signature, TransactionResult> {
+        self.history.entries()
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn transaction_history_capacity(&self) -> usize {
+        self.history.capacity()
+    }
+
+    // ── persistence-internal: setters ──────────────────────────────────
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_latest_blockhash(&mut self, hash: Hash) {
+        self.latest_blockhash = hash;
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_airdrop_keypair(&mut self, kp: [u8; 64]) {
+        self.airdrop_kp = kp;
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_account_no_checks(&mut self, pubkey: Address, account: AccountSharedData) {
+        self.accounts.add_account_no_checks(pubkey, account);
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn restore_transaction_history(
+        &mut self,
+        entries: IndexMap<Signature, TransactionResult>,
+        capacity: usize,
+    ) {
+        self.history = TransactionHistory::from_entries(entries, capacity);
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_fee_structure(&mut self, fee_structure: FeeStructure) {
+        self.fee_structure = fee_structure;
+    }
+
+    // ── persistence-internal: cache rebuild ────────────────────────────
+
+    /// Rebuilds all derived caches after bulk account insertion.
+    ///
+    /// Must be called after restoring accounts via `set_account_no_checks`.
+    /// Order matters: environments first, then sysvars, then BPF programs.
+    #[cfg(feature = "persistence-internal")]
+    pub fn rebuild_caches(&mut self) -> Result<(), LiteSVMError> {
+        self.reserved_account_keys =
+            Self::reserved_account_keys_for_feature_set(&self.feature_set);
+        self.set_builtins();
+        self.accounts.rebuild_sysvar_cache();
+        self.accounts.load_all_existing_programs()?;
+        Ok(())
     }
 }
 
