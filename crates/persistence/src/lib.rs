@@ -128,6 +128,7 @@ pub fn save_to_file(svm: &LiteSVM, path: impl AsRef<Path>) -> Result<(), Persist
         let mut writer = BufWriter::new(file);
         writer.write_all(&[STATE_VERSION])?;
         bincode::serialize_into(&mut writer, &snapshot)?;
+        writer.flush()?;
         Ok(())
     })
 }

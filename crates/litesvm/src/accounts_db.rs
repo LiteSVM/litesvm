@@ -269,7 +269,11 @@ impl AccountsDb {
 
         let owner = program_account.owner();
         let program_runtime_v1 = self.environments.program_runtime_v1.clone();
-        let slot = self.sysvar_cache.get_clock().unwrap().slot;
+        let slot = self
+            .sysvar_cache
+            .get_clock()
+            .map(|c| c.slot)
+            .unwrap_or(0);
 
         if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
             ProgramCacheEntry::new(
