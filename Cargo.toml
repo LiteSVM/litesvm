@@ -26,6 +26,7 @@ indexmap = "2.12"
 itertools = "0.14"
 libsecp256k1 = "0.6.0"
 litesvm = { path = "crates/litesvm", version = "0.11" }
+litesvm-persistence = { path = "crates/persistence", version = "0.11" }
 log = "0.4"
 napi = { version = "3.8.3", default-features = false }
 napi-build = "2.3.1"
@@ -89,6 +90,7 @@ solana-vote-interface = "5.0.0"
 spl-associated-token-account-interface = "2.0.0"
 spl-token-2022-interface = "2.0.0"
 spl-token-interface = "2.0.0"
+tempfile = "3"
 test-log = "0.2"
 thiserror = "2.0"
 

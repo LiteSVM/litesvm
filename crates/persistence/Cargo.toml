@@ -1,0 +1,36 @@
+[package]
+name = "litesvm-persistence"
+description = "Save and load LiteSVM state snapshots"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+litesvm = { workspace = true, features = ["persistence-internal"] }
+bincode.workspace = true
+serde = { workspace = true, features = ["derive"] }
+indexmap = { workspace = true, features = ["serde"] }
+solana-account.workspace = true
+solana-address.workspace = true
+solana-compute-budget.workspace = true
+solana-fee-structure.workspace = true
+solana-hash.workspace = true
+solana-signature.workspace = true
+agave-feature-set = { workspace = true, features = ["agave-unstable-api"] }
+thiserror.workspace = true
+
+[dev-dependencies]
+solana-instruction.workspace = true
+solana-keypair.workspace = true
+solana-signer.workspace = true
+solana-system-interface = { workspace = true, features = ["bincode"] }
+solana-native-token.workspace = true
+solana-message.workspace = true
+solana-transaction = { workspace = true, features = ["verify"] }
+solana-clock.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

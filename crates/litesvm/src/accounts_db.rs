@@ -213,6 +213,39 @@ impl AccountsDb {
         self.inner.insert(address, data);
     }
 
+    /// Rebuilds the sysvar cache from account data already present in `self.inner`.
+    #[cfg(feature = "persistence-internal")]
+    pub(crate) fn rebuild_sysvar_cache(&mut self) {
+        self.sysvar_cache.reset();
+        let accounts = &self.inner;
+        self.sysvar_cache.fill_missing_entries(|pubkey, set_sysvar| {
+            if let Some(acc) = accounts.get(pubkey) {
+                set_sysvar(acc.data())
+            }
+        });
+        if let Ok(clock) = self.sysvar_cache.get_clock() {
+            self.programs_cache.set_slot_for_tests(clock.slot);
+        }
+    }
+
+    /// Scans all accounts for executable BPF programs and loads them into the program cache.
+    #[cfg(feature = "persistence-internal")]
+    pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
+        let executable_keys: Vec<Address> = self
+            .inner
+            .iter()
+            .filter(|(_, acc)| acc.executable() && acc.owner() != &native_loader::ID)
+            .map(|(k, _)| *k)
+            .collect();
+
+        for key in executable_keys {
+            let account = self.inner.get(&key).unwrap().clone();
+            let loaded = self.load_program(&account)?;
+            self.programs_cache.replenish(key, Arc::new(loaded));
+        }
+        Ok(())
+    }
+
     pub(crate) fn sync_accounts(
         &mut self,
         mut accounts: Vec<(Address, AccountSharedData)>,
