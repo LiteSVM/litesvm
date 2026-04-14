@@ -792,6 +792,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crc32fast"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "criterion"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1861,6 +1870,32 @@ dependencies = [
  "solana-transaction",
  "solana-transaction-context",
  "solana-transaction-error",
+]
+
+[[package]]
+name = "litesvm-persistence"
+version = "0.10.0"
+dependencies = [
+ "agave-feature-set",
+ "bincode",
+ "crc32fast",
+ "litesvm",
+ "serde",
+ "solana-account",
+ "solana-address 2.2.0",
+ "solana-clock",
+ "solana-compute-budget",
+ "solana-fee-structure",
+ "solana-hash 3.1.0",
+ "solana-instruction",
+ "solana-keypair",
+ "solana-message",
+ "solana-signature",
+ "solana-signer",
+ "solana-system-interface 2.0.0",
+ "solana-transaction",
+ "solana-transaction-error",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

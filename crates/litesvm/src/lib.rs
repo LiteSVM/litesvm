@@ -1783,6 +1783,85 @@ impl InvocationInspectCallback for EmptyInvocationInspectCallback {
     fn after_invocation(&self, _: &LiteSVM, _: &InvokeContext, _enable_register_tracing: bool) {}
 }
 
+#[cfg(feature = "persistence-internal")]
+impl LiteSVM {
+    pub fn airdrop_keypair_bytes(&self) -> &[u8; 64] {
+        &self.airdrop_kp
+    }
+
+    pub fn get_blockhash_check(&self) -> bool {
+        self.blockhash_check
+    }
+
+    pub fn get_fee_structure(&self) -> &FeeStructure {
+        &self.fee_structure
+    }
+
+    pub fn get_log_bytes_limit(&self) -> Option<usize> {
+        self.log_bytes_limit
+    }
+
+    pub fn get_feature_set_ref(&self) -> &FeatureSet {
+        &self.feature_set
+    }
+
+    pub fn transaction_history_entries(
+        &self,
+    ) -> &indexmap::IndexMap<Signature, TransactionResult> {
+        self.history.inner()
+    }
+
+    pub fn get_history_capacity(&self) -> usize {
+        self.history.capacity()
+    }
+
+    pub fn set_fee_structure(&mut self, fee_structure: FeeStructure) {
+        self.fee_structure = fee_structure;
+    }
+
+    pub fn set_latest_blockhash(&mut self, hash: Hash) {
+        self.latest_blockhash = hash;
+    }
+
+    pub fn set_airdrop_keypair(&mut self, kp: [u8; 64]) {
+        self.airdrop_kp = kp;
+    }
+
+    pub fn restore_transaction_history(
+        &mut self,
+        entries: impl IntoIterator<Item = (Signature, TransactionResult)>,
+    ) {
+        self.history.restore_from_entries(entries);
+    }
+
+    pub fn set_account_no_checks(&mut self, address: Address, data: Account) {
+        let shared: AccountSharedData = data.into();
+        if shared.lamports() == 0 {
+            self.accounts.inner.remove(&address);
+        } else {
+            self.accounts.add_account_no_checks(address, shared);
+        }
+    }
+
+    pub fn rebuild_caches(&mut self) -> Result<(), LiteSVMError> {
+        // Phase 1: Rebuild sysvar cache
+        let sysvar_accounts: Vec<(Address, AccountSharedData)> = self
+            .accounts
+            .inner
+            .iter()
+            .filter(|(_, acc)| acc.owner() == &solana_sdk_ids::sysvar::ID)
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+        for (pubkey, account) in sysvar_accounts {
+            self.accounts
+                .maybe_handle_sysvar_account(pubkey, &account)
+                .map_err(LiteSVMError::InvalidSysvarData)?;
+        }
+        // Phase 2: Rebuild program cache
+        self.accounts.load_all_existing_programs()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use {

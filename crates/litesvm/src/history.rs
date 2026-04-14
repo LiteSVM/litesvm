@@ -34,4 +34,24 @@ impl TransactionHistory {
     pub fn check_transaction(&self, signature: &Signature) -> bool {
         self.0.contains_key(signature)
     }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn inner(&self) -> &IndexMap<Signature, TransactionResult> {
+        &self.0
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn restore_from_entries(
+        &mut self,
+        entries: impl IntoIterator<Item = (Signature, TransactionResult)>,
+    ) {
+        for (sig, result) in entries {
+            self.add_new_transaction(sig, result);
+        }
+    }
 }

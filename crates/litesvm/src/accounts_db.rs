@@ -112,7 +112,7 @@ impl AccountsDb {
         Ok(())
     }
 
-    fn maybe_handle_sysvar_account(
+    pub(crate) fn maybe_handle_sysvar_account(
         &mut self,
         pubkey: Address,
         account: &AccountSharedData,
@@ -228,7 +228,7 @@ impl AccountsDb {
         Ok(())
     }
 
-    fn load_program(
+    pub(crate) fn load_program(
         &self,
         program_account: &AccountSharedData,
     ) -> Result<ProgramCacheEntry, InstructionError> {
@@ -315,6 +315,34 @@ impl AccountsDb {
             error!("Owner does not match any expected loader.");
             Err(InstructionError::IncorrectProgramId)
         }
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
+        let accounts_snapshot: Vec<(Address, AccountSharedData)> = self
+            .inner
+            .iter()
+            .filter(|(pubkey, acc)| {
+                let is_executable = acc.executable();
+                let is_loadable_program = acc.owner() == &bpf_loader_upgradeable::id()
+                    || acc.owner() == &bpf_loader::id()
+                    || acc.owner() == &bpf_loader_deprecated::id()
+                    || acc.owner() == &loader_v4::id();
+                let in_cache = self.programs_cache.find(pubkey).is_some();
+                is_executable && is_loadable_program && !in_cache
+            })
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+
+        for (program_pubkey, program_acc) in accounts_snapshot {
+            let loaded_program = self
+                .load_program(&program_acc)
+                .map_err(LiteSVMError::Instruction)?;
+            self.programs_cache
+                .replenish(program_pubkey, Arc::new(loaded_program));
+        }
+
+        Ok(())
     }
 
     fn load_lookup_table_addresses(

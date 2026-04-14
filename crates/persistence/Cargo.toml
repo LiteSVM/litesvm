@@ -1,0 +1,38 @@
+[package]
+name = "litesvm-persistence"
+description = "Disk persistence for LiteSVM state snapshots"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+litesvm = { path = "../litesvm", features = ["persistence-internal", "serde"] }
+bincode.workspace = true
+serde = { workspace = true, features = ["derive"] }
+solana-account = { workspace = true, features = ["serde"] }
+solana-address = { workspace = true, features = ["serde"] }
+solana-hash = { workspace = true, features = ["serde"] }
+solana-fee-structure.workspace = true
+solana-signature = { workspace = true, features = ["serde"] }
+solana-transaction-error = { workspace = true, features = ["serde"] }
+thiserror.workspace = true
+crc32fast = "1"
+agave-feature-set.workspace = true
+solana-compute-budget.workspace = true
+
+[dev-dependencies]
+solana-address = { workspace = true, features = ["serde"] }
+solana-keypair.workspace = true
+solana-signer.workspace = true
+solana-clock.workspace = true
+solana-instruction.workspace = true
+solana-system-interface = { workspace = true, features = ["bincode"] }
+solana-message.workspace = true
+solana-transaction.workspace = true
+solana-compute-budget.workspace = true
+solana-fee-structure.workspace = true
+
+[lints]
+workspace = true
