@@ -20,6 +20,7 @@ hashbrown = ["dep:hashbrown"]
 serde = []
 precompiles = ["dep:agave-precompiles"]
 register-tracing = ["invocation-inspect-callback", "dep:hex", "dep:sha2"]
+persistence-internal = []
 
 [dependencies]
 agave-feature-set.workspace = true
