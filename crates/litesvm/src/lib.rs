@@ -284,6 +284,8 @@ much easier.
 
 */
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
 #[cfg(feature = "precompiles")]

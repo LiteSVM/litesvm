@@ -8,6 +8,10 @@ rust-version.workspace = true
 repository.workspace = true
 readme = "../../README.md"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 internal-test = []
 invocation-inspect-callback = []

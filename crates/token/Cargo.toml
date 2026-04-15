@@ -7,6 +7,10 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = ["dep:spl-token-interface", "dep:solana-account", "dep:solana-rent"]
 token-2022 = ["dep:spl-token-2022-interface"]
