@@ -15,8 +15,6 @@ use {
 };
 
 const DEFAULT_PATH: &str = "target/sbf/trace";
-#[cfg(feature = "sbpf-debugger")]
-const DEFAULT_DEBUG_PORT: Option<u16> = None;
 
 pub struct DefaultRegisterTracingCallback {
     pub sbf_trace_dir: String,
@@ -38,7 +36,7 @@ impl Default for DefaultRegisterTracingCallback {
             #[cfg(feature = "sbpf-debugger")]
             sbf_debug_port: std::env::var("SBF_DEBUG_PORT")
                 .map(|port| port.parse::<u16>().ok())
-                .unwrap_or(DEFAULT_DEBUG_PORT),
+                .unwrap_or_default(),
         }
     }
 }
@@ -73,6 +71,7 @@ impl DefaultRegisterTracingCallback {
         eval(&ast, &row)
     }
 
+    #[cfg_attr(not(feature = "sbpf-debugger"), expect(unused_variables))]
     pub fn pre_handler(
         &self,
         svm: &LiteSVM,
@@ -86,7 +85,9 @@ impl DefaultRegisterTracingCallback {
                 // Collect pre-load hashes for these accounts.
                 // We need them later to judge what object to
                 // load in the debugger client.
-                let _ = self.elf_accounts_to_sha256(svm, tx);
+                if let Err(e) = self.elf_accounts_to_sha256(svm, tx) {
+                    eprintln!("Failed to persist the ELF SHA-256 mappings: {e}");
+                }
 
                 let mut program_ids = std::collections::HashSet::new();
 
@@ -132,8 +133,6 @@ impl DefaultRegisterTracingCallback {
                     tx.signatures().iter().map(|sig| sig.to_string()).collect();
                 if self.match_filter(signatures, program_ids.into_iter().collect()) {
                     invoke_context.debug_port = Some(debug_port);
-                    eprintln!("WILL INVOKE THE DEBUGGER FOR TXSIG:{}", tx.signatures()[0]);
-                    std::thread::sleep(std::time::Duration::from_secs(2));
                 }
             }
         }
@@ -278,7 +277,7 @@ impl InvocationInspectCallback for DefaultRegisterTracingCallback {
                     if let Err(e) =
                         self.post_handler(svm, tx, instruction_context, executable, register_trace)
                     {
-                        eprintln!("Error collecting the register tracing: {}", e);
+                        eprintln!("Error collecting the register tracing: {e}");
                     }
                 },
             );
@@ -290,6 +289,7 @@ pub(crate) fn as_bytes<T>(slice: &[T]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, std::mem::size_of_val(slice)) }
 }
 
+/// Returns the SHA-256 hash of the given bytes as a lowercase hex string.
 pub fn compute_hash(slice: &[u8]) -> String {
     hex::encode(Sha256::digest(slice).as_slice())
 }
