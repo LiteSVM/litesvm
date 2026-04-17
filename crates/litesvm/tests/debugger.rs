@@ -94,7 +94,7 @@ pub fn test_cpi_with_debugger() {
         });
         let blockhash = svm.latest_blockhash();
 
-        let program_id_file = std::path::PathBuf::from(SBF_TRACE_DIR)
+        let program_ids_map_file = std::path::PathBuf::from(SBF_TRACE_DIR)
             .join("program_ids")
             .with_extension("map");
 
@@ -183,12 +183,15 @@ pub fn test_cpi_with_debugger() {
         });
 
         // Check the program_ids <-> elf sha256 mapping table.
-        let read_program_ids = std::fs::read_to_string(&program_id_file).unwrap();
+        let read_program_ids = std::fs::read_to_string(&program_ids_map_file).unwrap();
         let mut read_lines: Vec<&str> = read_program_ids.lines().collect();
         let mut expected_lines: Vec<&str> = expected_program_ids.lines().collect();
         read_lines.sort();
         expected_lines.sort();
         assert_eq!(read_lines, expected_lines);
+
+        // Remove the program_ids.map file.
+        std::fs::remove_file(&program_ids_map_file).unwrap();
     }
 
     // Phase 2 - try to debug inexisting program_id, the gdbstub must not hang even
