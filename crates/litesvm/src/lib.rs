@@ -256,6 +256,16 @@ SHA-256 identifier is that files may grow in number, and consumers need a
 deterministic way to evaluate which shared object should be used when
 analyzing the tracing data.
 
+When the `sbpf-debugger` feature is enabled and `SBF_DEBUG_PORT` is set, the
+VM will start a GDB remote stub on the specified TCP port. A debugger client
+can then connect to inspect registers, memory, set
+breakpoints, and step through SBPF execution.
+
+The `SBF_TRACE_FILTER` environment variable can be used to narrow which
+traces are collected and what is going to be debugged. It supports filtering
+by `txsig` and `program_id` with the `==`, `!=`, `||`, and `&&` operators.
+For example: `SBF_TRACE_FILTER="txsig == A && (program_id == B || program_id == C)"`.
+
 Once enabled register tracing can't be changed afterwards because in nature
 it's baked into the program executables at load time. Yet a user may want a
 more fine-grained control over when register tracing data should be
