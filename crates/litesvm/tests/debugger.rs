@@ -80,18 +80,12 @@ pub fn test_cpi_with_debugger() {
         format!("program_id == {cpi_maker_program_id} || program_id == {cpi_target_program_id}");
 
     let test_trace_filters = [
-        empty_filter_will_invoke_debugger_if_port_is_set,
-        specific_filter,
+        &empty_filter_will_invoke_debugger_if_port_is_set,
+        &specific_filter,
     ];
 
-    for sbf_trace_filter in test_trace_filters.into_iter() {
+    for sbf_trace_filter in test_trace_filters {
         svm.expire_blockhash();
-        svm.set_invocation_inspect_callback(DefaultRegisterTracingCallback {
-            sbf_trace_dir: SBF_TRACE_DIR.into(),
-            sbf_trace_disassemble: false,
-            sbf_debug_port: SBF_DEBUG_PORT.into(),
-            sbf_trace_filter,
-        });
         let blockhash = svm.latest_blockhash();
 
         let program_ids_map_file = std::path::PathBuf::from(SBF_TRACE_DIR)
@@ -177,6 +171,22 @@ pub fn test_cpi_with_debugger() {
             let msg =
                 Message::new_with_blockhash(&[instruction.clone()], Some(&payer_pk), &blockhash);
             let tx = Transaction::new(&[&payer_kp], msg, blockhash);
+
+            // Now that we've prepared the TX we have the signatures - so tweak
+            // the callback to have the signature checked as well.
+            svm.set_invocation_inspect_callback(DefaultRegisterTracingCallback {
+                sbf_trace_dir: SBF_TRACE_DIR.into(),
+                sbf_trace_disassemble: false,
+                sbf_debug_port: SBF_DEBUG_PORT.into(),
+                sbf_trace_filter: {
+                    // As long as it isn't the empty one, add the signature to the trace filter.
+                    if *sbf_trace_filter != empty_filter_will_invoke_debugger_if_port_is_set {
+                        format!("txsig == {} && ({})", tx.signatures[0], sbf_trace_filter)
+                    } else {
+                        sbf_trace_filter.into()
+                    }
+                },
+            });
             let _meta = svm.send_transaction(tx).unwrap();
 
             client_jh.join().unwrap().expect("client error");
@@ -199,14 +209,14 @@ pub fn test_cpi_with_debugger() {
 
     let not_matching_filter = format!("program_id == {unassociated_program_id}");
     svm.expire_blockhash();
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[instruction.clone()], Some(&payer_pk), &blockhash);
+    let tx = Transaction::new(&[&payer_kp], msg, blockhash);
     svm.set_invocation_inspect_callback(DefaultRegisterTracingCallback {
         sbf_trace_dir: SBF_TRACE_DIR.into(),
         sbf_trace_disassemble: false,
         sbf_debug_port: SBF_DEBUG_PORT.into(),
-        sbf_trace_filter: not_matching_filter,
+        sbf_trace_filter: format!("txsig == {} && ({not_matching_filter})", tx.signatures[0]),
     });
-    let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[instruction.clone()], Some(&payer_pk), &blockhash);
-    let tx = Transaction::new(&[&payer_kp], msg, blockhash);
     let _meta = svm.send_transaction(tx).unwrap();
 }
