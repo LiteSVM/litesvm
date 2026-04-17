@@ -409,6 +409,8 @@ pub mod error;
 pub mod types;
 
 mod accounts_db;
+#[cfg(feature = "sbpf-debugger")]
+pub mod debugger;
 mod callback;
 mod features;
 mod format_logs;
