@@ -358,7 +358,7 @@ use {
     solana_stake_interface::stake_history::StakeHistory,
     solana_svm_log_collector::LogCollector,
     solana_svm_timings::ExecuteTimings,
-    solana_svm_transaction::svm_message::SVMMessage,
+    solana_svm_transaction::svm_message::SVMStaticMessage,
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::{Sysvar, SysvarSerialize},
     solana_sysvar_id::SysvarId,
@@ -366,7 +366,10 @@ use {
         sanitized::{MessageHash, SanitizedTransaction, MAX_TX_ACCOUNT_LOCKS},
         versioned::VersionedTransaction,
     },
-    solana_transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext},
+    solana_transaction_context::{
+        transaction::{ExecutionRecord, TransactionContext},
+        IndexOfAccount,
+    },
     solana_transaction_error::TransactionError,
     std::{cell::RefCell, path::Path, rc::Rc, sync::Arc},
     types::SimulatedTransactionInfo,
@@ -936,17 +939,33 @@ impl LiteSVM {
             )));
         };
 
-        let mut loaded_program = solana_bpf_loader_program::load_program_from_bytes(
-            None,
-            &mut LoadProgramMetrics::default(),
-            program_bytes,
-            loader_id,
-            program_size,
-            current_slot,
-            self.accounts.environments.program_runtime_v1.clone(),
-            PREVERIFIED,
-        )
-        .map_err(LiteSVMError::from)?;
+        let effective_slot = current_slot
+            .saturating_add(solana_program_runtime::loaded_programs::DELAY_VISIBILITY_SLOT_OFFSET);
+        let mut loaded_program = if PREVERIFIED {
+            // Safety: PREVERIFIED means the program was previously verified.
+            unsafe {
+                ProgramCacheEntry::reload(
+                    loader_id,
+                    self.accounts.environments.program_runtime_v1.clone(),
+                    current_slot,
+                    effective_slot,
+                    program_bytes,
+                    program_size,
+                    &mut LoadProgramMetrics::default(),
+                )
+            }
+        } else {
+            ProgramCacheEntry::new(
+                loader_id,
+                self.accounts.environments.program_runtime_v1.clone(),
+                current_slot,
+                effective_slot,
+                program_bytes,
+                program_size,
+                &mut LoadProgramMetrics::default(),
+            )
+        }
+        .map_err(|e| LiteSVMError::ProgramLoad(e.to_string()))?;
         loaded_program.effective_slot = current_slot;
 
         self.accounts
@@ -994,12 +1013,14 @@ impl LiteSVM {
         &self,
         compute_budget: ComputeBudget,
         accounts: Vec<(Address, AccountSharedData)>,
+        number_of_top_level_instructions: usize,
     ) -> TransactionContext<'_> {
         TransactionContext::new(
             accounts,
             self.get_sysvar(),
             compute_budget.max_instruction_stack_depth,
             compute_budget.max_instruction_trace_length,
+            number_of_top_level_instructions,
         )
     }
 
@@ -1195,7 +1216,11 @@ impl LiteSVM {
 
         match maybe_program_indices {
             Ok(program_indices) => {
-                let mut context = self.create_transaction_context(compute_budget, accounts);
+                let mut context = self.create_transaction_context(
+                    compute_budget,
+                    accounts,
+                    message.num_instructions(),
+                );
                 let feature_set = self.feature_set.runtime_features();
                 let mut invoke_context = InvokeContext::new(
                     &mut context,
@@ -1720,7 +1745,7 @@ fn execute_tx_helper(
     ctx: TransactionContext,
 ) -> (
     Signature,
-    solana_transaction_context::TransactionReturnData,
+    solana_transaction_context::transaction::TransactionReturnData,
     InnerInstructionsList,
     Vec<(Address, AccountSharedData)>,
 ) {
@@ -1745,14 +1770,11 @@ fn get_compute_budget_limits(
     sanitized_tx: &SanitizedTransaction,
     feature_set: &FeatureSet,
 ) -> Result<ComputeBudgetLimits, ExecutionResult> {
-    process_compute_budget_instructions(
-        SVMMessage::program_instructions_iter(sanitized_tx),
-        feature_set,
-    )
-    .map_err(|e| ExecutionResult {
-        tx_result: Err(e),
-        ..Default::default()
-    })
+    process_compute_budget_instructions(sanitized_tx.program_instructions_iter(), feature_set)
+        .map_err(|e| ExecutionResult {
+            tx_result: Err(e),
+            ..Default::default()
+        })
 }
 
 /// Get the max number of accounts that a transaction may lock in this block
