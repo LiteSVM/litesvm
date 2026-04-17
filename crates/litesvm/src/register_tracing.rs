@@ -82,7 +82,7 @@ impl DefaultRegisterTracingCallback {
     ) {
         #[cfg(feature = "sbpf-debugger")]
         {
-            if let Some(_debug_port) = self.sbf_debug_port {
+            if let Some(debug_port) = self.sbf_debug_port {
                 // Collect pre-load hashes for these accounts.
                 // We need them later to judge what object to
                 // load in the debugger client.
@@ -131,7 +131,7 @@ impl DefaultRegisterTracingCallback {
                 let signatures: Vec<_> =
                     tx.signatures().iter().map(|sig| sig.to_string()).collect();
                 if self.match_filter(signatures, program_ids.into_iter().collect()) {
-                    // invoke_context.debug_port = Some(debug_port); // TODO
+                    invoke_context.debug_port = Some(debug_port);
                     eprintln!("WILL INVOKE THE DEBUGGER FOR TXSIG:{}", tx.signatures()[0]);
                     std::thread::sleep(std::time::Duration::from_secs(2));
                 }
