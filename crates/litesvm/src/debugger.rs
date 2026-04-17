@@ -3,7 +3,7 @@
 //! Provides low-level packet construction, parsing, and convenience wrappers
 //! for communicating with the GDB stub exposed by the SBPF VM when the
 //! `sbpf-debugger` feature is enabled.
-//! 
+//!
 //! A verbatim from Mollusk, maybe it's best to have this in a separate crate
 //! for easy reuse.
 
