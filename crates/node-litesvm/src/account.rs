@@ -28,7 +28,8 @@ impl Account {
         Ok(Self(AccountOriginal {
             lamports: bigint_to_u64(&lamports)?,
             data: data.to_vec(),
-            owner: Address::try_from(owner.as_ref()).unwrap(),
+            owner: Address::try_from(owner.as_ref())
+                .map_err(|e| Error::from_reason(e.to_string()))?,
             executable,
             rent_epoch: bigint_to_u64(&rent_epoch)?,
         }))
