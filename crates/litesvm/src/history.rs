@@ -34,4 +34,21 @@ impl TransactionHistory {
     pub fn check_transaction(&self, signature: &Signature) -> bool {
         self.0.contains_key(signature)
     }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn entries(&self) -> &IndexMap<Signature, TransactionResult> {
+        &self.0
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn from_entries(entries: IndexMap<Signature, TransactionResult>, capacity: usize) -> Self {
+        let mut history = TransactionHistory(entries);
+        history.set_capacity(capacity);
+        history
+    }
 }
