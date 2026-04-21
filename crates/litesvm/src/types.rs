@@ -6,7 +6,7 @@ use {
     solana_message::inner_instruction::InnerInstructionsList,
     solana_program_error::ProgramError,
     solana_signature::Signature,
-    solana_transaction_context::TransactionReturnData,
+    solana_transaction_context::transaction::TransactionReturnData,
     solana_transaction_error::{TransactionError, TransactionResult as Result},
 };
 
