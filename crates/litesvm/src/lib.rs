@@ -1834,30 +1834,18 @@ impl LiteSVM {
         self.history.restore_from_entries(entries);
     }
 
-    pub fn set_account_no_checks(&mut self, address: Address, data: Account) {
-        let shared: AccountSharedData = data.into();
-        if shared.lamports() == 0 {
-            self.accounts.inner.remove(&address);
-        } else {
-            self.accounts.add_account_no_checks(address, shared);
-        }
+    pub fn set_account_no_checks(&mut self, pubkey: Address, account: AccountSharedData) {
+        self.accounts.add_account_no_checks(pubkey, account);
     }
 
+    /// Rebuilds all derived caches after bulk account insertion.
+    ///
+    /// Order matters: builtins/environments first, then sysvars, then BPF programs.
     pub fn rebuild_caches(&mut self) -> Result<(), LiteSVMError> {
-        // Phase 1: Rebuild sysvar cache
-        let sysvar_accounts: Vec<(Address, AccountSharedData)> = self
-            .accounts
-            .inner
-            .iter()
-            .filter(|(_, acc)| acc.owner() == &solana_sdk_ids::sysvar::ID)
-            .map(|(k, v)| (*k, v.clone()))
-            .collect();
-        for (pubkey, account) in sysvar_accounts {
-            self.accounts
-                .maybe_handle_sysvar_account(pubkey, &account)
-                .map_err(LiteSVMError::InvalidSysvarData)?;
-        }
-        // Phase 2: Rebuild program cache
+        self.reserved_account_keys =
+            Self::reserved_account_keys_for_feature_set(&self.feature_set);
+        self.set_builtins();
+        self.accounts.rebuild_sysvar_cache();
         self.accounts.load_all_existing_programs()
     }
 }

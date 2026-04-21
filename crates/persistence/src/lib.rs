@@ -1,11 +1,8 @@
 use {
     agave_feature_set::FeatureSet,
-    litesvm::{
-        types::{FailedTransactionMetadata, TransactionMetadata, TransactionResult},
-        LiteSVM,
-    },
+    litesvm::{types::TransactionResult, LiteSVM},
     serde::{Deserialize, Serialize},
-    solana_account::{Account, AccountSharedData},
+    solana_account::AccountSharedData,
     solana_address::Address,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_fee_structure::FeeStructure,
@@ -35,32 +32,6 @@ pub enum PersistenceError {
     LiteSvm(#[from] litesvm::error::LiteSVMError),
     #[error("Data integrity check failed (expected checksum {expected:#010x}, got {actual:#010x})")]
     ChecksumMismatch { expected: u32, actual: u32 },
-}
-
-/// Serializable wrapper for `TransactionResult` which is
-/// `Result<TransactionMetadata, FailedTransactionMetadata>`.
-#[derive(Serialize, Deserialize)]
-enum TransactionResultState {
-    Ok(TransactionMetadata),
-    Err(FailedTransactionMetadata),
-}
-
-impl From<&TransactionResult> for TransactionResultState {
-    fn from(result: &TransactionResult) -> Self {
-        match result {
-            Ok(meta) => TransactionResultState::Ok(meta.clone()),
-            Err(meta) => TransactionResultState::Err(meta.clone()),
-        }
-    }
-}
-
-impl From<TransactionResultState> for TransactionResult {
-    fn from(state: TransactionResultState) -> Self {
-        match state {
-            TransactionResultState::Ok(meta) => Ok(meta),
-            TransactionResultState::Err(meta) => Err(meta),
-        }
-    }
 }
 
 /// Serializable mirror of `FeeBin` (upstream type lacks serde).
@@ -279,7 +250,7 @@ struct LiteSVMState {
     fee_structure: FeeStructureState,
     active_features: Vec<(Address, u64)>,
     compute_budget: Option<ComputeBudgetState>,
-    history: Vec<(Signature, TransactionResultState)>,
+    history: Vec<(Signature, TransactionResult)>,
     history_capacity: usize,
 }
 
@@ -299,10 +270,10 @@ fn extract_state(svm: &LiteSVM) -> LiteSVMState {
         .map(|(k, v)| (*k, *v))
         .collect();
 
-    let history: Vec<(Signature, TransactionResultState)> = svm
+    let history: Vec<(Signature, TransactionResult)> = svm
         .transaction_history_entries()
         .iter()
-        .map(|(sig, result)| (*sig, TransactionResultState::from(result)))
+        .map(|(sig, result)| (*sig, result.clone()))
         .collect();
 
     LiteSVMState {
@@ -328,32 +299,23 @@ fn restore_from_state(state: LiteSVMState) -> Result<LiteSVM, PersistenceError> 
         feature_set.activate(feature_id, *slot);
     }
 
-    // Build LiteSVM with feature set and builtins.
-    // with_sysvars() initializes the sysvar cache (especially Clock)
-    // because load_program() depends on Clock being available.
-    // The saved sysvar accounts will overwrite these defaults during account loading.
-    //
-    // IMPORTANT: compute_budget must be set BEFORE with_builtins() because
-    // set_builtins() reads self.compute_budget to create ProgramRuntimeEnvironments.
+    // Set scalar config. No with_builtins()/with_sysvars() needed —
+    // rebuild_caches() handles builtins, environments, and sysvar cache
+    // after all accounts are inserted.
     let mut svm = LiteSVM::default().with_feature_set(feature_set);
 
     if let Some(cb_state) = state.compute_budget {
         svm = svm.with_compute_budget(cb_state.into());
     }
 
-    let fee_structure: FeeStructure = state.fee_structure.into();
-
     svm = svm
-        .with_builtins()
-        .with_sysvars()
         .with_sigverify(state.sigverify)
         .with_blockhash_check(state.blockhash_check)
         .with_log_bytes_limit(state.log_bytes_limit)
         .with_transaction_history(state.history_capacity);
 
-    svm.set_fee_structure(fee_structure);
+    svm.set_fee_structure(state.fee_structure.into());
 
-    // Restore airdrop keypair and blockhash.
     let airdrop_kp: [u8; 64] = state
         .airdrop_kp
         .try_into()
@@ -368,24 +330,16 @@ fn restore_from_state(state: LiteSVMState) -> Result<LiteSVM, PersistenceError> 
     svm.set_airdrop_keypair(airdrop_kp);
     svm.set_latest_blockhash(state.latest_blockhash);
 
-    // === TWO-PASS ACCOUNT LOADING ===
-    //
-    // Pass 1: Insert all accounts WITHOUT loading programs into cache.
-    //         This avoids MissingAccount errors when upgradeable programs
-    //         are inserted before their ProgramData accounts.
-    for (address, account_shared_data) in state.accounts {
-        let account: Account = account_shared_data.into();
+    // Pass 1: Insert all accounts without triggering cache updates.
+    for (address, account) in state.accounts {
         svm.set_account_no_checks(address, account);
     }
-    // Pass 2: Rebuild sysvar cache and program cache now that ALL accounts exist.
+
+    // Pass 2: Rebuild builtins, environments, sysvar cache, and program cache.
     svm.rebuild_caches()?;
 
     // Restore transaction history.
-    let history_entries = state
-        .history
-        .into_iter()
-        .map(|(sig, result_state)| (sig, TransactionResult::from(result_state)));
-    svm.restore_transaction_history(history_entries);
+    svm.restore_transaction_history(state.history.into_iter());
 
     Ok(svm)
 }

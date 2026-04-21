@@ -236,7 +236,11 @@ impl AccountsDb {
 
         let owner = program_account.owner();
         let program_runtime_v1 = self.environments.program_runtime_v1.clone();
-        let slot = self.sysvar_cache.get_clock().unwrap().slot;
+        let slot = self
+            .sysvar_cache
+            .get_clock()
+            .map(|c| c.slot)
+            .unwrap_or(0);
 
         if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
             ProgramCacheEntry::new(
@@ -317,24 +321,37 @@ impl AccountsDb {
         }
     }
 
+    /// Rebuilds the sysvar cache from account data already present in `self.inner`.
+    #[cfg(feature = "persistence-internal")]
+    pub(crate) fn rebuild_sysvar_cache(&mut self) {
+        self.sysvar_cache.reset();
+        let accounts = &self.inner;
+        self.sysvar_cache
+            .fill_missing_entries(|pubkey, set_sysvar| {
+                if let Some(acc) = accounts.get(pubkey) {
+                    set_sysvar(acc.data())
+                }
+            });
+        if let Ok(clock) = self.sysvar_cache.get_clock() {
+            self.programs_cache.set_slot_for_tests(clock.slot);
+        }
+    }
+
+    /// Scans all accounts for executable programs and loads them into the program cache.
     #[cfg(feature = "persistence-internal")]
     pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
-        let accounts_snapshot: Vec<(Address, AccountSharedData)> = self
+        let executable_keys: Vec<(Address, AccountSharedData)> = self
             .inner
             .iter()
             .filter(|(pubkey, acc)| {
-                let is_executable = acc.executable();
-                let is_loadable_program = acc.owner() == &bpf_loader_upgradeable::id()
-                    || acc.owner() == &bpf_loader::id()
-                    || acc.owner() == &bpf_loader_deprecated::id()
-                    || acc.owner() == &loader_v4::id();
-                let in_cache = self.programs_cache.find(pubkey).is_some();
-                is_executable && is_loadable_program && !in_cache
+                acc.executable()
+                    && acc.owner() != &native_loader::ID
+                    && self.programs_cache.find(pubkey).is_none()
             })
             .map(|(k, v)| (*k, v.clone()))
             .collect();
 
-        for (program_pubkey, program_acc) in accounts_snapshot {
+        for (program_pubkey, program_acc) in executable_keys {
             let loaded_program = self
                 .load_program(&program_acc)
                 .map_err(LiteSVMError::Instruction)?;
