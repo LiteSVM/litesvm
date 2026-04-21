@@ -9,16 +9,10 @@ use {
     solana_message::Message,
     solana_signer::Signer,
     solana_transaction::Transaction,
-    std::path::PathBuf,
 };
 
-fn temp_path(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join("litesvm_persistence_tests");
-    std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join(name);
-    // Clean up any leftover file from a previous run.
-    let _ = std::fs::remove_file(&path);
-    path
+fn temp_dir() -> tempfile::TempDir {
+    tempfile::tempdir().unwrap()
 }
 
 #[test]
@@ -29,7 +23,8 @@ fn basic_account_round_trip() {
     account.data = vec![0xAB; 128];
     svm.set_account(addr, account.clone()).unwrap();
 
-    let path = temp_path("basic.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("basic.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -53,7 +48,8 @@ fn multiple_accounts_round_trip() {
         addrs.push(addr);
     }
 
-    let path = temp_path("multi.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -75,7 +71,8 @@ fn sysvar_round_trip() {
         unix_timestamp: 1_700_000_500,
     });
 
-    let path = temp_path("sysvar.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -94,7 +91,8 @@ fn config_round_trip() {
         .with_blockhash_check(false)
         .with_log_bytes_limit(Some(4096));
 
-    let path = temp_path("config.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -110,7 +108,8 @@ fn blockhash_round_trip() {
     svm.expire_blockhash();
     let hash_before = svm.latest_blockhash();
 
-    let path = temp_path("blockhash.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -122,7 +121,8 @@ fn airdrop_keypair_round_trip() {
     let svm = LiteSVM::new().with_builtins().with_sysvars();
     let original_pubkey = svm.airdrop_pubkey();
 
-    let path = temp_path("airdrop_kp.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -151,7 +151,8 @@ fn transaction_history_round_trip() {
     // This will likely fail (no program), but it should still record in history
     let _ = svm.send_transaction(tx);
 
-    let path = temp_path("history.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -180,7 +181,8 @@ fn bytes_round_trip() {
 #[test]
 fn airdrop_works_after_restore() {
     let svm = LiteSVM::new().with_builtins().with_sysvars();
-    let path = temp_path("airdrop_after.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
 
     let mut restored = load_from_file(&path).unwrap();
@@ -201,7 +203,8 @@ fn send_transaction_after_restore() {
     let to = Address::new_unique();
     svm.airdrop(&from_kp.pubkey(), 10_000_000_000).unwrap();
 
-    let path = temp_path("send_after.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let mut restored = load_from_file(&path).unwrap();
 
@@ -229,7 +232,8 @@ fn bpf_program_round_trip() {
     svm.send_transaction(tx).unwrap();
 
     // Save and restore
-    let path = temp_path("bpf.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let mut restored = load_from_file(&path).unwrap();
 
@@ -255,7 +259,8 @@ fn custom_compute_budget_round_trip() {
         .with_builtins()
         .with_sysvars();
 
-    let path = temp_path("custom_budget.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -288,7 +293,8 @@ fn fee_structure_round_trip() {
     let mut svm = LiteSVM::new().with_builtins().with_sysvars();
     svm.set_fee_structure(fee_structure.clone());
 
-    let path = temp_path("fee_structure.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -311,7 +317,8 @@ fn history_capacity_round_trip() {
 
     let original_cap = svm.get_history_capacity();
 
-    let path = temp_path("history_cap.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let restored = load_from_file(&path).unwrap();
 
@@ -334,7 +341,8 @@ fn bpf_program_executes_with_custom_compute_budget() {
     let program_id = Address::new_unique();
     svm.add_program(program_id, program_bytes).unwrap();
 
-    let path = temp_path("bpf_custom_budget.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let mut restored = load_from_file(&path).unwrap();
 
@@ -382,7 +390,8 @@ fn checksum_detects_corruption() {
 #[test]
 fn corrupted_file_returns_checksum_error() {
     let svm = LiteSVM::new().with_builtins().with_sysvars();
-    let path = temp_path("corrupt_file.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
 
     // Corrupt the file on disk.
@@ -411,7 +420,8 @@ fn double_round_trip() {
     svm.set_account(addr, account).unwrap();
 
     // First round trip.
-    let path = temp_path("double_rt.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let mut restored1 = load_from_file(&path).unwrap();
 
@@ -423,7 +433,8 @@ fn double_round_trip() {
     let hash_after = restored1.latest_blockhash();
 
     // Second round trip.
-    let path2 = temp_path("double_rt_2.bin");
+    let dir2 = temp_dir();
+    let path2 = dir2.path().join("snapshot.bin");
     save_to_file(&restored1, &path2).unwrap();
     let restored2 = load_from_file(&path2).unwrap();
 
@@ -439,7 +450,8 @@ fn full_default_round_trip() {
     // sigverify=true, blockhash_check=true — the full default setup.
     let svm = LiteSVM::new();
 
-    let path = temp_path("full_default.bin");
+    let dir = temp_dir();
+    let path = dir.path().join("snapshot.bin");
     save_to_file(&svm, &path).unwrap();
     let mut restored = load_from_file(&path).unwrap();
 

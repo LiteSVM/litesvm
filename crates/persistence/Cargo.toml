@@ -31,6 +31,7 @@ solana-instruction.workspace = true
 solana-system-interface = { workspace = true, features = ["bincode"] }
 solana-message.workspace = true
 solana-transaction.workspace = true
+tempfile.workspace = true
 solana-compute-budget.workspace = true
 solana-fee-structure.workspace = true
 
