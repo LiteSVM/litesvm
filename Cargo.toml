@@ -90,6 +90,7 @@ solana-vote-interface = "5.0.0"
 spl-associated-token-account-interface = "2.0.0"
 spl-token-2022-interface = "2.0.0"
 spl-token-interface = "2.0.0"
+tempfile = "3"
 test-log = "0.2"
 thiserror = "2.0"
 
