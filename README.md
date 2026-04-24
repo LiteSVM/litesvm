@@ -81,6 +81,16 @@ cargo add --dev litesvm-token
 
 See the [SPL token testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-spl-tokens) for a full walkthrough.
 
+### `litesvm-loader`
+
+[`litesvm-loader`](https://crates.io/crates/litesvm-loader) provides helpers for working with Solana's upgradeable BPF loader in LiteSVM. It wraps the repetitive deployment flow for upgradeable programs by creating the buffer account, writing program bytes in chunks, deploying the program, and exposing a helper for changing the upgrade authority.
+
+```sh
+cargo add --dev litesvm-loader
+```
+
+See the [loader API docs](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-loader) for the available helpers.
+
 ### `litesvm-utils`
 
 [`litesvm-utils`](https://crates.io/crates/litesvm-utils) dramatically reduces test boilerplate through three ergonomic traits that extend `LiteSVM`:
