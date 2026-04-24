@@ -55,6 +55,12 @@ assert_eq!(from_account.unwrap().lamports, 4936);
 assert_eq!(to_account.unwrap().lamports, 64);
 ```
 
+### 🛠️ More Examples
+
+[QuickNode's Anchor Swap/Escrow app](https://github.com/quiknode-labs/you-will-build-a-solana-program)
+has a full suite of tests using LiteSVM, as well as tests using Solana Kit to compare. LiteSVM is
+[25 x faster than Solana Kit](https://x.com/mikemaccana/status/1940026554341372009)!
+
 ### 🛠️ Developing litesvm
 
 #### Run the tests
