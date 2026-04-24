@@ -590,11 +590,11 @@ pub unsafe extern "C" fn litesvm_tx_outcome_signature(
 ///
 /// See module-level safety model.
 #[no_mangle]
-pub unsafe extern "C" fn litesvm_tx_outcome_compute_units(
-    handle: *const LiteSvmTxOutcome,
-) -> u64 {
+pub unsafe extern "C" fn litesvm_tx_outcome_compute_units(handle: *const LiteSvmTxOutcome) -> u64 {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { outcome_ref(handle) }.map_or(0, |o| o.compute_units_consumed))
+    guard(0, || {
+        unsafe { outcome_ref(handle) }.map_or(0, |o| o.compute_units_consumed)
+    })
 }
 
 /// # Safety
@@ -612,7 +612,9 @@ pub unsafe extern "C" fn litesvm_tx_outcome_fee(handle: *const LiteSvmTxOutcome)
 #[no_mangle]
 pub unsafe extern "C" fn litesvm_tx_outcome_logs_count(handle: *const LiteSvmTxOutcome) -> usize {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { outcome_ref(handle) }.map_or(0, |o| o.logs.len()))
+    guard(0, || {
+        unsafe { outcome_ref(handle) }.map_or(0, |o| o.logs.len())
+    })
 }
 
 /// Copies the `idx`-th log line into `buf`. Returns the full byte length of
@@ -714,7 +716,9 @@ pub unsafe extern "C" fn litesvm_tx_outcome_return_data_len(
     handle: *const LiteSvmTxOutcome,
 ) -> usize {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { outcome_ref(handle) }.map_or(0, |o| o.return_data.len()))
+    guard(0, || {
+        unsafe { outcome_ref(handle) }.map_or(0, |o| o.return_data.len())
+    })
 }
 
 /// # Safety
@@ -748,7 +752,9 @@ pub unsafe extern "C" fn litesvm_tx_outcome_post_accounts_count(
     handle: *const LiteSvmTxOutcome,
 ) -> usize {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { outcome_ref(handle) }.map_or(0, |o| o.post_accounts.len()))
+    guard(0, || {
+        unsafe { outcome_ref(handle) }.map_or(0, |o| o.post_accounts.len())
+    })
 }
 
 /// Returns a newly-allocated Account handle for the idx-th post-account and
@@ -782,7 +788,9 @@ pub unsafe extern "C" fn litesvm_tx_outcome_post_account_at(
         // SAFETY: `out_address` is non-null and valid for 32 writable bytes
         // per caller's contract.
         unsafe { ptr::copy_nonoverlapping(addr.to_bytes().as_ptr(), out_address, 32) };
-        Box::into_raw(Box::new(LiteSvmAccount { inner: acct.clone() }))
+        Box::into_raw(Box::new(LiteSvmAccount {
+            inner: acct.clone(),
+        }))
     })
 }
 
@@ -811,7 +819,9 @@ pub unsafe extern "C" fn litesvm_tx_outcome_inner_outer_count(
     handle: *const LiteSvmTxOutcome,
 ) -> usize {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { outcome_ref(handle) }.map_or(0, |o| o.inner_instructions.len()))
+    guard(0, || {
+        unsafe { outcome_ref(handle) }.map_or(0, |o| o.inner_instructions.len())
+    })
 }
 
 /// Number of inner instructions for the `outer_idx`-th top-level instruction.
@@ -1412,10 +1422,10 @@ pub unsafe extern "C" fn litesvm_add_program_with_loader(
             return 3;
         };
         // SAFETY: forwarded caller contract; helper tolerates (null, 0).
-        let Some(program_bytes) =
-            (unsafe { slice_from_c(bytes, bytes_len, "program bytes") }) else {
-                return 4;
-            };
+        let Some(program_bytes) = (unsafe { slice_from_c(bytes, bytes_len, "program bytes") })
+        else {
+            return 4;
+        };
         if program_bytes.is_empty() {
             set_error("empty program bytes");
             return 4;
@@ -1511,7 +1521,9 @@ pub unsafe extern "C" fn litesvm_account_free(handle: *mut LiteSvmAccount) {
 #[no_mangle]
 pub unsafe extern "C" fn litesvm_account_lamports(handle: *const LiteSvmAccount) -> u64 {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { account_ref(handle) }.map_or(0, |a| a.inner.lamports))
+    guard(0, || {
+        unsafe { account_ref(handle) }.map_or(0, |a| a.inner.lamports)
+    })
 }
 
 /// Returns 1 if executable, 0 if not, -1 on error.
@@ -1536,7 +1548,9 @@ pub unsafe extern "C" fn litesvm_account_executable(handle: *const LiteSvmAccoun
 #[no_mangle]
 pub unsafe extern "C" fn litesvm_account_rent_epoch(handle: *const LiteSvmAccount) -> u64 {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { account_ref(handle) }.map_or(0, |a| a.inner.rent_epoch))
+    guard(0, || {
+        unsafe { account_ref(handle) }.map_or(0, |a| a.inner.rent_epoch)
+    })
 }
 
 /// # Safety
@@ -1544,10 +1558,7 @@ pub unsafe extern "C" fn litesvm_account_rent_epoch(handle: *const LiteSvmAccoun
 /// See module-level safety model. `out` must be null or point to at least
 /// 32 writable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn litesvm_account_owner(
-    handle: *const LiteSvmAccount,
-    out: *mut u8,
-) -> i32 {
+pub unsafe extern "C" fn litesvm_account_owner(handle: *const LiteSvmAccount, out: *mut u8) -> i32 {
     guard(-1, || {
         // SAFETY: forwarded caller contract.
         let Some(a) = (unsafe { account_ref(handle) }) else {
@@ -1569,7 +1580,9 @@ pub unsafe extern "C" fn litesvm_account_owner(
 #[no_mangle]
 pub unsafe extern "C" fn litesvm_account_data_len(handle: *const LiteSvmAccount) -> usize {
     // SAFETY: forwarded caller contract.
-    guard(0, || unsafe { account_ref(handle) }.map_or(0, |a| a.inner.data.len()))
+    guard(0, || {
+        unsafe { account_ref(handle) }.map_or(0, |a| a.inner.data.len())
+    })
 }
 
 /// Probe-then-copy semantics: returns the full data length. Caller may pass
@@ -1688,10 +1701,10 @@ pub unsafe extern "C" fn litesvm_add_program(
             return 2;
         };
         // SAFETY: forwarded caller contract; helper tolerates (null, 0).
-        let Some(program_bytes) =
-            (unsafe { slice_from_c(bytes, bytes_len, "program bytes") }) else {
-                return 3;
-            };
+        let Some(program_bytes) = (unsafe { slice_from_c(bytes, bytes_len, "program bytes") })
+        else {
+            return 3;
+        };
         if program_bytes.is_empty() {
             set_error("empty program bytes");
             return 3;
@@ -2746,15 +2759,18 @@ fn compute_budget_from_ffi(
     let u64_to_usize = |v: u64, name: &'static str| -> usize {
         usize::try_from(v).unwrap_or_else(|_| panic!("compute budget field {name} exceeds usize"))
     };
-    let mut b = solana_compute_budget::compute_budget::ComputeBudget::new_with_defaults(false, false);
+    let mut b =
+        solana_compute_budget::compute_budget::ComputeBudget::new_with_defaults(false, false);
     b.compute_unit_limit = f.compute_unit_limit;
     b.log_64_units = f.log_64_units;
     b.create_program_address_units = f.create_program_address_units;
     b.invoke_units = f.invoke_units;
     b.max_instruction_stack_depth =
         u64_to_usize(f.max_instruction_stack_depth, "max_instruction_stack_depth");
-    b.max_instruction_trace_length =
-        u64_to_usize(f.max_instruction_trace_length, "max_instruction_trace_length");
+    b.max_instruction_trace_length = u64_to_usize(
+        f.max_instruction_trace_length,
+        "max_instruction_trace_length",
+    );
     b.sha256_base_cost = f.sha256_base_cost;
     b.sha256_byte_cost = f.sha256_byte_cost;
     b.sha256_max_slices = f.sha256_max_slices;

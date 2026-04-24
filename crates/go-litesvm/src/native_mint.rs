@@ -3,12 +3,7 @@
 //! identical to the node-litesvm fixture so the two bindings produce the same
 //! state.
 
-use {
-    litesvm::LiteSVM,
-    solana_account::Account,
-    solana_address::Address,
-    solana_rent::Rent,
-};
+use {litesvm::LiteSVM, solana_account::Account, solana_address::Address, solana_rent::Rent};
 
 pub(crate) mod inline_spl {
     use super::Address;
@@ -19,11 +14,7 @@ pub(crate) mod inline_spl {
         Address::from_str_const("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 }
 
-fn create_native_mint_with_program_id(
-    svm: &mut LiteSVM,
-    address: Address,
-    token_program: Address,
-) {
+fn create_native_mint_with_program_id(svm: &mut LiteSVM, address: Address, token_program: Address) {
     let account = Account {
         lamports: svm.get_sysvar::<Rent>().minimum_balance(82),
         data: vec![
