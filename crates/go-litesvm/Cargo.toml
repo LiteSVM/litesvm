@@ -1,0 +1,35 @@
+[package]
+name = "litesvm-go"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "C ABI bindings for LiteSVM, intended for use from Go via cgo"
+publish = false
+
+[lib]
+name = "litesvm_go"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+agave-feature-set.workspace = true
+bincode.workspace = true
+litesvm = { workspace = true, features = ["nodejs-internal", "precompiles"] }
+solana-account.workspace = true
+solana-address.workspace = true
+solana-clock.workspace = true
+solana-compute-budget.workspace = true
+solana-epoch-rewards.workspace = true
+solana-epoch-schedule.workspace = true
+solana-hash.workspace = true
+solana-last-restart-slot.workspace = true
+solana-rent.workspace = true
+solana-slot-hashes.workspace = true
+solana-slot-history.workspace = true
+solana-stake-interface.workspace = true
+solana-keypair.workspace = true
+solana-message.workspace = true
+solana-signature.workspace = true
+solana-signer.workspace = true
+solana-system-interface = { workspace = true, features = ["bincode"] }
+solana-transaction.workspace = true

@@ -1859,6 +1859,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "litesvm-go"
+version = "0.1.0"
+dependencies = [
+ "agave-feature-set",
+ "bincode",
+ "litesvm",
+ "solana-account",
+ "solana-address 2.5.0",
+ "solana-clock",
+ "solana-compute-budget",
+ "solana-epoch-rewards",
+ "solana-epoch-schedule",
+ "solana-hash 3.1.0",
+ "solana-keypair",
+ "solana-last-restart-slot",
+ "solana-message",
+ "solana-rent 3.1.0",
+ "solana-signature",
+ "solana-signer",
+ "solana-slot-hashes",
+ "solana-slot-history",
+ "solana-stake-interface",
+ "solana-system-interface 2.0.0",
+ "solana-transaction",
+]
+
+[[package]]
 name = "litesvm-loader"
 version = "0.11.0"
 dependencies = [
