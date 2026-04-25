@@ -379,6 +379,43 @@ use {
 pub mod error;
 pub mod types;
 
+/// Feature gates that are not yet active on Solana mainnet-beta, sourced from
+/// the cluster on 2026-04-26.
+const MAINNET_INACTIVE_FEATURES: &[Address] = &[
+    agave_feature_set::full_inflation::devnet_and_testnet::ID,
+    agave_feature_set::blake3_syscall_enabled::ID,
+    agave_feature_set::zk_token_sdk_enabled::ID,
+    agave_feature_set::libsecp256k1_fail_on_bad_count::ID,
+    agave_feature_set::stake_raise_minimum_delegation_to_1_sol::ID,
+    agave_feature_set::stake_minimum_delegation_for_rewards::ID,
+    agave_feature_set::increase_tx_account_lock_limit::ID,
+    agave_feature_set::enable_big_mod_exp_syscall::ID,
+    agave_feature_set::stricter_abi_and_runtime_constraints::ID,
+    agave_feature_set::account_data_direct_mapping::ID,
+    agave_feature_set::include_loaded_accounts_data_size_in_fee_calculation::ID,
+    agave_feature_set::remaining_compute_units_syscall_enabled::ID,
+    agave_feature_set::enable_loader_v4::ID,
+    agave_feature_set::enable_zk_transfer_with_fee::ID,
+    agave_feature_set::enable_zk_proof_from_account::ID,
+    agave_feature_set::chained_merkle_conflict_duplicate_proofs::ID,
+    agave_feature_set::verify_retransmitter_signature::ID,
+    agave_feature_set::vote_only_retransmitter_signed_fec_sets::ID,
+    agave_feature_set::enable_turbine_extended_fanout_experiments::ID,
+    agave_feature_set::deprecate_legacy_vote_ixs::ID,
+    agave_feature_set::disable_sbpf_v0_execution::ID,
+    agave_feature_set::reenable_sbpf_v0_execution::ID,
+    agave_feature_set::enable_sbpf_v3_deployment_and_execution::ID,
+    // create_slashing_program and enshrine_slashing_program share the same id.
+    agave_feature_set::create_slashing_program::ID,
+    agave_feature_set::enable_extend_program_checked::ID,
+    agave_feature_set::alpenglow::ID,
+    agave_feature_set::reenable_zk_elgamal_proof_program::ID,
+    agave_feature_set::raise_block_limits_to_100m::ID,
+    agave_feature_set::raise_cpi_nesting_limit_to_8::ID,
+    agave_feature_set::discard_unexpected_data_complete_shreds::ID,
+    agave_feature_set::replace_spl_token_with_p_token::ID,
+];
+
 mod accounts_db;
 mod callback;
 mod format_logs;
@@ -462,7 +499,7 @@ impl LiteSVM {
 
     fn into_basic(self) -> Self {
         let svm = self
-            .with_feature_set(FeatureSet::all_enabled())
+            .with_mainnet_features()
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
@@ -579,6 +616,27 @@ impl LiteSVM {
     pub fn with_feature_set(mut self, feature_set: FeatureSet) -> Self {
         self.set_feature_set(feature_set);
         self
+    }
+
+    /// Returns a [`FeatureSet`] containing only the features currently
+    /// activated on Solana mainnet-beta.
+    ///
+    /// The list of inactive features was captured from
+    /// `https://api.mainnet-beta.solana.com` on 2026-04-26 and will need to
+    /// be refreshed as mainnet activates new features. See also
+    /// <https://www.simd.wtf/>.
+    pub fn mainnet_feature_set() -> FeatureSet {
+        let mut feature_set = FeatureSet::all_enabled();
+        for feature_id in MAINNET_INACTIVE_FEATURES {
+            feature_set.deactivate(feature_id);
+        }
+        feature_set
+    }
+
+    /// Replace the feature set with one matching the features active on
+    /// Solana mainnet-beta. See [`Self::mainnet_feature_set`].
+    pub fn with_mainnet_features(self) -> Self {
+        self.with_feature_set(Self::mainnet_feature_set())
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
