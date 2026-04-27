@@ -286,7 +286,6 @@ much easier.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-use crate::features::MAINNET_ACTIVE_FEATURES;
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
 #[cfg(feature = "precompiles")]
@@ -301,6 +300,7 @@ use {
     crate::{
         accounts_db::AccountsDb,
         error::LiteSVMError,
+        features::MAINNET_ACTIVE_FEATURES,
         history::TransactionHistory,
         message_processor::process_message,
         programs::load_default_programs,
