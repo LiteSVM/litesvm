@@ -22,22 +22,22 @@ hashbrown = { workspace = true, optional = true }
 indexmap.workspace = true
 itertools.workspace = true
 ethnum = "1.5.2"
-jupnet-bpf-loader-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-cluster-identity-management-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-compute-budget = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-compute-budget-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-config-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-feature-set = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-loader-v4-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-log-collector = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-program-runtime = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-sdk = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-stake-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-svm-transaction = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-system-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-timings = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-transaction-error = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
-jupnet-vote-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "fddd83e36f93e094917e0089e860a32e19180581" }
+jupnet-bpf-loader-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-cluster-identity-management-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-compute-budget = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-compute-budget-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-config-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-feature-set = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-loader-v4-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-log-collector = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-program-runtime = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-sdk = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-stake-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-svm-transaction = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-system-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-timings = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-transaction-error = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
+jupnet-vote-program = { git = "https://github.com/jupnet/jupnet-svm.git", rev = "e0f0c00427b3b52e7a744cef7dcff21a7df3e0c4" }
 log.workspace = true
 qualifier_attr = { workspace = true, optional = true }
 serde.workspace = true
