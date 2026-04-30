@@ -9,7 +9,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  administration: write
 
 concurrency:
   group: pages
@@ -29,8 +28,6 @@ jobs:
           cache-dependency-path: crates/node-litesvm/yarn.lock
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Install dependencies
         working-directory: crates/node-litesvm
         run: yarn install
