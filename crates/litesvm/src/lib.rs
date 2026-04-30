@@ -272,6 +272,18 @@ Other things you can do with `litesvm` include:
 * Disable transaction signature checking using [`.with_sigverify(false)`](LiteSVM::with_sigverify).
 * Find previous transactions using [`.get_transaction`](`LiteSVM::get_transaction`).
 
+## Feature Flags
+
+| Feature | Description |
+|---|---|
+| `precompiles` | Loads the standard precompiles (ed25519, secp256k1) alongside the builtins. Enables [`with_precompiles`](LiteSVM::with_precompiles). |
+| `invocation-inspect-callback` | Enables the [`InvocationInspectCallback`] trait and [`set_invocation_inspect_callback`](LiteSVM::set_invocation_inspect_callback), giving low-level access to the `InvokeContext` before and after each transaction. |
+| `register-tracing` | Enables BPF register-level tracing. Implies `invocation-inspect-callback`. See [`LiteSVM::new_debuggable`] and [`register_tracing::DefaultRegisterTracingCallback`]. |
+| `hashbrown` | Switches internal hash maps to `hashbrown`. |
+| `serde` | Enables serde serialization/deserialization on internal types. |
+| `nodejs-internal` | Used by the Node.js bindings; not intended for direct use. |
+| `internal-test` | Enables internal test helpers; not intended for direct use. |
+
 ## When should I use `solana-test-validator`?
 
 While `litesvm` is faster and more convenient, it is also less like a real RPC node.
@@ -622,6 +634,7 @@ impl LiteSVM {
         }
     }
 
+    /// Adds on-chain feature gate accounts corresponding to the currently active feature set.
     pub fn with_feature_accounts(mut self) -> Self {
         self.set_feature_accounts();
         self
@@ -733,6 +746,7 @@ impl LiteSVM {
         self.log_bytes_limit = limit;
     }
 
+    /// Sets the maximum number of bytes collected from transaction logs. Pass `None` to remove the limit.
     pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
         self.set_log_bytes_limit(limit);
         self
@@ -1592,6 +1606,7 @@ impl LiteSVM {
         self.compute_budget
     }
 
+    /// Returns whether transaction signature verification is enabled.
     pub fn get_sigverify(&self) -> bool {
         self.sigverify
     }
