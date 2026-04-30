@@ -300,6 +300,7 @@ use {
     crate::{
         accounts_db::AccountsDb,
         error::LiteSVMError,
+        features::MAINNET_ACTIVE_FEATURES,
         history::TransactionHistory,
         message_processor::process_message,
         programs::load_default_programs,
@@ -381,6 +382,7 @@ pub mod types;
 
 mod accounts_db;
 mod callback;
+mod features;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -462,7 +464,7 @@ impl LiteSVM {
 
     fn into_basic(self) -> Self {
         let svm = self
-            .with_feature_set(FeatureSet::all_enabled())
+            .with_mainnet_features()
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
@@ -579,6 +581,27 @@ impl LiteSVM {
     pub fn with_feature_set(mut self, feature_set: FeatureSet) -> Self {
         self.set_feature_set(feature_set);
         self
+    }
+
+    /// Returns a [`FeatureSet`] containing only the features currently
+    /// activated on Solana mainnet-beta.
+    ///
+    /// The list of active features was captured from
+    /// `https://api.mainnet-beta.solana.com` on 2026-04-26 and will need to
+    /// be refreshed as mainnet activates new features. See also
+    /// <https://www.simd.wtf/>.
+    pub fn mainnet_feature_set() -> FeatureSet {
+        let mut feature_set = FeatureSet::default();
+        for feature_id in MAINNET_ACTIVE_FEATURES {
+            feature_set.activate(feature_id, 0);
+        }
+        feature_set
+    }
+
+    /// Replace the feature set with one matching the features active on
+    /// Solana mainnet-beta. See [`Self::mainnet_feature_set`].
+    pub fn with_mainnet_features(self) -> Self {
+        self.with_feature_set(Self::mainnet_feature_set())
     }
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
