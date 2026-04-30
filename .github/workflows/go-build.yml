@@ -1,0 +1,46 @@
+name: go-build
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+      - '**/*.gitignore'
+      - .editorconfig
+jobs:
+  test:
+    name: Test - ${{ matrix.host }}
+    runs-on: ${{ matrix.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: crates/go-litesvm/go.sum
+      - name: Rustup install
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      - name: Build native library
+        run: cargo build -p litesvm-go
+      - name: Run Go tests
+        working-directory: crates/go-litesvm
+        env:
+          RUST_BACKTRACE: 1
+          LD_LIBRARY_PATH: ${{ github.workspace }}/target/debug
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/target/debug
+        run: go test -v ./...
