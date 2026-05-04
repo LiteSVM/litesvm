@@ -272,6 +272,18 @@ Other things you can do with `litesvm` include:
 * Disable transaction signature checking using [`.with_sigverify(false)`](LiteSVM::with_sigverify).
 * Find previous transactions using [`.get_transaction`](`LiteSVM::get_transaction`).
 
+## Feature Flags
+
+| Feature | Description |
+|---|---|
+| `precompiles` | Loads the standard precompiles (ed25519, secp256k1) alongside the builtins. Enables [`with_precompiles`](LiteSVM::with_precompiles). |
+| `invocation-inspect-callback` | Enables the [`InvocationInspectCallback`] trait and [`set_invocation_inspect_callback`](LiteSVM::set_invocation_inspect_callback), giving low-level access to the `InvokeContext` before and after each transaction. |
+| `register-tracing` | Enables BPF register-level tracing. Implies `invocation-inspect-callback`. See [`LiteSVM::new_debuggable`] and [`register_tracing::DefaultRegisterTracingCallback`]. |
+| `hashbrown` | Switches internal hash maps to `hashbrown`. |
+| `serde` | Enables serde serialization/deserialization on internal types. |
+| `nodejs-internal` | Used by the Node.js bindings; not intended for direct use. |
+| `internal-test` | Enables internal test helpers; not intended for direct use. |
+
 ## When should I use `solana-test-validator`?
 
 While `litesvm` is faster and more convenient, it is also less like a real RPC node.
@@ -283,6 +295,8 @@ In general though it is recommended to use `litesvm` wherever possible, as it wi
 much easier.
 
 */
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
@@ -298,6 +312,7 @@ use {
     crate::{
         accounts_db::AccountsDb,
         error::LiteSVMError,
+        features::MAINNET_ACTIVE_FEATURES,
         history::TransactionHistory,
         message_processor::process_message,
         programs::load_default_programs,
@@ -382,6 +397,7 @@ pub mod types;
 
 mod accounts_db;
 mod callback;
+mod features;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -463,7 +479,7 @@ impl LiteSVM {
 
     fn into_basic(self) -> Self {
         let svm = self
-            .with_feature_set(FeatureSet::all_enabled())
+            .with_mainnet_features()
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
@@ -582,6 +598,27 @@ impl LiteSVM {
         self
     }
 
+    /// Returns a [`FeatureSet`] containing only the features currently
+    /// activated on Solana mainnet-beta.
+    ///
+    /// The list of active features was captured from
+    /// `https://api.mainnet-beta.solana.com` on 2026-04-26 and will need to
+    /// be refreshed as mainnet activates new features. See also
+    /// <https://www.simd.wtf/>.
+    pub fn mainnet_feature_set() -> FeatureSet {
+        let mut feature_set = FeatureSet::default();
+        for feature_id in MAINNET_ACTIVE_FEATURES {
+            feature_set.activate(feature_id, 0);
+        }
+        feature_set
+    }
+
+    /// Replace the feature set with one matching the features active on
+    /// Solana mainnet-beta. See [`Self::mainnet_feature_set`].
+    pub fn with_mainnet_features(self) -> Self {
+        self.with_feature_set(Self::mainnet_feature_set())
+    }
+
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_feature_set(&mut self, feature_set: FeatureSet) {
         self.feature_set = feature_set;
@@ -600,6 +637,7 @@ impl LiteSVM {
         }
     }
 
+    /// Adds on-chain feature gate accounts corresponding to the currently active feature set.
     pub fn with_feature_accounts(mut self) -> Self {
         self.set_feature_accounts();
         self
@@ -711,6 +749,7 @@ impl LiteSVM {
         self.log_bytes_limit = limit;
     }
 
+    /// Sets the maximum number of bytes collected from transaction logs. Pass `None` to remove the limit.
     pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
         self.set_log_bytes_limit(limit);
         self
@@ -1570,6 +1609,7 @@ impl LiteSVM {
         self.compute_budget
     }
 
+    /// Returns whether transaction signature verification is enabled.
     pub fn get_sigverify(&self) -> bool {
         self.sigverify
     }

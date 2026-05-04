@@ -20,7 +20,7 @@ any programs of our own. It uses the [Node.js test runner](https://nodejs.org/ap
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LiteSVM } from "litesvm";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm";
 import { getTransferSolInstruction } from "@solana-program/system";
 import {
 	appendTransactionMessageInstruction,
@@ -53,7 +53,10 @@ test("it transfers SOL from one wallet to another", async () => {
 		(tx) => appendTransactionMessageInstruction(instruction, tx),
 		(tx) => signTransactionMessageWithSigners(tx),
 	);
-	svm.sendTransaction(transaction);
+	const result = svm.sendTransaction(transaction);
+	if (result instanceof FailedTransactionMetadata) {
+		throw new Error(`Transaction failed: ${result.err()}`);
+	}
 
 	// Then we expect the accounts to have the correct balances.
 	assert.strictEqual(
