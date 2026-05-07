@@ -3,8 +3,7 @@ use {
     agave_feature_set::replace_spl_token_with_p_token,
     solana_address::address,
     solana_sdk_ids::{
-        address_lookup_table, bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable,
-        stake,
+        address_lookup_table, bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, stake,
     },
 };
 
