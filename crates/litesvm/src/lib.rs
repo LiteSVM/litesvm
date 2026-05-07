@@ -1910,6 +1910,73 @@ impl InvocationInspectCallback for EmptyInvocationInspectCallback {
     fn after_invocation(&self, _: &LiteSVM, _: &InvokeContext, _enable_register_tracing: bool) {}
 }
 
+#[cfg(feature = "persistence-internal")]
+impl LiteSVM {
+    pub fn airdrop_keypair_bytes(&self) -> &[u8; 64] {
+        &self.airdrop_kp
+    }
+
+    pub fn get_blockhash_check(&self) -> bool {
+        self.blockhash_check
+    }
+
+    pub fn get_fee_structure(&self) -> &FeeStructure {
+        &self.fee_structure
+    }
+
+    pub fn get_log_bytes_limit(&self) -> Option<usize> {
+        self.log_bytes_limit
+    }
+
+    pub fn get_feature_set_ref(&self) -> &FeatureSet {
+        &self.feature_set
+    }
+
+    pub fn transaction_history_entries(
+        &self,
+    ) -> &indexmap::IndexMap<Signature, TransactionResult> {
+        self.history.inner()
+    }
+
+    pub fn get_history_capacity(&self) -> usize {
+        self.history.capacity()
+    }
+
+    pub fn set_fee_structure(&mut self, fee_structure: FeeStructure) {
+        self.fee_structure = fee_structure;
+    }
+
+    pub fn set_latest_blockhash(&mut self, hash: Hash) {
+        self.latest_blockhash = hash;
+    }
+
+    pub fn set_airdrop_keypair(&mut self, kp: [u8; 64]) {
+        self.airdrop_kp = kp;
+    }
+
+    pub fn restore_transaction_history(
+        &mut self,
+        entries: impl IntoIterator<Item = (Signature, TransactionResult)>,
+    ) {
+        self.history.restore_from_entries(entries);
+    }
+
+    pub fn set_account_no_checks(&mut self, pubkey: Address, account: AccountSharedData) {
+        self.accounts.add_account_no_checks(pubkey, account);
+    }
+
+    /// Rebuilds all derived caches after bulk account insertion.
+    ///
+    /// Order matters: builtins/environments first, then sysvars, then BPF programs.
+    pub fn rebuild_caches(&mut self) -> Result<(), LiteSVMError> {
+        self.reserved_account_keys =
+            Self::reserved_account_keys_for_feature_set(&self.feature_set);
+        self.set_builtins();
+        self.accounts.rebuild_sysvar_cache();
+        self.accounts.load_all_existing_programs()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use {
