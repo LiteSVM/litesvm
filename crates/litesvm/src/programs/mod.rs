@@ -3,8 +3,7 @@ use {
     agave_feature_set::replace_spl_token_with_p_token,
     solana_address::address,
     solana_sdk_ids::{
-        address_lookup_table, bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, config,
-        stake,
+        address_lookup_table, bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, stake,
     },
 };
 
@@ -52,12 +51,6 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
         address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
         include_bytes!("elf/spl_associated_token_account-1.1.1.so"),
         &bpf_loader::id(),
-    )
-    .unwrap();
-    svm.add_program_preverified(
-        config::ID,
-        include_bytes!("elf/config.so"),
-        &bpf_loader_upgradeable::id(),
     )
     .unwrap();
     svm.add_program_preverified(
