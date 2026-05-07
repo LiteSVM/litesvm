@@ -12,6 +12,7 @@ register-tracing = ["litesvm/register-tracing"]
 
 [lib]
 crate-type = ["cdylib"]
+test = false
 
 [dependencies]
 agave-feature-set.workspace = true
