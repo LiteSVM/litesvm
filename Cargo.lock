@@ -1808,7 +1808,6 @@ dependencies = [
  "solana-compute-budget",
  "solana-compute-budget-instruction",
  "solana-compute-budget-interface",
- "solana-config-interface",
  "solana-ed25519-program",
  "solana-epoch-rewards",
  "solana-epoch-schedule",
@@ -3097,23 +3096,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "688491544a91b94fcb17cffb5cc4dca4be93bc96460fa27325a404c24b584130"
 dependencies = [
  "solana-program-runtime",
-]
-
-[[package]]
-name = "solana-config-interface"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63e401ae56aed512821cc7a0adaa412ff97fecd2dff4602be7b1330d2daec0c4"
-dependencies = [
- "bincode",
- "serde",
- "serde_derive",
- "solana-account",
- "solana-instruction",
- "solana-pubkey 3.0.0",
- "solana-sdk-ids",
- "solana-short-vec",
- "solana-system-interface 2.0.0",
 ]
 
 [[package]]
