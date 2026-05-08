@@ -35,6 +35,21 @@ import {
 	StakeHistory,
 	TransactionMetadata,
 } from "./internal";
+
+export type TransactionTarget = "base" | "ephemeral";
+export type TransactionTargetOptions = {
+	target?: TransactionTarget;
+};
+export type MagicSVMOptions = {
+	validatorIdentity?: Address;
+};
+
+function resolveTransactionTarget(
+	options?: TransactionTargetOptions,
+): TransactionTarget {
+	return options?.target ?? "base";
+}
+
 export {
 	Account,
 	Clock,
@@ -93,8 +108,12 @@ export class SimulatedTransactionInfo {
  */
 export class LiteSVM {
 	/** Create a new LiteSVM instance with standard functionality enabled */
-	constructor() {
-		const inner = new LiteSVMInner();
+	constructor(options?: MagicSVMOptions) {
+		const inner = new LiteSVMInner(
+			options?.validatorIdentity
+				? (getAddressCodec().encode(options.validatorIdentity) as Uint8Array)
+				: undefined,
+		);
 		this.inner = inner;
 	}
 	private inner: LiteSVMInner;
@@ -239,8 +258,23 @@ export class LiteSVM {
 	 * @returns The account object, if the account exists.
 	 */
 	getAccount(address: Address): MaybeEncodedAccount {
-		const inner = this.inner.getAccount(
+		return this.getAccountFor(address, { target: "base" });
+	}
+
+	/**
+	 * Return the account at the given address from the selected ledger.
+	 * If the account is not found, None is returned.
+	 * @param address - The account address to look up.
+	 * @param options - The transaction target options.
+	 * @returns The account object, if the account exists.
+	 */
+	getAccountFor(
+		address: Address,
+		options?: TransactionTargetOptions,
+	): MaybeEncodedAccount {
+		const inner = this.inner.getAccountFor(
 			getAddressCodec().encode(address) as Uint8Array,
+			resolveTransactionTarget(options),
 		);
 
 		return inner === null
@@ -296,6 +330,11 @@ export class LiteSVM {
 		return this.inner.latestBlockhash() as Blockhash;
 	}
 
+	/** Gets the validator identity that delegation instructions should target. */
+	validatorIdentity(): Address {
+		return getAddressCodec().decode(this.inner.validatorIdentity());
+	}
+
 	/**
 	 * Sets the lifetime on a transaction message using
 	 * the latest blockhash from the LiteSVM instance.
@@ -324,8 +363,24 @@ export class LiteSVM {
 	getTransaction(
 		signature: Signature,
 	): TransactionMetadata | FailedTransactionMetadata | null {
+		return this.getTransactionFor(signature, { target: "base" });
+	}
+
+	/**
+	 * Gets a transaction from the selected ledger's transaction history.
+	 * @param signature - The transaction signature bytes
+	 * @param options - The transaction target options.
+	 * @returns The transaction, if it is found in the history.
+	 */
+	getTransactionFor(
+		signature: Signature,
+		options?: TransactionTargetOptions,
+	): TransactionMetadata | FailedTransactionMetadata | null {
 		const signatureBytes = getBase58Encoder().encode(signature) as Uint8Array;
-		return this.inner.getTransaction(signatureBytes);
+		return this.inner.getTransactionFor(
+			signatureBytes,
+			resolveTransactionTarget(options),
+		);
 	}
 
 	/**
@@ -393,8 +448,10 @@ export class LiteSVM {
 	 */
 	sendTransaction(
 		tx: Transaction,
+		options?: TransactionTargetOptions,
 	): TransactionMetadata | FailedTransactionMetadata {
 		const internal = this.inner;
+		const target = resolveTransactionTarget(options);
 		if (internal.getSigverify()) {
 			assertIsFullySignedTransaction(tx);
 		}
@@ -405,9 +462,9 @@ export class LiteSVM {
 
 		switch (version) {
 			case "legacy":
-				return internal.sendLegacyTransaction(serialized);
+				return internal.sendLegacyTransactionTo(serialized, target);
 			case 0:
-				return internal.sendVersionedTransaction(serialized);
+				return internal.sendVersionedTransactionTo(serialized, target);
 			default:
 				throw new Error(`Unsupported transaction version: ${version}`);
 		}
@@ -420,8 +477,10 @@ export class LiteSVM {
 	 */
 	simulateTransaction(
 		tx: Transaction,
+		options?: TransactionTargetOptions,
 	): FailedTransactionMetadata | SimulatedTransactionInfo {
 		const internal = this.inner;
+		const target = resolveTransactionTarget(options);
 		if (internal.getSigverify()) {
 			assertIsFullySignedTransaction(tx);
 		}
@@ -433,9 +492,9 @@ export class LiteSVM {
 		const inner = (() => {
 			switch (version) {
 				case "legacy":
-					return internal.simulateLegacyTransaction(serialized);
+					return internal.simulateLegacyTransactionTo(serialized, target);
 				case 0:
-					return internal.simulateVersionedTransaction(serialized);
+					return internal.simulateVersionedTransactionTo(serialized, target);
 				default:
 					throw new Error(`Unsupported transaction version: ${version}`);
 			}
@@ -453,7 +512,16 @@ export class LiteSVM {
 	 * The return value of `latestBlockhash()` will be different after calling this.
 	 */
 	expireBlockhash() {
-		this.inner.expireBlockhash();
+		this.expireBlockhashFor({ target: "base" });
+	}
+
+	/**
+	 * Expires the current blockhash for the selected ledger.
+	 * The return value of `latestBlockhash()` will be different after calling this with the base target.
+	 * @param options - The transaction target options.
+	 */
+	expireBlockhashFor(options?: TransactionTargetOptions) {
+		this.inner.expireBlockhashFor(resolveTransactionTarget(options));
 	}
 
 	/**

@@ -36,6 +36,8 @@ hashbrown = { workspace = true, optional = true }
 indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
+magicblock-delegation-program-api.workspace = true
+magicblock-magic-program-api.workspace = true
 qualifier_attr = { workspace = true, optional = true }
 serde.workspace = true
 solana-account.workspace = true

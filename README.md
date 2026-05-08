@@ -69,6 +69,47 @@ Beyond simple transfers, `litesvm` supports:
 - **Custom syscalls** — register custom BPF syscalls with `with_custom_syscall`.
 - **Register tracing** — capture BPF register traces (requires the `register-tracing` feature flag).
 
+## MagicSVM Native Delegation
+
+This fork also exposes `MagicSVM`, a two-ledger test environment for Magicblock
+Ephemeral Rollups. A `MagicSVM` instance owns a base-layer ledger and an
+ephemeral-rollup ledger. Base-layer transactions run through the normal LiteSVM
+path and include the dumped Magicblock delegation BPF program by default at
+`DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh`. The program artifact is loaded as
+a regular upgradeable-loader program, matching how it is invoked on devnet.
+
+Delegation-program transactions sent to the base target mirror delegated
+accounts into the ephemeral ledger. Transactions sent to the ephemeral target
+are checked before execution and can only write delegated accounts. Commit,
+finalize, and undelegate delegation-program instructions copy the ephemeral
+account state back to the base ledger.
+
+```rust
+use litesvm::{MagicSVM, TransactionTarget, DEFAULT_VALIDATOR_IDENTITY};
+
+let mut svm = MagicSVM::new();
+assert_eq!(svm.validator_identity(), DEFAULT_VALIDATOR_IDENTITY);
+
+// Tests can also choose the validator identity that programs delegate to.
+let mut svm = MagicSVM::new_with_validator_identity(validator_pubkey);
+
+// Send normal Solana and delegation-program instructions to the base layer.
+svm.send_transaction(base_transaction).unwrap();
+
+// Send rollup-local instructions to the ephemeral ledger.
+svm.send_transaction_to(TransactionTarget::Ephemeral, ephemeral_transaction)
+    .unwrap();
+```
+
+The Node API mirrors this with an optional target:
+
+```ts
+const svm = new LiteSVM({ validatorIdentity });
+svm.sendTransaction(transaction, { target: "base" });
+svm.sendTransaction(transaction, { target: "ephemeral" });
+svm.simulateTransaction(transaction, { target: "ephemeral" });
+```
+
 ## Additional Crates
 
 ### `litesvm-token`
@@ -134,6 +175,6 @@ See the [anchor-litesvm testing guide](https://www.litesvm.com/docs/additional-c
 
 The tests in this repo use some test programs you need to build first (Solana CLI >= 1.18.8 required):
 
-```cd crates/litesvm/test_programs && cargo build-sbf```
+```cd crates/litesvm/test_programs && cargo build-sbf --workspace --sbf-out-dir target/deploy```
 
 Then just run `cargo test`.

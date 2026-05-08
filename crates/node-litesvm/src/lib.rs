@@ -22,7 +22,7 @@ use {
             SimulatedTransactionInfo as SimulatedTransactionInfoOriginal,
             TransactionResult as TransactionResultOriginal,
         },
-        LiteSVM as LiteSVMOriginal,
+        MagicSVM as LiteSVMOriginal, TransactionTarget, DEFAULT_VALIDATOR_IDENTITY,
     },
     napi::bindgen_prelude::*,
     solana_clock::Clock as ClockOriginal,
@@ -85,6 +85,14 @@ fn convert_sim_result(
     }
 }
 
+fn parse_transaction_target(target: String) -> TransactionTarget {
+    if target == "ephemeral" {
+        TransactionTarget::Ephemeral
+    } else {
+        TransactionTarget::Base
+    }
+}
+
 #[napi]
 pub struct LiteSvm(LiteSVMOriginal);
 
@@ -92,8 +100,13 @@ pub struct LiteSvm(LiteSVMOriginal);
 impl LiteSvm {
     /// Creates the basic test environment.
     #[napi(constructor)]
-    pub fn new() -> Self {
-        Self(LiteSVMOriginal::new())
+    pub fn new(validator_identity: Option<&[u8]>) -> Self {
+        let validator_identity = validator_identity
+            .map(convert_pubkey)
+            .unwrap_or(DEFAULT_VALIDATOR_IDENTITY);
+        Self(LiteSVMOriginal::new_with_validator_identity(
+            validator_identity,
+        ))
     }
 
     #[napi(factory, js_name = "default")]
@@ -186,6 +199,14 @@ impl LiteSvm {
     }
 
     #[napi]
+    /// Returns all information associated with the account of the provided pubkey on the selected ledger.
+    pub fn get_account_for(&self, pubkey: &[u8], target: String) -> Option<Account> {
+        self.0
+            .get_account_for(parse_transaction_target(target), &convert_pubkey(pubkey))
+            .map(Account)
+    }
+
+    #[napi]
     /// Sets all information associated with the account of the provided pubkey.
     pub fn set_account(&mut self, pubkey: &[u8], data: &Account) -> Result<()> {
         self.0
@@ -205,11 +226,32 @@ impl LiteSvm {
         self.0.latest_blockhash().to_string()
     }
 
+    #[napi]
+    /// Gets the validator identity that delegation instructions should target.
+    pub fn validator_identity(&self) -> Uint8Array {
+        Uint8Array::new(self.0.validator_identity().to_bytes().to_vec())
+    }
+
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
     /// Gets a transaction from the transaction history.
     pub fn get_transaction(&self, signature: &[u8]) -> Option<TransactionResult> {
         self.0
             .get_transaction(&Signature::try_from(signature).unwrap())
+            .map(|x| convert_transaction_result(x.clone()))
+    }
+
+    #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata | null")]
+    /// Gets a transaction from the selected ledger's transaction history.
+    pub fn get_transaction_for(
+        &self,
+        signature: &[u8],
+        target: String,
+    ) -> Option<TransactionResult> {
+        self.0
+            .get_transaction_for(
+                parse_transaction_target(target),
+                &Signature::try_from(signature).unwrap(),
+            )
             .map(|x| convert_transaction_result(x.clone()))
     }
 
@@ -284,6 +326,32 @@ impl LiteSvm {
         convert_transaction_result(res)
     }
 
+    #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
+    pub fn send_legacy_transaction_to(
+        &mut self,
+        tx_bytes: &[u8],
+        target: String,
+    ) -> TransactionResult {
+        let tx: Transaction = deserialize(tx_bytes).unwrap();
+        let res = self
+            .0
+            .send_transaction_to(parse_transaction_target(target), tx);
+        convert_transaction_result(res)
+    }
+
+    #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
+    pub fn send_versioned_transaction_to(
+        &mut self,
+        tx_bytes: &[u8],
+        target: String,
+    ) -> TransactionResult {
+        let tx: VersionedTransaction = deserialize(tx_bytes).unwrap();
+        let res = self
+            .0
+            .send_transaction_to(parse_transaction_target(target), tx);
+        convert_transaction_result(res)
+    }
+
     #[napi(ts_return_type = "SimulatedTransactionInfo | FailedTransactionMetadata")]
     pub fn simulate_legacy_transaction(&mut self, tx_bytes: &[u8]) -> SimulateResult {
         let tx: Transaction = deserialize(tx_bytes).unwrap();
@@ -298,10 +366,43 @@ impl LiteSvm {
         convert_sim_result(res)
     }
 
+    #[napi(ts_return_type = "SimulatedTransactionInfo | FailedTransactionMetadata")]
+    pub fn simulate_legacy_transaction_to(
+        &mut self,
+        tx_bytes: &[u8],
+        target: String,
+    ) -> SimulateResult {
+        let tx: Transaction = deserialize(tx_bytes).unwrap();
+        let res = self
+            .0
+            .simulate_transaction_to(parse_transaction_target(target), tx);
+        convert_sim_result(res)
+    }
+
+    #[napi(ts_return_type = "SimulatedTransactionInfo | FailedTransactionMetadata")]
+    pub fn simulate_versioned_transaction_to(
+        &mut self,
+        tx_bytes: &[u8],
+        target: String,
+    ) -> SimulateResult {
+        let tx: VersionedTransaction = deserialize(tx_bytes).unwrap();
+        let res = self
+            .0
+            .simulate_transaction_to(parse_transaction_target(target), tx);
+        convert_sim_result(res)
+    }
+
     #[napi]
     /// Expires the current blockhash
     pub fn expire_blockhash(&mut self) {
         self.0.expire_blockhash()
+    }
+
+    #[napi]
+    /// Expires the current blockhash for the selected ledger.
+    pub fn expire_blockhash_for(&mut self, target: String) {
+        self.0
+            .expire_blockhash_for(parse_transaction_target(target))
     }
 
     #[napi]

@@ -279,7 +279,7 @@ export declare class InstructionErrorCustom {
 
 export declare class LiteSvm {
   /** Creates the basic test environment. */
-  constructor()
+  constructor(validatorIdentity?: Uint8Array | undefined | null)
   static default(): LiteSvm
   setComputeBudget(budget: ComputeBudget): void
   /** Enables or disables sigverify */
@@ -307,14 +307,20 @@ export declare class LiteSvm {
   minimumBalanceForRentExemption(dataLen: bigint): bigint
   /** Returns all information associated with the account of the provided pubkey. */
   getAccount(pubkey: Uint8Array): Account | null
+  /** Returns all information associated with the account of the provided pubkey on the selected ledger. */
+  getAccountFor(pubkey: Uint8Array, target: string): Account | null
   /** Sets all information associated with the account of the provided pubkey. */
   setAccount(pubkey: Uint8Array, data: Account): void
   /** Gets the balance of the provided account pubkey. */
   getBalance(pubkey: Uint8Array): bigint | null
   /** Gets the latest blockhash. */
   latestBlockhash(): string
+  /** Gets the validator identity that delegation instructions should target. */
+  validatorIdentity(): Uint8Array
   /** Gets a transaction from the transaction history. */
   getTransaction(signature: Uint8Array): TransactionMetadata | FailedTransactionMetadata | null
+  /** Gets a transaction from the selected ledger's transaction history. */
+  getTransactionFor(signature: Uint8Array, target: string): TransactionMetadata | FailedTransactionMetadata | null
   /** Airdrops the account with the lamports specified. */
   airdrop(pubkey: Uint8Array, lamports: bigint): TransactionMetadata | FailedTransactionMetadata | null
   /** Adds am SBF program to the test environment from the file specified. */
@@ -325,10 +331,16 @@ export declare class LiteSvm {
   addProgramWithLoader(programId: Uint8Array, programBytes: Uint8Array, loaderId: Uint8Array): void
   sendLegacyTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata
   sendVersionedTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata
+  sendLegacyTransactionTo(txBytes: Uint8Array, target: string): TransactionMetadata | FailedTransactionMetadata
+  sendVersionedTransactionTo(txBytes: Uint8Array, target: string): TransactionMetadata | FailedTransactionMetadata
   simulateLegacyTransaction(txBytes: Uint8Array): SimulatedTransactionInfo | FailedTransactionMetadata
   simulateVersionedTransaction(txBytes: Uint8Array): SimulatedTransactionInfo | FailedTransactionMetadata
+  simulateLegacyTransactionTo(txBytes: Uint8Array, target: string): SimulatedTransactionInfo | FailedTransactionMetadata
+  simulateVersionedTransactionTo(txBytes: Uint8Array, target: string): SimulatedTransactionInfo | FailedTransactionMetadata
   /** Expires the current blockhash */
   expireBlockhash(): void
+  /** Expires the current blockhash for the selected ledger. */
+  expireBlockhashFor(target: string): void
   /** Warps the clock to the specified slot */
   warpToSlot(slot: bigint): void
   getComputeBudget(): ComputeBudget | null

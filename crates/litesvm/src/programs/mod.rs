@@ -1,5 +1,5 @@
 use {
-    crate::LiteSVM,
+    crate::{magic::DELEGATION_PROGRAM_ID, LiteSVM},
     agave_feature_set::replace_spl_token_with_p_token,
     solana_address::address,
     solana_sdk_ids::{
@@ -62,6 +62,12 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
     svm.add_program_preverified(
         stake::ID,
         include_bytes!("elf/core_bpf_stake-1.0.1.so"),
+        &bpf_loader_upgradeable::id(),
+    )
+    .unwrap();
+    svm.add_program_preverified(
+        DELEGATION_PROGRAM_ID,
+        include_bytes!("elf/magicblock_delegation_program.so"),
         &bpf_loader_upgradeable::id(),
     )
     .unwrap();

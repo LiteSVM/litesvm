@@ -397,6 +397,7 @@ mod callback;
 mod features;
 mod format_logs;
 mod history;
+mod magic;
 mod message_processor;
 #[cfg(feature = "precompiles")]
 mod precompiles;
@@ -404,6 +405,11 @@ mod programs;
 #[cfg(feature = "register-tracing")]
 pub mod register_tracing;
 mod utils;
+
+pub use magic::{
+    MagicSVM, TransactionTarget, DEFAULT_VALIDATOR_IDENTITY, DELEGATION_PROGRAM_ID,
+    MAGIC_CONTEXT_ID, MAGIC_PROGRAM_ID,
+};
 
 #[derive(Clone)]
 pub struct LiteSVM {
@@ -886,9 +892,10 @@ impl LiteSVM {
             .programs_cache
             .replenish(program_id, Arc::new(builtin));
 
-        let mut account = AccountSharedData::new(1, 1, &bpf_loader::id());
-        account.set_executable(true);
-        self.accounts.add_account_no_checks(program_id, account);
+        self.accounts.add_builtin_account(
+            program_id,
+            crate::utils::create_loadable_account_for_test("custom_builtin"),
+        );
     }
 
     /// Adds an SBF program to the test environment from the file specified.

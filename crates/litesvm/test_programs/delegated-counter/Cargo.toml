@@ -1,0 +1,24 @@
+[package]
+name = "delegated-counter"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+custom-heap = []
+custom-panic = []
+no-entrypoint = []
+
+[dependencies]
+borsh.workspace = true
+ephemeral-rollups-sdk.workspace = true
+solana-account-info = "2.2"
+solana-cpi = "2.2"
+solana-instruction = "2.2"
+solana-msg.workspace = true
+solana-program-entrypoint = "2.2"
+solana-program-error = { version = "2.2", features = ["borsh"] }
+solana-pubkey = "2.2"
+solana-system-interface = { version = "=1.0.0", features = ["bincode"] }
