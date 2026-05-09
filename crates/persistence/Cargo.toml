@@ -11,7 +11,6 @@ rust-version.workspace = true
 litesvm = { workspace = true, features = ["persistence-internal"] }
 bincode.workspace = true
 serde = { workspace = true, features = ["derive"] }
-indexmap = { workspace = true, features = ["serde"] }
 solana-account.workspace = true
 solana-address.workspace = true
 solana-compute-budget.workspace = true
@@ -34,3 +33,7 @@ tempfile.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+test = false
+doctest = false
