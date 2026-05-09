@@ -231,12 +231,11 @@ impl AccountsDb {
     /// Scans all accounts for executable BPF programs and loads them into the program cache.
     #[cfg(feature = "persistence-internal")]
     pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
-        let executable_keys: Vec<Address> = self
+        let executable_keys= self
             .inner
             .iter()
             .filter(|(_, acc)| acc.executable() && acc.owner() != &native_loader::ID)
-            .map(|(k, _)| *k)
-            .collect();
+            .map(|(k, _)| *k);
 
         for key in executable_keys {
             let account = self.inner.get(&key).unwrap().clone();

@@ -4,8 +4,12 @@ use thiserror::Error;
 pub enum PersistenceError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    #[error("serialization error: {0}")]
-    Serialize(#[from] bincode::Error),
+    #[error("write error: {0}")]
+    Write(#[from] wincode::error::WriteError),
+    #[error("read error: {0}")]
+    Read(#[from] wincode::error::ReadError),
+    #[error("empty input")]
+    EmptyInput,
     #[error("unsupported snapshot version: {0}")]
     UnsupportedVersion(u8),
     #[error("failed to rebuild caches: {0}")]

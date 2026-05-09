@@ -200,7 +200,7 @@ fn load_nonexistent_file() {
 #[test]
 fn load_corrupted_data() {
     let result = from_bytes(&[1, 0, 0, 0, 0xff, 0xff]); // version 1 + garbage
-    assert!(matches!(result, Err(PersistenceError::Serialize(_))));
+    assert!(matches!(result, Err(PersistenceError::Read(_))));
 }
 
 #[test]
