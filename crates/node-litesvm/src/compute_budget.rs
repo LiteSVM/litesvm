@@ -266,19 +266,19 @@ impl ComputeBudget {
     }
     #[napi(setter)]
     pub fn set_alt_bn128_addition_cost(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.alt_bn128_addition_cost = bigint_to_u64(&val)?)
+        Ok(self.0.alt_bn128_g1_addition_cost = bigint_to_u64(&val)?)
     }
     #[napi(getter)]
     pub fn alt_bn128_addition_cost(&self) -> u64 {
-        self.0.alt_bn128_addition_cost
+        self.0.alt_bn128_g1_addition_cost
     }
     #[napi(setter)]
     pub fn set_alt_bn128_multiplication_cost(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.alt_bn128_multiplication_cost = bigint_to_u64(&val)?)
+        Ok(self.0.alt_bn128_g1_multiplication_cost = bigint_to_u64(&val)?)
     }
     #[napi(getter)]
     pub fn alt_bn128_multiplication_cost(&self) -> u64 {
-        self.0.alt_bn128_multiplication_cost
+        self.0.alt_bn128_g1_multiplication_cost
     }
     #[napi(setter)]
     pub fn set_alt_bn128_pairing_one_pair_cost_first(&mut self, val: BigInt) -> Result<()> {

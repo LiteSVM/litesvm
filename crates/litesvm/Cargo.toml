@@ -63,6 +63,7 @@ solana-keypair.workspace = true
 solana-last-restart-slot.workspace = true
 solana-loader-v3-interface.workspace = true
 solana-loader-v4-interface.workspace = true
+solana-loader-v4-program.workspace = true
 solana-message.workspace = true
 solana-native-token.workspace = true
 solana-nonce.workspace = true

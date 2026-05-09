@@ -4,7 +4,7 @@ use {
         compiled_instruction::CompiledInstruction,
         inner_instruction::{InnerInstruction, InnerInstructionsList},
     },
-    solana_transaction_context::TransactionContext,
+    solana_transaction_context::transaction::TransactionContext,
 };
 
 /// Pulled verbatim from `solana-svm` crate, `transaction_processor.rs`
