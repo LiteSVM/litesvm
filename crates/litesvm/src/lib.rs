@@ -886,7 +886,7 @@ impl LiteSVM {
             .programs_cache
             .replenish(program_id, Arc::new(builtin));
 
-        let mut account = AccountSharedData::new(1, 1, &bpf_loader::id());
+        let mut account = AccountSharedData::new(1, 1, &native_loader::id());
         account.set_executable(true);
         self.accounts.add_account_no_checks(program_id, account);
     }
