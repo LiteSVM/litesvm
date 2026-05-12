@@ -79,8 +79,8 @@ fn config_round_trip() {
     let bytes = to_bytes(&svm).unwrap();
     let restored = from_bytes(&bytes).unwrap();
 
-    assert_eq!(restored.get_sigverify(), true);
-    assert_eq!(restored.get_blockhash_check(), true);
+    assert!(restored.get_sigverify());
+    assert!(restored.get_blockhash_check());
     assert_eq!(restored.get_log_bytes_limit(), Some(5000));
 }
 
