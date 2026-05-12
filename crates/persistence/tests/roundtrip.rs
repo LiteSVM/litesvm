@@ -206,7 +206,10 @@ fn load_corrupted_data() {
 #[test]
 fn version_check() {
     let result = from_bytes(&[255, 0, 0, 0]); // invalid version
-    assert!(matches!(result, Err(PersistenceError::UnsupportedVersion(255))));
+    assert!(matches!(
+        result,
+        Err(PersistenceError::UnsupportedVersion(255))
+    ));
 }
 
 #[test]
@@ -214,12 +217,11 @@ fn bpf_program_round_trip() {
     // Load the counter program
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     so_path.push("../litesvm/test_programs/target/deploy/counter.so");
-    let program_bytes = std::fs::read(&so_path).expect("counter.so not found — run `cd crates/litesvm/test_programs && cargo build-sbf`");
+    let program_bytes = std::fs::read(&so_path)
+        .expect("counter.so not found — run `cd crates/litesvm/test_programs && cargo build-sbf`");
 
-    let program_id =
-        Address::from_str_const("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
-    let counter_address =
-        Address::from_str_const("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+    let program_id = Address::from_str_const("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+    let counter_address = Address::from_str_const("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
 
     // Set up SVM with a deployed BPF program and counter account
     let mut svm = LiteSVM::new();

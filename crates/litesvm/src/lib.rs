@@ -300,6 +300,8 @@ much easier.
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
+#[cfg(feature = "persistence-internal")]
+use indexmap::IndexMap;
 #[cfg(feature = "precompiles")]
 use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
@@ -388,9 +390,6 @@ use {
         inner_instructions::inner_instructions_list_from_instruction_trace,
     },
 };
-
-#[cfg(feature = "persistence-internal")]
-use indexmap::IndexMap;
 
 pub mod error;
 pub mod types;
@@ -1798,8 +1797,7 @@ impl LiteSVM {
     /// Order matters: environments first, then sysvars, then BPF programs.
     #[cfg(feature = "persistence-internal")]
     pub fn rebuild_caches(&mut self) -> Result<(), LiteSVMError> {
-        self.reserved_account_keys =
-            Self::reserved_account_keys_for_feature_set(&self.feature_set);
+        self.reserved_account_keys = Self::reserved_account_keys_for_feature_set(&self.feature_set);
         self.set_builtins();
         self.accounts.rebuild_sysvar_cache();
         self.accounts.load_all_existing_programs()?;

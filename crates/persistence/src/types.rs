@@ -78,10 +78,7 @@ unsafe impl<C: Config> SchemaWrite<C> for AccountSchema {
 unsafe impl<'de, C: Config> SchemaRead<'de, C> for AccountSchema {
     type Dst = AccountSharedData;
 
-    fn read(
-        reader: impl Reader<'de>,
-        dst: &mut MaybeUninit<AccountSharedData>,
-    ) -> ReadResult<()> {
+    fn read(reader: impl Reader<'de>, dst: &mut MaybeUninit<AccountSharedData>) -> ReadResult<()> {
         let mut account = MaybeUninit::<Account>::uninit();
         <AccountWire as SchemaRead<'de, C>>::read(reader, &mut account)?;
         // SAFETY: AccountWire::read fully initialized `account` on Ok.

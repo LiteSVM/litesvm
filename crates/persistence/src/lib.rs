@@ -2,7 +2,6 @@ mod error;
 mod types;
 
 pub use error::PersistenceError;
-
 use {
     litesvm::LiteSVM,
     std::{

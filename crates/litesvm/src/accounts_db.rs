@@ -218,11 +218,12 @@ impl AccountsDb {
     pub(crate) fn rebuild_sysvar_cache(&mut self) {
         self.sysvar_cache.reset();
         let accounts = &self.inner;
-        self.sysvar_cache.fill_missing_entries(|pubkey, set_sysvar| {
-            if let Some(acc) = accounts.get(pubkey) {
-                set_sysvar(acc.data())
-            }
-        });
+        self.sysvar_cache
+            .fill_missing_entries(|pubkey, set_sysvar| {
+                if let Some(acc) = accounts.get(pubkey) {
+                    set_sysvar(acc.data())
+                }
+            });
         if let Ok(clock) = self.sysvar_cache.get_clock() {
             self.programs_cache.set_slot_for_tests(clock.slot);
         }
@@ -231,7 +232,7 @@ impl AccountsDb {
     /// Scans all accounts for executable BPF programs and loads them into the program cache.
     #[cfg(feature = "persistence-internal")]
     pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
-        let executable_keys= self
+        let executable_keys = self
             .inner
             .iter()
             .filter(|(_, acc)| acc.executable() && acc.owner() != &native_loader::ID)
@@ -268,11 +269,7 @@ impl AccountsDb {
 
         let owner = program_account.owner();
         let program_runtime_v1 = self.environments.program_runtime_v1.clone();
-        let slot = self
-            .sysvar_cache
-            .get_clock()
-            .map(|c| c.slot)
-            .unwrap_or(0);
+        let slot = self.sysvar_cache.get_clock().map(|c| c.slot).unwrap_or(0);
 
         if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
             ProgramCacheEntry::new(
