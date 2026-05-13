@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-13
+
+### Added
+
+- Add mainnet feature set support in `LiteSVM` ([#327](https://github.com/LiteSVM/litesvm/pull/327)).
+- Add the `litesvm-persistence` crate for saving and loading LiteSVM state snapshots ([#319](https://github.com/LiteSVM/litesvm/pull/319)).
+- Include the `p-token` feature ([#336](https://github.com/LiteSVM/litesvm/pull/336)).
+
+### Changed
+
+- Refresh LiteSVM documentation and README with additional usage information ([#328](https://github.com/LiteSVM/litesvm/pull/328)).
+
+### Fixed
+
+- Use the native loader id when adding builtins ([#334](https://github.com/LiteSVM/litesvm/pull/334)).
+- Remove the config program from the default program set ([#331](https://github.com/LiteSVM/litesvm/pull/331)).
+
 ## [0.11.0] - 2026-03-30
 
 ### Added
@@ -212,7 +229,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/LiteSVM/litesvm/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/LiteSVM/litesvm/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/LiteSVM/litesvm/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/LiteSVM/litesvm/compare/v0.9.0...v0.9.1
