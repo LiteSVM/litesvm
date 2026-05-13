@@ -221,5 +221,5 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::poseidon_enforce_padding::ID,
     agave_feature_set::fix_alt_bn128_pairing_length_check::ID,
     agave_feature_set::relax_programdata_account_check_migration::ID,
-    agave_feature_set::replace_spl_token_with_p_token::ID
+    agave_feature_set::replace_spl_token_with_p_token::ID,
 ];
