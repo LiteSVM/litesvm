@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Refresh the Node wrapper documentation and README [(#328)](https://github.com/LiteSVM/litesvm/pull/328).
+
+### Fixed
+
+- Replace an `unwrap` with proper error handling for owner addresses [(#323)](https://github.com/LiteSVM/litesvm/pull/323).
+
 ## [1.0.0] - 2026-03-30
 
 ### Changed
