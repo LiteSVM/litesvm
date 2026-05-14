@@ -1802,7 +1802,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "litesvm"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "agave-feature-set",
  "agave-precompiles",
@@ -1865,7 +1865,7 @@ dependencies = [
  "solana-svm-log-collector",
  "solana-svm-timings",
  "solana-svm-transaction",
- "solana-system-interface 2.0.0",
+ "solana-system-interface 3.2.0",
  "solana-system-program",
  "solana-sysvar",
  "solana-sysvar-id",
@@ -1881,7 +1881,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-loader"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "agave-feature-set",
  "litesvm",
@@ -1928,7 +1928,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-persistence"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "agave-feature-set",
  "litesvm",
@@ -1944,7 +1944,7 @@ dependencies = [
  "solana-native-token",
  "solana-signature",
  "solana-signer",
- "solana-system-interface 2.0.0",
+ "solana-system-interface 3.2.0",
  "solana-transaction",
  "solana-transaction-context",
  "solana-transaction-error",
@@ -1956,7 +1956,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-token"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "litesvm",
  "smallvec",
@@ -1968,7 +1968,7 @@ dependencies = [
  "solana-program-pack",
  "solana-rent 3.1.0",
  "solana-signer",
- "solana-system-interface 2.0.0",
+ "solana-system-interface 3.2.0",
  "solana-transaction",
  "solana-transaction-error",
  "spl-associated-token-account-interface",
@@ -3273,7 +3273,7 @@ dependencies = [
  "solana-pubkey 4.2.0",
  "solana-rent 4.1.0",
  "solana-sdk-ids",
- "solana-system-interface 3.1.0",
+ "solana-system-interface 3.2.0",
 ]
 
 [[package]]
@@ -4010,9 +4010,9 @@ dependencies = [
 
 [[package]]
 name = "solana-system-interface"
-version = "3.1.0"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a95a6f2e23ed861d6444ad4a6d6896c418d7d101b960787e65a8e33157cee81b"
+checksum = "55b54965bf0b76fa8e2b35376583efddd4d916618cfe595bf48c7d7b55a9e628"
 dependencies = [
  "num-traits",
  "serde",
@@ -4192,7 +4192,7 @@ dependencies = [
  "solana-serde-varint",
  "solana-serialize-utils",
  "solana-short-vec",
- "solana-system-interface 3.1.0",
+ "solana-system-interface 3.2.0",
 ]
 
 [[package]]
