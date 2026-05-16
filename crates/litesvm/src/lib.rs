@@ -600,10 +600,8 @@ impl LiteSVM {
     /// Returns a [`FeatureSet`] containing only the features currently
     /// activated on Solana mainnet-beta.
     ///
-    /// The list of active features was captured from
-    /// `https://api.mainnet-beta.solana.com` on 2026-04-26 and will need to
-    /// be refreshed as mainnet activates new features. See also
-    /// <https://www.simd.wtf/>.
+    /// The list of active features will need to be refreshed as mainnet
+    /// activates new features. See also <https://www.simd.wtf/>.
     pub fn mainnet_feature_set() -> FeatureSet {
         let mut feature_set = FeatureSet::default();
         for feature_id in MAINNET_ACTIVE_FEATURES {
