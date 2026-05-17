@@ -312,3 +312,20 @@ fn account_with_data_round_trip() {
     assert_eq!(account.owner, owner);
     assert_eq!(account.lamports, 1_000_000);
 }
+
+#[test]
+fn compute_budget_round_trip() {
+    use solana_compute_budget::compute_budget::ComputeBudget;
+
+    let mut svm = LiteSVM::new();
+
+    let custom_budget = ComputeBudget::new_with_defaults(false, false);
+    let expected_limit = custom_budget.compute_unit_limit;
+    svm = svm.with_compute_budget(custom_budget); // This is the Some(cb), which tests the logic. Apply custome budget to svm. snapshot.compute_budget = Some()
+
+    let bytes = to_bytes(&svm).unwrap(); // Serializing the svm
+    let restored = from_bytes(&bytes).unwrap(); // Deserializing and returning restore_from_snapshot() in lib.rs
+
+    let restored_budget = restored.get_compute_budget().unwrap();
+    assert_eq!(restored_budget.compute_unit_limit, expected_limit);
+}
