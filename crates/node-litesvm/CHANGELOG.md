@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-20
+
 ### Changed
 
 - Refresh the Node wrapper documentation and README [(#328)](https://github.com/LiteSVM/litesvm/pull/328).
