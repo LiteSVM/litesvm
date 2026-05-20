@@ -1,6 +1,6 @@
 {
 	"name": "litesvm",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"files": [
@@ -23,12 +23,12 @@
 		"fastestsmallesttextencoderdecoder": "^1.0.22"
 	},
 	"devDependencies": {
-		"@algolia/client-search": "^5.50.0",
-		"@napi-rs/cli": "^3.6.0",
+		"@algolia/client-search": "^5.52.1",
+		"@napi-rs/cli": "^3.6.2",
 		"@solana/spl-token": "^0.4.14",
 		"@types/fastestsmallesttextencoderdecoder": "^1.0.2",
 		"@types/markdown-it": "^14.1.2",
-		"@types/node": "22.19.7",
+		"@types/node": "22.19.19",
 		"@types/node-fetch": "^2.6.13",
 		"markdown-it": "^14.1.1",
 		"markdown-it-include": "^2.0.0",
@@ -36,7 +36,7 @@
 		"search-insights": "^2.17.3",
 		"ts-node": "^10.9.2",
 		"tsconfig-paths": "^4.2.0",
-		"typedoc": "^0.28.18",
+		"typedoc": "^0.28.19",
 		"typedoc-plugin-markdown": "^4.11.0",
 		"typedoc-vitepress-theme": "^1.1.2",
 		"typescript": "^5.9.3",
