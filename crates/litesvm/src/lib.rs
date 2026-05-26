@@ -405,6 +405,7 @@ use {
     },
 };
 
+pub mod cpi_tree;
 pub mod error;
 pub mod types;
 
