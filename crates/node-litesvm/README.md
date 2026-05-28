@@ -53,17 +53,21 @@ test("it transfers SOL from one wallet to another", async () => {
 		(tx) => appendTransactionMessageInstruction(instruction, tx),
 		(tx) => signTransactionMessageWithSigners(tx),
 	);
+
 	const result = svm.sendTransaction(transaction);
 	if (result instanceof FailedTransactionMetadata) {
 		throw new Error(`Transaction failed: ${result.err()}`);
 	}
 
 	// Then we expect the accounts to have the correct balances.
-	assert.strictEqual(
-		svm.getBalance(recipient.address),
-		lamports(1_000_000_000n),
-	);
-	assert(svm.getBalance(payer.address) < lamports(1_000_000_000n));
+  const payerBalance = svm.getBalance(payer.address);
+
+  assert.strictEqual(
+    payerBalance,
+    lamports(1_000_000_000n),
+  );
+  assert(payerBalance !== null);
+  assert(payerBalance < lamports(1_000_000_000n));
 });
 ```
 
