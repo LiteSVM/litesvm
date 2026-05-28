@@ -364,7 +364,8 @@ use {
     },
     solana_rent::Rent,
     solana_sdk_ids::{
-        bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, native_loader, system_program,
+        bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, config as config_program,
+        native_loader, system_program,
     },
     solana_signature::Signature,
     solana_signer::Signer,
@@ -582,7 +583,35 @@ impl LiteSVM {
             latest_blockhash,
         )]));
         self.set_sysvar(&SlotHistory::default());
-        self.set_sysvar(&StakeHistory::default());
+
+        // StakeHistory::size_of() is hard-coded to 16 KiB (512 max entries). Using set_sysvar
+        // would allocate that padded buffer, and sol_get_sysvar reads beyond the actual data
+        // would return zeros. The Stake BPF program asserts entry_epoch == target_epoch after
+        // each partial read, so those zero bytes trigger a panic at epoch >= 1. Serialize only
+        // the actual data so reads beyond the end return an error instead.
+        {
+            let data = bincode::serialize(&StakeHistory::default()).unwrap();
+            let mut account = AccountSharedData::new(1, data.len(), &solana_sdk_ids::sysvar::id());
+            account.data_as_mut_slice().copy_from_slice(&data);
+            self.accounts
+                .add_account(StakeHistory::id(), account)
+                .unwrap();
+        }
+
+        // Initialize the deprecated StakeConfig account so it is available to programs
+        // that still pass it as a transaction account (e.g. older DelegateStake callers).
+        // Format: ConfigKeys header (8-byte u64 key count = 0) followed by
+        // bincode-serialised Config::default().
+        #[allow(deprecated)]
+        {
+            use solana_stake_interface::config::Config;
+            let mut data = bincode::serialize(&0u64).unwrap(); // 0 authorized keys
+            data.extend(bincode::serialize(&Config::default()).unwrap());
+            let mut account = AccountSharedData::new(1, data.len(), &config_program::id());
+            account.data_as_mut_slice().copy_from_slice(&data);
+            self.accounts
+                .add_account_no_checks(solana_sdk_ids::stake::config::id(), account);
+        }
     }
 
     /// Includes the default sysvars.

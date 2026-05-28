@@ -23,6 +23,7 @@ use {
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
     solana_vote_interface::{
+        authorized_voters::AuthorizedVoters,
         instruction as vote_instruction,
         state::{VoteInit, VoteStateV4, VoteStateVersions},
     },
@@ -712,7 +713,6 @@ fn test_authorize() {
 }
 
 #[test]
-#[ignore]
 fn test_stake_delegate() {
     let mut svm = LiteSVM::new();
     let accounts = Accounts::default();
@@ -840,4 +840,92 @@ fn test_stake_delegate() {
     let e =
         process_instruction(&mut svm, &instruction, &vec![&staker_keypair], &payer).unwrap_err();
     assert_eq!(e, ProgramError::InvalidAccountData);
+}
+
+/// Regression test for https://github.com/solana-foundation/surfpool/pull/605.
+///
+/// Three bugs existed in LiteSVM that made it unusable with mainnet-forked state:
+///
+/// 1. The bundled stake ELF (v1.0.1) was compiled against solana-vote-interface v2.x which only
+///    knew VoteStateVersions discriminants 0–2. Delegating to a V4 vote account (discriminant 3,
+///    common on mainnet) returned InvalidAccountData.
+///
+/// 2. StakeHistory was initialised from `size_of()` (16 KiB of zeros). The Stake BPF program
+///    uses `sol_get_sysvar` with byte offsets to read individual entries; the oversized zero-
+///    padded account made those reads succeed but return zeros, triggering an
+///    `assert_eq!(entry_epoch, target_epoch)` panic inside the program at epoch >= 2.
+///
+/// 3. The StakeConfig account was absent, so DelegateStake instructions that pass it as an
+///    account would fail with AccountNotFound.
+#[test]
+fn test_stake_surfpool_605() {
+    let mut svm = LiteSVM::new();
+    let payer = Keypair::new();
+    svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
+
+    // Bug 3: StakeConfig must be present at the well-known address after LiteSVM::new().
+    #[allow(deprecated)]
+    let stake_config_id = solana_sdk_ids::stake::config::id();
+    assert!(
+        svm.get_account(&stake_config_id).is_some(),
+        "StakeConfig account not found — was it removed from set_sysvars()?"
+    );
+
+    // Build a V4 vote account directly, bypassing the vote program.
+    // This simulates the way surfpool (and similar fork-from-mainnet tools) inject live accounts:
+    // they serialise the RPC state straight into LiteSVM without re-creating it via instructions.
+    let voter = Keypair::new();
+    let vote_account_address = Address::new_unique();
+    let rent = svm.get_sysvar::<Rent>();
+    let vote_state = VoteStateV4 {
+        node_pubkey: Keypair::new().pubkey(),
+        authorized_withdrawer: Keypair::new().pubkey(),
+        authorized_voters: AuthorizedVoters::new(0, voter.pubkey()),
+        ..VoteStateV4::default()
+    };
+    let mut vote_account = Account {
+        lamports: rent.minimum_balance(VoteStateV4::size_of()),
+        data: vec![0u8; VoteStateV4::size_of()],
+        owner: solana_sdk_ids::vote::id(),
+        executable: false,
+        rent_epoch: u64::MAX,
+    };
+    to(&VoteStateVersions::V4(Box::new(vote_state)), &mut vote_account).unwrap();
+    svm.set_account(vote_account_address, vote_account).unwrap();
+
+    // Bug 1: DelegateStake to the V4 vote account.
+    // The old stake ELF (v1.0.1) returned InvalidAccountData for V4 vote accounts.
+    let staker = Keypair::new();
+    let withdrawer = Keypair::new();
+    let minimum_delegation = get_minimum_delegation(&mut svm, &payer);
+    let stake = create_independent_stake_account(
+        &mut svm,
+        &Authorized {
+            staker: staker.pubkey(),
+            withdrawer: withdrawer.pubkey(),
+        },
+        minimum_delegation * 2,
+        &payer,
+    );
+    process_instruction(
+        &mut svm,
+        &ixn::delegate_stake(&stake, &staker.pubkey(), &vote_account_address),
+        &[&staker],
+        &payer,
+    )
+    .unwrap();
+
+    // Bug 2: Perform a stake operation after epoch 2.
+    // The old 16 KiB zero-padded StakeHistory caused the Stake BPF program to panic when it read
+    // an entry via sol_get_sysvar and the zero bytes made the epoch-index assertion fire.
+    advance_epoch(&mut svm);
+    advance_epoch(&mut svm);
+
+    process_instruction(
+        &mut svm,
+        &ixn::deactivate_stake(&stake, &staker.pubkey()),
+        &[&staker],
+        &payer,
+    )
+    .unwrap();
 }
