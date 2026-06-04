@@ -842,21 +842,6 @@ fn test_stake_delegate() {
     assert_eq!(e, ProgramError::InvalidAccountData);
 }
 
-/// Regression test for https://github.com/solana-foundation/surfpool/pull/605.
-///
-/// Three bugs existed in LiteSVM that made it unusable with mainnet-forked state:
-///
-/// 1. The bundled stake ELF (v1.0.1) was compiled against solana-vote-interface v2.x which only
-///    knew VoteStateVersions discriminants 0–2. Delegating to a V4 vote account (discriminant 3,
-///    common on mainnet) returned InvalidAccountData.
-///
-/// 2. StakeHistory was initialised from `size_of()` (16 KiB of zeros). The Stake BPF program
-///    uses `sol_get_sysvar` with byte offsets to read individual entries; the oversized zero-
-///    padded account made those reads succeed but return zeros, triggering an
-///    `assert_eq!(entry_epoch, target_epoch)` panic inside the program at epoch >= 2.
-///
-/// 3. The StakeConfig account was absent, so DelegateStake instructions that pass it as an
-///    account would fail with AccountNotFound.
 #[test]
 fn test_stake_surfpool_605() {
     let mut svm = LiteSVM::new();
@@ -890,7 +875,11 @@ fn test_stake_surfpool_605() {
         executable: false,
         rent_epoch: u64::MAX,
     };
-    to(&VoteStateVersions::V4(Box::new(vote_state)), &mut vote_account).unwrap();
+    to(
+        &VoteStateVersions::V4(Box::new(vote_state)),
+        &mut vote_account,
+    )
+    .unwrap();
     svm.set_account(vote_account_address, vote_account).unwrap();
 
     // Bug 1: DelegateStake to the V4 vote account.
