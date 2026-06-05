@@ -61,7 +61,7 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
     .unwrap();
     svm.add_program_preverified(
         stake::ID,
-        include_bytes!("elf/core_bpf_stake-1.0.1.so"),
+        include_bytes!("elf/core_bpf_stake-5.0.0.so"),
         &bpf_loader_upgradeable::id(),
     )
     .unwrap();
