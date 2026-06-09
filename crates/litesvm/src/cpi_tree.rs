@@ -320,6 +320,13 @@ pub fn format_cpi_tree(header: &str, frames: &[CpiFrame]) -> String {
 /// Like [`format_cpi_tree`], but the caller supplies how each frame's
 /// `program_id` is rendered (an alias, a hyperlink, ...). litesvm owns the
 /// tree structure; the consumer augments the label.
+///
+/// ```text
+/// // swap raw pubkeys for human aliases, falling back to the pubkey:
+/// format_cpi_tree_with(header, frames, &|addr| {
+///     aliases.get(addr).cloned().unwrap_or_else(|| addr.to_string())
+/// })
+/// ```
 pub fn format_cpi_tree_with(
     header: &str,
     frames: &[CpiFrame],
@@ -1011,10 +1018,7 @@ mod tests {
 
     #[test]
     fn format_with_custom_label_replaces_program_id() {
-        let logs = vec![
-            invoke(&SYSTEM_PROG, 1),
-            format!("Program {SYSTEM_PROG} success"),
-        ];
+        let logs = vec![invoke(&SYSTEM_PROG, 1), success(&SYSTEM_PROG)];
         let frames = cpi_tree(&logs);
         let rendered = format_cpi_tree_with("tx", &frames, &|addr| format!("<{addr}>"));
         assert_render_eq(
@@ -1022,6 +1026,28 @@ mod tests {
             "
             tx
             └── <11111111111111111111111111111111>
+            ",
+        );
+    }
+
+    #[test]
+    fn format_with_custom_label_threads_through_recursion() {
+        // A parent frame with a CPI child: the label closure must wrap BOTH
+        // program ids, proving it threads through the recursive descent.
+        let logs = vec![
+            invoke(&PROG_A, 1),
+            invoke(&TOKEN_PROG, 2),
+            success(&TOKEN_PROG),
+            success(&PROG_A),
+        ];
+        let frames = cpi_tree(&logs);
+        let rendered = format_cpi_tree_with("tx", &frames, &|addr| format!("<{addr}>"));
+        assert_render_eq(
+            &rendered,
+            "
+            tx
+            └── <GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2>
+                └── <TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA>
             ",
         );
     }
