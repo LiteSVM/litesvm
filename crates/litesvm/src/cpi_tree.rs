@@ -314,16 +314,33 @@ fn classify(log: &str) -> LogLine {
 /// a visible parent so a transaction's multiple top-level frames read as
 /// siblings rather than flush-left strangers.
 pub fn format_cpi_tree(header: &str, frames: &[CpiFrame]) -> String {
+    format_cpi_tree_with(header, frames, &|addr| addr.to_string())
+}
+
+/// Like [`format_cpi_tree`], but the caller supplies how each frame's
+/// `program_id` is rendered (an alias, a hyperlink, ...). litesvm owns the
+/// tree structure; the consumer augments the label.
+pub fn format_cpi_tree_with(
+    header: &str,
+    frames: &[CpiFrame],
+    program_label: &dyn Fn(&Address) -> String,
+) -> String {
     let mut out = String::new();
     writeln!(out, "{header}").unwrap();
     let last_idx = frames.len().saturating_sub(1);
     for (i, frame) in frames.iter().enumerate() {
-        write_frame(&mut out, frame, "", i == last_idx);
+        write_frame(&mut out, frame, "", i == last_idx, program_label);
     }
     out
 }
 
-fn write_frame(out: &mut String, frame: &CpiFrame, prefix: &str, is_last: bool) {
+fn write_frame(
+    out: &mut String,
+    frame: &CpiFrame,
+    prefix: &str,
+    is_last: bool,
+    program_label: &dyn Fn(&Address) -> String,
+) {
     let connector = if is_last { CONN_LAST } else { CONN_BRANCH };
     write!(out, "{prefix}{connector}").unwrap();
     if let Some(name) = &frame.instruction_name {
@@ -345,7 +362,7 @@ fn write_frame(out: &mut String, frame: &CpiFrame, prefix: &str, is_last: bool) 
         )
         .unwrap();
     }
-    writeln!(out, "{}", frame.program_id).unwrap();
+    writeln!(out, "{}", program_label(&frame.program_id)).unwrap();
 
     let child_prefix = if is_last {
         format!("{prefix}{SPINE_END}")
@@ -371,7 +388,7 @@ fn write_frame(out: &mut String, frame: &CpiFrame, prefix: &str, is_last: bool) 
     }
     let last_idx = frame.children.len().saturating_sub(1);
     for (i, child) in frame.children.iter().enumerate() {
-        write_frame(out, child, &child_prefix, i == last_idx);
+        write_frame(out, child, &child_prefix, i == last_idx, program_label);
     }
 }
 
@@ -990,6 +1007,23 @@ mod tests {
         ];
         let tree = cpi_tree(&logs);
         assert_eq!(transaction_compute_budget(&tree), Some(1_000_000));
+    }
+
+    #[test]
+    fn format_with_custom_label_replaces_program_id() {
+        let logs = vec![
+            invoke(&SYSTEM_PROG, 1),
+            format!("Program {SYSTEM_PROG} success"),
+        ];
+        let frames = cpi_tree(&logs);
+        let rendered = format_cpi_tree_with("tx", &frames, &|addr| format!("<{addr}>"));
+        assert_render_eq(
+            &rendered,
+            "
+            tx
+            └── <11111111111111111111111111111111>
+            ",
+        );
     }
 
     #[test]
