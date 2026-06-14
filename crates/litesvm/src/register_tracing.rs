@@ -4,7 +4,7 @@ use {
     solana_address::Address,
     solana_program_runtime::invoke_context::{Executable, InvokeContext, RegisterTrace},
     solana_transaction::sanitized::SanitizedTransaction,
-    solana_transaction_context::{IndexOfAccount, InstructionContext},
+    solana_transaction_context::{instruction::InstructionContext, IndexOfAccount},
     std::{fs::File, io::Write},
 };
 

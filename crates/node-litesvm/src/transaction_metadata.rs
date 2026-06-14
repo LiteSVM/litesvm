@@ -15,7 +15,7 @@ use {
         compiled_instruction::CompiledInstruction as CompiledInstructionOriginal,
         inner_instruction::InnerInstruction as InnerInstructionOriginal,
     },
-    solana_transaction_context::TransactionReturnData as TransactionReturnDataOriginal,
+    solana_transaction_context::transaction::TransactionReturnData as TransactionReturnDataOriginal,
 };
 
 #[derive(Debug, Clone)]

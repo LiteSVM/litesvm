@@ -6,11 +6,11 @@ use {
     litesvm::LiteSVM,
     std::{
         fs::File,
-        io::{BufReader, BufWriter, Read, Write},
+        io::{BufWriter, Read, Write},
         path::Path,
     },
     types::{FeatureSetSnapshot, LiteSvmSnapshot, TxResult},
-    wincode::{Deserialize, DeserializeOwned, Serialize},
+    wincode::{Deserialize, Serialize},
 };
 
 const STATE_VERSION: u8 = 1;
@@ -77,27 +77,29 @@ fn restore_from_snapshot(snapshot: LiteSvmSnapshot) -> Result<LiteSVM, Persisten
     Ok(svm)
 }
 
-/// Saves the full LiteSVM state to a file. Streams directly to disk via `BufWriter`
-/// without materializing the full snapshot in memory first.
+/// Saves the full LiteSVM state to a file.
 pub fn save_to_file(svm: &LiteSVM, path: impl AsRef<Path>) -> Result<(), PersistenceError> {
     let snapshot = extract_snapshot(svm);
     let mut writer = BufWriter::new(File::create(path)?);
+    let payload_size = LiteSvmSnapshot::serialized_size(&snapshot)? as usize;
+    let mut payload = Vec::with_capacity(payload_size);
+    LiteSvmSnapshot::serialize_into(&mut payload, &snapshot)?;
     writer.write_all(&[STATE_VERSION])?;
-    LiteSvmSnapshot::serialize_into(&mut writer, &snapshot)?;
+    writer.write_all(&payload)?;
     writer.flush()?;
     Ok(())
 }
 
-/// Loads a full LiteSVM state from a file. Reads directly from disk via `BufReader`
-/// without buffering the full file in memory first.
+/// Loads a full LiteSVM state from a file.
 pub fn load_from_file(path: impl AsRef<Path>) -> Result<LiteSVM, PersistenceError> {
-    let mut reader = BufReader::new(File::open(path)?);
-    let mut version = [0u8; 1];
-    reader.read_exact(&mut version)?;
-    if version[0] != STATE_VERSION {
-        return Err(PersistenceError::UnsupportedVersion(version[0]));
+    let mut reader = File::open(path)?;
+    let mut bytes = Vec::new();
+    reader.read_to_end(&mut bytes)?;
+    let (version, rest) = bytes.split_first().ok_or(PersistenceError::EmptyInput)?;
+    if *version != STATE_VERSION {
+        return Err(PersistenceError::UnsupportedVersion(*version));
     }
-    let snapshot: LiteSvmSnapshot = LiteSvmSnapshot::deserialize_from(reader)?;
+    let snapshot: LiteSvmSnapshot = LiteSvmSnapshot::deserialize(rest)?;
     restore_from_snapshot(snapshot)
 }
 

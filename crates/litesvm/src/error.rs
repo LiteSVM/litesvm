@@ -32,4 +32,6 @@ pub enum LiteSVMError {
     InvalidPath(#[from] std::io::Error),
     #[error("{0}")]
     InvalidLoader(String),
+    #[error("{0}")]
+    ProgramLoad(String),
 }
