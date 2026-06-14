@@ -1,6 +1,6 @@
 {
 	"name": "litesvm",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"files": [
@@ -20,14 +20,14 @@
 	"license": "MIT",
 	"dependencies": {
 		"@solana-program/system": "^0.12.0",
-		"@solana-program/token": "^0.12.0",
-		"@solana/kit": "^6.5.0"
+		"@solana-program/token": "^0.13.0",
+		"@solana/kit": "^6.9.0"
 	},
 	"devDependencies": {
-		"@algolia/client-search": "^5.50.0",
-		"@napi-rs/cli": "^3.6.0",
+		"@algolia/client-search": "^5.52.1",
+		"@napi-rs/cli": "^3.6.2",
 		"@types/markdown-it": "^14.1.2",
-		"@types/node": "22.19.7",
+		"@types/node": "22.19.19",
 		"@types/node-fetch": "^2.6.13",
 		"markdown-it": "^14.1.1",
 		"markdown-it-include": "^2.0.0",
@@ -35,12 +35,12 @@
 		"search-insights": "^2.17.3",
 		"ts-node": "^10.9.2",
 		"tsconfig-paths": "^4.2.0",
-		"typedoc": "^0.28.18",
+		"typedoc": "^0.28.19",
 		"typedoc-plugin-markdown": "^4.11.0",
 		"typedoc-vitepress-theme": "^1.1.2",
 		"typescript": "^5.9.3",
 		"vitepress": "^1.6.4",
-		"ws": "^8.20.0"
+		"ws": "^8.20.1"
 	},
 	"engines": {
 		"node": ">= 20"

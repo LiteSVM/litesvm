@@ -272,6 +272,18 @@ Other things you can do with `litesvm` include:
 * Disable transaction signature checking using [`.with_sigverify(false)`](LiteSVM::with_sigverify).
 * Find previous transactions using [`.get_transaction`](`LiteSVM::get_transaction`).
 
+## Feature Flags
+
+| Feature | Description |
+|---|---|
+| `precompiles` | Loads the standard precompiles (ed25519, secp256k1) alongside the builtins. Enables [`with_precompiles`](LiteSVM::with_precompiles). |
+| `invocation-inspect-callback` | Enables the [`InvocationInspectCallback`] trait and [`set_invocation_inspect_callback`](LiteSVM::set_invocation_inspect_callback), giving low-level access to the `InvokeContext` before and after each transaction. |
+| `register-tracing` | Enables BPF register-level tracing. Implies `invocation-inspect-callback`. See [`LiteSVM::new_debuggable`] and [`register_tracing::DefaultRegisterTracingCallback`]. |
+| `hashbrown` | Switches internal hash maps to `hashbrown`. |
+| `serde` | Enables serde serialization/deserialization on internal types. |
+| `nodejs-internal` | Used by the Node.js bindings; not intended for direct use. |
+| `internal-test` | Enables internal test helpers; not intended for direct use. |
+
 ## When should I use `solana-test-validator`?
 
 While `litesvm` is faster and more convenient, it is also less like a real RPC node.
@@ -288,6 +300,8 @@ much easier.
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
+#[cfg(feature = "persistence-internal")]
+use indexmap::IndexMap;
 #[cfg(feature = "precompiles")]
 use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
@@ -300,6 +314,7 @@ use {
     crate::{
         accounts_db::AccountsDb,
         error::LiteSVMError,
+        features::MAINNET_ACTIVE_FEATURES,
         history::TransactionHistory,
         message_processor::process_message,
         programs::load_default_programs,
@@ -384,6 +399,7 @@ pub mod types;
 
 mod accounts_db;
 mod callback;
+mod features;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -465,7 +481,7 @@ impl LiteSVM {
 
     fn into_basic(self) -> Self {
         let svm = self
-            .with_feature_set(FeatureSet::all_enabled())
+            .with_mainnet_features()
             .with_builtins()
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
@@ -584,6 +600,25 @@ impl LiteSVM {
         self
     }
 
+    /// Returns a [`FeatureSet`] containing only the features currently
+    /// activated on Solana mainnet-beta.
+    ///
+    /// The list of active features will need to be refreshed as mainnet
+    /// activates new features. See also <https://www.simd.wtf/>.
+    pub fn mainnet_feature_set() -> FeatureSet {
+        let mut feature_set = FeatureSet::default();
+        for feature_id in MAINNET_ACTIVE_FEATURES {
+            feature_set.activate(feature_id, 0);
+        }
+        feature_set
+    }
+
+    /// Replace the feature set with one matching the features active on
+    /// Solana mainnet-beta. See [`Self::mainnet_feature_set`].
+    pub fn with_mainnet_features(self) -> Self {
+        self.with_feature_set(Self::mainnet_feature_set())
+    }
+
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_feature_set(&mut self, feature_set: FeatureSet) {
         self.feature_set = feature_set;
@@ -602,6 +637,7 @@ impl LiteSVM {
         }
     }
 
+    /// Adds on-chain feature gate accounts corresponding to the currently active feature set.
     pub fn with_feature_accounts(mut self) -> Self {
         self.set_feature_accounts();
         self
@@ -713,6 +749,7 @@ impl LiteSVM {
         self.log_bytes_limit = limit;
     }
 
+    /// Sets the maximum number of bytes collected from transaction logs. Pass `None` to remove the limit.
     pub fn with_log_bytes_limit(mut self, limit: Option<usize>) -> Self {
         self.set_log_bytes_limit(limit);
         self
@@ -852,7 +889,7 @@ impl LiteSVM {
             .programs_cache
             .replenish(program_id, Arc::new(builtin));
 
-        let mut account = AccountSharedData::new(1, 1, &bpf_loader::id());
+        let mut account = AccountSharedData::new(1, 1, &native_loader::id());
         account.set_executable(true);
         self.accounts.add_account_no_checks(program_id, account);
     }
@@ -1594,6 +1631,7 @@ impl LiteSVM {
         self.compute_budget
     }
 
+    /// Returns whether transaction signature verification is enabled.
     pub fn get_sigverify(&self) -> bool {
         self.sigverify
     }
@@ -1704,6 +1742,89 @@ impl LiteSVM {
             .unwrap_or_else(|e| panic!("failed to register syscall '{name}' in runtime_v2: {e}"));
 
         self
+    }
+
+    // ── persistence-internal: getters ──────────────────────────────────
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn airdrop_keypair_bytes(&self) -> &[u8; 64] {
+        &self.airdrop_kp
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_blockhash_check(&self) -> bool {
+        self.blockhash_check
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_fee_structure(&self) -> &FeeStructure {
+        &self.fee_structure
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_log_bytes_limit(&self) -> Option<usize> {
+        self.log_bytes_limit
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn get_feature_set_ref(&self) -> &FeatureSet {
+        &self.feature_set
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn transaction_history_entries(&self) -> &IndexMap<Signature, TransactionResult> {
+        self.history.entries()
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn transaction_history_capacity(&self) -> usize {
+        self.history.capacity()
+    }
+
+    // ── persistence-internal: setters ──────────────────────────────────
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_latest_blockhash(&mut self, hash: Hash) {
+        self.latest_blockhash = hash;
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_airdrop_keypair(&mut self, kp: [u8; 64]) {
+        self.airdrop_kp = kp;
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_account_no_checks(&mut self, pubkey: Address, account: AccountSharedData) {
+        self.accounts.add_account_no_checks(pubkey, account);
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn restore_transaction_history(
+        &mut self,
+        entries: IndexMap<Signature, TransactionResult>,
+        capacity: usize,
+    ) {
+        self.history = TransactionHistory::from_entries(entries, capacity);
+    }
+
+    #[cfg(feature = "persistence-internal")]
+    pub fn set_fee_structure(&mut self, fee_structure: FeeStructure) {
+        self.fee_structure = fee_structure;
+    }
+
+    // ── persistence-internal: cache rebuild ────────────────────────────
+
+    /// Rebuilds all derived caches after bulk account insertion.
+    ///
+    /// Must be called after restoring accounts via `set_account_no_checks`.
+    /// Order matters: environments first, then sysvars, then BPF programs.
+    #[cfg(feature = "persistence-internal")]
+    pub fn rebuild_caches(&mut self) -> Result<(), LiteSVMError> {
+        self.reserved_account_keys = Self::reserved_account_keys_for_feature_set(&self.feature_set);
+        self.set_builtins();
+        self.accounts.rebuild_sysvar_cache();
+        self.accounts.load_all_existing_programs()?;
+        Ok(())
     }
 }
 

@@ -41,3 +41,7 @@ workspace = true
 [[test]]
 name = "native_mint"
 required-features = ["token-2022"]
+
+[lib]
+test = false
+doctest = false
