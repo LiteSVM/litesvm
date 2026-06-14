@@ -1,10 +1,12 @@
 use solana_address::Address;
 
 /// Feature gates currently activated on Solana mainnet-beta, sourced from the
-/// cluster on 2026-05-13.
+/// cluster on 2026-06-14.
 pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::deprecate_rewards_sysvar::ID,
     agave_feature_set::pico_inflation::ID,
+    agave_feature_set::full_inflation::mainnet::certusone::vote::ID,
+    agave_feature_set::full_inflation::mainnet::certusone::enable::ID,
     agave_feature_set::secp256k1_program_enabled::ID,
     agave_feature_set::spl_token_v2_multisig_fix::ID,
     agave_feature_set::no_overflow_rent_distribution::ID,
@@ -220,6 +222,6 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::deprecate_rent_exemption_threshold::ID,
     agave_feature_set::poseidon_enforce_padding::ID,
     agave_feature_set::fix_alt_bn128_pairing_length_check::ID,
-    agave_feature_set::relax_programdata_account_check_migration::ID,
     agave_feature_set::replace_spl_token_with_p_token::ID,
+    agave_feature_set::relax_programdata_account_check_migration::ID,
 ];
