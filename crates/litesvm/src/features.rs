@@ -1,7 +1,7 @@
 use solana_address::Address;
 
 /// Feature gates currently activated on Solana mainnet-beta, sourced from the
-/// cluster on 2026-06-14.
+/// cluster on 2026-06-16.
 pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::deprecate_rewards_sysvar::ID,
     agave_feature_set::pico_inflation::ID,
@@ -212,9 +212,11 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::mask_out_rent_epoch_in_vm_serialization::ID,
     agave_feature_set::formalize_loaded_transaction_data_size::ID,
     agave_feature_set::disable_zk_elgamal_proof_program::ID,
+    agave_feature_set::reenable_zk_elgamal_proof_program::ID,
     agave_feature_set::raise_account_cu_limit::ID,
     agave_feature_set::enforce_fixed_fec_set::ID,
     agave_feature_set::provide_instruction_data_offset_in_vm_r2::ID,
+    agave_feature_set::create_account_allow_prefund::ID,
     agave_feature_set::static_instruction_limit::ID,
     agave_feature_set::vote_state_v4::ID,
     agave_feature_set::switch_to_chacha8_turbine::ID,
@@ -223,5 +225,9 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::poseidon_enforce_padding::ID,
     agave_feature_set::fix_alt_bn128_pairing_length_check::ID,
     agave_feature_set::replace_spl_token_with_p_token::ID,
+    agave_feature_set::alt_bn128_little_endian::ID,
     agave_feature_set::relax_programdata_account_check_migration::ID,
+    agave_feature_set::enable_alt_bn128_g2_syscalls::ID,
+    agave_feature_set::enable_bls12_381_syscall::ID,
+    agave_feature_set::remove_simple_vote_from_cost_model::ID,
 ];
