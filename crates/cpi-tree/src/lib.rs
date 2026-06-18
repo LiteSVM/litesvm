@@ -449,6 +449,13 @@ mod tests {
         format!("Program {addr} failed: {msg}")
     }
 
+    // Render a fresh tree under the standard test header. Most renderer tests
+    // care only about the formatted string, not the intermediate frames, so
+    // they go straight from logs to output.
+    fn render(logs: &[String]) -> String {
+        format_cpi_tree("CPI Tree:", &cpi_tree(logs))
+    }
+
     // ---- Render assertion ----
     /// Compare a rendered tree against a multi-line literal, after dedenting
     /// the literal by its common leading indent. Lets renderer tests write
@@ -705,8 +712,7 @@ mod tests {
             consumed(&PROG_A, 5000),
             success(&PROG_A),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
@@ -727,8 +733,7 @@ mod tests {
             consumed(&PROG_A, 3100),
             failed(&PROG_A, "custom program error: 0x7d1"),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
@@ -759,8 +764,7 @@ mod tests {
             invoke(&PROG_A, 1),
             success(&PROG_A),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
@@ -784,8 +788,7 @@ mod tests {
             consumed(&PROG_B, 1500),
             success(&PROG_B),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
@@ -812,8 +815,7 @@ mod tests {
             consumed(&PROG_A, 5000),
             success(&PROG_A),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
@@ -832,8 +834,7 @@ mod tests {
             consumed(&SYSTEM_PROG, 100),
             success(&SYSTEM_PROG),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
@@ -887,8 +888,7 @@ mod tests {
             consumed(&PROG_B, 1500),
             success(&PROG_B),
         ];
-        let tree = cpi_tree(&logs);
-        let out = format_cpi_tree("CPI Tree:", &tree);
+        let out = render(&logs);
         assert_render_eq(
             &out,
             "
