@@ -64,6 +64,9 @@ use {
     std::{fmt::Write, str::FromStr},
 };
 
+mod ext;
+pub use ext::CpiTreeExt;
+
 // `cargo tree` glyphs. Connectors go on a child's line; spines continue
 // under a frame on lines that follow. 4 cols wide so nested frames align.
 const CONN_BRANCH: &str = "├── ";

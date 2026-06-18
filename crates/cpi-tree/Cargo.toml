@@ -12,7 +12,16 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
+litesvm.workspace = true
 solana-address = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+solana-account.workspace = true
+solana-clock.workspace = true
+solana-keypair.workspace = true
+solana-message.workspace = true
+solana-signer.workspace = true
+solana-transaction = { workspace = true, features = ["verify"] }
 
 [lints]
 workspace = true
