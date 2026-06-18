@@ -745,6 +745,21 @@ mod tests {
     }
 
     #[test]
+    fn format_truncated_frame_marks_it() {
+        // A frame still open at EOF must render with the TRUNCATED marker, so
+        // a lost-sight-of CPI doesn't masquerade as a clean success.
+        let logs = vec![invoke(&PROG_A, 1)];
+        let out = render(&logs);
+        assert_render_eq(
+            &out,
+            "
+            CPI Tree:
+            └── TRUNCATED GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2
+            ",
+        );
+    }
+
+    #[test]
     fn format_empty_tree_yields_only_header() {
         assert_eq!(format_cpi_tree("CPI Tree:", &[]), "CPI Tree:\n");
     }
