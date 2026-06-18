@@ -81,8 +81,8 @@ const LOG_SPINE_END: &str = "  ";
 
 /// Both values from a `Consumed(N, M)` token. Either both are emitted
 /// (BPF programs) or neither (native programs outside the SBPF VM:
-/// `ComputeBudget`, `BpfLoader`, precompiles). The native-program gap is
-/// load-bearing for the totals below; see `transaction_total_cu`.
+/// `ComputeBudget`, `BpfLoader`, precompiles). The totals below depend on
+/// this native-program gap; see `transaction_total_cu`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ComputeUnits {
     /// CU consumed by this frame as reported by the SBPF VM. Cumulative
