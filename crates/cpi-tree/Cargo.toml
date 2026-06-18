@@ -1,0 +1,21 @@
+[package]
+name = "litesvm-cpi-tree"
+description = "Parse and render Solana transaction logs as a CPI call tree"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+solana-address = { workspace = true, features = ["std"] }
+
+[lints]
+workspace = true
+
+[lib]
+doctest = false
