@@ -214,11 +214,7 @@ pub fn cpi_tree(logs: &[String]) -> Vec<CpiFrame> {
     roots
 }
 
-fn push_into_parent_or_roots(
-    frame: CpiFrame,
-    stack: &mut Vec<CpiFrame>,
-    roots: &mut Vec<CpiFrame>,
-) {
+fn push_into_parent_or_roots(frame: CpiFrame, stack: &mut [CpiFrame], roots: &mut Vec<CpiFrame>) {
     if let Some(parent) = stack.last_mut() {
         parent.children.push(frame);
     } else {
