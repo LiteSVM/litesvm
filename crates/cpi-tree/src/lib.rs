@@ -255,8 +255,8 @@ pub fn with_commas(n: u64) -> String {
 pub fn transaction_total_cu(frames: &[CpiFrame]) -> Option<u64> {
     frames
         .iter()
-        .filter_map(|f| f.compute_units.as_ref().map(|cu| cu.consumed))
-        .fold(None, |acc, cu| Some(acc.unwrap_or(0) + cu))
+        .filter_map(|f| f.compute_units.map(|cu| cu.consumed))
+        .reduce(|a, b| a + b)
 }
 
 /// Transaction CU budget: `available_at_start` of the first top-level
