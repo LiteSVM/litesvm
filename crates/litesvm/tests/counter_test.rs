@@ -240,13 +240,16 @@ fn test_register_tracing_handler() {
             _: &LiteSVM,
             _: &SanitizedTransaction,
             _: &[IndexOfAccount],
-            _: &InvokeContext,
+            _: &mut InvokeContext,
+            _register_tracing_enabled: bool,
         ) {
         }
 
         fn after_invocation(
             &self,
             _: &LiteSVM,
+            _: &SanitizedTransaction,
+            _: &[IndexOfAccount],
             invoke_context: &InvokeContext,
             register_tracing_enabled: bool,
         ) {

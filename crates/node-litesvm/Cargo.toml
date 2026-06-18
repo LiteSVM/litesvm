@@ -8,6 +8,7 @@ license = "MIT"
 
 [features]
 default = []
+sbpf-debugger = ["litesvm/sbpf-debugger"]
 register-tracing = ["litesvm/register-tracing"]
 
 [lib]
