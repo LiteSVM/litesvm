@@ -7,7 +7,7 @@
 
 use {
     litesvm::LiteSVM,
-    litesvm_cpi_tree::CpiTreeExt,
+    litesvm_cpi_tree::{CpiOutcome, CpiTreeExt},
     solana_account::Account,
     solana_address::{address, Address},
     solana_clock::Clock,
@@ -72,6 +72,12 @@ fn fixture_counter() {
         tree.contains(&program_id.to_string()),
         "missing frame: {tree}"
     );
+    // Structural checks that can't drift with toolchain CU accounting: a
+    // single top-level frame, the program we called, a clean success.
+    let frames = meta.cpi_tree();
+    assert_eq!(frames.len(), 1, "expected a single root frame: {frames:?}");
+    assert_eq!(frames[0].program_id, program_id);
+    assert_eq!(frames[0].outcome, CpiOutcome::Success);
     dump("counter (success)", tree);
 }
 
@@ -100,6 +106,10 @@ fn fixture_failure() {
     let tree = failed.meta.pretty_cpi_tree();
     // The failure must be attributed on the frame line, not lost.
     assert!(tree.contains("FAILED:"), "missing failure marker: {tree}");
+    // Structural: one root frame, and it carries a Failed outcome.
+    let frames = failed.meta.cpi_tree();
+    assert_eq!(frames.len(), 1, "expected a single root frame: {frames:?}");
+    assert!(matches!(frames[0].outcome, CpiOutcome::Failed { .. }));
     dump("failure (custom error 0)", tree);
 }
 
@@ -134,5 +144,10 @@ fn fixture_clock_example() {
         tree.starts_with("CPI Tree (") && tree.contains(&program_id.to_string()),
         "unexpected tree: {tree}"
     );
+    // Structural: one root frame, the program we called, a clean success.
+    let frames = meta.cpi_tree();
+    assert_eq!(frames.len(), 1, "expected a single root frame: {frames:?}");
+    assert_eq!(frames[0].program_id, program_id);
+    assert_eq!(frames[0].outcome, CpiOutcome::Success);
     dump("clock-example (success)", tree);
 }
