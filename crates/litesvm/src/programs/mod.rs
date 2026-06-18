@@ -31,7 +31,7 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
 
     svm.add_program_preverified(
         address!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
-        include_bytes!("elf/spl_token_2022-10.0.0.so"),
+        include_bytes!("elf/spl_token_2022-11.0.0.so"),
         &bpf_loader_upgradeable::id(),
     )
     .unwrap();
