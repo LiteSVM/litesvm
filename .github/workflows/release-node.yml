@@ -38,7 +38,7 @@ jobs:
           cd crates/node-litesvm/
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           TAG=latest
-          [[ "$GITHUB_REF_NAME" == *-* ]] && TAG=next
+          [[ "$GITHUB_REF_NAME" == *-rc.* ]] && TAG=next
           npm publish --access public --tag "$TAG"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
