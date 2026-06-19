@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-19
+
+### Changed
+
+- Bump to Agave 4.0 ([#322](https://github.com/LiteSVM/litesvm/pull/322)).
+- Update mainnet feature set ([#353](https://github.com/LiteSVM/litesvm/pull/353)).
+
+### Fixed
+
+- Add missing mainnet features ([#355](https://github.com/LiteSVM/litesvm/pull/355)).
+- Fix stake program panics and failures ([#346](https://github.com/LiteSVM/litesvm/pull/346)).
+- Update outdated mainnet features date ([#339](https://github.com/LiteSVM/litesvm/pull/339)).
+
 ## [0.12.0] - 2026-05-13
 
 ### Added
@@ -229,7 +242,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/LiteSVM/litesvm/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/LiteSVM/litesvm/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/LiteSVM/litesvm/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/LiteSVM/litesvm/compare/v0.9.1...v0.10.0
