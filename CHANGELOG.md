@@ -4,10 +4,17 @@
 
 ## [0.13.0] - 2026-06-19
 
+### Added
+
+- Add SBPF debugger support with GDB remote stub and trace filtering ([#354](https://github.com/LiteSVM/litesvm/pull/354)).
+- Add a script to update mainnet features ([#357](https://github.com/LiteSVM/litesvm/pull/357)).
+
 ### Changed
 
 - Bump to Agave 4.0 ([#322](https://github.com/LiteSVM/litesvm/pull/322)).
 - Update mainnet feature set ([#353](https://github.com/LiteSVM/litesvm/pull/353)).
+- Update SPL token to version 2022-11.0.0 ([#358](https://github.com/LiteSVM/litesvm/pull/358)).
+- Allow pre-release version for node ([#356](https://github.com/LiteSVM/litesvm/pull/356)).
 
 ### Fixed
 
