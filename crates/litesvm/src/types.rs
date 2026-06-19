@@ -2,7 +2,7 @@ use {
     crate::format_logs::format_logs,
     solana_account::AccountSharedData,
     solana_address::Address,
-    solana_instruction::error::InstructionError,
+    solana_instruction_error::InstructionError,
     solana_message::inner_instruction::InnerInstructionsList,
     solana_program_error::ProgramError,
     solana_signature::Signature,
