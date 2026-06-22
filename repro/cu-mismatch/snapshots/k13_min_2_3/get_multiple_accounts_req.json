@@ -1,0 +1,43 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "getMultipleAccounts",
+  "params": [
+    [
+      "11111111111111111111111111111111",
+      "3RmKnrRXjUJAmeSa57y8EDZBnXJ3eav5rXByMiHZTKno",
+      "4nUn4uy88EcUwkjP6EUmAHUyfjqr27MQMa2LTXcAH3TR",
+      "4oJZDPnihHANczZXXyvmBUTGLve2oD9Fbe7d2z56wTXC",
+      "5PHirr8joyTMp9JMm6nW7hNDVyEYdkzDqazxPD7RaTjx",
+      "5vPNE6VFyXmCmzmWotdxmRk57LEWiXxuAfZL3hKbi2LH",
+      "6rR1V4h4BncYbyR7M1ZEtLYFQguCPwuS7L8j53bDpump",
+      "7RKtfATWCe98ChuwecNq8XCzAzfoK3DtZTprFsPMGtio",
+      "7iypnuGgz89gtP6DkPCprUAQnpq5jm6Q5muvPRM9PqNn",
+      "933VZLqtaeVadcn6uRYcgpGNr8hEmaof72ns9pABtukx",
+      "ADyA8hdefvWN2dbGGWFotbzWxrAvLW83WG6QCVXvJKqw",
+      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+      "BWXT6RUhit9FfJQM3pBmqeFLPYmuxgmyhMGC5sGr8RbA",
+      "C2aFPdENg4A2HQsmrd5rTw5TaYBX5Ku887cWjbFKtZpw",
+      "ComputeBudget111111111111111111111111111111",
+      "D9ix7hoLSwmVADJ858GAK8PkdDis3xwgCJGhTKTe35Bz",
+      "DnXfbS8uZUgTCx9wec6aADjgXPgU1AAcagtYapijrCF3",
+      "EHDjV35kB2R5fh8aRhh4poz1aAQZY5gmKR5xiwdgGafe",
+      "F9digUyMzaYwFUyGdbTgPuiV4cXwYJq4eZVNcBRVX9EY",
+      "FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9",
+      "G5UZAVbAf46s7cKWoyKu8kYTip9DGTpbLZ2qa9Aq69dP",
+      "GS4CU59F31iL7aR2Q8zVS8DRrcRnXX1yjQ66TqNVQnaR",
+      "H2cDR3EkJjtTKDQKk8SJS48du9mhsdzQhy8xJx5UMqQK",
+      "So11111111111111111111111111111111111111112",
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "TpdxgNJBWZRL8UXF5mrEsyWxDWx9HQexA9P1eTWQ42p",
+      "jitodontfront81111111TradeWithAxiomDotTrade",
+      "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+      "pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ"
+    ],
+    {
+      "encoding": "base64",
+      "commitment": "confirmed"
+    }
+  ]
+}
