@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-06-22
+
+### Changed
+
+- Loosen `solana-address` version constraint ([#363](https://github.com/LiteSVM/litesvm/pull/363)).
+
 ## [0.13.0] - 2026-06-19
 
 ### Added
