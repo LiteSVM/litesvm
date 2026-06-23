@@ -644,6 +644,38 @@ mod tests {
     }
 
     #[test]
+    fn truncation_marks_open_spine_not_resolved_siblings() {
+        // Truncation deeper than the root. PROG_A opens, runs a CPI to
+        // TOKEN_PROG that completes, then opens PROG_C before the stream cuts
+        // off. The LIFO stack guarantees the open frames are a single spine
+        // (PROG_A -> PROG_C); the sibling that closed keeps its Success while
+        // only that spine drains as Truncated.
+        let logs = vec![
+            invoke(&PROG_A, 1),
+            instruction("Outer"),
+            invoke(&TOKEN_PROG, 2),
+            consumed(&TOKEN_PROG, 500),
+            success(&TOKEN_PROG),
+            invoke(&PROG_C, 2),
+        ];
+        let tree = cpi_tree(&logs);
+        assert_eq!(tree.len(), 1);
+        assert_eq!(tree[0].program_id, PROG_A);
+        assert_eq!(tree[0].outcome, CpiOutcome::Truncated);
+        assert_eq!(tree[0].children.len(), 2);
+        // The CPI that closed before truncation keeps its outcome and CU.
+        assert_eq!(tree[0].children[0].program_id, TOKEN_PROG);
+        assert_eq!(tree[0].children[0].outcome, CpiOutcome::Success);
+        assert_eq!(
+            tree[0].children[0].compute_units.map(|cu| cu.consumed),
+            Some(500)
+        );
+        // The frame still open at EOF drains as Truncated.
+        assert_eq!(tree[0].children[1].program_id, PROG_C);
+        assert_eq!(tree[0].children[1].outcome, CpiOutcome::Truncated);
+    }
+
+    #[test]
     fn invalid_program_id_in_invoke_is_dropped() {
         let logs = vec![
             "Program not-a-valid-base58-pubkey invoke [1]".to_string(),
@@ -755,6 +787,31 @@ mod tests {
             "
             CPI Tree:
             └── TRUNCATED GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2
+            ",
+        );
+    }
+
+    #[test]
+    fn format_truncated_spine_with_resolved_sibling() {
+        // TRUNCATED on a non-leaf frame: the marker sits on PROG_A while a
+        // resolved child (├──) and the truncated continuation (└──) branch
+        // below it.
+        let logs = vec![
+            invoke(&PROG_A, 1),
+            instruction("Outer"),
+            invoke(&TOKEN_PROG, 2),
+            consumed(&TOKEN_PROG, 500),
+            success(&TOKEN_PROG),
+            invoke(&PROG_C, 2),
+        ];
+        let out = render(&logs);
+        assert_render_eq(
+            &out,
+            "
+            CPI Tree:
+            └── Outer TRUNCATED GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2
+                ├── (500 / 200,000 CU) TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+                └── TRUNCATED 22222222222222222222222222222222222222222222
             ",
         );
     }
