@@ -2055,11 +2055,11 @@ dependencies = [
 
 [[package]]
 name = "litesvm-cpi-tree"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "litesvm",
  "solana-account",
- "solana-address 2.6.0",
+ "solana-address 2.2.0",
  "solana-clock",
  "solana-keypair",
  "solana-message",
