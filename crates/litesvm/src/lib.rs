@@ -357,6 +357,7 @@ use {
     solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
     solana_loader_v3_interface::state::UpgradeableLoaderState,
+    solana_loader_v4_interface::state::{LoaderV4State, LoaderV4Status},
     solana_message::{
         inner_instruction::InnerInstructionsList, Message, SanitizedMessage, VersionedMessage,
     },
@@ -372,7 +373,7 @@ use {
     solana_rent::Rent,
     solana_sdk_ids::{
         bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, config as config_program,
-        native_loader, system_program,
+        loader_v4, native_loader, system_program,
     },
     solana_signature::Signature,
     solana_signer::Signer,
@@ -1004,6 +1005,51 @@ impl LiteSVM {
             self.accounts.add_account_no_checks(program_id, account);
 
             program_len
+        } else if loader_v4::check_id(loader_id) {
+            if self
+                .accounts
+                .programs_cache
+                .find(&loader_v4::id())
+                .is_none()
+            {
+                let builtin = ProgramCacheEntry::new_builtin(
+                    current_slot,
+                    "loader_v4".len(),
+                    solana_loader_v4_program::Entrypoint::vm,
+                );
+                self.accounts
+                    .programs_cache
+                    .replenish(loader_v4::id(), Arc::new(builtin));
+            }
+            if self.accounts.get_account_ref(&loader_v4::id()).is_none() {
+                self.accounts.add_builtin_account(
+                    loader_v4::id(),
+                    crate::utils::create_loadable_account_for_test("loader_v4"),
+                );
+            }
+
+            let metadata_len = LoaderV4State::program_data_offset();
+            let program_len = metadata_len + program_bytes.len();
+
+            let lamports = self.minimum_balance_for_rent_exemption(program_len);
+            let mut account = AccountSharedData::new(lamports, program_len, loader_id);
+            account.set_executable(true);
+
+            let data = account.data_as_mut_slice();
+            let (metadata, program_data) = data.split_at_mut(metadata_len);
+            let (slot, metadata) = metadata.split_at_mut(std::mem::size_of::<u64>());
+            let authority_address_or_next_version = Address::default();
+            let (authority, status) =
+                metadata.split_at_mut(authority_address_or_next_version.as_ref().len());
+
+            slot.copy_from_slice(&current_slot.to_le_bytes());
+            authority.copy_from_slice(authority_address_or_next_version.as_ref());
+            status.copy_from_slice(&(LoaderV4Status::Deployed as u64).to_le_bytes());
+            program_data.copy_from_slice(program_bytes);
+
+            self.accounts.add_account_no_checks(program_id, account);
+
+            program_len
         } else {
             return Err(LiteSVMError::InvalidLoader(format!(
                 "Unsupported loader: {loader_id}"
@@ -1062,6 +1108,7 @@ impl LiteSVM {
     ///
     /// Use `bpf_loader::id()` for BPFLoader2, `bpf_loader_deprecated::id()` for BPFLoader1,
     /// or `bpf_loader_upgradeable::id()` for the upgradeable loader.
+    /// Use `loader_v4::id()` for Loader v4.
     pub fn add_program_with_loader(
         &mut self,
         program_id: impl Into<Address>,
