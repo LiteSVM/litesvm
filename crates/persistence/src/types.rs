@@ -32,10 +32,55 @@ wincode::pod_wrapper! {
 // ── Wincode shadows for foreign types lacking upstream wincode ─────────
 
 #[derive(SchemaWrite, SchemaRead)]
+pub(crate) struct AddressWire {
+    pub bytes: [u8; 32],
+}
+
+impl From<Address> for AddressWire {
+    fn from(address: Address) -> Self {
+        Self {
+            bytes: address.to_bytes(),
+        }
+    }
+}
+
+impl From<AddressWire> for Address {
+    fn from(address: AddressWire) -> Self {
+        address.bytes.into()
+    }
+}
+
+pub(crate) struct AddressSchema;
+
+unsafe impl<C: Config> SchemaWrite<C> for AddressSchema {
+    type Src = Address;
+
+    fn size_of(src: &Address) -> WriteResult<usize> {
+        <[u8; 32] as SchemaWrite<C>>::size_of(&src.to_bytes())
+    }
+
+    fn write(writer: impl Writer, src: &Address) -> WriteResult<()> {
+        <[u8; 32] as SchemaWrite<C>>::write(writer, &src.to_bytes())
+    }
+}
+
+unsafe impl<'de, C: Config> SchemaRead<'de, C> for AddressSchema {
+    type Dst = Address;
+
+    fn read(reader: impl Reader<'de>, dst: &mut MaybeUninit<Address>) -> ReadResult<()> {
+        let mut bytes = MaybeUninit::<[u8; 32]>::uninit();
+        <[u8; 32] as SchemaRead<'de, C>>::read(reader, &mut bytes)?;
+        dst.write(unsafe { bytes.assume_init() }.into());
+        Ok(())
+    }
+}
+
+#[derive(SchemaWrite, SchemaRead)]
 #[wincode(from = "Account")]
 pub(crate) struct AccountWire {
     pub lamports: u64,
     pub data: Vec<u8>,
+    #[wincode(with = "AddressSchema")]
     pub owner: Address,
     pub executable: bool,
     pub rent_epoch: u64,
@@ -56,7 +101,7 @@ unsafe impl<C: Config> SchemaWrite<C> for AccountSchema {
         let rent_epoch = src.rent_epoch();
         Ok(<u64 as SchemaWrite<C>>::size_of(&lamports)?
             + <[u8] as SchemaWrite<C>>::size_of(src.data())?
-            + <Address as SchemaWrite<C>>::size_of(&owner)?
+            + <AddressSchema as SchemaWrite<C>>::size_of(&owner)?
             + <bool as SchemaWrite<C>>::size_of(&executable)?
             + <u64 as SchemaWrite<C>>::size_of(&rent_epoch)?)
     }
@@ -68,7 +113,7 @@ unsafe impl<C: Config> SchemaWrite<C> for AccountSchema {
         let rent_epoch = src.rent_epoch();
         <u64 as SchemaWrite<C>>::write(writer.by_ref(), &lamports)?;
         <[u8] as SchemaWrite<C>>::write(writer.by_ref(), src.data())?;
-        <Address as SchemaWrite<C>>::write(writer.by_ref(), &owner)?;
+        <AddressSchema as SchemaWrite<C>>::write(writer.by_ref(), &owner)?;
         <bool as SchemaWrite<C>>::write(writer.by_ref(), &executable)?;
         <u64 as SchemaWrite<C>>::write(writer, &rent_epoch)?;
         Ok(())
@@ -186,8 +231,31 @@ pub(crate) struct InnerInstructionWire {
 #[derive(SchemaWrite, SchemaRead)]
 #[wincode(from = "TransactionReturnData")]
 pub(crate) struct TransactionReturnDataWire {
+    #[wincode(with = "AddressSchema")]
     pub program_id: Address,
     pub data: Vec<u8>,
+}
+
+#[derive(SchemaWrite, SchemaRead)]
+pub(crate) struct FeatureActivationWire {
+    #[wincode(with = "AddressSchema")]
+    pub address: Address,
+    pub slot: u64,
+}
+
+impl From<(Address, u64)> for FeatureActivationWire {
+    fn from((address, slot): (Address, u64)) -> Self {
+        Self {
+            address,
+            slot,
+        }
+    }
+}
+
+impl From<FeatureActivationWire> for (Address, u64) {
+    fn from(entry: FeatureActivationWire) -> Self {
+        (entry.address, entry.slot)
+    }
 }
 
 #[derive(SchemaWrite, SchemaRead)]
@@ -239,21 +307,25 @@ impl TxResult {
 
 #[derive(SchemaWrite, SchemaRead)]
 pub(crate) struct FeatureSetSnapshot {
-    pub active: Vec<(Address, u64)>,
-    pub inactive: Vec<Address>,
+    pub active: Vec<FeatureActivationWire>,
+    pub inactive: Vec<AddressWire>,
 }
 
 impl FeatureSetSnapshot {
     pub fn from_feature_set(fs: &FeatureSet) -> Self {
-        let active = fs.active().iter().map(|(k, v)| (*k, *v)).collect();
-        let inactive = fs.inactive().iter().copied().collect();
+        let active = fs
+            .active()
+            .iter()
+            .map(|(k, v)| FeatureActivationWire::from((*k, *v)))
+            .collect();
+        let inactive = fs.inactive().iter().copied().map(Into::into).collect();
         Self { active, inactive }
     }
 
     pub fn into_feature_set(self) -> FeatureSet {
         FeatureSet::new(
-            self.active.into_iter().collect(),
-            self.inactive.into_iter().collect(),
+            self.active.into_iter().map(Into::into).collect(),
+            self.inactive.into_iter().map(Into::into).collect(),
         )
     }
 }
@@ -261,9 +333,31 @@ impl FeatureSetSnapshot {
 // ── Top-level snapshot ─────────────────────────────────────────────────
 
 #[derive(SchemaWrite, SchemaRead)]
+pub(crate) struct AccountEntryWire {
+    #[wincode(with = "AddressSchema")]
+    pub address: Address,
+    #[wincode(with = "AccountSchema")]
+    pub account: AccountSharedData,
+}
+
+impl From<(Address, AccountSharedData)> for AccountEntryWire {
+    fn from((address, account): (Address, AccountSharedData)) -> Self {
+        Self {
+            address,
+            account,
+        }
+    }
+}
+
+impl From<AccountEntryWire> for (Address, AccountSharedData) {
+    fn from(entry: AccountEntryWire) -> Self {
+        (entry.address, entry.account)
+    }
+}
+
+#[derive(SchemaWrite, SchemaRead)]
 pub(crate) struct LiteSvmSnapshot {
-    #[wincode(with = "Vec<(Address, AccountSchema)>")]
-    pub accounts: Vec<(Address, AccountSharedData)>,
+    pub accounts: Vec<AccountEntryWire>,
     #[wincode(with = "PodAirdropKp")]
     pub airdrop_kp: [u8; 64],
     pub feature_set: FeatureSetSnapshot,

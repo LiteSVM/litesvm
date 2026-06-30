@@ -9,7 +9,7 @@ use {
         io::{BufWriter, Read, Write},
         path::Path,
     },
-    types::{FeatureSetSnapshot, LiteSvmSnapshot, TxResult},
+    types::{AccountEntryWire, FeatureSetSnapshot, LiteSvmSnapshot, TxResult},
     wincode::{Deserialize, Serialize},
 };
 
@@ -23,7 +23,7 @@ fn extract_snapshot(svm: &LiteSVM) -> LiteSvmSnapshot {
             .accounts_db()
             .inner
             .iter()
-            .map(|(k, v)| (*k, v.clone()))
+            .map(|(k, v)| AccountEntryWire::from((*k, v.clone())))
             .collect(),
         airdrop_kp: *svm.airdrop_keypair_bytes(),
         feature_set: FeatureSetSnapshot::from_feature_set(svm.get_feature_set_ref()),
@@ -59,7 +59,7 @@ fn restore_from_snapshot(snapshot: LiteSvmSnapshot) -> Result<LiteSVM, Persisten
     svm.set_latest_blockhash(snapshot.latest_blockhash);
     svm.set_airdrop_keypair(snapshot.airdrop_kp);
 
-    for (address, account) in snapshot.accounts {
+    for (address, account) in snapshot.accounts.into_iter().map(Into::into) {
         svm.set_account_no_checks(address, account);
     }
 
