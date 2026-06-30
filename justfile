@@ -1,13 +1,13 @@
 update-features:
     python3 scripts/update_features.py
-    cargo fmt -p litesvm
+    just fmt
 
 fmt:
     cargo +nightly fmt --all
 
 clippy:
     cargo clippy --all-features --all-targets
-
+    
 publish:
     cargo publish -p litesvm
     cargo publish -p litesvm-loader
