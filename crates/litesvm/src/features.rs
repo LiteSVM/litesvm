@@ -1,7 +1,7 @@
 use solana_address::Address;
 
 /// Feature gates currently activated on Solana mainnet-beta, sourced from the
-/// cluster on 2026-06-16.
+/// cluster on 2026-06-30.
 pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::deprecate_rewards_sysvar::ID,
     agave_feature_set::pico_inflation::ID,
@@ -141,6 +141,7 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::prevent_rent_paying_rent_recipients::ID,
     agave_feature_set::delay_visibility_of_program_deployment::ID,
     agave_feature_set::apply_cost_tracker_during_replay::ID,
+    agave_feature_set::syscall_parameter_address_restrictions::ID,
     agave_feature_set::add_set_tx_loaded_accounts_data_size_instruction::ID,
     agave_feature_set::switch_to_new_elf_parser::ID,
     agave_feature_set::round_up_heap_size::ID,
@@ -193,6 +194,7 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::enable_transaction_loading_failure_fees::ID,
     agave_feature_set::enable_sbpf_v1_deployment_and_execution::ID,
     agave_feature_set::enable_sbpf_v2_deployment_and_execution::ID,
+    agave_feature_set::enable_sbpf_v3_deployment_and_execution::ID,
     agave_feature_set::remove_accounts_executable_flag_checks::ID,
     agave_feature_set::disable_account_loader_special_case::ID,
     agave_feature_set::enable_secp256r1_precompile::ID,
@@ -214,6 +216,7 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::disable_zk_elgamal_proof_program::ID,
     agave_feature_set::reenable_zk_elgamal_proof_program::ID,
     agave_feature_set::raise_account_cu_limit::ID,
+    agave_feature_set::delay_commission_updates::ID,
     agave_feature_set::enforce_fixed_fec_set::ID,
     agave_feature_set::provide_instruction_data_offset_in_vm_r2::ID,
     agave_feature_set::create_account_allow_prefund::ID,
@@ -230,4 +233,6 @@ pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[
     agave_feature_set::enable_alt_bn128_g2_syscalls::ID,
     agave_feature_set::enable_bls12_381_syscall::ID,
     agave_feature_set::remove_simple_vote_from_cost_model::ID,
+    agave_feature_set::validate_chained_block_id::ID,
+    agave_feature_set::upgrade_bpf_stake_program_to_v5::ID,
 ];
