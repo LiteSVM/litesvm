@@ -245,10 +245,7 @@ pub(crate) struct FeatureActivationWire {
 
 impl From<(Address, u64)> for FeatureActivationWire {
     fn from((address, slot): (Address, u64)) -> Self {
-        Self {
-            address,
-            slot,
-        }
+        Self { address, slot }
     }
 }
 
@@ -342,10 +339,7 @@ pub(crate) struct AccountEntryWire {
 
 impl From<(Address, AccountSharedData)> for AccountEntryWire {
     fn from((address, account): (Address, AccountSharedData)) -> Self {
-        Self {
-            address,
-            account,
-        }
+        Self { address, account }
     }
 }
 
