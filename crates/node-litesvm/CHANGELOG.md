@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add `LiteSVM.getProgramAccounts` to return all accounts owned by a given program, together with their addresses.
+
 ## [1.2.1] - 2026-07-01
 
 ### Fixed

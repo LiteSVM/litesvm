@@ -829,6 +829,16 @@ impl LiteSVM {
         self.accounts.get_account(address).map(Into::into)
     }
 
+    /// Returns all accounts owned by the given program, together with their addresses.
+    pub fn get_program_accounts(&self, program_id: &Address) -> Vec<(Address, Account)> {
+        self.accounts
+            .inner
+            .iter()
+            .filter(|(_, account)| account.owner() == program_id)
+            .map(|(address, account)| (*address, account.clone().into()))
+            .collect()
+    }
+
     /// Sets all information associated with the account of the provided pubkey.
     pub fn set_account(&mut self, address: Address, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(address, data.into())

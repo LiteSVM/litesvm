@@ -307,6 +307,8 @@ export declare class LiteSvm {
   minimumBalanceForRentExemption(dataLen: bigint): bigint
   /** Returns all information associated with the account of the provided pubkey. */
   getAccount(pubkey: Uint8Array): Account | null
+  /** Returns all accounts owned by the given program, together with their addresses. */
+  getProgramAccounts(programId: Uint8Array): Array<AddressAndAccount>
   /** Sets all information associated with the account of the provided pubkey. */
   setAccount(pubkey: Uint8Array, data: Account): void
   /** Gets the balance of the provided account pubkey. */
