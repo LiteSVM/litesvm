@@ -1974,7 +1974,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "litesvm"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "agave-feature-set",
  "agave-precompiles",
@@ -2056,7 +2056,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-loader"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "agave-feature-set",
  "litesvm",
@@ -2103,7 +2103,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-persistence"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "agave-feature-set",
  "litesvm",
@@ -2131,7 +2131,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-token"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "litesvm",
  "smallvec",
