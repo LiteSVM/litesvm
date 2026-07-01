@@ -157,7 +157,7 @@ to_string_js!(FailedTransactionMetadata);
 #[napi]
 pub struct AddressAndAccount {
     pub address: Uint8Array,
-    account: Account,
+    pub(crate) account: Account,
 }
 
 #[napi]

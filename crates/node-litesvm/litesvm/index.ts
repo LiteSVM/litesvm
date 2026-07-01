@@ -252,6 +252,24 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Return all accounts owned by the given program, together with their addresses.
+	 * @param programAddress - The owner program address to look up.
+	 * @returns The list of encoded accounts owned by the program.
+	 */
+	getProgramAccounts(programAddress: Address): EncodedAccount[] {
+		return this.inner
+			.getProgramAccounts(
+				getAddressCodec().encode(programAddress) as Uint8Array,
+			)
+			.map((addressAndAccount: AddressAndAccount) =>
+				toEncodedAccount(
+					getAddressCodec().decode(addressAndAccount.address),
+					addressAndAccount.account(),
+				),
+			);
+	}
+
+	/**
 	 * Create or overwrite an account, subverting normal runtime checks.
 	 *
 	 * This method exists to make it easier to set up artificial situations

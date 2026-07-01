@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add `LiteSVM::get_program_accounts` to return all accounts owned by a given program, together with their addresses.
+
 ## [0.13.1] - 2026-06-22
 
 ### Fixed
