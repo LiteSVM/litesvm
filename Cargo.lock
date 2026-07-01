@@ -2072,7 +2072,7 @@ dependencies = [
 
 [[package]]
 name = "litesvm-node"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "agave-feature-set",
  "bincode",

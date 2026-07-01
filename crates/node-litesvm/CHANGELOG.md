@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-01
+
+### Fixed
+
+- Align the native binding version checks with the litesvm `v0.13.1`.
+
 ## [1.2.0] - 2026-06-19
 
 ### Added
