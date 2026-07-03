@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Only run the rent check on successful transactions, so a failed transaction keeps its original error instead of `InsufficientFundsForRent` ([#371](https://github.com/LiteSVM/litesvm/pull/371)).
+
 ## [0.13.1] - 2026-06-22
 
 ### Fixed

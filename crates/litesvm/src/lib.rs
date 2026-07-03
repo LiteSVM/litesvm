@@ -1346,9 +1346,7 @@ impl LiteSVM {
                     self.enable_register_tracing,
                 );
 
-                if let Err(err) = self.check_accounts_rent(tx, &context, &rent) {
-                    tx_result = Err(err);
-                };
+                tx_result = tx_result.and_then(|()| self.check_accounts_rent(tx, &context, &rent));
 
                 (
                     tx_result,
