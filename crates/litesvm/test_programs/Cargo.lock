@@ -792,6 +792,7 @@ name = "test-program-custom-syscall"
 version = "0.1.0"
 dependencies = [
  "solana-account-info",
+ "solana-define-syscall 4.0.1",
  "solana-program-entrypoint",
  "solana-program-error",
  "solana-pubkey 3.0.0",

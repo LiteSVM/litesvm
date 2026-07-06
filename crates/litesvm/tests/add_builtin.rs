@@ -4,7 +4,9 @@ use {
     solana_keypair::Keypair,
     solana_message::{Instruction, Message},
     solana_native_token::LAMPORTS_PER_SOL,
-    solana_program_runtime::declare_process_instruction,
+    solana_program_runtime::{
+        declare_process_instruction, solana_sbpf::program::BuiltinFunctionDefinition,
+    },
     solana_signer::Signer,
     solana_transaction::Transaction,
 };
@@ -22,7 +24,7 @@ fn test_add_builtin() {
 
     let mut svm = LiteSVM::new();
 
-    svm.add_builtin(EmptyBuiltin::ID, EmptyBuiltin::vm);
+    svm.add_builtin(EmptyBuiltin::ID, EmptyBuiltin::register);
 
     svm.airdrop(&payer, 10 * LAMPORTS_PER_SOL).unwrap();
     let tx = Transaction::new(

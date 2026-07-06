@@ -319,7 +319,7 @@ fn compute_budget_round_trip() {
 
     let mut svm = LiteSVM::new();
 
-    let custom_budget = ComputeBudget::new_with_defaults(false, false);
+    let custom_budget = ComputeBudget::new_with_defaults(false);
     let expected_limit = custom_budget.compute_unit_limit;
     svm = svm.with_compute_budget(custom_budget); // This is the Some(cb), which tests the logic. Apply custome budget to svm. snapshot.compute_budget = Some()
 

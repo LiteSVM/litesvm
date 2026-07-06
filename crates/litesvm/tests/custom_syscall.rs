@@ -7,7 +7,7 @@ use {
     solana_native_token::LAMPORTS_PER_SOL,
     solana_program_runtime::{
         invoke_context::InvokeContext,
-        solana_sbpf::{declare_builtin_function, memory_region::MemoryMapping},
+        solana_sbpf::{declare_builtin_function, program::BuiltinFunctionDefinition},
     },
     solana_signer::Signer,
     solana_transaction::Transaction,
@@ -20,16 +20,15 @@ declare_builtin_function!(
     /// A custom syscall to burn CUs.
     SyscallBurnCus,
     fn rust(
-        invoke_context: &mut InvokeContext,
+        invoke_context: &mut InvokeContext<'_, '_>,
         to_burn: u64,
         _arg2: u64,
         _arg3: u64,
         _arg4: u64,
         _arg5: u64,
-        _memory_mapping: &mut MemoryMapping,
     ) -> Result<u64, Box<dyn std::error::Error>> {
         assert_eq!(to_burn, CUS_TO_BURN);
-        invoke_context.consume_checked(to_burn)?;
+        invoke_context.compute_meter.consume_checked(to_burn)?;
         Ok(0)
     }
 );
@@ -44,7 +43,7 @@ fn litesvm_ctor() -> LiteSVM {
     LiteSVM::default()
         .with_feature_set(FeatureSet::all_enabled())
         .with_builtins()
-        .with_custom_syscall("sol_burn_cus", SyscallBurnCus::vm)
+        .with_custom_syscall("sol_burn_cus", SyscallBurnCus::register)
         .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
         .with_sysvars()
         .with_default_programs()

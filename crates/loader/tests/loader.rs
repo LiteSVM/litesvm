@@ -43,7 +43,9 @@ fn hello_world_with_store() {
 
 #[test_log::test]
 fn hello_world_with_deploy_upgradeable() {
-    let feature_set = FeatureSet::all_enabled();
+    let mut feature_set = FeatureSet::all_enabled();
+    // The fixture is an sbpf v0 ELF; keep its deployment allowed.
+    feature_set.deactivate(&agave_feature_set::disable_sbpf_v0_v1_v2_deployment::id());
 
     let mut svm = LiteSVM::default()
         .with_feature_set(feature_set)
