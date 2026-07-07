@@ -43,7 +43,7 @@ pub fn load_default_programs(svm: &mut LiteSVM) {
     .unwrap();
     svm.add_program_preverified(
         address!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-        include_bytes!("elf/pinocchio_memo_program.so"),
+        include_bytes!("elf/spl_memo-4.0.0.so"),
         &bpf_loader::id(),
     )
     .unwrap();
