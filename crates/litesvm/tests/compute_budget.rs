@@ -25,7 +25,7 @@ fn test_set_compute_budget() {
     svm.airdrop(&to, LAMPORTS_PER_SOL).unwrap();
 
     // need to set the low compute budget after the airdrop tx
-    let mut compute_budget = ComputeBudget::new_with_defaults(false, false);
+    let mut compute_budget = ComputeBudget::new_with_defaults(false);
     compute_budget.compute_unit_limit = 10;
     svm = svm.with_compute_budget(compute_budget);
     let instruction = transfer(&from, &to, 64);

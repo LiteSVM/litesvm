@@ -10,7 +10,6 @@ use {
     solana_instruction::Instruction,
     solana_keypair::Keypair,
     solana_program_error::{ProgramError, ProgramResult},
-    solana_rent::Rent,
     solana_sdk_ids::system_program,
     solana_signer::{signers::Signers, Signer},
     solana_stake_interface::{
@@ -138,13 +137,12 @@ fn create_vote(
     withdrawer: &Address,
     vote_account: &Keypair,
 ) {
-    let rent = svm.get_sysvar::<Rent>();
-    let rent_voter = rent.minimum_balance(VoteStateV4::size_of());
+    let rent_voter = svm.minimum_balance_for_rent_exemption(VoteStateV4::size_of());
 
     let mut instructions = vec![system_instruction::create_account(
         &payer.pubkey(),
         &validator.pubkey(),
-        rent.minimum_balance(0),
+        svm.minimum_balance_for_rent_exemption(0),
         0,
         &system_program::id(),
     )];
@@ -206,8 +204,7 @@ fn get_stake_account(svm: &mut LiteSVM, pubkey: &Address) -> (Meta, Option<Stake
 }
 
 fn get_stake_account_rent(svm: &mut LiteSVM) -> u64 {
-    let rent = svm.get_sysvar::<Rent>();
-    rent.minimum_balance(std::mem::size_of::<stake::state::StakeStateV2>())
+    svm.minimum_balance_for_rent_exemption(std::mem::size_of::<stake::state::StakeStateV2>())
 }
 
 fn get_minimum_delegation(svm: &mut LiteSVM, payer: &Keypair) -> u64 {
@@ -507,14 +504,13 @@ fn test_stake_initialize() {
     // check that we see what we expect
     let account = get_account(&mut svm, &stake);
     let stake_state: StakeStateV2 = bincode::deserialize(&account.data).unwrap();
-    assert_eq!(
-        stake_state,
-        StakeStateV2::Initialized(Meta {
-            authorized,
-            rent_exempt_reserve,
-            lockup,
-        }),
-    );
+    #[allow(deprecated)]
+    let expected_meta = Meta {
+        authorized,
+        rent_exempt_reserve,
+        lockup,
+    };
+    assert_eq!(stake_state, StakeStateV2::Initialized(expected_meta));
 
     // 2nd time fails, can't move it from anything other than uninit->init
     refresh_blockhash(&mut svm);
@@ -861,7 +857,6 @@ fn test_stake_surfpool_605() {
     // they serialise the RPC state straight into LiteSVM without re-creating it via instructions.
     let voter = Keypair::new();
     let vote_account_address = Address::new_unique();
-    let rent = svm.get_sysvar::<Rent>();
     let vote_state = VoteStateV4 {
         node_pubkey: Keypair::new().pubkey(),
         authorized_withdrawer: Keypair::new().pubkey(),
@@ -869,7 +864,7 @@ fn test_stake_surfpool_605() {
         ..VoteStateV4::default()
     };
     let mut vote_account = Account {
-        lamports: rent.minimum_balance(VoteStateV4::size_of()),
+        lamports: svm.minimum_balance_for_rent_exemption(VoteStateV4::size_of()),
         data: vec![0u8; VoteStateV4::size_of()],
         owner: solana_sdk_ids::vote::id(),
         executable: false,
