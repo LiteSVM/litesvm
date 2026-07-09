@@ -1,12 +1,16 @@
 #![cfg(target_os = "solana")]
 
-use {solana_account_info::AccountInfo, solana_program_error::ProgramError, solana_pubkey::Pubkey};
+use {
+    solana_account_info::AccountInfo, solana_define_syscall::define_syscall,
+    solana_program_error::ProgramError, solana_pubkey::Pubkey,
+};
 
 // Declare the custom syscall that we expect to be registered.
 // This matches the `sol_burn_cus` syscall from the test.
-extern "C" {
-    fn sol_burn_cus(to_burn: u64) -> u64;
-}
+// define_syscall! emits the correct call encoding for both dynamic (SBPFv0)
+// and static-syscalls (SBPFv3) targets; a raw `extern "C"` block links as an
+// unresolved call-to-self stub under SBPFv3.
+define_syscall!(fn sol_burn_cus(to_burn: u64) -> u64);
 
 solana_program_entrypoint::entrypoint!(process_instruction);
 

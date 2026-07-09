@@ -19,10 +19,13 @@ use {
     },
     solana_nonce as nonce,
     solana_program_runtime::{
+        invoke_context::InvokeContext,
         loaded_programs::{
-            LoadProgramMetrics, ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType,
-            ProgramCacheForTxBatch, ProgramRuntimeEnvironments,
+            ProgramCacheForTxBatch, ProgramRuntimeEnvironment, ProgramRuntimeEnvironments,
         },
+        program_cache_entry::{ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType},
+        program_metrics::LoadProgramMetrics,
+        solana_sbpf::program::BuiltinProgram,
         sysvar_cache::SysvarCache,
     },
     solana_sdk_ids::{
@@ -66,12 +69,40 @@ where
     Ok(())
 }
 
-#[derive(Clone, Default)]
 pub struct AccountsDb {
     pub inner: HashMap<Address, AccountSharedData>,
     pub programs_cache: ProgramCacheForTxBatch,
     pub sysvar_cache: SysvarCache,
     pub environments: ProgramRuntimeEnvironments,
+}
+
+impl Clone for AccountsDb {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            programs_cache: self.programs_cache.clone(),
+            sysvar_cache: self.sysvar_cache.clone(),
+            environments: ProgramRuntimeEnvironments::new(
+                self.environments.get_env_for_execution().clone(),
+                self.environments.get_env_for_deployment().clone(),
+            ),
+        }
+    }
+}
+
+impl Default for AccountsDb {
+    fn default() -> Self {
+        let env = ProgramRuntimeEnvironment::from(
+            BuiltinProgram::<InvokeContext<'static, 'static>>::new_mock(),
+        );
+
+        Self {
+            inner: HashMap::default(),
+            programs_cache: ProgramCacheForTxBatch::new(0),
+            sysvar_cache: SysvarCache::default(),
+            environments: ProgramRuntimeEnvironments::new(env.clone(), env),
+        }
+    }
 }
 
 impl AccountsDb {
@@ -268,13 +299,13 @@ impl AccountsDb {
         let metrics = &mut LoadProgramMetrics::default();
 
         let owner = program_account.owner();
-        let program_runtime_v1 = self.environments.program_runtime_v1.clone();
+        let program_runtime_for_execution = self.environments.get_env_for_execution().clone();
         let slot = self.sysvar_cache.get_clock().map(|c| c.slot).unwrap_or(0);
 
         if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
             ProgramCacheEntry::new(
                 owner,
-                program_runtime_v1,
+                program_runtime_for_execution,
                 slot,
                 slot,
                 program_account.data(),
@@ -308,7 +339,7 @@ impl AccountsDb {
             {
                 ProgramCacheEntry::new(
                     owner,
-                    program_runtime_v1,
+                    program_runtime_for_execution,
                     slot,
                     slot,
                     programdata,
@@ -331,7 +362,7 @@ impl AccountsDb {
             {
                 ProgramCacheEntry::new(
                     &loader_v4::id(),
-                    program_runtime_v1,
+                    program_runtime_for_execution,
                     slot,
                     slot,
                     elf_bytes,

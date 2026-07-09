@@ -1,7 +1,39 @@
 use {
-    litesvm::LiteSVM, solana_keypair::Keypair, solana_program_pack::Pack, solana_rent::Rent,
-    solana_signer::Signer, solana_transaction::Transaction, spl_token_interface::state::Mint,
+    litesvm::LiteSVM,
+    solana_address::address,
+    solana_instruction::{AccountMeta, Instruction},
+    solana_keypair::Keypair,
+    solana_program_pack::Pack,
+    solana_rent::Rent,
+    solana_signer::Signer,
+    solana_transaction::Transaction,
+    spl_token_interface::state::Mint,
 };
+
+#[test]
+fn spl_memo() {
+    let mut svm = LiteSVM::new();
+    let payer_kp = Keypair::new();
+    let payer_pk = payer_kp.pubkey();
+    svm.airdrop(&payer_pk, 1_000_000_000).unwrap();
+
+    let memo = "hello from memo";
+    let memo_ix = Instruction {
+        program_id: address!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+        accounts: vec![AccountMeta::new_readonly(payer_pk, true)],
+        data: memo.as_bytes().to_vec(),
+    };
+    let meta = svm
+        .send_transaction(Transaction::new_signed_with_payer(
+            &[memo_ix],
+            Some(&payer_pk),
+            &[&payer_kp],
+            svm.latest_blockhash(),
+        ))
+        .unwrap();
+
+    assert!(meta.logs.iter().any(|log| log.contains(memo)));
+}
 
 #[test]
 fn spl_token() {

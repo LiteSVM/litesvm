@@ -6,6 +6,7 @@ use {
     solana_instructions_sysvar::construct_instructions_data,
     solana_message::SanitizedMessage,
     solana_sha256_hasher::Hasher,
+    solana_transaction_error::TransactionError,
 };
 
 pub mod inner_instructions;
@@ -20,12 +21,18 @@ pub fn create_blockhash(bytes: &[u8]) -> Hash {
     hasher.result()
 }
 
-pub fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedData {
-    AccountSharedData::from(Account {
-        data: construct_instructions_data(&message.decompile_instructions()),
+pub fn construct_instructions_account(
+    message: &SanitizedMessage,
+) -> Result<AccountSharedData, TransactionError> {
+    // Fails when serialized instruction offsets exceed u16::MAX; LiteSVM does
+    // not enforce the packet size limit, so oversized transactions can get here.
+    let data = construct_instructions_data(&message.decompile_instructions())
+        .map_err(|_| TransactionError::SanitizeFailure)?;
+    Ok(AccountSharedData::from(Account {
+        data,
         owner: solana_sdk_ids::sysvar::id(),
         ..Account::default()
-    })
+    }))
 }
 
 pub(crate) fn create_loadable_account_with_fields(

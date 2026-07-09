@@ -168,8 +168,11 @@ pub fn test_cpi_with_debugger() {
             });
 
             // Processing...
-            let msg =
-                Message::new_with_blockhash(&[instruction.clone()], Some(&payer_pk), &blockhash);
+            let msg = Message::new_with_blockhash(
+                std::slice::from_ref(&instruction),
+                Some(&payer_pk),
+                &blockhash,
+            );
             let tx = Transaction::new(&[&payer_kp], msg, blockhash);
 
             // Now that we've prepared the TX we have the signatures - so tweak
@@ -210,7 +213,11 @@ pub fn test_cpi_with_debugger() {
     let not_matching_filter = format!("program_id == {unassociated_program_id}");
     svm.expire_blockhash();
     let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[instruction.clone()], Some(&payer_pk), &blockhash);
+    let msg = Message::new_with_blockhash(
+        std::slice::from_ref(&instruction),
+        Some(&payer_pk),
+        &blockhash,
+    );
     let tx = Transaction::new(&[&payer_kp], msg, blockhash);
     svm.set_invocation_inspect_callback(DefaultRegisterTracingCallback {
         sbf_trace_dir: SBF_TRACE_DIR.into(),

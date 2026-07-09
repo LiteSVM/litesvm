@@ -336,13 +336,8 @@ use {
             rent::{check_rent_state_with_account, get_account_rent_state, RentState},
         },
     },
-    agave_feature_set::{
-        increase_cpi_account_info_limit, raise_cpi_nesting_limit_to_8, FeatureSet,
-    },
+    agave_feature_set::{raise_cpi_nesting_limit_to_8, FeatureSet},
     agave_reserved_account_keys::ReservedAccountKeys,
-    agave_syscalls::{
-        create_program_runtime_environment_v1, create_program_runtime_environment_v2,
-    },
     log::error,
     serde::de::DeserializeOwned,
     solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
@@ -368,9 +363,11 @@ use {
     solana_native_token::LAMPORTS_PER_SOL,
     solana_nonce::{state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
     solana_program_runtime::{
-        invoke_context::{BuiltinFunctionWithContext, EnvironmentConfig, InvokeContext},
-        loaded_programs::{LoadProgramMetrics, ProgramCacheEntry},
-        solana_sbpf::program::BuiltinFunction,
+        invoke_context::{BuiltinFunctionRegisterer, EnvironmentConfig, InvokeContext},
+        loaded_programs::{ProgramRuntimeEnvironment, ProgramRuntimeEnvironments},
+        program_cache_entry::{ProgramCacheEntry, DELAY_VISIBILITY_SLOT_OFFSET},
+        program_metrics::LoadProgramMetrics,
+        solana_sbpf::program::BuiltinProgram,
     },
     solana_rent::Rent,
     solana_sdk_ids::{
@@ -385,6 +382,7 @@ use {
     solana_svm_log_collector::LogCollector,
     solana_svm_timings::ExecuteTimings,
     solana_svm_transaction::svm_message::SVMStaticMessage,
+    solana_syscalls::create_program_runtime_environment,
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::{Sysvar, SysvarSerialize},
     solana_sysvar_id::SysvarId,
@@ -438,6 +436,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    custom_syscalls: Vec<(String, BuiltinFunctionRegisterer)>,
     /// The callback which can be used to inspect invoke_context
     /// and extract low-level information such as bpf traces, transaction
     /// context, detailed timings, etc.
@@ -480,6 +479,7 @@ impl LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            custom_syscalls: Vec::new(),
             #[cfg(feature = "invocation-inspect-callback")]
             enable_register_tracing: _enable_register_tracing,
             #[cfg(feature = "invocation-inspect-callback")]
@@ -582,16 +582,19 @@ impl LiteSVM {
             fees.fee_calculator.lamports_per_signature,
         )]));
 
-        // Rent account differs based off feature gating
+        // Rent account differs based off feature gating. Rent::default() already
+        // carries the SIMD-0194 values (lamports_per_byte = 6960, threshold = 1.0);
+        // without the feature, restore the legacy pre-SIMD-0194 representation
+        // (lamports_per_byte_year = 3480, threshold = 2.0 — same minimum balance).
         #[allow(deprecated)]
         {
             let mut rent_account = Rent::default();
-            if self
+            if !self
                 .feature_set
                 .is_active(&agave_feature_set::deprecate_rent_exemption_threshold::id())
             {
-                rent_account.exemption_threshold = 1.0;
-                rent_account.lamports_per_byte_year = solana_rent::DEFAULT_LAMPORTS_PER_BYTE
+                rent_account.exemption_threshold = 2.0f64.to_le_bytes();
+                rent_account.lamports_per_byte = solana_rent::DEFAULT_LAMPORTS_PER_BYTE / 2;
             }
             self.set_sysvar(&rent_account);
         }
@@ -700,7 +703,7 @@ impl LiteSVM {
                 .is_none_or(|x| self.feature_set.is_active(&x))
             {
                 let loaded_program =
-                    ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.entrypoint);
+                    ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.register_fn);
                 self.accounts
                     .programs_cache
                     .replenish(builtint.program_id, Arc::new(loaded_program));
@@ -711,33 +714,7 @@ impl LiteSVM {
             }
         });
 
-        let _enable_register_tracing = false;
-        #[cfg(feature = "register-tracing")]
-        let _enable_register_tracing = self.enable_register_tracing;
-
-        let compute_budget = self
-            .compute_budget
-            .unwrap_or(ComputeBudget::new_with_defaults(
-                self.feature_set
-                    .is_active(&raise_cpi_nesting_limit_to_8::ID),
-                self.feature_set
-                    .is_active(&increase_cpi_account_info_limit::ID),
-            ));
-        let program_runtime_v1 = create_program_runtime_environment_v1(
-            &self.feature_set.runtime_features(),
-            &compute_budget.to_budget(),
-            false,
-            _enable_register_tracing,
-        )
-        .unwrap();
-
-        let program_runtime_v2 = create_program_runtime_environment_v2(
-            &compute_budget.to_budget(),
-            _enable_register_tracing,
-        );
-
-        self.accounts.environments.program_runtime_v1 = Arc::new(program_runtime_v1);
-        self.accounts.environments.program_runtime_v2 = Arc::new(program_runtime_v2);
+        self.accounts.environments = self.create_program_runtime_environments();
     }
 
     /// Changes the default builtins.
@@ -814,13 +791,17 @@ impl LiteSVM {
     }
 
     /// Returns minimum balance required to make an account with specified data length rent exempt.
+    ///
+    /// Returns `u64::MAX` for data lengths above the maximum permitted account
+    /// size (10 MiB), for which no balance can be rent exempt.
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
         1.max(
             self.accounts
                 .sysvar_cache
                 .get_rent()
                 .unwrap_or_default()
-                .minimum_balance(data_len),
+                .try_minimum_balance(data_len)
+                .unwrap_or(u64::MAX),
         )
     }
 
@@ -927,7 +908,7 @@ impl LiteSVM {
     }
 
     /// Adds a builtin program to the test environment.
-    pub fn add_builtin(&mut self, program_id: Address, entrypoint: BuiltinFunctionWithContext) {
+    pub fn add_builtin(&mut self, program_id: Address, entrypoint: BuiltinFunctionRegisterer) {
         let builtin = ProgramCacheEntry::new_builtin(
             self.accounts
                 .sysvar_cache
@@ -1029,14 +1010,15 @@ impl LiteSVM {
             )));
         };
 
-        let effective_slot = current_slot
-            .saturating_add(solana_program_runtime::loaded_programs::DELAY_VISIBILITY_SLOT_OFFSET);
+        let effective_slot = current_slot.saturating_add(DELAY_VISIBILITY_SLOT_OFFSET);
+        let program_runtime_for_deployment =
+            self.accounts.environments.get_env_for_deployment().clone();
         let mut loaded_program = if PREVERIFIED {
             // Safety: PREVERIFIED means the program was previously verified.
             unsafe {
                 ProgramCacheEntry::reload(
                     loader_id,
-                    self.accounts.environments.program_runtime_v1.clone(),
+                    program_runtime_for_deployment.clone(),
                     current_slot,
                     effective_slot,
                     program_bytes,
@@ -1047,7 +1029,7 @@ impl LiteSVM {
         } else {
             ProgramCacheEntry::new(
                 loader_id,
-                self.accounts.environments.program_runtime_v1.clone(),
+                program_runtime_for_deployment,
                 current_slot,
                 effective_slot,
                 program_bytes,
@@ -1188,8 +1170,6 @@ impl LiteSVM {
             ..ComputeBudget::new_with_defaults(
                 self.feature_set
                     .is_active(&raise_cpi_nesting_limit_to_8::ID),
-                self.feature_set
-                    .is_active(&increase_cpi_account_info_limit::ID),
             )
         });
         let rent = self.accounts.sysvar_cache.get_rent().unwrap();
@@ -1202,7 +1182,6 @@ impl LiteSVM {
         let prioritization_fee = compute_budget_limits.get_prioritization_fee();
         let fee = solana_fee::calculate_fee(
             message,
-            false,
             self.fee_structure.lamports_per_signature,
             prioritization_fee,
             FeeFeatures::from(&self.feature_set),
@@ -1214,7 +1193,7 @@ impl LiteSVM {
             .enumerate()
             .map(|(i, key)| {
                 let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
-                    construct_instructions_account(message)
+                    construct_instructions_account(message)?
                 } else {
                     let is_instruction_account = message.is_instruction_account(i);
                     let mut account = if !is_instruction_account
@@ -1318,9 +1297,9 @@ impl LiteSVM {
                     EnvironmentConfig::new(
                         *blockhash,
                         self.fee_structure.lamports_per_signature,
+                        false,
                         self,
                         &feature_set,
-                        &self.accounts.environments,
                         &self.accounts.environments,
                         &self.accounts.sysvar_cache,
                     ),
@@ -1356,9 +1335,7 @@ impl LiteSVM {
                     self.enable_register_tracing,
                 );
 
-                if let Err(err) = self.check_accounts_rent(tx, &context, &rent) {
-                    tx_result = Err(err);
-                };
+                tx_result = tx_result.and_then(|()| self.check_accounts_rent(tx, &context, &rent));
 
                 (
                     tx_result,
@@ -1761,43 +1738,68 @@ impl LiteSVM {
         self.invocation_inspect_callback = Arc::new(callback);
     }
 
-    /// Registers a custom syscall in both program runtime environments (v1 and v2).
+    /// Registers a custom syscall in both program runtime environments.
     ///
-    /// **Must be called after `with_builtins()`** (which recreates the environments
-    /// from scratch) and **before `with_default_programs()`** (which clones the
-    /// environment Arcs into program cache entries, preventing further mutation).
+    /// **Must be called before loading programs** (`with_default_programs()`,
+    /// `add_program`, ...): program cache entries capture the runtime
+    /// environment at load time, so programs loaded earlier will not see the
+    /// syscall. Note that `LiteSVM::new()` already loads the default programs —
+    /// start from `LiteSVM::default()` and build up manually when using custom
+    /// syscalls.
     ///
-    /// Panics if the runtime environments cannot be mutated or if registration
-    /// fails. This is intentional — a misconfigured syscall should fail loudly
-    /// rather than silently.
-    pub fn with_custom_syscall(
-        mut self,
-        name: &str,
-        syscall: BuiltinFunction<InvokeContext<'static, 'static>>,
-    ) -> Self {
-        let (Some(program_runtime_v1), Some(program_runtime_v2)) = (
-            Arc::get_mut(&mut self.accounts.environments.program_runtime_v1),
-            Arc::get_mut(&mut self.accounts.environments.program_runtime_v2),
-        ) else {
-            panic!("with_custom_syscall: can't mutate program runtimes");
-        };
-
-        // Once unregister_function is available, users could replace existing built-in
-        // syscalls.
-
-        // TODO: uncomment once https://github.com/anza-xyz/sbpf/pull/153 is available.
-        // let _ = program_runtime_v1.unregister_function(name);
-        program_runtime_v1
-            .register_function(name, syscall)
-            .unwrap_or_else(|e| panic!("failed to register syscall '{name}' in runtime_v1: {e}"));
-
-        // TODO: uncomment once https://github.com/anza-xyz/sbpf/pull/153 is available.
-        // let _ = program_runtime_v2.unregister_function(name);
-        program_runtime_v2
-            .register_function(name, syscall)
-            .unwrap_or_else(|e| panic!("failed to register syscall '{name}' in runtime_v2: {e}"));
-
+    /// Panics if registration fails. This is intentional — a misconfigured
+    /// syscall should fail loudly rather than silently.
+    pub fn with_custom_syscall(mut self, name: &str, syscall: BuiltinFunctionRegisterer) -> Self {
+        self.custom_syscalls.push((name.to_owned(), syscall));
+        self.accounts.environments = self.create_program_runtime_environments();
         self
+    }
+
+    fn create_program_runtime_environments(&self) -> ProgramRuntimeEnvironments {
+        #[cfg(feature = "register-tracing")]
+        let debugging_features = self.enable_register_tracing;
+        #[cfg(not(feature = "register-tracing"))]
+        let debugging_features = false;
+        let compute_budget = self
+            .compute_budget
+            .unwrap_or(ComputeBudget::new_with_defaults(
+                self.feature_set
+                    .is_active(&raise_cpi_nesting_limit_to_8::ID),
+            ));
+        let env = create_program_runtime_environment(
+            &self.feature_set.runtime_features(),
+            &compute_budget.to_budget(),
+            false,
+            debugging_features,
+        )
+        .unwrap();
+        let env = self.register_custom_syscalls(env);
+        ProgramRuntimeEnvironments::new(env.clone(), env)
+    }
+
+    fn register_custom_syscalls(
+        &self,
+        env: ProgramRuntimeEnvironment,
+    ) -> ProgramRuntimeEnvironment {
+        if self.custom_syscalls.is_empty() {
+            return env;
+        }
+
+        let mut program = BuiltinProgram::new_loader((*env).get_config().clone());
+        for (_key, (name, value)) in (*env).get_function_registry().iter() {
+            program
+                .register_function(
+                    std::str::from_utf8(name).expect("syscall names are valid utf-8"),
+                    value,
+                )
+                .unwrap();
+        }
+        for (name, syscall) in &self.custom_syscalls {
+            syscall(&mut program, name)
+                .unwrap_or_else(|e| panic!("failed to register syscall '{name}': {e}"));
+        }
+
+        ProgramRuntimeEnvironment::from(program)
     }
 
     // ── persistence-internal: getters ──────────────────────────────────

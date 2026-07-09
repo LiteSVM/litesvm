@@ -19,22 +19,18 @@ pub(crate) fn process_message<'ix_data>(
     accumulated_consumed_units: &mut u64,
 ) -> Result<(), TransactionError> {
     debug_assert_eq!(program_indices.len(), message.num_instructions());
-    for (top_level_instruction_index, ((program_id, instruction), program_account_index)) in message
-        .program_instructions_iter()
-        .zip(program_indices.iter())
-        .enumerate()
-    {
-        invoke_context
-            .prepare_next_top_level_instruction(
-                message,
-                &instruction,
-                *program_account_index,
-                instruction.data,
-            )
-            .map_err(|err| {
-                TransactionError::InstructionError(top_level_instruction_index as u8, err)
-            })?;
+    invoke_context
+        .prepare_top_level_instructions(message)
+        .map_err(|(instruction_index, err)| {
+            TransactionError::InstructionError(instruction_index, err)
+        })?;
 
+    for (top_level_instruction_index, ((program_id, instruction), _program_account_index)) in
+        message
+            .program_instructions_iter()
+            .zip(program_indices.iter())
+            .enumerate()
+    {
         let mut compute_units_consumed = 0;
         let result = if invoke_context.is_precompile(program_id) {
             invoke_context.process_precompile(
