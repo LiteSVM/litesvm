@@ -10,7 +10,8 @@ use {
             slot_hashes::SlotHash, slot_history::SlotHistory, stake_history::StakeHistory,
         },
         transaction_metadata::{
-            FailedTransactionMetadata, SimulatedTransactionInfo, TransactionMetadata,
+            AddressAndAccount, FailedTransactionMetadata, SimulatedTransactionInfo,
+            TransactionMetadata,
         },
         util::{convert_pubkey, try_parse_hash},
     },
@@ -183,6 +184,19 @@ impl LiteSvm {
     /// Returns all information associated with the account of the provided pubkey.
     pub fn get_account(&self, pubkey: &[u8]) -> Option<Account> {
         self.0.get_account(&convert_pubkey(pubkey)).map(Account)
+    }
+
+    #[napi]
+    /// Returns all accounts owned by the given program, together with their addresses.
+    pub fn get_program_accounts(&self, program_id: &[u8]) -> Vec<AddressAndAccount> {
+        self.0
+            .get_program_accounts(&convert_pubkey(program_id))
+            .into_iter()
+            .map(|(address, account)| AddressAndAccount {
+                address: Uint8Array::with_data_copied(address.to_bytes()),
+                account: Account(account),
+            })
+            .collect()
     }
 
     #[napi]
