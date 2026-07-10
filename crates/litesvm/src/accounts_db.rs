@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use {
     crate::error::{InvalidSysvarDataError, LiteSVMError},
     log::error,
-    solana_account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
+    solana_account::{AccountSharedData, ReadableAccount, WritableAccount},
     solana_address::Address,
     solana_address_lookup_table_interface::{error::AddressLookupError, state::AddressLookupTable},
     solana_clock::Clock,
@@ -319,7 +319,7 @@ impl AccountsDb {
         } else if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
-            }) = program_account.state()
+            }) = UpgradeableLoaderState::deserialize_from(program_account.data())
             else {
                 error!(
                     "Program account data does not deserialize to UpgradeableLoaderState::Program"
@@ -463,7 +463,7 @@ impl AccountsDb {
         } else if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
-            }) = program_account.state()
+            }) = UpgradeableLoaderState::deserialize_from(program_account.data())
             else {
                 return Err(InstructionError::InvalidAccountData);
             };

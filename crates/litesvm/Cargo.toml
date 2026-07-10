@@ -39,7 +39,6 @@ agave-reserved-account-keys = { workspace = true, features = [
 ] }
 solana-syscalls.workspace = true
 ansi_term.workspace = true
-bincode.workspace = true
 hashbrown = { workspace = true, optional = true }
 indexmap.workspace = true
 itertools.workspace = true
@@ -69,7 +68,7 @@ solana-instruction-error.workspace = true
 solana-instructions-sysvar.workspace = true
 solana-keypair.workspace = true
 solana-last-restart-slot.workspace = true
-solana-loader-v3-interface = { workspace = true, features = ["bincode"] }
+solana-loader-v3-interface = { workspace = true, features = ["wincode"] }
 solana-loader-v4-interface.workspace = true
 solana-message.workspace = true
 solana-native-token.workspace = true
