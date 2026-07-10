@@ -1036,16 +1036,10 @@ impl LiteSVM {
             account.set_executable(true);
 
             let data = account.data_as_mut_slice();
-            let (metadata, program_data) = data.split_at_mut(metadata_len);
-            let (slot, metadata) = metadata.split_at_mut(std::mem::size_of::<u64>());
-            let authority_address_or_next_version = Address::default();
-            let (authority, status) =
-                metadata.split_at_mut(authority_address_or_next_version.as_ref().len());
-
-            slot.copy_from_slice(&current_slot.to_le_bytes());
-            authority.copy_from_slice(authority_address_or_next_version.as_ref());
-            status.copy_from_slice(&(LoaderV4Status::Deployed as u64).to_le_bytes());
-            program_data.copy_from_slice(program_bytes);
+            data[..std::mem::size_of::<u64>()].copy_from_slice(&current_slot.to_le_bytes());
+            data[metadata_len - std::mem::size_of::<u64>()..metadata_len]
+                .copy_from_slice(&(LoaderV4Status::Deployed as u64).to_le_bytes());
+            data[metadata_len..].copy_from_slice(program_bytes);
 
             self.accounts.add_account_no_checks(program_id, account);
 
