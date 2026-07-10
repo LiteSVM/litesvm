@@ -179,14 +179,14 @@ impl FeatureSetSnapshot {
             .iter()
             .map(|(k, v)| FeatureActivationWire::from((*k, *v)))
             .collect();
-        let inactive = fs.inactive().iter().copied().map(Into::into).collect();
+        let inactive = fs.inactive().iter().copied().collect();
         Self { active, inactive }
     }
 
     pub fn into_feature_set(self) -> FeatureSet {
         FeatureSet::new(
             self.active.into_iter().map(Into::into).collect(),
-            self.inactive.into_iter().map(Into::into).collect(),
+            self.inactive.into_iter().collect(),
         )
     }
 }
