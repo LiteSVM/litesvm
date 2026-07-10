@@ -9,8 +9,7 @@ use {
     solana_program_error::{ProgramError, ProgramResult},
     solana_signer::{signers::Signers, Signer},
     solana_stake_interface::{
-        self as stake,
-        instruction as ixn,
+        self as stake, instruction as ixn,
         state::{Authorized, Lockup},
     },
     solana_transaction::Transaction,
