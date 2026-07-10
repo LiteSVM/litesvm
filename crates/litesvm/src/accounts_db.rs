@@ -226,7 +226,7 @@ impl AccountsDb {
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar::<solana_stake_interface::stake_history::StakeHistory>(
+                handle_sysvar::<solana_stake_history::StakeHistory>(
                     cache,
                     StakeHistory,
                     account,

@@ -17,7 +17,6 @@ test = false
 
 [dependencies]
 agave-feature-set.workspace = true
-bincode.workspace = true
 bv.workspace = true
 litesvm = { workspace = true, features = ["nodejs-internal", "precompiles"] }
 napi = { workspace = true, features = ["napi4", "napi6"] }
@@ -36,7 +35,7 @@ solana-rent.workspace = true
 solana-signature.workspace = true
 solana-slot-hashes.workspace = true
 solana-slot-history.workspace = true
-solana-stake-interface.workspace = true
+solana-stake-history.workspace = true
 solana-transaction.workspace = true
 solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true

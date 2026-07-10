@@ -33,7 +33,7 @@ use {
     solana_signature::Signature,
     solana_slot_hashes::SlotHashes,
     solana_slot_history::SlotHistory as SlotHistoryOriginal,
-    solana_stake_interface::stake_history::StakeHistory as StakeHistoryOriginal,
+    solana_stake_history::StakeHistory as StakeHistoryOriginal,
     solana_transaction::{versioned::VersionedTransaction, Transaction},
     util::{bigint_to_u64, bigint_to_usize},
     wincode::deserialize,
