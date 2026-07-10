@@ -7,8 +7,10 @@ use {
     solana_message::{Message, MessageHeader},
     solana_sdk_ids::system_program,
     solana_signer::Signer,
+    solana_system_interface::instruction::SystemInstruction,
     solana_transaction::{sanitized::MAX_TX_ACCOUNT_LOCKS, CompiledInstruction, Transaction},
     solana_transaction_error::TransactionError,
+    wincode::Serialize,
 };
 
 #[test]
@@ -21,10 +23,8 @@ fn test_account_loaded_twice() {
     // Create an account that we'll reference twice
     let duplicate_account = Address::new_unique();
 
-    let data = bincode::serialize(
-        &solana_system_interface::instruction::SystemInstruction::Transfer { lamports: 500_000 },
-    )
-    .unwrap();
+    let data =
+        SystemInstruction::serialize(&SystemInstruction::Transfer { lamports: 500_000 }).unwrap();
     // Construct a transaction that references the same account as twice
     let mut tx = Transaction {
         signatures: vec![Signature::default()],

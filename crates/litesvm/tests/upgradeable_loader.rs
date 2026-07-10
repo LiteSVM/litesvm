@@ -1,5 +1,4 @@
 use {
-    bincode::{deserialize, serialize},
     litesvm::LiteSVM,
     solana_account::Account,
     solana_address::{address, Address},
@@ -16,6 +15,7 @@ use {
     solana_signer::Signer,
     solana_transaction::Transaction,
     std::path::PathBuf,
+    wincode::{Deserialize, Serialize},
 };
 
 fn read_counter_program() -> Vec<u8> {
@@ -33,13 +33,13 @@ fn set_program_upgrade_authority(
     let mut programdata_account = svm.get_account(&programdata_address).unwrap();
     let metadata_len = UpgradeableLoaderState::size_of_programdata_metadata();
     let metadata =
-        deserialize::<UpgradeableLoaderState>(&programdata_account.data[..metadata_len]).unwrap();
+        UpgradeableLoaderState::deserialize(&programdata_account.data[..metadata_len]).unwrap();
     let slot = match metadata {
         UpgradeableLoaderState::ProgramData { slot, .. } => slot,
         other => panic!("expected ProgramData account, got {other:?}"),
     };
 
-    let mut data = bincode::serialize(&UpgradeableLoaderState::ProgramData {
+    let mut data = UpgradeableLoaderState::serialize(&UpgradeableLoaderState::ProgramData {
         slot,
         upgrade_authority_address: Some(authority),
     })
@@ -119,7 +119,10 @@ fn close_upgradeable_program_keeps_vm_usable() {
     {
         let close_ix = Instruction::new_with_bytes(
             bpf_loader_upgradeable::id(),
-            &serialize(&UpgradeableLoaderInstruction::Close).unwrap(),
+            &UpgradeableLoaderInstruction::serialize(&UpgradeableLoaderInstruction::Close {
+                tombstone: false,
+            })
+            .unwrap(),
             vec![
                 AccountMeta::new(programdata_address, false),
                 AccountMeta::new(authority, false),

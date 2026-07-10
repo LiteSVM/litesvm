@@ -1864,7 +1864,6 @@ dependencies = [
  "agave-precompiles",
  "agave-reserved-account-keys",
  "ansi_term",
- "bincode",
  "criterion",
  "ed25519-dalek 2.2.0",
  "hashbrown 0.16.1",
@@ -1897,7 +1896,7 @@ dependencies = [
  "solana-instructions-sysvar 4.0.0",
  "solana-keypair",
  "solana-last-restart-slot",
- "solana-loader-v3-interface",
+ "solana-loader-v3-interface 8.0.1",
  "solana-loader-v4-interface",
  "solana-message",
  "solana-native-token",
@@ -1947,7 +1946,7 @@ dependencies = [
  "solana-address 2.6.1",
  "solana-instruction",
  "solana-keypair",
- "solana-loader-v3-interface",
+ "solana-loader-v3-interface 8.0.1",
  "solana-message",
  "solana-signer",
  "solana-transaction",
@@ -3005,6 +3004,7 @@ dependencies = [
  "solana-pubkey 4.2.0",
  "solana-sdk-ids",
  "solana-sysvar",
+ "wincode",
 ]
 
 [[package]]
@@ -3183,7 +3183,7 @@ dependencies = [
  "solana-bincode",
  "solana-clock",
  "solana-instruction",
- "solana-loader-v3-interface",
+ "solana-loader-v3-interface 7.0.0",
  "solana-packet",
  "solana-program-runtime",
  "solana-pubkey 4.2.0",
@@ -3590,7 +3590,19 @@ dependencies = [
  "solana-instruction",
  "solana-pubkey 4.2.0",
  "solana-sdk-ids",
+]
+
+[[package]]
+name = "solana-loader-v3-interface"
+version = "8.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "362b468fbde4c20521b9ff5ef743bc0d9b410455a5a92a8b29fd46954e89345f"
+dependencies = [
+ "solana-instruction",
+ "solana-pubkey 4.2.0",
+ "solana-sdk-ids",
  "solana-system-interface",
+ "wincode",
 ]
 
 [[package]]
@@ -3777,7 +3789,7 @@ dependencies = [
  "solana-hash",
  "solana-instruction",
  "solana-last-restart-slot",
- "solana-loader-v3-interface",
+ "solana-loader-v3-interface 7.0.0",
  "solana-program-entrypoint",
  "solana-pubkey 4.2.0",
  "solana-rent",
@@ -4317,6 +4329,7 @@ dependencies = [
  "solana-rent",
  "solana-sbpf",
  "solana-sdk-ids",
+ "wincode",
 ]
 
 [[package]]

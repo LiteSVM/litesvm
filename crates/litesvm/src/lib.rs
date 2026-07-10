@@ -849,14 +849,13 @@ impl LiteSVM {
     where
         T: Sysvar + SysvarId + Serialize<Src = T>,
     {
-        let data = wincode::serialize(sysvar).unwrap();
         let len = if T::id() == SlotHashes::id() {
             solana_slot_hashes::SIZE
         } else {
-            data.len()
+            wincode::serialized_size(&sysvar).unwrap() as usize
         };
         let mut account = AccountSharedData::new(1, len, &solana_sdk_ids::sysvar::id());
-        account.data_as_mut_slice()[..data.len()].copy_from_slice(&data);
+        wincode::serialize_into(account.data_as_mut_slice(), sysvar).unwrap();
         self.accounts.add_account(T::id(), account).unwrap();
     }
 
@@ -954,7 +953,7 @@ impl LiteSVM {
             let programdata_len = programdata_metadata_len + program_bytes.len();
             let mut programdata_data = vec![0u8; programdata_len];
 
-            bincode::serialize_into(
+            UpgradeableLoaderState::serialize_into(
                 &mut programdata_data[..programdata_metadata_len],
                 &UpgradeableLoaderState::ProgramData {
                     slot: current_slot,
@@ -969,10 +968,11 @@ impl LiteSVM {
                 AccountSharedData::new(programdata_lamports, programdata_len, loader_id);
             programdata_account.set_data_from_slice(&programdata_data);
 
-            let program_account_data = bincode::serialize(&UpgradeableLoaderState::Program {
-                programdata_address,
-            })
-            .expect("UpgradeableLoaderState::Program serialization should never fail");
+            let program_account_data =
+                UpgradeableLoaderState::serialize(&UpgradeableLoaderState::Program {
+                    programdata_address,
+                })
+                .expect("UpgradeableLoaderState::Program serialization should never fail");
 
             let program_lamports =
                 self.minimum_balance_for_rent_exemption(program_account_data.len());

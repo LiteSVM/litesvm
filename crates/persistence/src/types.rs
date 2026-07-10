@@ -1,8 +1,7 @@
 use {
     agave_feature_set::FeatureSet,
-    core::mem::MaybeUninit,
     litesvm::types::{FailedTransactionMetadata, TransactionMetadata, TransactionResult},
-    solana_account::{Account, AccountSharedData, ReadableAccount},
+    solana_account::AccountSharedData,
     solana_address::Address,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_fee_structure::{FeeBin, FeeStructure},
@@ -14,124 +13,8 @@ use {
     solana_signature::Signature,
     solana_transaction_context::transaction::TransactionReturnData,
     solana_transaction_error::TransactionError,
-    wincode::{
-        config::Config,
-        error::{ReadResult, WriteResult},
-        io::{Reader, Writer},
-        SchemaRead, SchemaWrite,
-    },
+    wincode::{SchemaRead, SchemaWrite},
 };
-
-// ── POD wrappers for newtype byte arrays ───────────────────────────────
-
-wincode::pod_wrapper! {
-    unsafe struct PodHash(Hash);
-    unsafe struct PodAirdropKp([u8; 64]);
-}
-
-// ── Wincode shadows for foreign types lacking upstream wincode ─────────
-
-#[derive(SchemaWrite, SchemaRead)]
-pub(crate) struct AddressWire {
-    pub bytes: [u8; 32],
-}
-
-impl From<Address> for AddressWire {
-    fn from(address: Address) -> Self {
-        Self {
-            bytes: address.to_bytes(),
-        }
-    }
-}
-
-impl From<AddressWire> for Address {
-    fn from(address: AddressWire) -> Self {
-        address.bytes.into()
-    }
-}
-
-pub(crate) struct AddressSchema;
-
-unsafe impl<C: Config> SchemaWrite<C> for AddressSchema {
-    type Src = Address;
-
-    fn size_of(src: &Address) -> WriteResult<usize> {
-        <[u8; 32] as SchemaWrite<C>>::size_of(&src.to_bytes())
-    }
-
-    fn write(writer: impl Writer, src: &Address) -> WriteResult<()> {
-        <[u8; 32] as SchemaWrite<C>>::write(writer, &src.to_bytes())
-    }
-}
-
-unsafe impl<'de, C: Config> SchemaRead<'de, C> for AddressSchema {
-    type Dst = Address;
-
-    fn read(reader: impl Reader<'de>, dst: &mut MaybeUninit<Address>) -> ReadResult<()> {
-        let mut bytes = MaybeUninit::<[u8; 32]>::uninit();
-        <[u8; 32] as SchemaRead<'de, C>>::read(reader, &mut bytes)?;
-        dst.write(unsafe { bytes.assume_init() }.into());
-        Ok(())
-    }
-}
-
-#[derive(SchemaWrite, SchemaRead)]
-#[wincode(from = "Account")]
-pub(crate) struct AccountWire {
-    pub lamports: u64,
-    pub data: Vec<u8>,
-    #[wincode(with = "AddressSchema")]
-    pub owner: Address,
-    pub executable: bool,
-    pub rent_epoch: u64,
-}
-
-/// Wincode schema for [`AccountSharedData`] that writes via accessors (avoiding the
-/// `Vec<u8>` data clone) and reads through the public `Account` shape via
-/// [`AccountWire`]. Wire format is identical to [`AccountWire`]/[`Account`].
-pub(crate) struct AccountSchema;
-
-unsafe impl<C: Config> SchemaWrite<C> for AccountSchema {
-    type Src = AccountSharedData;
-
-    fn size_of(src: &AccountSharedData) -> WriteResult<usize> {
-        let lamports = src.lamports();
-        let owner = *src.owner();
-        let executable = src.executable();
-        let rent_epoch = src.rent_epoch();
-        Ok(<u64 as SchemaWrite<C>>::size_of(&lamports)?
-            + <[u8] as SchemaWrite<C>>::size_of(src.data())?
-            + <AddressSchema as SchemaWrite<C>>::size_of(&owner)?
-            + <bool as SchemaWrite<C>>::size_of(&executable)?
-            + <u64 as SchemaWrite<C>>::size_of(&rent_epoch)?)
-    }
-
-    fn write(mut writer: impl Writer, src: &AccountSharedData) -> WriteResult<()> {
-        let lamports = src.lamports();
-        let owner = *src.owner();
-        let executable = src.executable();
-        let rent_epoch = src.rent_epoch();
-        <u64 as SchemaWrite<C>>::write(writer.by_ref(), &lamports)?;
-        <[u8] as SchemaWrite<C>>::write(writer.by_ref(), src.data())?;
-        <AddressSchema as SchemaWrite<C>>::write(writer.by_ref(), &owner)?;
-        <bool as SchemaWrite<C>>::write(writer.by_ref(), &executable)?;
-        <u64 as SchemaWrite<C>>::write(writer, &rent_epoch)?;
-        Ok(())
-    }
-}
-
-unsafe impl<'de, C: Config> SchemaRead<'de, C> for AccountSchema {
-    type Dst = AccountSharedData;
-
-    fn read(reader: impl Reader<'de>, dst: &mut MaybeUninit<AccountSharedData>) -> ReadResult<()> {
-        let mut account = MaybeUninit::<Account>::uninit();
-        <AccountWire as SchemaRead<'de, C>>::read(reader, &mut account)?;
-        // SAFETY: AccountWire::read fully initialized `account` on Ok.
-        let account = unsafe { account.assume_init() };
-        dst.write(account.into());
-        Ok(())
-    }
-}
 
 #[derive(SchemaWrite, SchemaRead)]
 #[wincode(from = "FeeBin")]
@@ -213,32 +96,14 @@ pub(crate) struct ComputeBudgetWire {
 }
 
 #[derive(SchemaWrite, SchemaRead)]
-#[wincode(from = "CompiledInstruction")]
-pub(crate) struct CompiledInstructionWire {
-    pub program_id_index: u8,
-    pub accounts: Vec<u8>,
-    pub data: Vec<u8>,
-}
-
-#[derive(SchemaWrite, SchemaRead)]
 #[wincode(from = "InnerInstruction")]
 pub(crate) struct InnerInstructionWire {
-    #[wincode(with = "CompiledInstructionWire")]
     pub instruction: CompiledInstruction,
     pub stack_height: u8,
 }
 
 #[derive(SchemaWrite, SchemaRead)]
-#[wincode(from = "TransactionReturnData")]
-pub(crate) struct TransactionReturnDataWire {
-    #[wincode(with = "AddressSchema")]
-    pub program_id: Address,
-    pub data: Vec<u8>,
-}
-
-#[derive(SchemaWrite, SchemaRead)]
 pub(crate) struct FeatureActivationWire {
-    #[wincode(with = "AddressSchema")]
     pub address: Address,
     pub slot: u64,
 }
@@ -263,7 +128,6 @@ pub(crate) struct TransactionMetadataWire {
     #[wincode(with = "Vec<Vec<InnerInstructionWire>>")]
     pub inner_instructions: InnerInstructionsList,
     pub compute_units_consumed: u64,
-    #[wincode(with = "TransactionReturnDataWire")]
     pub return_data: TransactionReturnData,
     pub fee: u64,
 }
@@ -305,7 +169,7 @@ impl TxResult {
 #[derive(SchemaWrite, SchemaRead)]
 pub(crate) struct FeatureSetSnapshot {
     pub active: Vec<FeatureActivationWire>,
-    pub inactive: Vec<AddressWire>,
+    pub inactive: Vec<Address>,
 }
 
 impl FeatureSetSnapshot {
@@ -331,9 +195,7 @@ impl FeatureSetSnapshot {
 
 #[derive(SchemaWrite, SchemaRead)]
 pub(crate) struct AccountEntryWire {
-    #[wincode(with = "AddressSchema")]
     pub address: Address,
-    #[wincode(with = "AccountSchema")]
     pub account: AccountSharedData,
 }
 
@@ -352,10 +214,8 @@ impl From<AccountEntryWire> for (Address, AccountSharedData) {
 #[derive(SchemaWrite, SchemaRead)]
 pub(crate) struct LiteSvmSnapshot {
     pub accounts: Vec<AccountEntryWire>,
-    #[wincode(with = "PodAirdropKp")]
     pub airdrop_kp: [u8; 64],
     pub feature_set: FeatureSetSnapshot,
-    #[wincode(with = "PodHash")]
     pub latest_blockhash: Hash,
     pub history: Vec<(Signature, TxResult)>,
     pub history_capacity: u64,
