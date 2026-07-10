@@ -400,6 +400,7 @@ use {
         construct_instructions_account,
         inner_instructions::inner_instructions_list_from_instruction_trace,
     },
+    wincode::{DeserializeOwned, Serialize},
 };
 
 pub mod error;
@@ -602,20 +603,7 @@ impl LiteSVM {
             latest_blockhash,
         )]));
         self.set_sysvar(&SlotHistory::default());
-
-        // StakeHistory::size_of() is hard-coded to 16 KiB (512 max entries). Using set_sysvar
-        // would allocate that padded buffer, and sol_get_sysvar reads beyond the actual data
-        // would return zeros. The Stake BPF program asserts entry_epoch == target_epoch after
-        // each partial read, so those zero bytes trigger a panic at epoch >= 1. Serialize only
-        // the actual data so reads beyond the end return an error instead.
-        {
-            let data = bincode::serialize(&StakeHistory::default()).unwrap();
-            let mut account = AccountSharedData::new(1, data.len(), &solana_sdk_ids::sysvar::id());
-            account.data_as_mut_slice().copy_from_slice(&data);
-            self.accounts
-                .add_account(StakeHistory::id(), account)
-                .unwrap();
-        }
+        self.set_sysvar(&StakeHistory::default());
 
         // Initialize the deprecated StakeConfig account so it is available to programs
         // that still pass it as a transaction account (e.g. older DelegateStake callers).
@@ -859,21 +847,23 @@ impl LiteSVM {
     /// Sets the sysvar to the test environment.
     pub fn set_sysvar<T>(&mut self, sysvar: &T)
     where
-        T: Sysvar + SysvarId + wincode::Serialize<Src = T>,
+        T: Sysvar + SysvarId + Serialize<Src = T>,
     {
-        let mut account = AccountSharedData::new(
-            1,
-            T::size_of(sysvar).unwrap(),
-            &solana_sdk_ids::sysvar::id(),
-        );
-        T::serialize_into(account.data_as_mut_slice(), sysvar).unwrap();
+        let data = wincode::serialize(sysvar).unwrap();
+        let len = if T::id() == SlotHashes::id() {
+            solana_slot_hashes::SIZE
+        } else {
+            data.len()
+        };
+        let mut account = AccountSharedData::new(1, len, &solana_sdk_ids::sysvar::id());
+        account.data_as_mut_slice()[..data.len()].copy_from_slice(&data);
         self.accounts.add_account(T::id(), account).unwrap();
     }
 
     /// Gets a sysvar from the test environment.
     pub fn get_sysvar<T>(&self) -> T
     where
-        T: Sysvar + SysvarId + wincode::DeserializeOwned<Dst = T>,
+        T: Sysvar + SysvarId + DeserializeOwned<Dst = T>,
     {
         T::deserialize_from(self.accounts.get_account_ref(&T::id()).unwrap().data()).unwrap()
     }
