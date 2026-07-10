@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use {
     crate::error::{InvalidSysvarDataError, LiteSVMError},
     log::error,
-    serde::de::DeserializeOwned,
     solana_account::{state_traits::StateMut, AccountSharedData, ReadableAccount, WritableAccount},
     solana_address::Address,
     solana_address_lookup_table_interface::{error::AddressLookupError, state::AddressLookupTable},
@@ -41,6 +40,7 @@ use {
     solana_sysvar::Sysvar,
     solana_transaction_error::{AddressLoaderError, TransactionError},
     std::sync::Arc,
+    wincode::DeserializeOwned,
 };
 
 const FEES_ID: Address = Address::from_str_const("SysvarFees111111111111111111111111111111111");
@@ -55,7 +55,7 @@ fn handle_sysvar<T>(
     address: Address,
 ) -> Result<(), InvalidSysvarDataError>
 where
-    T: Sysvar + DeserializeOwned,
+    T: Sysvar + DeserializeOwned<Dst = T>,
 {
     cache.reset();
     cache.fill_missing_entries(|pubkey, set_sysvar| {
@@ -65,7 +65,7 @@ where
             set_sysvar(acc.data())
         }
     });
-    let _parsed: T = bincode::deserialize(account.data()).map_err(|_| err_variant)?;
+    let _parsed = T::deserialize_from(account.data()).map_err(|_| err_variant)?;
     Ok(())
 }
 
@@ -156,7 +156,7 @@ impl AccountsDb {
         #[allow(deprecated)]
         match pubkey {
             CLOCK_ID => {
-                let parsed: Clock = bincode::deserialize(account.data())
+                let parsed = Clock::deserialize_from(account.data())
                     .map_err(|_| InvalidSysvarDataError::Clock)?;
                 self.programs_cache.set_slot_for_tests(parsed.slot);
                 let mut accounts_clone = self.inner.clone();
@@ -226,7 +226,7 @@ impl AccountsDb {
                 )?;
             }
             STAKE_HISTORY_ID => {
-                handle_sysvar::<solana_stake_interface::stake_history::StakeHistory>(
+                handle_sysvar::<solana_stake_history::StakeHistory>(
                     cache,
                     StakeHistory,
                     account,

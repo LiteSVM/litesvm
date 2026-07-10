@@ -22,7 +22,12 @@ sbpf-debugger = ["register-tracing", "solana-program-runtime/sbpf-debugger"]
 serde = ["solana-transaction-error/serde", "solana-message/serde"]
 persistence-internal = []
 precompiles = ["dep:agave-precompiles"]
-register-tracing = ["invocation-inspect-callback", "dep:hex", "dep:sha2", "dep:nom"]
+register-tracing = [
+    "invocation-inspect-callback",
+    "dep:hex",
+    "dep:sha2",
+    "dep:nom",
+]
 
 [dependencies]
 agave-feature-set.workspace = true
@@ -47,15 +52,14 @@ solana-address-lookup-table-interface = { workspace = true, features = [
     "bincode",
     "bytemuck",
 ] }
-solana-bpf-loader-program.workspace = true
 solana-builtins = { workspace = true, features = ["agave-unstable-api"] }
-solana-clock.workspace = true
+solana-clock = { workspace = true, features = ["wincode"] }
 solana-compute-budget.workspace = true
 solana-compute-budget-instruction = { workspace = true, features = [
     "agave-unstable-api",
 ] }
-solana-epoch-rewards.workspace = true
-solana-epoch-schedule.workspace = true
+solana-epoch-rewards = { workspace = true, features = ["wincode"] }
+solana-epoch-schedule = { workspace = true, features = ["wincode"] }
 solana-fee = { workspace = true, features = ["agave-unstable-api"] }
 solana-feature-gate-interface = { workspace = true, features = ["bincode"] }
 solana-fee-structure.workspace = true
@@ -81,14 +85,14 @@ solana-signature.workspace = true
 solana-signer.workspace = true
 solana-slot-hashes.workspace = true
 solana-slot-history.workspace = true
-solana-stake-interface.workspace = true
+solana-stake-history.workspace = true
 solana-svm-callback.workspace = true
 solana-svm-log-collector.workspace = true
 solana-svm-timings.workspace = true
 solana-svm-transaction.workspace = true
 solana-system-interface = { workspace = true, features = ["bincode"] }
 solana-system-program.workspace = true
-solana-sysvar.workspace = true
+solana-sysvar = { workspace = true, features = ["wincode"] }
 solana-sysvar-id.workspace = true
 solana-transaction = { workspace = true, features = ["verify"] }
 solana-transaction-context.workspace = true
@@ -97,6 +101,7 @@ thiserror.workspace = true
 sha2 = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 nom = { workspace = true, optional = true }
+wincode.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
@@ -111,6 +116,7 @@ solana-program-option.workspace = true
 solana-program-pack.workspace = true
 solana-secp256k1-program = { workspace = true, features = ["bincode"] }
 solana-signer.workspace = true
+solana-stake-interface.workspace = true
 solana-vote-interface = { workspace = true, features = ["bincode"] }
 spl-associated-token-account-interface.workspace = true
 spl-token-interface.workspace = true
