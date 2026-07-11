@@ -410,7 +410,7 @@ mod accounts_db;
 mod callback;
 #[cfg(feature = "sbpf-debugger")]
 pub mod debugger;
-mod features;
+pub mod features;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -422,6 +422,19 @@ pub mod register_tracing;
 #[cfg(feature = "register-tracing")]
 pub mod register_tracing_filter;
 mod utils;
+
+/// Latest slot at which mainnet-beta activated a feature in [`MAINNET_ACTIVE_FEATURES`]; LiteSVM's default starting slot.
+pub const MAINNET_DEFAULT_SLOT: u64 = {
+    let mut max = 0;
+    let mut i = 0;
+    while i < MAINNET_ACTIVE_FEATURES.len() {
+        if MAINNET_ACTIVE_FEATURES[i].1 > max {
+            max = MAINNET_ACTIVE_FEATURES[i].1;
+        }
+        i += 1;
+    }
+    max
+};
 
 #[derive(Clone)]
 pub struct LiteSVM {
@@ -567,7 +580,10 @@ impl LiteSVM {
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_sysvars(&mut self) {
-        self.set_sysvar(&Clock::default());
+        self.set_sysvar(&Clock {
+            slot: MAINNET_DEFAULT_SLOT,
+            ..Default::default()
+        });
         self.set_sysvar(&EpochRewards::default());
         self.set_sysvar(&EpochSchedule::default());
         #[allow(deprecated)]
@@ -640,8 +656,8 @@ impl LiteSVM {
     /// activates new features. See also <https://www.simd.wtf/>.
     pub fn mainnet_feature_set() -> FeatureSet {
         let mut feature_set = FeatureSet::default();
-        for feature_id in MAINNET_ACTIVE_FEATURES {
-            feature_set.activate(feature_id, 0);
+        for (feature_id, activation_slot) in MAINNET_ACTIVE_FEATURES {
+            feature_set.activate(feature_id, *activation_slot);
         }
         feature_set
     }

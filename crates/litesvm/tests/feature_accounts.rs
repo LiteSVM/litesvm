@@ -1,6 +1,6 @@
 use {
     agave_feature_set::{accounts_lt_hash, alpenglow, raise_cpi_nesting_limit_to_8},
-    litesvm::LiteSVM,
+    litesvm::{features::MAINNET_ACTIVE_FEATURES, LiteSVM},
     solana_feature_gate_interface::{self as feature_gate, Feature},
 };
 
@@ -14,11 +14,17 @@ fn new_initializes_accounts_for_enabled_features() {
         .expect("active feature account should exist");
     let feature = feature_gate::from_account(&account).expect("feature account should deserialize");
 
+    let expected_slot = MAINNET_ACTIVE_FEATURES
+        .iter()
+        .find(|(id, _)| *id == feature_id)
+        .map(|(_, slot)| *slot)
+        .expect("accounts_lt_hash should be in the active feature list");
+
     assert_eq!(account.owner, solana_sdk_ids::feature::id());
     assert_eq!(
         feature,
         Feature {
-            activated_at: Some(0)
+            activated_at: Some(expected_slot)
         }
     );
     assert!(
