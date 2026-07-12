@@ -75,7 +75,12 @@ def rpc(method, params):
 
 
 def active_mainnet_features(feature_ids):
-    keep = set()
+    """Return {feature_id: activation_slot} for features active on mainnet.
+
+    The `Feature` account is bincode `Option<u64>`: a leading tag byte (1 for
+    `Some`) followed by the activation slot as a little-endian u64.
+    """
+    activation_slots = {}
     for i in range(0, len(feature_ids), 100):  # RPC caps at 100 per call
         chunk = feature_ids[i:i + 100]
         result = rpc("getMultipleAccounts",
@@ -84,9 +89,9 @@ def active_mainnet_features(feature_ids):
             if not acc or acc["owner"] != FEATURE_PROGRAM:
                 continue
             data = base64.b64decode(acc["data"][0])
-            if data and data[0] == 1:  # Some(activation_slot)
-                keep.add(fid)
-    return keep
+            if len(data) >= 9 and data[0] == 1:  # Some(activation_slot)
+                activation_slots[fid] = int.from_bytes(data[1:9], "little")
+    return activation_slots
 
 
 def main():
@@ -97,12 +102,14 @@ def main():
     lines = [
         "use solana_address::Address;",
         "",
-        "/// Feature gates currently activated on Solana mainnet-beta, sourced from the",
-        f"/// cluster on {date.today().isoformat()}.",
-        "pub const MAINNET_ACTIVE_FEATURES: &[Address] = &[",
+        "/// Feature gates currently activated on Solana mainnet-beta, paired with their",
+        "/// activation slot, sourced from the cluster on "
+        f"{date.today().isoformat()}.",
+        "pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[",
     ]
     for pk in in_source_order:
-        lines.append(f"    agave_feature_set::{pubkey_to_path[pk]}::ID,")
+        lines.append(
+            f"    (agave_feature_set::{pubkey_to_path[pk]}::ID, {active[pk]}),")
     lines += ["];", ""]
     OUT.write_text("\n".join(lines))
     print(f"wrote {len(in_source_order)} features to "
