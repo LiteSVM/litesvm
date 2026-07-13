@@ -13,3 +13,4 @@ publish:
     cargo publish -p litesvm-loader
     cargo publish -p litesvm-token
     cargo publish -p litesvm-persistence
+    cargo publish -p litesvm-cpi-tree

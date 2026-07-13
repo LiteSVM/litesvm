@@ -5,6 +5,12 @@
 ### Added
 
 - Add `LiteSVM.getProgramAccounts` to return all accounts owned by a given program, together with their addresses.
+- Expose activation slots on active feature metadata in the Node bindings [(#378)](https://github.com/LiteSVM/litesvm/pull/378).
+
+### Changed
+
+- Bump to Agave 4.1 [(#373)](https://github.com/LiteSVM/litesvm/pull/373).
+- Use `wincode` for sysvar serialization in the native bindings [(#376)](https://github.com/LiteSVM/litesvm/pull/376).
 
 ## [1.2.1] - 2026-07-01
 
