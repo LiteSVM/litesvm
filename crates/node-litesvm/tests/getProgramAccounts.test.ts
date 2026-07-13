@@ -1,5 +1,5 @@
 import { EncodedAccount, lamports } from "@solana/kit";
-import { LiteSVM } from "litesvm";
+import { LiteSVM } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { generateAddress, LAMPORTS_PER_SOL } from "./util";

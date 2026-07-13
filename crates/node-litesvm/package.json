@@ -1,11 +1,26 @@
 {
 	"name": "litesvm",
 	"version": "1.3.0",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"files": [
-		"dist/"
-	],
+	"main": "dist/kit.js",
+	"types": "dist/kit.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/kit.d.ts",
+			"import": "./dist/kit.js",
+			"require": "./dist/kit.js"
+		},
+		"./kit": {
+			"types": "./dist/kit.d.ts",
+			"import": "./dist/kit.js",
+			"require": "./dist/kit.js"
+		},
+		"./web3js": {
+			"types": "./dist/web3js.d.ts",
+			"import": "./dist/web3js.js",
+			"require": "./dist/web3js.js"
+		}
+	},
+	"files": ["dist/"],
 	"napi": {
 		"binaryName": "litesvm",
 		"targets": [
@@ -21,7 +36,8 @@
 	"dependencies": {
 		"@solana-program/system": "^0.12.2",
 		"@solana-program/token": "^0.14.0",
-		"@solana/kit": "^6.10.0"
+		"@solana/kit": "^7.0.0",
+		"@solana/web3.js": "3.0.0-rc.2"
 	},
 	"devDependencies": {
 		"@algolia/client-search": "^5.55.0",
@@ -52,10 +68,10 @@
 		"prepublishOnly": "napi prepublish -t npm",
 		"fmt": "yarn fmt:rust && yarn fmt:js",
 		"fmt:rust": "cargo fmt",
-		"fmt:js": "rome format --write litesvm/index.ts tests/ tsconfig.json package.json",
+		"fmt:js": "rome format --write litesvm/index.ts litesvm/kit.ts litesvm/web3js.ts tests/ tsconfig.json package.json",
 		"lint": "yarn lint:rust && yarn lint:js",
 		"lint:rust": "cargo clippy",
-		"lint:js": "rome check litesvm/index.ts tests/ tsconfig.json package.json",
+		"lint:js": "rome check litesvm/index.ts litesvm/kit.ts litesvm/web3js.ts tests/ tsconfig.json package.json",
 		"test": "node -r ts-node/register -r tsconfig-paths/register --max-old-space-size=4096 --test --test-concurrency=1 tests/*.test.ts",
 		"build:js": "tsc --build && cp litesvm/internal.d.ts dist/internal.d.ts",
 		"universal": "napi universal",

@@ -1,6 +1,6 @@
 import { generateKeyPairSigner, lamports } from "@solana/kit";
-import { TransactionErrorFieldless } from "internal";
-import { FailedTransactionMetadata, LiteSVM } from "litesvm";
+import { TransactionErrorFieldless } from "litesvm/kit";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {

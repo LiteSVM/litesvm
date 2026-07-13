@@ -3,7 +3,7 @@ import {
 	FailedTransactionMetadata,
 	LiteSVM,
 	TransactionMetadata,
-} from "litesvm";
+} from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {

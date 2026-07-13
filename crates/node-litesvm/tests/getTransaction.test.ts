@@ -3,7 +3,7 @@ import {
 	getSignatureFromTransaction,
 	lamports,
 } from "@solana/kit";
-import { TransactionMetadata } from "internal";
+import { TransactionMetadata } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
@@ -14,7 +14,7 @@ import {
 	setHelloWorldAccount,
 	setHelloWorldProgram,
 } from "./util";
-import { LiteSVM } from "index";
+import { LiteSVM } from "litesvm/kit";
 
 test("get transaction", async () => {
 	// Given the following addresses and signers.

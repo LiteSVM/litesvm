@@ -17,7 +17,7 @@ import {
 	TransactionSigner,
 	TransactionWithLifetime,
 } from "@solana/kit";
-import { ComputeBudget, LiteSVM } from "../litesvm";
+import { ComputeBudget, LiteSVM } from "litesvm/kit";
 
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
 

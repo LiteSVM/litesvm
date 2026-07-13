@@ -5,7 +5,7 @@ import {
 	SignatureBytes,
 	TransactionPartialSigner,
 } from "@solana/kit";
-import { LiteSVM } from "index";
+import { LiteSVM } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {

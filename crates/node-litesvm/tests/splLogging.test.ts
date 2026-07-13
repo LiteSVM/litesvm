@@ -1,5 +1,5 @@
 import { AccountRole, generateKeyPairSigner, lamports } from "@solana/kit";
-import { LiteSVM, TransactionMetadata } from "litesvm";
+import { LiteSVM, TransactionMetadata } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
