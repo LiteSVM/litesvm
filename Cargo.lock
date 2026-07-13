@@ -1938,6 +1938,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "litesvm-cpi-tree"
+version = "0.13.0"
+dependencies = [
+ "litesvm",
+ "solana-account",
+ "solana-address 2.2.0",
+ "solana-clock",
+ "solana-keypair",
+ "solana-message",
+ "solana-signer",
+ "solana-transaction",
+]
+
+[[package]]
 name = "litesvm-loader"
 version = "0.13.1"
 dependencies = [
