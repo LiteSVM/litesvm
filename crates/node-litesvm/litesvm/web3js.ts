@@ -14,7 +14,7 @@ import {
 	SlotHistory,
 	StakeHistory,
 	TransactionMetadata,
-} from "./internal";
+} from "./internal.js";
 export {
 	Account,
 	Clock,
@@ -32,7 +32,7 @@ export {
 	StakeHistoryEntry,
 	TransactionMetadata,
 	TransactionReturnData,
-} from "./internal";
+} from "./internal.js";
 import {
 	AccountInfo,
 	Address,

@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"outDir": "dist/types"
+	},
+	"include": ["litesvm/index.ts", "litesvm/kit.ts", "litesvm/web3js.ts"]
+}

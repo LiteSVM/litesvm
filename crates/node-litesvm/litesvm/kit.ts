@@ -34,7 +34,7 @@ import {
 	SlotHistory,
 	StakeHistory,
 	TransactionMetadata,
-} from "./internal";
+} from "./internal.js";
 export {
 	Account,
 	Clock,
@@ -53,7 +53,7 @@ export {
 	TransactionMetadata,
 	TransactionErrorFieldless,
 	TransactionReturnData,
-} from "./internal";
+} from "./internal.js";
 
 function toEncodedAccount(address: Address, account: Account): EncodedAccount {
 	const data = account.data();
