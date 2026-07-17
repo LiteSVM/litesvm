@@ -109,8 +109,6 @@ fn test_too_many_account_locks() {
 fn test_too_many_account_locks_without_sigverify() {
     use solana_system_interface::instruction::transfer;
 
-    // The bank enforces the account-lock limit regardless of signature
-    // verification, so disabling sigverify must not skip it.
     let mut svm = LiteSVM::new().with_sigverify(false);
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();

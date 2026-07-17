@@ -1120,10 +1120,6 @@ impl LiteSVM {
             log::error!("Transaction sanitization failed");
         })
         .and_then(|tx| {
-            // The bank enforces the account-lock limit on every transaction
-            // independently of signature verification, so a transaction over
-            // the limit can never execute on a real cluster. Validate it in
-            // the no-verify path too, rather than only alongside sigverify.
             SanitizedTransaction::validate_account_locks(
                 tx.message(),
                 get_transaction_account_lock_limit(self),
