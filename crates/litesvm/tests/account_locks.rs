@@ -104,3 +104,43 @@ fn test_too_many_account_locks() {
         "Expected TooManyAccountLocks error when transaction has more than 64 accounts"
     );
 }
+
+#[test]
+fn test_too_many_account_locks_without_sigverify() {
+    use solana_system_interface::instruction::transfer;
+
+    let mut svm = LiteSVM::new().with_sigverify(false);
+    let payer_kp = Keypair::new();
+    let payer_pk = payer_kp.pubkey();
+    svm.airdrop(&payer_pk, 1_000_000_000_000).unwrap();
+
+    let compute_budget_ix =
+        solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_limit(
+            1_000_000,
+        );
+    let mut instructions: Vec<Instruction> = vec![compute_budget_ix];
+    for _ in 0..MAX_TX_ACCOUNT_LOCKS {
+        let recipient = Address::new_unique();
+        instructions.push(transfer(&payer_pk, &recipient, 1_000_000));
+    }
+
+    let tx = Transaction::new(
+        &[&payer_kp],
+        Message::new(&instructions, Some(&payer_pk)),
+        svm.latest_blockhash(),
+    );
+
+    let sim = svm.simulate_transaction(tx.clone());
+    assert_eq!(
+        sim.unwrap_err().err,
+        TransactionError::TooManyAccountLocks,
+        "simulate_transaction with sigverify disabled must still enforce the account-lock limit"
+    );
+
+    let result = svm.send_transaction(tx);
+    assert_eq!(
+        result.unwrap_err().err,
+        TransactionError::TooManyAccountLocks,
+        "send_transaction with sigverify disabled must still enforce the account-lock limit"
+    );
+}

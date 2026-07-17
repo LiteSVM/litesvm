@@ -1119,6 +1119,13 @@ impl LiteSVM {
         res.inspect_err(|_| {
             log::error!("Transaction sanitization failed");
         })
+        .and_then(|tx| {
+            SanitizedTransaction::validate_account_locks(
+                tx.message(),
+                get_transaction_account_lock_limit(self),
+            )?;
+            Ok(tx)
+        })
     }
 
     fn sanitize_transaction_no_verify(
@@ -1150,10 +1157,6 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
-        SanitizedTransaction::validate_account_locks(
-            tx.message(),
-            get_transaction_account_lock_limit(self),
-        )?;
 
         Ok(tx)
     }
