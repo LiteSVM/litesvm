@@ -3973,9 +3973,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"litesvm@workspace:.":
+"litesvm-core@workspace:crates/node-litesvm-core":
   version: 0.0.0-use.local
-  resolution: "litesvm@workspace:."
+  resolution: "litesvm-core@workspace:crates/node-litesvm-core"
+  dependencies:
+    "@napi-rs/cli": "npm:^3.7.2"
+  languageName: unknown
+  linkType: soft
+
+"litesvm@workspace:crates/node-litesvm":
+  version: 0.0.0-use.local
+  resolution: "litesvm@workspace:crates/node-litesvm"
   dependencies:
     "@algolia/client-search": "npm:^5.55.0"
     "@napi-rs/cli": "npm:^3.7.2"
@@ -4632,6 +4640,12 @@ __metadata:
   checksum: 10c0/5461bfdbef0b9857451535ba531b80423b600c29c34641ccbb18da761dbd87deacd6c30d10fa48a592b930238a70057c93d72beaeae16ff3dc1dee3514b15b5f
   languageName: node
   linkType: hard
+
+"root-workspace-0b6124@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "root-workspace-0b6124@workspace:."
+  languageName: unknown
+  linkType: soft
 
 "safer-buffer@npm:>= 2.1.2 < 3.0.0":
   version: 2.1.2

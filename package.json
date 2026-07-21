@@ -1,0 +1,13 @@
+{
+	"private": true,
+	"packageManager": "yarn@4.10.3",
+	"workspaces": [
+		"crates/node-litesvm-core",
+		"crates/node-litesvm",
+		"crates/node-litesvm-web3js"
+	],
+	"scripts": {
+		"build:core": "yarn workspace litesvm-core build",
+		"build:core:debug": "yarn workspace litesvm-core build:debug",
+	}
+}
