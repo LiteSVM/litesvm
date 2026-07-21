@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Add `LiteSVM::{set_epoch_stake, set_epoch_stakes, epoch_total_stake, epoch_stake}` so tests can configure values returned by the `sol_get_epoch_stake` syscall (previously always `0`). The per-vote map is the source of truth; the cluster total is maintained as its checked sum (overwrites adjust the total, overflow returns `LiteSVMError::EpochStakeOverflow`).
+
 ## [0.14.0] - 2026-07-13
 
 ### Added
