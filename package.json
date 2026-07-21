@@ -7,7 +7,11 @@
 		"crates/node-litesvm-web3js"
 	],
 	"scripts": {
+		"build": "yarn build:core && yarn workspace litesvm build && yarn workspace litesvm-web3js build",
+		"build:debug": "yarn build:core:debug && yarn workspace litesvm build && yarn workspace litesvm-web3js build",
 		"build:core": "yarn workspace litesvm-core build",
 		"build:core:debug": "yarn workspace litesvm-core build:debug",
+		"test": "yarn test:core && yarn workspace litesvm test && yarn workspace litesvm-web3js test",
+		"lint": "yarn workspace litesvm-core lint && yarn workspace litesvm lint && yarn workspace litesvm-web3js lint"
 	}
 }

@@ -30,16 +30,19 @@ jobs:
           path: crates/node-litesvm-core/artifacts
       - name: Move native artifacts
         run: yarn workspace litesvm-core artifacts
-      - name: Build Kit wrapper
-        run: yarn workspace litesvm build
+      - name: Build wrappers
+        run: |
+          yarn workspace litesvm build
+          yarn workspace litesvm-web3js build
       - name: List native packages
         run: ls -R crates/node-litesvm-core/npm
-      - name: Publish core and Kit wrapper
+      - name: Publish core and wrappers
         run: |
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           TAG=latest
           [[ "$GITHUB_REF_NAME" == *-rc.* ]] && TAG=next
           yarn workspace litesvm-core npm publish --access public --tag "$TAG"
           yarn workspace litesvm npm publish --access public --tag "$TAG"
+          yarn workspace litesvm-web3js npm publish --access public --tag "$TAG"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

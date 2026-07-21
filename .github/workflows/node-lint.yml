@@ -32,3 +32,5 @@ jobs:
         run: yarn workspace litesvm-core lint
       - name: Lint Kit wrapper
         run: yarn workspace litesvm lint:js
+      - name: Lint Web3.js wrapper
+        run: yarn workspace litesvm-web3js lint
