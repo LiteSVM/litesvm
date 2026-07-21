@@ -30,3 +30,5 @@ jobs:
         run: corepack enable && yarn install --immutable
       - name: Lint Rust core
         run: yarn workspace litesvm-core lint
+      - name: Lint Kit wrapper
+        run: yarn workspace litesvm lint:js

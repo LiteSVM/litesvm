@@ -3973,7 +3973,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"litesvm-core@workspace:crates/node-litesvm-core":
+"litesvm-core@workspace:^, litesvm-core@workspace:crates/node-litesvm-core":
   version: 0.0.0-use.local
   resolution: "litesvm-core@workspace:crates/node-litesvm-core"
   dependencies:
@@ -3986,13 +3986,13 @@ __metadata:
   resolution: "litesvm@workspace:crates/node-litesvm"
   dependencies:
     "@algolia/client-search": "npm:^5.55.0"
-    "@napi-rs/cli": "npm:^3.7.2"
     "@solana-program/system": "npm:^0.12.2"
     "@solana-program/token": "npm:^0.14.0"
     "@solana/kit": "npm:^6.10.0"
     "@types/markdown-it": "npm:^14.1.2"
     "@types/node": "npm:22.19.21"
     "@types/node-fetch": "npm:^2.6.13"
+    litesvm-core: "workspace:^"
     markdown-it: "npm:^14.2.0"
     markdown-it-include: "npm:^2.0.0"
     rome: "npm:^12.1.3"

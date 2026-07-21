@@ -39,6 +39,8 @@ jobs:
           components: clippy, rustfmt
       - name: Install dependencies
         run: corepack enable && yarn install --immutable
+      - name: Lint Kit wrapper
+        run: yarn workspace litesvm lint
       - name: Cargo fmt
         run: cargo fmt --all -- --check
       - name: Clippy core
@@ -157,8 +159,11 @@ jobs:
       - name: List bindings
         run: ls -R crates/node-litesvm-core/litesvm
         shell: bash
-      - name: Test core bindings
-        run: yarn workspace litesvm-core test
+      - name: Test core and Kit wrapper
+        run: |
+          yarn workspace litesvm-core test
+          yarn workspace litesvm build
+          yarn workspace litesvm test
 
   test-linux-binding:
     name: Test ${{ matrix.target }} - node@${{ matrix.node }}
@@ -215,9 +220,9 @@ jobs:
       - name: List bindings
         run: ls -R crates/node-litesvm-core/litesvm
         shell: bash
-      - name: Test core bindings
+      - name: Test core and Kit wrapper
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ steps.docker.outputs.IMAGE }}
           options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }} -e RUST_MIN_STACK=8388608
-          run: corepack enable && yarn workspace litesvm-core test
+          run: corepack enable && yarn workspace litesvm-core test && yarn workspace litesvm build && yarn workspace litesvm test

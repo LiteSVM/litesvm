@@ -34,7 +34,7 @@ import {
 	SlotHistory,
 	StakeHistory,
 	TransactionMetadata,
-} from "./internal";
+} from "litesvm-core";
 export {
 	Account,
 	Clock,
@@ -52,7 +52,7 @@ export {
 	StakeHistoryEntry,
 	TransactionMetadata,
 	TransactionReturnData,
-} from "./internal";
+} from "litesvm-core";
 
 function toEncodedAccount(address: Address, account: Account): EncodedAccount {
 	const data = account.data();

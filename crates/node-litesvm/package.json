@@ -6,26 +6,15 @@
 	"files": [
 		"dist/"
 	],
-	"napi": {
-		"binaryName": "litesvm",
-		"targets": [
-			"x86_64-apple-darwin",
-			"x86_64-unknown-linux-gnu",
-			"x86_64-unknown-linux-musl",
-			"aarch64-apple-darwin",
-			"aarch64-unknown-linux-gnu",
-			"aarch64-unknown-linux-musl"
-		]
-	},
 	"license": "MIT",
 	"dependencies": {
 		"@solana-program/system": "^0.12.2",
 		"@solana-program/token": "^0.14.0",
-		"@solana/kit": "^6.10.0"
+		"@solana/kit": "^6.10.0",
+		"litesvm-core": "workspace:^"
 	},
 	"devDependencies": {
 		"@algolia/client-search": "^5.55.0",
-		"@napi-rs/cli": "^3.7.2",
 		"@types/markdown-it": "^14.1.2",
 		"@types/node": "22.19.21",
 		"@types/node-fetch": "^2.6.13",
@@ -46,27 +35,21 @@
 		"node": ">= 20"
 	},
 	"scripts": {
-		"artifacts": "napi artifacts",
-		"build": "napi build --platform --release --output-dir litesvm --dts internal.d.ts --js internal.js",
-		"build:debug": "napi build --platform litesvm --dts internal.d.ts --js internal.js",
-		"prepublishOnly": "napi prepublish -t npm",
-		"fmt": "yarn fmt:rust && yarn fmt:js",
-		"fmt:rust": "cargo fmt",
+		"clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+		"build": "yarn clean && tsc --build",
+		"prepublishOnly": "yarn build",
+		"fmt": "yarn fmt:js",
 		"fmt:js": "rome format --write litesvm/index.ts tests/ tsconfig.json package.json",
-		"lint": "yarn lint:rust && yarn lint:js",
-		"lint:rust": "cargo clippy",
+		"lint": "yarn lint:js",
 		"lint:js": "rome check litesvm/index.ts tests/ tsconfig.json package.json",
 		"test": "node -r ts-node/register -r tsconfig-paths/register --max-old-space-size=4096 --test --test-concurrency=1 tests/*.test.ts",
-		"build:js": "tsc --build && cp litesvm/internal.d.ts dist/internal.d.ts",
-		"universal": "napi universal",
-		"cargoBump": "cargo set-version --package litesvm-node --bump",
-		"bumpPatch": "yarn version patch && napi version && cargo tree",
-		"bumpMinor": "yarn version minor && napi version && cargo tree",
-		"bumpMajor": "yarn version major && napi version && cargo tree",
+		"build:js": "yarn build",
+		"bumpPatch": "yarn version patch",
+		"bumpMinor": "yarn version minor",
+		"bumpMajor": "yarn version major",
 		"predocs": "typedoc",
 		"docs:dev": "vitepress dev docs",
 		"docs:build": "vitepress build docs",
 		"docs:preview": "vitepress preview docs"
-	},
-	"packageManager": "yarn@4.10.3"
+	}
 }
