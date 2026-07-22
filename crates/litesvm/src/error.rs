@@ -34,4 +34,6 @@ pub enum LiteSVMError {
     InvalidLoader(String),
     #[error("{0}")]
     ProgramLoad(String),
+    #[error("Epoch stake arithmetic overflow")]
+    EpochStakeOverflow,
 }

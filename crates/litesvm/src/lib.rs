@@ -310,6 +310,8 @@ much easier.
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
+#[cfg(feature = "hashbrown")]
+use hashbrown::{hash_map::Entry, HashMap};
 #[cfg(feature = "persistence-internal")]
 use indexmap::IndexMap;
 #[cfg(feature = "precompiles")]
@@ -320,6 +322,8 @@ use qualifier_attr::qualifiers;
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
 use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+#[cfg(not(feature = "hashbrown"))]
+use std::collections::{hash_map::Entry, HashMap};
 use {
     crate::{
         accounts_db::AccountsDb,
@@ -450,6 +454,8 @@ pub struct LiteSVM {
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
     custom_syscalls: Vec<(String, BuiltinFunctionRegisterer)>,
+    epoch_total_stake: u64,
+    epoch_vote_stakes: HashMap<Address, u64>,
     /// The callback which can be used to inspect invoke_context
     /// and extract low-level information such as bpf traces, transaction
     /// context, detailed timings, etc.
@@ -493,6 +499,8 @@ impl LiteSVM {
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
             custom_syscalls: Vec::new(),
+            epoch_total_stake: 0,
+            epoch_vote_stakes: HashMap::new(),
             #[cfg(feature = "invocation-inspect-callback")]
             enable_register_tracing: _enable_register_tracing,
             #[cfg(feature = "invocation-inspect-callback")]
@@ -826,6 +834,97 @@ impl LiteSVM {
     /// Sets all information associated with the account of the provided pubkey.
     pub fn set_account(&mut self, address: Address, data: Account) -> Result<(), LiteSVMError> {
         self.accounts.add_account(address, data.into())
+    }
+
+    /// Sets the active stake for `vote_account` returned by
+    /// `sol_get_epoch_stake(vote_account)`.
+    ///
+    /// Updates the cluster total (`sol_get_epoch_stake(null)`) by replacing any
+    /// previous stake for this vote: `total = total - previous + stake`, using
+    /// checked arithmetic. Setting `stake` to `0` removes the vote from the map.
+    ///
+    /// Returns [`LiteSVMError::EpochStakeOverflow`] if the new total would
+    /// overflow `u64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use {litesvm::LiteSVM, solana_address::Address};
+    ///
+    /// let mut svm = LiteSVM::new();
+    /// let vote = Address::new_unique();
+    /// svm.set_epoch_stake(vote, 500).unwrap();
+    /// svm.set_epoch_stake(vote, 200).unwrap(); // overwrite adjusts total
+    /// assert_eq!(svm.epoch_stake(&vote), 200);
+    /// assert_eq!(svm.epoch_total_stake(), 200);
+    /// ```
+    pub fn set_epoch_stake(
+        &mut self,
+        vote_account: Address,
+        stake: u64,
+    ) -> Result<(), LiteSVMError> {
+        match self.epoch_vote_stakes.entry(vote_account) {
+            Entry::Occupied(mut entry) => {
+                let previous = *entry.get();
+                self.epoch_total_stake = self
+                    .epoch_total_stake
+                    .checked_sub(previous)
+                    .and_then(|total| total.checked_add(stake))
+                    .ok_or(LiteSVMError::EpochStakeOverflow)?;
+                if stake == 0 {
+                    entry.remove();
+                } else {
+                    *entry.get_mut() = stake;
+                }
+            }
+            Entry::Vacant(entry) => {
+                if stake != 0 {
+                    self.epoch_total_stake = self
+                        .epoch_total_stake
+                        .checked_add(stake)
+                        .ok_or(LiteSVMError::EpochStakeOverflow)?;
+                    entry.insert(stake);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Replaces all per-vote epoch stakes. The cluster total becomes the
+    /// checked sum of `stakes` (zero entries are dropped).
+    ///
+    /// Returns [`LiteSVMError::EpochStakeOverflow`] if the sum overflows `u64`.
+    pub fn set_epoch_stakes(
+        &mut self,
+        stakes: impl IntoIterator<Item = (Address, u64)>,
+    ) -> Result<(), LiteSVMError> {
+        let mut total = 0u64;
+        let mut map = HashMap::new();
+        for (vote_account, stake) in stakes {
+            if stake == 0 {
+                continue;
+            }
+            total = total
+                .checked_add(stake)
+                .ok_or(LiteSVMError::EpochStakeOverflow)?;
+            map.insert(vote_account, stake);
+        }
+        self.epoch_vote_stakes = map;
+        self.epoch_total_stake = total;
+        Ok(())
+    }
+
+    /// Returns the total epoch stake (sum of all configured vote stakes).
+    pub fn epoch_total_stake(&self) -> u64 {
+        self.epoch_total_stake
+    }
+
+    /// Returns the configured epoch stake for `vote_account`, or `0` if unset.
+    pub fn epoch_stake(&self, vote_account: &Address) -> u64 {
+        self.epoch_vote_stakes
+            .get(vote_account)
+            .copied()
+            .unwrap_or(0)
     }
 
     /// **⚠️ ADVANCED USE ONLY ⚠️**
