@@ -12,6 +12,8 @@
 		"baseUrl": "./litesvm",
 		"paths": {
 			"litesvm": ["./"],
+			"litesvm/kit": ["./kit"],
+			"litesvm/web3js": ["./web3js"],
 			"@/*": ["../*"]
 		},
 		"resolveJsonModule": true,

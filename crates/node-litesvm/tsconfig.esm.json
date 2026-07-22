@@ -1,0 +1,10 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"declaration": false,
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"outDir": "dist/esm"
+	},
+	"include": ["litesvm/index.ts", "litesvm/kit.ts", "litesvm/web3js.ts"]
+}

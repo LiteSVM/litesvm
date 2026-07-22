@@ -1,11 +1,28 @@
 {
 	"name": "litesvm",
 	"version": "1.3.0",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"files": [
-		"dist/"
-	],
+	"main": "dist/cjs/kit.js",
+	"module": "dist/esm/kit.js",
+	"types": "dist/types/kit.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/types/kit.d.ts",
+			"import": "./dist/esm/kit.js",
+			"require": "./dist/cjs/kit.js"
+		},
+		"./kit": {
+			"types": "./dist/types/kit.d.ts",
+			"import": "./dist/esm/kit.js",
+			"require": "./dist/cjs/kit.js"
+		},
+		"./web3js": {
+			"types": "./dist/types/web3js.d.ts",
+			"import": "./dist/esm/web3js.js",
+			"require": "./dist/cjs/web3js.js"
+		}
+	},
+	"files": ["dist/"],
+	"sideEffects": false,
 	"napi": {
 		"binaryName": "litesvm",
 		"targets": [
@@ -21,7 +38,8 @@
 	"dependencies": {
 		"@solana-program/system": "^0.12.2",
 		"@solana-program/token": "^0.14.0",
-		"@solana/kit": "^6.10.0"
+		"@solana/kit": "^7.0.0",
+		"@solana/web3.js": "3.0.0-rc.2"
 	},
 	"devDependencies": {
 		"@algolia/client-search": "^5.55.0",
@@ -47,17 +65,23 @@
 	},
 	"scripts": {
 		"artifacts": "napi artifacts",
-		"build": "napi build --platform --release --output-dir litesvm --dts internal.d.ts --js internal.js",
+		"build": "yarn build:napi:cjs && yarn build:napi:esm",
+		"build:napi:cjs": "napi build --platform --release --output-dir dist/cjs --dts internal.d.ts --js internal.js",
+		"build:napi:esm": "napi build --platform --release --output-dir dist/esm --dts internal.d.ts --js internal.js --esm",
 		"build:debug": "napi build --platform litesvm --dts internal.d.ts --js internal.js",
 		"prepublishOnly": "napi prepublish -t npm",
 		"fmt": "yarn fmt:rust && yarn fmt:js",
 		"fmt:rust": "cargo fmt",
-		"fmt:js": "rome format --write litesvm/index.ts tests/ tsconfig.json package.json",
+		"fmt:js": "rome format --write litesvm/index.ts litesvm/kit.ts litesvm/web3js.ts scripts/ tests/ tsconfig.json tsconfig.cjs.json tsconfig.esm.json tsconfig.types.json package.json",
 		"lint": "yarn lint:rust && yarn lint:js",
 		"lint:rust": "cargo clippy",
-		"lint:js": "rome check litesvm/index.ts tests/ tsconfig.json package.json",
+		"lint:js": "rome check litesvm/index.ts litesvm/kit.ts litesvm/web3js.ts scripts/ tests/ tsconfig.json tsconfig.cjs.json tsconfig.esm.json tsconfig.types.json package.json",
 		"test": "node -r ts-node/register -r tsconfig-paths/register --max-old-space-size=4096 --test --test-concurrency=1 tests/*.test.ts",
-		"build:js": "tsc --build && cp litesvm/internal.d.ts dist/internal.d.ts",
+		"build:js": "yarn build:js:cjs && yarn build:js:esm && yarn build:types && yarn build:js:package-types",
+		"build:js:cjs": "tsc --project tsconfig.cjs.json",
+		"build:js:esm": "tsc --project tsconfig.esm.json",
+		"build:js:package-types": "node scripts/package-types.js",
+		"build:types": "tsc --project tsconfig.types.json && cp litesvm/internal.d.ts dist/types/internal.d.ts",
 		"universal": "napi universal",
 		"cargoBump": "cargo set-version --package litesvm-node --bump",
 		"bumpPatch": "yarn version patch && napi version && cargo tree",

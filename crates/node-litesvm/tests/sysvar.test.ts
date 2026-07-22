@@ -1,4 +1,4 @@
-import { Clock, LiteSVM, Rent } from "litesvm";
+import { Clock, LiteSVM, Rent } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

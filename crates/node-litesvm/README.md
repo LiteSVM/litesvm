@@ -14,13 +14,13 @@ and `bankrun` (reasonably fast and powerful, but inherits a lot of warts from `s
 
 ## Minimal example
 
-This example just transfers lamports from Alice to Bob without loading
+This Kit example just transfers lamports from Alice to Bob without loading
 any programs of our own. It uses the [Node.js test runner](https://nodejs.org/api/test.html).
 
 ```ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FailedTransactionMetadata, LiteSVM } from "litesvm";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm/kit";
 import { getTransferSolInstruction } from "@solana-program/system";
 import {
 	appendTransactionMessageInstruction,
@@ -70,6 +70,50 @@ test("it transfers SOL from one wallet to another", async () => {
   assert(payerBalance < lamports(1_000_000_000n));
 });
 ```
+
+web3.js users can use the compatibility entrypoint:
+
+```ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { FailedTransactionMetadata, LiteSVM } from "litesvm/web3js";
+import {
+	Keypair,
+	LAMPORTS_PER_SOL,
+	SystemProgram,
+	Transaction,
+} from "@solana/web3.js";
+
+test("it transfers SOL with web3.js", async () => {
+	const svm = new LiteSVM();
+	const payer = await Keypair.generate();
+	const recipient = await Keypair.generate();
+	svm.airdrop(payer.publicKey, BigInt(LAMPORTS_PER_SOL));
+
+	const tx = new Transaction({
+		feePayer: payer.publicKey,
+		blockhash: svm.latestBlockhash(),
+		lastValidBlockHeight: 0n,
+	}).add(
+		SystemProgram.transfer({
+			fromPubkey: payer.publicKey,
+			toPubkey: recipient.publicKey,
+			lamports: 1_000_000_000n,
+		}),
+	);
+	await tx.sign(payer);
+
+	const result = await svm.sendTransaction(tx);
+	if (result instanceof FailedTransactionMetadata) {
+		throw new Error(`Transaction failed: ${result.err()}`);
+	}
+
+	assert.strictEqual(svm.getBalance(recipient.publicKey), 1_000_000_000n);
+});
+```
+
+Root imports (`import { LiteSVM } from "litesvm"`) point to the Kit-compatible API. Prefer `litesvm/kit`
+or `litesvm/web3js` in new code so the Solana SDK surface is explicit.
 
 Note: by default the `LiteSVM` instance includes some core programs such as
 the System Program and SPL Token.

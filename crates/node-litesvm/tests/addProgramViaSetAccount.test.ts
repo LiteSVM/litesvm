@@ -4,7 +4,7 @@ import {
 	generateKeyPairSigner,
 	lamports,
 } from "@solana/kit";
-import { LiteSVM } from "index";
+import { LiteSVM } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";

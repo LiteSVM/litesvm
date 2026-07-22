@@ -1,4 +1,4 @@
-import { LiteSVM } from "litesvm";
+import { LiteSVM } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

@@ -10,7 +10,7 @@ import {
 	setTransactionMessageLifetimeUsingBlockhash,
 	signTransactionMessageWithSigners,
 } from "@solana/kit";
-import { LiteSVM } from "index";
+import { LiteSVM } from "litesvm/kit";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
