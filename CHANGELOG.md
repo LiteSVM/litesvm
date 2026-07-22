@@ -2,9 +2,15 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-22
+
 ### Added
 
-- Add `LiteSVM::{set_epoch_stake, set_epoch_stakes, epoch_total_stake, epoch_stake}` so tests can configure values returned by the `sol_get_epoch_stake` syscall (previously always `0`). The per-vote map is the source of truth; the cluster total is maintained as its checked sum (overwrites adjust the total, overflow returns `LiteSVMError::EpochStakeOverflow`).
+- Add `LiteSVM::{set_epoch_stake, set_epoch_stakes, epoch_total_stake, epoch_stake}` so tests can configure values returned by the `sol_get_epoch_stake` syscall (previously always `0`). The per-vote map is the source of truth; the cluster total is maintained as its checked sum (overwrites adjust the total, overflow returns `LiteSVMError::EpochStakeOverflow`) ([#383](https://github.com/LiteSVM/litesvm/pull/383)).
+
+### Fixed
+
+- Validate account locks even when sigverify is disabled, so transactions with duplicate or too many account locks are rejected consistently ([#381](https://github.com/LiteSVM/litesvm/pull/381)).
 
 ## [0.14.0] - 2026-07-13
 
@@ -279,7 +285,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/LiteSVM/litesvm/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/LiteSVM/litesvm/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/LiteSVM/litesvm/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/LiteSVM/litesvm/compare/v0.12.0...v0.13.0
