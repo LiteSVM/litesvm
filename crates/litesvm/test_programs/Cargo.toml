@@ -1,5 +1,12 @@
 [workspace]
-members = ["clock-example", "counter", "failure", "custom-syscall", "cpi-maker", "epoch-stake"]
+members = [
+    "clock-example",
+    "counter",
+    "failure",
+    "custom-syscall",
+    "cpi-maker",
+    "epoch-stake",
+]
 resolver = "2"
 
 [workspace.dependencies]
@@ -13,8 +20,8 @@ solana-instruction = "3.0"
 solana-msg = "3.0"
 solana-program-entrypoint = "3.0"
 solana-program-error = "3.0"
-solana-pubkey = "3.0"
-solana-sysvar = { version = "3.0", features = ["bincode"] }
+solana-pubkey = "4.2"
+solana-sysvar = { version = "4.1", features = ["bincode"] }
 
 
 [profile.release]
