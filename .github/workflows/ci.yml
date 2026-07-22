@@ -23,12 +23,12 @@ jobs:
 
       - name: Install Solana CLI
         run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/v3.0.3/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v4.1.2/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
           export PATH="$GITHUB_PATH:$PATH"
 
       - name: Build test programs
-        run: cd crates/litesvm/test_programs && cargo build-sbf -- --locked
+        run: cd crates/litesvm/test_programs && cargo build-sbf
 
       - name: Run tests
         run: cargo test --features precompiles
