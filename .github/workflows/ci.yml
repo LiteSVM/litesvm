@@ -28,7 +28,7 @@ jobs:
           export PATH="$GITHUB_PATH:$PATH"
 
       - name: Build test programs
-        run: cd crates/litesvm/test_programs && cargo build-sbf
+        run: cd crates/litesvm/test_programs && cargo build-sbf -- --locked
 
       - name: Run tests
         run: cargo test --features precompiles
