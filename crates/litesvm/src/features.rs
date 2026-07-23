@@ -1,7 +1,7 @@
 use solana_address::Address;
 
 /// Feature gates currently activated on Solana mainnet-beta, paired with their
-/// activation slot, sourced from the cluster on 2026-07-10.
+/// activation slot, sourced from the cluster on 2026-07-23.
 pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
     (agave_feature_set::deprecate_rewards_sysvar::ID, 55728001),
     (agave_feature_set::pico_inflation::ID, 57456000),
@@ -656,6 +656,10 @@ pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
         422928004,
     ),
     (agave_feature_set::static_instruction_limit::ID, 404352000),
+    (
+        agave_feature_set::discard_unexpected_data_complete_shreds::ID,
+        434160000,
+    ),
     (agave_feature_set::vote_state_v4::ID, 409968000),
     (agave_feature_set::switch_to_chacha8_turbine::ID, 408672000),
     (
@@ -688,6 +692,10 @@ pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
         agave_feature_set::enable_alt_bn128_g2_syscalls::ID,
         425520000,
     ),
+    (
+        agave_feature_set::commission_rate_in_basis_points::ID,
+        433296000,
+    ),
     (agave_feature_set::enable_bls12_381_syscall::ID, 425952004),
     (
         agave_feature_set::remove_simple_vote_from_cost_model::ID,
@@ -698,6 +706,11 @@ pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
     (
         agave_feature_set::validate_chained_block_id_2::ID,
         428544000,
+    ),
+    (agave_feature_set::validator_admission_ticket::ID, 434592000),
+    (
+        agave_feature_set::loader_v3_minimum_extend_program_size::ID,
+        432864000,
     ),
     (
         agave_feature_set::upgrade_bpf_stake_program_to_v5::ID,
