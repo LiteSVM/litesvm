@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Update activation slots for the bundled mainnet feature set to match Solana mainnet-beta as of 2026-07-27 ([#385](https://github.com/LiteSVM/litesvm/pull/385), [#389](https://github.com/LiteSVM/litesvm/pull/389)).
+- Pin the Solana crates that must stay in lockstep with Agave to tilde requirements, so a semver-compatible upgrade of one can no longer break the build ([#388](https://github.com/LiteSVM/litesvm/pull/388)).
+
 ## [0.15.0] - 2026-07-22
 
 ### Added
