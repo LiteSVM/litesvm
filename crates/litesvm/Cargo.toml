@@ -80,6 +80,7 @@ solana-program-runtime.workspace = true
 solana-rent.workspace = true
 solana-sdk-ids.workspace = true
 solana-sha256-hasher.workspace = true
+solana-short-vec.workspace = true
 solana-signature.workspace = true
 solana-signer.workspace = true
 solana-slot-hashes.workspace = true
