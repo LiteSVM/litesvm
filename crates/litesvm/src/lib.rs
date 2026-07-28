@@ -817,8 +817,23 @@ impl LiteSVM {
     }
 
     /// Returns all information associated with the account of the provided pubkey.
+    ///
+    /// The returned [`Account`] owns its data, so this copies the account's
+    /// bytes. To inspect an account without copying — checking whether it
+    /// exists, reading its owner or lamports, or looking at a few bytes of its
+    /// data — use [`get_account_ref`](Self::get_account_ref) instead.
     pub fn get_account(&self, address: &Address) -> Option<Account> {
         self.accounts.get_account(address).map(Into::into)
+    }
+
+    /// Borrows the account at the provided pubkey, without copying its data.
+    ///
+    /// The cheap counterpart to [`get_account`](Self::get_account): use it
+    /// whenever the account is only being inspected rather than kept, which
+    /// matters for accounts with large data (copying is proportional to the
+    /// data length).
+    pub fn get_account_ref(&self, address: &Address) -> Option<&AccountSharedData> {
+        self.accounts.get_account_ref(address)
     }
 
     /// Returns all accounts owned by the given program, together with their addresses.
@@ -2224,5 +2239,29 @@ mod tests {
         let sanitized = svm.sanitize_transaction_no_verify_inner(tx).unwrap();
 
         assert!(!sanitized.message().is_writable(1));
+    }
+
+    #[test]
+    fn get_account_ref_sees_the_same_account_as_get_account() {
+        let mut svm = LiteSVM::new();
+        let address = Address::new_unique();
+        assert!(svm.get_account_ref(&address).is_none());
+
+        let account = Account {
+            lamports: 12_345,
+            data: vec![1, 2, 3, 4],
+            owner: solana_sdk_ids::system_program::ID,
+            executable: false,
+            rent_epoch: 7,
+        };
+        svm.set_account(address, account.clone()).unwrap();
+
+        let borrowed = svm.get_account_ref(&address).unwrap();
+        assert_eq!(borrowed.lamports(), account.lamports);
+        assert_eq!(borrowed.data(), account.data.as_slice());
+        assert_eq!(borrowed.owner(), &account.owner);
+        assert_eq!(borrowed.executable(), account.executable);
+        assert_eq!(borrowed.rent_epoch(), account.rent_epoch);
+        assert_eq!(svm.get_account(&address), Some(account));
     }
 }
