@@ -2225,4 +2225,43 @@ mod tests {
 
         assert!(!sanitized.message().is_writable(1));
     }
+
+    /// Writing the clock must refresh the whole sysvar cache — the new clock
+    /// included — without consulting a copy of the account store.
+    #[test]
+    fn setting_clock_refreshes_sysvar_cache() {
+        let mut svm = LiteSVM::new();
+        // An unrelated account, to make sure the cache is filled from the live
+        // store rather than a snapshot taken before it was added.
+        svm.set_account(
+            Address::new_unique(),
+            Account {
+                lamports: 1,
+                data: vec![],
+                owner: solana_sdk_ids::system_program::ID,
+                executable: false,
+                rent_epoch: 0,
+            },
+        )
+        .unwrap();
+
+        let mut clock = svm.get_sysvar::<Clock>();
+        clock.slot = 1234;
+        clock.unix_timestamp = 5678;
+        svm.set_sysvar(&clock);
+
+        let cache = &svm.accounts.sysvar_cache;
+        let cached_clock = cache.get_clock().unwrap();
+        assert_eq!(cached_clock.slot, 1234);
+        assert_eq!(cached_clock.unix_timestamp, 5678);
+        assert_eq!(svm.get_sysvar::<Clock>().slot, 1234);
+
+        // The other sysvars must survive the cache reset.
+        assert!(cache.get_rent().is_ok());
+        assert!(cache.get_epoch_schedule().is_ok());
+        assert!(cache.get_epoch_rewards().is_ok());
+        assert!(cache.get_slot_hashes().is_ok());
+        assert!(cache.get_stake_history().is_ok());
+        assert!(cache.get_last_restart_slot().is_ok());
+    }
 }

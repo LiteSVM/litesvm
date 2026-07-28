@@ -159,11 +159,12 @@ impl AccountsDb {
                 let parsed = Clock::deserialize_from(account.data())
                     .map_err(|_| InvalidSysvarDataError::Clock)?;
                 self.programs_cache.set_slot_for_tests(parsed.slot);
-                let mut accounts_clone = self.inner.clone();
-                accounts_clone.insert(pubkey, account.clone());
+                let accounts = &self.inner;
                 cache.reset();
-                cache.fill_missing_entries(|pubkey, set_sysvar| {
-                    if let Some(acc) = accounts_clone.get(pubkey) {
+                cache.fill_missing_entries(|sysvar_pubkey, set_sysvar| {
+                    if *sysvar_pubkey == pubkey {
+                        set_sysvar(account.data())
+                    } else if let Some(acc) = accounts.get(sysvar_pubkey) {
                         set_sysvar(acc.data())
                     }
                 });
