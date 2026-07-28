@@ -140,5 +140,9 @@ name = "max_perf"
 harness = false
 
 [[bench]]
+name = "set_clock"
+harness = false
+
+[[bench]]
 name = "hashing"
 harness = false
