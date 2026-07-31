@@ -4064,6 +4064,8 @@ __metadata:
     ts-node: "npm:^10.9.2"
     tsconfig-paths: "npm:^4.2.0"
     typescript: "npm:^5.9.3"
+  peerDependencies:
+    "@solana/web3.js": ">=3.0.0"
   languageName: unknown
   linkType: soft
 
@@ -4091,6 +4093,8 @@ __metadata:
     typescript: "npm:^5.9.3"
     vitepress: "npm:^1.6.4"
     ws: "npm:^8.21.0"
+  peerDependencies:
+    "@solana/kit": ">=6.0.0"
   languageName: unknown
   linkType: soft
 

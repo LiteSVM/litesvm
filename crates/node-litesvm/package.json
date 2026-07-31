@@ -10,11 +10,14 @@
 	"dependencies": {
 		"@solana-program/system": "^0.12.2",
 		"@solana-program/token": "^0.14.0",
-		"@solana/kit": "^6.10.0",
 		"litesvm-core": "workspace:^"
+	},
+	"peerDependencies": {
+		"@solana/kit": ">=6.0.0"
 	},
 	"devDependencies": {
 		"@algolia/client-search": "^5.55.0",
+		"@solana/kit": "^6.10.0",
 		"@types/markdown-it": "^14.1.2",
 		"@types/node": "22.19.21",
 		"@types/node-fetch": "^2.6.13",
