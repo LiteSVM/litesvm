@@ -22,32 +22,6 @@ on:
       - crates/node-litesvm/docs/**
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: yarn
-          cache-dependency-path: yarn.lock
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: clippy, rustfmt
-      - name: Install dependencies
-        run: corepack enable && yarn install --immutable
-      - name: Lint Kit wrapper
-        run: yarn workspace litesvm lint
-      - name: Lint Web3.js wrapper
-        run: yarn workspace litesvm-web3js lint
-      - name: Cargo fmt
-        run: cargo fmt --all -- --check
-      - name: Clippy core
-        run: yarn workspace litesvm-core lint
-
   build:
     strategy:
       fail-fast: false

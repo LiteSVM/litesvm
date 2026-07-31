@@ -25,9 +25,11 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
       - name: Install dependencies
         run: corepack enable && yarn install --immutable
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
       - name: Lint Rust core
         run: yarn workspace litesvm-core lint
       - name: Lint Kit wrapper
