@@ -3,8 +3,9 @@ name: release NodeJS
 on:
   push:
     tags:
-    - "node-v[0-9]+.[0-9]+.[0-9]+"
-    - "node-v[0-9]+.[0-9]+.[0-9]+-*"
+      - "node-v[0-9]+.[0-9]+.[0-9]+"
+      - "node-v[0-9]+.[0-9]+.[0-9]+-*"
+
 jobs:
   publish:
     name: Publish
@@ -17,28 +18,31 @@ jobs:
           node-version: 22
           check-latest: true
           cache: yarn
-          cache-dependency-path: crates/node-litesvm/yarn.lock
+          cache-dependency-path: yarn.lock
       - name: Install dependencies
-        run: cd crates/node-litesvm/ && corepack enable && yarn install
-      - name: Create npm dirs
-        run: cd crates/node-litesvm/ && yarn napi create-npm-dirs
-      - name: Download all artifacts
+        run: corepack enable && yarn install --immutable
+      - name: Create native package directories
+        run: yarn workspace litesvm-core napi create-npm-dirs
+      - name: Download all native artifacts
         uses: dawidd6/action-download-artifact@v11
         with:
           workflow: node-build.yml
-          path: crates/node-litesvm/artifacts
-      - name: Move artifacts
-        run: cd crates/node-litesvm/ && yarn artifacts
-      - name: Compile Typescript
-        run: cd crates/node-litesvm/ && yarn build:js
-      - name: List packages
-        run: cd crates/node-litesvm/ && ls -R ./npm
-      - name: Publish
+          path: crates/node-litesvm-core/artifacts
+      - name: Move native artifacts
+        run: yarn workspace litesvm-core artifacts
+      - name: Build wrappers
         run: |
-          cd crates/node-litesvm/
+          yarn workspace litesvm build
+          yarn workspace litesvm-web3js build
+      - name: List native packages
+        run: ls -R crates/node-litesvm-core/npm
+      - name: Publish core and wrappers
+        run: |
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           TAG=latest
           [[ "$GITHUB_REF_NAME" == *-rc.* ]] && TAG=next
-          npm publish --access public --tag "$TAG"
+          yarn workspace litesvm-core npm publish --access public --tag "$TAG"
+          yarn workspace litesvm npm publish --access public --tag "$TAG"
+          yarn workspace litesvm-web3js npm publish --access public --tag "$TAG"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

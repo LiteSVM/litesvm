@@ -1,24 +1,4 @@
 import {
-	Address,
-	assertIsFullySignedTransaction,
-	TransactionMessage,
-	Blockhash,
-	EncodedAccount,
-	ExcludeTransactionMessageLifetime,
-	getAddressCodec,
-	getBase58Encoder,
-	getTransactionEncoder,
-	getTransactionVersionDecoder,
-	Lamports,
-	lamports,
-	MaybeEncodedAccount,
-	setTransactionMessageLifetimeUsingBlockhash,
-	Signature,
-	Transaction,
-	TransactionMessageWithBlockhashLifetime,
-	TransactionMessageWithLifetime,
-} from "@solana/kit";
-import {
 	Account,
 	AddressAndAccount,
 	Clock,
@@ -53,17 +33,55 @@ export {
 	TransactionMetadata,
 	TransactionReturnData,
 } from "litesvm-core";
+import {
+	AccountInfo,
+	Address,
+	Blockhash,
+	Transaction,
+	VersionedTransaction,
+} from "@solana/web3.js";
 
-function toEncodedAccount(address: Address, account: Account): EncodedAccount {
-	const data = account.data();
+export type AccountInfoBytes = Readonly<
+	AccountInfo<Uint8Array> & { space: bigint }
+>;
+
+function toAccountInfo(acc: Account): AccountInfoBytes {
+	const data = acc.data();
+	const owner = new Address(acc.owner());
 	return {
-		address,
-		executable: account.executable(),
-		lamports: lamports(account.lamports()),
-		programAddress: getAddressCodec().decode(account.owner()),
-		space: BigInt(data.length),
+		executable: acc.executable(),
+		owner,
+		lamports: acc.lamports(),
 		data,
+		rentEpoch: acc.rentEpoch(),
+		space: BigInt(data.length),
 	};
+}
+
+function fromAccountInfo(acc: AccountInfoBytes): Account {
+	return new Account(
+		acc.lamports,
+		acc.data,
+		acc.owner.toBytes(),
+		acc.executable,
+		acc.rentEpoch,
+	);
+}
+
+function convertAddressAndAccount(val: AddressAndAccount): [Address, Account] {
+	return [new Address(val.address), val.account()];
+}
+
+async function serializeTransaction(
+	tx: Transaction | VersionedTransaction,
+	verifySignatures: boolean,
+): Promise<Uint8Array> {
+	return tx instanceof Transaction
+		? tx.serialize({
+				requireAllSignatures: true,
+				verifySignatures,
+			})
+		: tx.serialize();
 }
 
 export class SimulatedTransactionInfo {
@@ -74,15 +92,8 @@ export class SimulatedTransactionInfo {
 	meta(): TransactionMetadata {
 		return this.inner.meta();
 	}
-	postAccounts(): EncodedAccount[] {
-		return this.inner
-			.postAccounts()
-			.map((addressAndAccount: AddressAndAccount) =>
-				toEncodedAccount(
-					getAddressCodec().decode(addressAndAccount.address),
-					addressAndAccount.account(),
-				),
-			);
+	postAccounts(): [Address, Account][] {
+		return this.inner.postAccounts().map(convertAddressAndAccount);
 	}
 }
 
@@ -238,35 +249,23 @@ export class LiteSVM {
 	 * @param address - The account address to look up.
 	 * @returns The account object, if the account exists.
 	 */
-	getAccount(address: Address): MaybeEncodedAccount {
-		const inner = this.inner.getAccount(
-			getAddressCodec().encode(address) as Uint8Array,
-		);
-
-		return inner === null
-			? { exists: false, address }
-			: ({
-				exists: true,
-				...toEncodedAccount(address, inner),
-			} as MaybeEncodedAccount);
+	getAccount(address: Address): AccountInfoBytes | null {
+		const inner = this.inner.getAccount(address.toBytes());
+		return inner === null ? null : toAccountInfo(inner);
 	}
 
 	/**
 	 * Return all accounts owned by the given program, together with their addresses.
 	 * @param programAddress - The owner program address to look up.
-	 * @returns The list of encoded accounts owned by the program.
+	 * @returns The list of accounts owned by the program.
 	 */
-	getProgramAccounts(programAddress: Address): EncodedAccount[] {
+	getProgramAccounts(programAddress: Address): [Address, AccountInfoBytes][] {
 		return this.inner
-			.getProgramAccounts(
-				getAddressCodec().encode(programAddress) as Uint8Array,
-			)
-			.map((addressAndAccount: AddressAndAccount) =>
-				toEncodedAccount(
-					getAddressCodec().decode(addressAndAccount.address),
-					addressAndAccount.account(),
-				),
-			);
+			.getProgramAccounts(programAddress.toBytes())
+			.map((addressAndAccount: AddressAndAccount) => [
+				new Address(addressAndAccount.address),
+				toAccountInfo(addressAndAccount.account()),
+			]);
 	}
 
 	/**
@@ -280,17 +279,8 @@ export class LiteSVM {
 	 * @param address - The address to write to.
 	 * @param account - The account object to write.
 	 */
-	setAccount(account: EncodedAccount) {
-		this.inner.setAccount(
-			getAddressCodec().encode(account.address) as Uint8Array,
-			new Account(
-				BigInt(account.lamports),
-				account.data as Uint8Array,
-				getAddressCodec().encode(account.programAddress) as Uint8Array,
-				account.executable,
-				0n, // rentEpoch was deprecated from the RPC response and removed from Kit.
-			),
-		);
+	setAccount(address: Address, account: AccountInfoBytes) {
+		this.inner.setAccount(address.toBytes(), fromAccountInfo(account));
 	}
 
 	/**
@@ -298,11 +288,8 @@ export class LiteSVM {
 	 * @param address - The account address.
 	 * @returns The account's balance in lamports.
 	 */
-	getBalance(address: Address): Lamports | null {
-		const addressBytes = getAddressCodec().encode(address) as Uint8Array;
-		const balance = this.inner.getBalance(addressBytes);
-
-		return balance === null ? null : lamports(balance);
+	getBalance(address: Address): bigint | null {
+		return this.inner.getBalance(address.toBytes());
 	}
 
 	/**
@@ -315,35 +302,14 @@ export class LiteSVM {
 	}
 
 	/**
-	 * Sets the lifetime on a transaction message using
-	 * the latest blockhash from the LiteSVM instance.
-	 */
-	setTransactionMessageLifetimeUsingLatestBlockhash<
-		TTransactionMessage extends TransactionMessage &
-		Partial<TransactionMessageWithLifetime>,
-	>(
-		transactionMessage: TTransactionMessage,
-	): ExcludeTransactionMessageLifetime<TTransactionMessage> &
-		TransactionMessageWithBlockhashLifetime {
-		return setTransactionMessageLifetimeUsingBlockhash(
-			{
-				blockhash: this.inner.latestBlockhash() as Blockhash,
-				lastValidBlockHeight: 0n,
-			},
-			transactionMessage,
-		);
-	}
-
-	/**
 	 * Gets a transaction from the transaction history.
 	 * @param signature - The transaction signature bytes
 	 * @returns The transaction, if it is found in the history.
 	 */
 	getTransaction(
-		signature: Signature,
+		signature: Uint8Array,
 	): TransactionMetadata | FailedTransactionMetadata | null {
-		const signatureBytes = getBase58Encoder().encode(signature) as Uint8Array;
-		return this.inner.getTransaction(signatureBytes);
+		return this.inner.getTransaction(signature);
 	}
 
 	/**
@@ -354,12 +320,9 @@ export class LiteSVM {
 	 */
 	airdrop(
 		address: Address,
-		lamports: Lamports,
+		lamports: bigint,
 	): TransactionMetadata | FailedTransactionMetadata | null {
-		return this.inner.airdrop(
-			getAddressCodec().encode(address) as Uint8Array,
-			lamports,
-		);
+		return this.inner.airdrop(address.toBytes(), lamports);
 	}
 
 	/**
@@ -368,10 +331,7 @@ export class LiteSVM {
 	 * @param path - The path to the .so file.
 	 */
 	addProgramFromFile(programId: Address, path: string) {
-		return this.inner.addProgramFromFile(
-			getAddressCodec().encode(programId) as Uint8Array,
-			path,
-		);
+		return this.inner.addProgramFromFile(programId.toBytes(), path);
 	}
 
 	/**
@@ -380,10 +340,7 @@ export class LiteSVM {
 	 * @param programBytes - The raw bytes of the compiled program.
 	 */
 	addProgram(programId: Address, programBytes: Uint8Array) {
-		return this.inner.addProgram(
-			getAddressCodec().encode(programId) as Uint8Array,
-			programBytes,
-		);
+		return this.inner.addProgram(programId.toBytes(), programBytes);
 	}
 
 	/**
@@ -398,9 +355,9 @@ export class LiteSVM {
 		loaderId: Address,
 	) {
 		return this.inner.addProgramWithLoader(
-			getAddressCodec().encode(programId) as Uint8Array,
+			programId.toBytes(),
 			programBytes,
-			getAddressCodec().encode(loaderId) as Uint8Array,
+			loaderId.toBytes(),
 		);
 	}
 
@@ -409,26 +366,16 @@ export class LiteSVM {
 	 * @param tx - The transaction to send.
 	 * @returns TransactionMetadata if the transaction succeeds, else FailedTransactionMetadata
 	 */
-	sendTransaction(
-		tx: Transaction,
-	): TransactionMetadata | FailedTransactionMetadata {
+	async sendTransaction(
+		tx: Transaction | VersionedTransaction,
+	): Promise<TransactionMetadata | FailedTransactionMetadata> {
 		const internal = this.inner;
-		if (internal.getSigverify()) {
-			assertIsFullySignedTransaction(tx);
-		}
+		const serialized = await serializeTransaction(tx, internal.getSigverify());
 
-		// The version is located at the beginning of the message bytes.
-		const version = getTransactionVersionDecoder().decode(tx.messageBytes);
-		const serialized = getTransactionEncoder().encode(tx) as Uint8Array;
-
-		switch (version) {
-			case "legacy":
-				return internal.sendLegacyTransaction(serialized);
-			case 0:
-				return internal.sendVersionedTransaction(serialized);
-			default:
-				throw new Error(`Unsupported transaction version: ${version}`);
+		if (tx instanceof Transaction) {
+			return internal.sendLegacyTransaction(serialized);
 		}
+		return internal.sendVersionedTransaction(serialized);
 	}
 
 	/**
@@ -436,34 +383,18 @@ export class LiteSVM {
 	 * @param tx The transaction to simulate
 	 * @returns SimulatedTransactionInfo if simulation succeeds, else FailedTransactionMetadata
 	 */
-	simulateTransaction(
-		tx: Transaction,
-	): FailedTransactionMetadata | SimulatedTransactionInfo {
+	async simulateTransaction(
+		tx: Transaction | VersionedTransaction,
+	): Promise<FailedTransactionMetadata | SimulatedTransactionInfo> {
 		const internal = this.inner;
-		if (internal.getSigverify()) {
-			assertIsFullySignedTransaction(tx);
-		}
-
-		// The version is located at the beginning of the message bytes.
-		const version = getTransactionVersionDecoder().decode(tx.messageBytes);
-		const serialized = getTransactionEncoder().encode(tx) as Uint8Array;
-
-		const inner = (() => {
-			switch (version) {
-				case "legacy":
-					return internal.simulateLegacyTransaction(serialized);
-				case 0:
-					return internal.simulateVersionedTransaction(serialized);
-				default:
-					throw new Error(`Unsupported transaction version: ${version}`);
-			}
-		})();
-
-		if (inner instanceof FailedTransactionMetadata) {
-			return inner;
-		}
-
-		return new SimulatedTransactionInfo(inner);
+		const serialized = await serializeTransaction(tx, internal.getSigverify());
+		const inner =
+			tx instanceof Transaction
+				? internal.simulateLegacyTransaction(serialized)
+				: internal.simulateVersionedTransaction(serialized);
+		return inner instanceof FailedTransactionMetadata
+			? inner
+			: new SimulatedTransactionInfo(inner);
 	}
 
 	/**

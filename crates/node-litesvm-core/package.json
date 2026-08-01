@@ -1,0 +1,43 @@
+{
+	"name": "litesvm-core",
+	"version": "1.3.0",
+	"description": "Raw Node.js NAPI bindings for LiteSVM",
+	"main": "litesvm/index.js",
+	"types": "litesvm/index.d.ts",
+	"files": [
+		"litesvm/"
+	],
+	"napi": {
+		"binaryName": "litesvm",
+		"targets": [
+			"x86_64-apple-darwin",
+			"x86_64-unknown-linux-gnu",
+			"x86_64-unknown-linux-musl",
+			"aarch64-apple-darwin",
+			"aarch64-unknown-linux-gnu",
+			"aarch64-unknown-linux-musl"
+		]
+	},
+	"license": "MIT",
+	"repository": "https://github.com/LiteSVM/litesvm",
+	"devDependencies": {
+		"@napi-rs/cli": "^3.7.2"
+	},
+	"engines": {
+		"node": ">= 20"
+	},
+	"scripts": {
+		"artifacts": "napi artifacts",
+		"build": "napi build --platform --release --output-dir litesvm --dts index.d.ts --js index.js",
+		"build:debug": "napi build --platform --output-dir litesvm --dts index.d.ts --js index.js",
+		"prepublishOnly": "napi prepublish -t npm",
+		"fmt": "cargo fmt",
+		"lint": "cargo clippy",
+		"test": "node --test tests/*.test.js",
+		"universal": "napi universal",
+		"cargoBump": "cargo set-version --package litesvm-node --bump",
+		"bumpPatch": "yarn version patch && napi version && cargo tree",
+		"bumpMinor": "yarn version minor && napi version && cargo tree",
+		"bumpMajor": "yarn version major && napi version && cargo tree"
+	}
+}

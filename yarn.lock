@@ -1416,6 +1416,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@noble/curves@npm:^1.4.2":
+  version: 1.9.7
+  resolution: "@noble/curves@npm:1.9.7"
+  dependencies:
+    "@noble/hashes": "npm:1.8.0"
+  checksum: 10c0/150014751ebe8ca06a8654ca2525108452ea9ee0be23430332769f06808cddabfe84f248b6dbf836916bc869c27c2092957eec62c7506d68a1ed0a624017c2a3
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:1.8.0, @noble/hashes@npm:^1.4.0":
+  version: 1.8.0
+  resolution: "@noble/hashes@npm:1.8.0"
+  checksum: 10c0/06a0b52c81a6fa7f04d67762e08b2c476a00285858150caeaaff4037356dd5e119f45b2a530f638b77a5eeca013168ec1b655db41bae3236cb2e9d511484fc77
+  languageName: node
+  linkType: hard
+
 "@npmcli/agent@npm:^3.0.0":
   version: 3.0.0
   resolution: "@npmcli/agent@npm:3.0.0"
@@ -1869,6 +1885,42 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@solana-program/address-lookup-table@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "@solana-program/address-lookup-table@npm:0.11.0"
+  peerDependencies:
+    "@solana/kit": ^6.0
+  checksum: 10c0/28271e452a9e6caa1cb5ad0365cf7f4a193920fd3fd3f5261fa655fb84e7b6a3d911e602125ad5718cdb4a8d6980e09d54f9f97016423b9d13051c3dde332cac
+  languageName: node
+  linkType: hard
+
+"@solana-program/compute-budget@npm:^0.15.0":
+  version: 0.15.0
+  resolution: "@solana-program/compute-budget@npm:0.15.0"
+  peerDependencies:
+    "@solana/kit": ^6.3.0
+  checksum: 10c0/b2c29063932dee2f5da77d63ab7db95834a0c6fc6ff79f99951093accebdd942d14a6db5bd97412a0e8b58f8b4e0ed20c084e60389ce6751da39afdd651a9d2b
+  languageName: node
+  linkType: hard
+
+"@solana-program/loader-v3@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@solana-program/loader-v3@npm:0.3.0"
+  peerDependencies:
+    "@solana/kit": ^6.0.0
+  checksum: 10c0/b1acdf7591f96b41e99b3dbd4b64eb77887a4e4c954e35046bc89402acc8c76f7938e8f9be7decb6aaf6bbb9c6c04fce8b3d761f5803d6cddb5294b69d9ee528
+  languageName: node
+  linkType: hard
+
+"@solana-program/stake@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@solana-program/stake@npm:0.6.1"
+  peerDependencies:
+    "@solana/kit": ^6.0
+  checksum: 10c0/8f4fa7e54f2509ee968c11057f001f1123e1a94b6820f9a9d1ba2894db4352e3078f3321d0ea95365c093546e4989197e0daff80a7a4ba4d193a2f5a4124863e
+  languageName: node
+  linkType: hard
+
 "@solana-program/system@npm:^0.12.0":
   version: 0.12.0
   resolution: "@solana-program/system@npm:0.12.0"
@@ -1935,7 +1987,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/assertions@npm:6.10.0":
+"@solana/assertions@npm:6.10.0, @solana/assertions@npm:^6.8.0":
   version: 6.10.0
   resolution: "@solana/assertions@npm:6.10.0"
   dependencies:
@@ -2049,7 +2101,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/fast-stable-stringify@npm:6.10.0":
+"@solana/fast-stable-stringify@npm:6.10.0, @solana/fast-stable-stringify@npm:^6.8.0":
   version: 6.10.0
   resolution: "@solana/fast-stable-stringify@npm:6.10.0"
   peerDependencies:
@@ -2141,7 +2193,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/kit@npm:^6.10.0":
+"@solana/kit@npm:^6.10.0, @solana/kit@npm:^6.8.0":
   version: 6.10.0
   resolution: "@solana/kit@npm:6.10.0"
   dependencies:
@@ -2347,7 +2399,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/rpc-spec-types@npm:6.10.0":
+"@solana/rpc-spec-types@npm:6.10.0, @solana/rpc-spec-types@npm:^6.8.0":
   version: 6.10.0
   resolution: "@solana/rpc-spec-types@npm:6.10.0"
   peerDependencies:
@@ -2531,7 +2583,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/signers@npm:6.10.0":
+"@solana/signers@npm:6.10.0, @solana/signers@npm:^6.8.0":
   version: 6.10.0
   resolution: "@solana/signers@npm:6.10.0"
   dependencies:
@@ -2654,6 +2706,26 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/a2e406cb155e491f5c619fe9a7c08851647c29bdcbfde37b828cfeea6b1939dfae1259af0d7a4ec0139d3db1dc30fed94b8d9d18d6ae7a8adc861e2d6796360a
+  languageName: node
+  linkType: hard
+
+"@solana/web3.js@npm:3.0.0-rc.2":
+  version: 3.0.0-rc.2
+  resolution: "@solana/web3.js@npm:3.0.0-rc.2"
+  dependencies:
+    "@noble/curves": "npm:^1.4.2"
+    "@noble/hashes": "npm:^1.4.0"
+    "@solana-program/address-lookup-table": "npm:^0.11.0"
+    "@solana-program/compute-budget": "npm:^0.15.0"
+    "@solana-program/loader-v3": "npm:^0.3.0"
+    "@solana-program/stake": "npm:^0.6.1"
+    "@solana-program/system": "npm:^0.12.0"
+    "@solana/assertions": "npm:^6.8.0"
+    "@solana/fast-stable-stringify": "npm:^6.8.0"
+    "@solana/kit": "npm:^6.8.0"
+    "@solana/rpc-spec-types": "npm:^6.8.0"
+    "@solana/signers": "npm:^6.8.0"
+  checksum: 10c0/99bf934c5b83470bb08fcf15aedd3c9b4cbb04d8cad2c5a28627fb68bb1157ef5d5e69cfe5287afe55613fbef7d5d0b852a53b76b89318a0df4a3335cab04c65
   languageName: node
   linkType: hard
 
@@ -3973,18 +4045,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"litesvm@workspace:.":
+"litesvm-core@workspace:^, litesvm-core@workspace:crates/node-litesvm-core":
   version: 0.0.0-use.local
-  resolution: "litesvm@workspace:."
+  resolution: "litesvm-core@workspace:crates/node-litesvm-core"
+  dependencies:
+    "@napi-rs/cli": "npm:^3.7.2"
+  languageName: unknown
+  linkType: soft
+
+"litesvm-web3js@workspace:crates/node-litesvm-web3js":
+  version: 0.0.0-use.local
+  resolution: "litesvm-web3js@workspace:crates/node-litesvm-web3js"
+  dependencies:
+    "@solana/web3.js": "npm:3.0.0-rc.2"
+    "@types/node": "npm:22.19.21"
+    litesvm-core: "workspace:^"
+    rome: "npm:^12.1.3"
+    ts-node: "npm:^10.9.2"
+    tsconfig-paths: "npm:^4.2.0"
+    typescript: "npm:^5.9.3"
+  peerDependencies:
+    "@solana/web3.js": ">=3.0.0"
+  languageName: unknown
+  linkType: soft
+
+"litesvm@workspace:crates/node-litesvm":
+  version: 0.0.0-use.local
+  resolution: "litesvm@workspace:crates/node-litesvm"
   dependencies:
     "@algolia/client-search": "npm:^5.55.0"
-    "@napi-rs/cli": "npm:^3.7.2"
     "@solana-program/system": "npm:^0.12.2"
     "@solana-program/token": "npm:^0.14.0"
     "@solana/kit": "npm:^6.10.0"
     "@types/markdown-it": "npm:^14.1.2"
     "@types/node": "npm:22.19.21"
     "@types/node-fetch": "npm:^2.6.13"
+    litesvm-core: "workspace:^"
     markdown-it: "npm:^14.2.0"
     markdown-it-include: "npm:^2.0.0"
     rome: "npm:^12.1.3"
@@ -3997,6 +4093,8 @@ __metadata:
     typescript: "npm:^5.9.3"
     vitepress: "npm:^1.6.4"
     ws: "npm:^8.21.0"
+  peerDependencies:
+    "@solana/kit": ">=6.0.0"
   languageName: unknown
   linkType: soft
 
@@ -4632,6 +4730,12 @@ __metadata:
   checksum: 10c0/5461bfdbef0b9857451535ba531b80423b600c29c34641ccbb18da761dbd87deacd6c30d10fa48a592b930238a70057c93d72beaeae16ff3dc1dee3514b15b5f
   languageName: node
   linkType: hard
+
+"root-workspace-0b6124@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "root-workspace-0b6124@workspace:."
+  languageName: unknown
+  linkType: soft
 
 "safer-buffer@npm:>= 2.1.2 < 3.0.0":
   version: 2.1.2

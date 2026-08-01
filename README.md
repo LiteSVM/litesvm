@@ -126,7 +126,10 @@ See the [anchor-litesvm testing guide](https://www.litesvm.com/docs/additional-c
 
 - Full documentation: [litesvm.com](https://litesvm.com)
 - Full API reference: [docs.rs/litesvm](https://docs.rs/litesvm/latest/litesvm/)
-- Node.js wrapper: [`litesvm` on npm](https://www.npmjs.com/package/litesvm) — see [`crates/node-litesvm`](crates/node-litesvm) for its README and tutorial
+- Node.js packages:
+  - [`litesvm`](https://www.npmjs.com/package/litesvm) provides the `@solana/kit` wrapper.
+  - [`litesvm-web3js`](https://www.npmjs.com/package/litesvm-web3js) provides the `@solana/web3.js` v3 wrapper.
+  - [`litesvm-core`](https://www.npmjs.com/package/litesvm-core) exposes the raw NAPI bindings used by both wrappers.
 
 ### 🛠️ Developing litesvm
 
