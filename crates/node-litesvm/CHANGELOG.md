@@ -12,6 +12,10 @@
 - Bump to Agave 4.1 [(#373)](https://github.com/LiteSVM/litesvm/pull/373).
 - Use `wincode` for sysvar serialization in the native bindings [(#376)](https://github.com/LiteSVM/litesvm/pull/376).
 
+### Fixed
+
+- Build the published binaries with the `register-tracing` feature enabled by default, so setting `SBF_TRACE_DIR` now produces SBPF register traces instead of being silently ignored. Previously this only worked for Rust consumers who opted into the feature, leaving tools such as `sbpf-coverage` reporting 0% coverage for anyone driving LiteSVM from JavaScript [(#XXX)](https://github.com/LiteSVM/litesvm/pull/XXX).
+
 ## [1.2.1] - 2026-07-01
 
 ### Fixed
