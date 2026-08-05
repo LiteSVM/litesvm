@@ -7,9 +7,6 @@ repository = "https://github.com/LiteSVM/litesvm"
 license = "MIT"
 
 [features]
-# `register-tracing` ships by default so that `SBF_TRACE_DIR` works out of the
-# box with the prebuilt binaries published to npm. Without it the env var is
-# silently ignored, which produces empty coverage reports rather than an error.
 default = ["register-tracing"]
 sbpf-debugger = ["litesvm/sbpf-debugger"]
 register-tracing = ["litesvm/register-tracing"]
