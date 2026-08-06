@@ -7,7 +7,7 @@ repository = "https://github.com/LiteSVM/litesvm"
 license = "MIT"
 
 [features]
-default = []
+default = ["register-tracing"]
 sbpf-debugger = ["litesvm/sbpf-debugger"]
 register-tracing = ["litesvm/register-tracing"]
 
