@@ -1599,6 +1599,10 @@ impl LiteSVM {
         self.maybe_history_check(sanitized_tx)?;
         let (result, compute_units_consumed, context, fee, payer_key) =
             self.process_transaction(sanitized_tx, compute_budget_limits, log_collector);
+        #[cfg(target_arch = "x86_64")]
+        unsafe {
+            core::arch::asm!("emms", options(nomem, nostack, preserves_flags));
+        }
         Ok(CheckAndProcessTransactionSuccess {
             core: {
                 CheckAndProcessTransactionSuccessCore {
