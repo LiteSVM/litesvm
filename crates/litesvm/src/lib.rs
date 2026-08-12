@@ -2048,7 +2048,7 @@ fn execute_tx_helper(
     let ExecutionRecord {
         accounts,
         return_data,
-        touched_account_count: _,
+        touched_flags: _,
         accounts_resize_delta: _,
     } = ctx.into();
     let msg = sanitized_tx.message();
