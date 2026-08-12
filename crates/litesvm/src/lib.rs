@@ -310,9 +310,6 @@ much easier.
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
-use crate::utils::{
-    LoadedTransactionDataSize, ADDRESS_LOOKUP_TABLE_BASE_SIZE, TRANSACTION_ACCOUNT_BASE_SIZE,
-};
 #[cfg(feature = "hashbrown")]
 use hashbrown::{hash_map::Entry, HashMap};
 #[cfg(feature = "persistence-internal")]
@@ -341,6 +338,8 @@ use {
         utils::{
             create_blockhash,
             rent::{check_rent_state_with_account, get_account_rent_state, RentState},
+            LoadedTransactionDataSize, ADDRESS_LOOKUP_TABLE_BASE_SIZE,
+            TRANSACTION_ACCOUNT_BASE_SIZE,
         },
     },
     agave_feature_set::{raise_cpi_nesting_limit_to_8, FeatureSet},
