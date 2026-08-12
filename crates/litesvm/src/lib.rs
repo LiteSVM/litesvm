@@ -347,10 +347,7 @@ use {
     solana_address::Address,
     solana_builtins::BUILTINS,
     solana_clock::Clock,
-    solana_compute_budget::{
-        compute_budget::ComputeBudget, compute_budget_limits::ComputeBudgetLimits,
-    },
-    solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
+    solana_compute_budget::compute_budget::ComputeBudget,
     solana_epoch_rewards::EpochRewards,
     solana_epoch_schedule::EpochSchedule,
     solana_feature_gate_interface::{self as feature_gate, Feature},
@@ -373,6 +370,7 @@ use {
         solana_sbpf::program::BuiltinProgram,
     },
     solana_rent::Rent,
+    solana_runtime_transaction::transaction_meta::TransactionConfiguration,
     solana_sdk_ids::{
         bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable, config as config_program,
         native_loader, system_program,
@@ -1263,7 +1261,7 @@ impl LiteSVM {
     fn process_transaction<'a, 'b>(
         &'a self,
         tx: &'b SanitizedTransaction,
-        compute_budget_limits: ComputeBudgetLimits,
+        tx_config: TransactionConfiguration,
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> (
         Result<(), TransactionError>,
@@ -1276,8 +1274,8 @@ impl LiteSVM {
         'a: 'b,
     {
         let compute_budget = self.compute_budget.unwrap_or_else(|| ComputeBudget {
-            compute_unit_limit: u64::from(compute_budget_limits.compute_unit_limit),
-            heap_size: compute_budget_limits.updated_heap_bytes,
+            compute_unit_limit: u64::from(tx_config.compute_unit_limit),
+            heap_size: tx_config.updated_heap_bytes,
             ..ComputeBudget::new_with_defaults(
                 self.feature_set
                     .is_active(&raise_cpi_nesting_limit_to_8::ID),
@@ -1290,7 +1288,7 @@ impl LiteSVM {
         let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
         let mut accumulated_consume_units = 0;
         let account_keys = message.account_keys();
-        let prioritization_fee = compute_budget_limits.get_prioritization_fee();
+        let prioritization_fee = tx_config.priority_fee_lamports;
         let fee = solana_fee::calculate_fee(
             message,
             self.fee_structure.lamports_per_signature,
@@ -1595,10 +1593,10 @@ impl LiteSVM {
         'a: 'b,
     {
         self.maybe_blockhash_check(sanitized_tx)?;
-        let compute_budget_limits = get_compute_budget_limits(sanitized_tx, &self.feature_set)?;
+        let tx_config = get_transaction_config(sanitized_tx, &self.feature_set)?;
         self.maybe_history_check(sanitized_tx)?;
         let (result, compute_units_consumed, context, fee, payer_key) =
-            self.process_transaction(sanitized_tx, compute_budget_limits, log_collector);
+            self.process_transaction(sanitized_tx, tx_config, log_collector);
         #[cfg(target_arch = "x86_64")]
         unsafe {
             core::arch::asm!("emms", options(nomem, nostack, preserves_flags));
@@ -2060,11 +2058,11 @@ fn execute_tx_helper(
     (signature, return_data, inner_instructions, post_accounts)
 }
 
-fn get_compute_budget_limits(
+fn get_transaction_config(
     sanitized_tx: &SanitizedTransaction,
     feature_set: &FeatureSet,
-) -> Result<ComputeBudgetLimits, ExecutionResult> {
-    process_compute_budget_instructions(sanitized_tx.program_instructions_iter(), feature_set)
+) -> Result<TransactionConfiguration, ExecutionResult> {
+    TransactionConfiguration::try_from_sanitized_message(sanitized_tx.message(), feature_set)
         .map_err(|e| ExecutionResult {
             tx_result: Err(e),
             ..Default::default()
