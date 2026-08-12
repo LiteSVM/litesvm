@@ -310,6 +310,9 @@ much easier.
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
+use crate::utils::{
+    LoadedTransactionDataSize, ADDRESS_LOOKUP_TABLE_BASE_SIZE, TRANSACTION_ACCOUNT_BASE_SIZE,
+};
 #[cfg(feature = "hashbrown")]
 use hashbrown::{hash_map::Entry, HashMap};
 #[cfg(feature = "persistence-internal")]
@@ -1297,36 +1300,64 @@ impl LiteSVM {
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
+
+        let mut loaded_tx_data_size =
+            LoadedTransactionDataSize::with_max_size(tx_config.loaded_accounts_data_size_limit);
+
+        if let Err(e) = loaded_tx_data_size.increase_calculated_data_size(
+            tx.message()
+                .num_lookup_tables()
+                .saturating_mul(ADDRESS_LOOKUP_TABLE_BASE_SIZE),
+        ) {
+            return (Err(e), accumulated_consume_units, None, fee, payer_key);
+        }
+
         let maybe_accounts = account_keys
             .iter()
             .enumerate()
             .map(|(i, key)| {
-                let account = if solana_sdk_ids::sysvar::instructions::check_id(key) {
-                    construct_instructions_account(message)?
+                let (loaded_size, account) = if solana_sdk_ids::sysvar::instructions::check_id(key)
+                {
+                    // according to agave code sysvar accounts are 0 loaded size:
+                    // https://github.com/anza-xyz/agave/blob/v4.2.0/svm/src/account_loader.rs#L613-L618
+                    (0, construct_instructions_account(message)?)
                 } else {
                     let is_instruction_account = message.is_instruction_account(i);
-                    let mut account = if !is_instruction_account
+                    let (loaded_size, mut account) = if !is_instruction_account
                         && !message.is_writable(i)
                         && self.accounts.programs_cache.find(key).is_some()
                     {
                         // Optimization to skip loading of accounts which are only used as
                         // programs in top-level instructions and not passed as instruction accounts.
-                        self.accounts.get_account(key).unwrap()
+                        let account = self.accounts.get_account(key).unwrap();
+                        (
+                            TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(account.data().len()),
+                            account,
+                        )
                     } else {
-                        self.accounts.get_account(key).unwrap_or_else(|| {
-                            let mut default_account = AccountSharedData::default();
-                            default_account.set_rent_epoch(0);
-                            default_account
-                        })
+                        self.accounts
+                            .get_account(key)
+                            .map(|acc| {
+                                (
+                                    TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(acc.data().len()),
+                                    acc,
+                                )
+                            })
+                            .unwrap_or_else(|| {
+                                let mut default_account = AccountSharedData::default();
+                                default_account.set_rent_epoch(0);
+                                (default_account.data().len(), default_account)
+                            })
                     };
                     if !validated_fee_payer && (!message.is_invoked(i) || is_instruction_account) {
                         validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
                         validated_fee_payer = true;
                         payer_key = Some(*key);
                     }
-                    account
+                    (loaded_size, account)
                 };
 
+                loaded_tx_data_size.increase_calculated_data_size(loaded_size)?;
                 Ok((*key, account))
             })
             .collect::<solana_transaction_error::TransactionResult<Vec<_>>>();
