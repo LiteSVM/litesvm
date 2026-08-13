@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve configured epoch stakes across persistence snapshot round trips.
+
 ## [0.15.2] - 2026-07-31
 
 ### Changed

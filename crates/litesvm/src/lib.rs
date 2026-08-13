@@ -1988,6 +1988,11 @@ impl LiteSVM {
         self.history.capacity()
     }
 
+    #[cfg(feature = "persistence-internal")]
+    pub fn epoch_vote_stakes(&self) -> impl Iterator<Item = (&Address, &u64)> {
+        self.epoch_vote_stakes.iter()
+    }
+
     // ── persistence-internal: setters ──────────────────────────────────
 
     #[cfg(feature = "persistence-internal")]

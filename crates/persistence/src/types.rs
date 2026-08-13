@@ -210,7 +210,7 @@ impl From<AccountEntryWire> for (Address, AccountSharedData) {
 }
 
 #[derive(SchemaWrite, SchemaRead)]
-pub(crate) struct LiteSvmSnapshot {
+pub(crate) struct LiteSvmSnapshotV2 {
     pub accounts: Vec<AccountEntryWire>,
     pub airdrop_kp: [u8; 64],
     pub feature_set: FeatureSetSnapshot,
@@ -224,4 +224,19 @@ pub(crate) struct LiteSvmSnapshot {
     #[wincode(with = "FeeStructureWire")]
     pub fee_structure: FeeStructure,
     pub log_bytes_limit: Option<u64>,
+}
+
+#[derive(SchemaWrite, SchemaRead)]
+pub(crate) struct LiteSvmSnapshotV3 {
+    pub state: LiteSvmSnapshotV2,
+    pub epoch_vote_stakes: Vec<(Address, u64)>,
+}
+
+impl From<LiteSvmSnapshotV2> for LiteSvmSnapshotV3 {
+    fn from(state: LiteSvmSnapshotV2) -> Self {
+        Self {
+            state,
+            epoch_vote_stakes: Vec::new(),
+        }
+    }
 }

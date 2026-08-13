@@ -85,6 +85,35 @@ fn config_round_trip() {
 }
 
 #[test]
+fn epoch_stakes_round_trip() {
+    let mut svm = LiteSVM::new();
+    let first_vote_account = Address::new_unique();
+    let second_vote_account = Address::new_unique();
+    svm.set_epoch_stake(first_vote_account, 1_500).unwrap();
+    svm.set_epoch_stake(second_vote_account, 2_000).unwrap();
+
+    let bytes = to_bytes(&svm).unwrap();
+    let restored = from_bytes(&bytes).unwrap();
+
+    assert_eq!(restored.epoch_total_stake(), 3_500);
+    assert_eq!(restored.epoch_stake(&first_vote_account), 1_500);
+    assert_eq!(restored.epoch_stake(&second_vote_account), 2_000);
+}
+
+#[test]
+fn epoch_stake_serialization_is_deterministic() {
+    let stakes: Vec<_> = (1..=32)
+        .map(|stake| (Address::new_unique(), stake))
+        .collect();
+    let mut svm = LiteSVM::new();
+    svm.set_epoch_stakes(stakes.iter().copied()).unwrap();
+    let forward = to_bytes(&svm).unwrap();
+    svm.set_epoch_stakes(stakes.iter().rev().copied()).unwrap();
+
+    assert_eq!(forward, to_bytes(&svm).unwrap());
+}
+
+#[test]
 fn blockhash_round_trip() {
     let mut svm = LiteSVM::new();
     svm.expire_blockhash();
@@ -199,12 +228,16 @@ fn load_nonexistent_file() {
 
 #[test]
 fn load_corrupted_data() {
-    let result = from_bytes(&[2, 0, 0, 0, 0xff, 0xff]); // current version + garbage
+    let result = from_bytes(&[3, 0, 0, 0, 0xff, 0xff]); // current version + garbage
     assert!(matches!(result, Err(PersistenceError::Read(_))));
 }
 
 #[test]
 fn version_check() {
+    assert!(matches!(
+        from_bytes(&[1, 0, 0, 0]),
+        Err(PersistenceError::UnsupportedVersion(1))
+    ));
     let result = from_bytes(&[255, 0, 0, 0]); // invalid version
     assert!(matches!(
         result,
