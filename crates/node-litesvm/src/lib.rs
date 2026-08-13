@@ -6,8 +6,13 @@ use {
         compute_budget::ComputeBudget,
         feature_set::FeatureSet,
         sysvar::{
-            clock::Clock, epoch_rewards::EpochRewards, epoch_schedule::EpochSchedule, rent::Rent,
-            slot_hashes::SlotHash, slot_history::SlotHistory, stake_history::StakeHistory,
+            clock::Clock,
+            epoch_rewards::EpochRewards,
+            epoch_schedule::EpochSchedule,
+            rent::Rent,
+            slot_hashes::{SlotHash, SlotHashInput},
+            slot_history::SlotHistory,
+            stake_history::StakeHistory,
         },
         transaction_metadata::{
             AddressAndAccount, FailedTransactionMetadata, SimulatedTransactionInfo,
@@ -400,7 +405,7 @@ impl LiteSvm {
     }
 
     #[napi]
-    pub fn set_slot_hashes(&mut self, hashes: Vec<&SlotHash>) -> Result<()> {
+    pub fn set_slot_hashes(&mut self, hashes: Vec<SlotHashInput>) -> Result<()> {
         let mut intermediate: Vec<(u64, solana_hash::Hash)> = Vec::with_capacity(hashes.len());
         for h in hashes {
             let converted_hash = try_parse_hash(&h.hash)?;

@@ -29,3 +29,10 @@ impl SlotHash {
         self.hash = hash;
     }
 }
+
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct SlotHashInput {
+    pub slot: BigInt,
+    pub hash: String,
+}

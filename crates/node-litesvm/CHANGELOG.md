@@ -14,6 +14,7 @@
 
 ### Fixed
 
+- Allow `setSlotHashes` to accept plain JavaScript objects [(#178)](https://github.com/LiteSVM/litesvm/issues/178).
 - Build the published binaries with the `register-tracing` feature enabled by default, so setting `SBF_TRACE_DIR` now produces SBPF register traces instead of being silently ignored. Previously this only worked for Rust consumers who opted into the feature, leaving tools such as `sbpf-coverage` reporting 0% coverage for anyone driving LiteSVM from JavaScript [(#397)](https://github.com/LiteSVM/litesvm/pull/397).
 
 ## [1.2.1] - 2026-07-01
