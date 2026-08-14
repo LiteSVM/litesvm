@@ -1344,10 +1344,16 @@ impl LiteSVM {
                             })
                             .unwrap_or_else(|| {
                                 let mut default_account = AccountSharedData::default();
-                                default_account.set_rent_epoch(0);
+                                default_account.set_rent_epoch(u64::MAX);
                                 (default_account.data().len(), default_account)
                             })
                     };
+                    if message.is_writable(i)
+                        && account.rent_epoch() != u64::MAX
+                        && rent.is_exempt(account.lamports(), account.data().len())
+                    {
+                        account.set_rent_epoch(u64::MAX);
+                    }
                     if !validated_fee_payer && (!message.is_invoked(i) || is_instruction_account) {
                         validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
                         validated_fee_payer = true;
