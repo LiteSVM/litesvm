@@ -346,7 +346,7 @@ export declare class LiteSvm {
   getLastRestartSlot(): bigint
   setLastRestartSlot(slot: bigint): void
   getSlotHashes(): Array<SlotHash>
-  setSlotHashes(hashes: Array<SlotHash>): void
+  setSlotHashes(hashes: Array<SlotHashInput>): void
   getSlotHistory(): SlotHistory
   setSlotHistory(history: SlotHistory): void
   getStakeHistory(): StakeHistory
@@ -588,6 +588,11 @@ export declare const enum InstructionErrorFieldless {
   MaxInstructionTraceLengthExceeded = 50,
   BuiltinProgramsMustConsumeComputeUnits = 51,
   BorshIoError = 52
+}
+
+export interface SlotHashInput {
+  slot: bigint
+  hash: string
 }
 
 export declare const enum SlotHistoryCheck {
