@@ -297,22 +297,6 @@ impl ComputeBudget {
         self.0.alt_bn128_pairing_one_pair_cost_other
     }
     #[napi(setter)]
-    pub fn set_big_modular_exponentiation_base_cost(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.big_modular_exponentiation_base_cost = bigint_to_u64(&val)?)
-    }
-    #[napi(getter)]
-    pub fn big_modular_exponentiation_base_cost(&self) -> u64 {
-        self.0.big_modular_exponentiation_base_cost
-    }
-    #[napi(setter)]
-    pub fn set_big_modular_exponentiation_cost_divisor(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.big_modular_exponentiation_cost_divisor = bigint_to_u64(&val)?)
-    }
-    #[napi(getter)]
-    pub fn big_modular_exponentiation_cost_divisor(&self) -> u64 {
-        self.0.big_modular_exponentiation_cost_divisor
-    }
-    #[napi(setter)]
     pub fn set_poseidon_cost_coefficient_a(&mut self, val: BigInt) -> Result<()> {
         Ok(self.0.poseidon_cost_coefficient_a = bigint_to_u64(&val)?)
     }

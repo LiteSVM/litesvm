@@ -81,6 +81,7 @@ solana-precompile-error.workspace = true
 solana-program-error.workspace = true
 solana-program-runtime.workspace = true
 solana-rent.workspace = true
+solana-runtime-transaction = { workspace = true, features = ["agave-unstable-api"] }
 solana-sdk-ids.workspace = true
 solana-sha256-hasher.workspace = true
 solana-short-vec.workspace = true

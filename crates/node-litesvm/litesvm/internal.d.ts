@@ -127,10 +127,6 @@ export declare class ComputeBudget {
   get altBn128PairingOnePairCostFirst(): bigint
   set altBn128PairingOnePairCostOther(val: bigint)
   get altBn128PairingOnePairCostOther(): bigint
-  set bigModularExponentiationBaseCost(val: bigint)
-  get bigModularExponentiationBaseCost(): bigint
-  set bigModularExponentiationCostDivisor(val: bigint)
-  get bigModularExponentiationCostDivisor(): bigint
   set poseidonCostCoefficientA(val: bigint)
   get poseidonCostCoefficientA(): bigint
   set poseidonCostCoefficientC(val: bigint)

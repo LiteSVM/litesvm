@@ -72,8 +72,6 @@ pub(crate) struct ComputeBudgetWire {
     pub alt_bn128_g2_multiplication_cost: u64,
     pub alt_bn128_pairing_one_pair_cost_first: u64,
     pub alt_bn128_pairing_one_pair_cost_other: u64,
-    pub big_modular_exponentiation_base_cost: u64,
-    pub big_modular_exponentiation_cost_divisor: u64,
     pub poseidon_cost_coefficient_a: u64,
     pub poseidon_cost_coefficient_c: u64,
     pub get_remaining_compute_units_cost: u64,

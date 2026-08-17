@@ -13,7 +13,7 @@ use {
     wincode::{Deserialize, Serialize},
 };
 
-const STATE_VERSION: u8 = 1;
+const STATE_VERSION: u8 = 2;
 
 fn extract_snapshot(svm: &LiteSVM) -> LiteSvmSnapshot {
     LiteSvmSnapshot {
