@@ -9,11 +9,15 @@ use {
         io::{BufWriter, Read, Write},
         path::Path,
     },
-    types::{AccountEntryWire, FeatureSetSnapshot, LiteSvmSnapshotV2, LiteSvmSnapshotV3, TxResult},
+    types::{
+        AccountEntryWire, FeatureSetSnapshot, LiteSvmSnapshotV1, LiteSvmSnapshotV2,
+        LiteSvmSnapshotV3, TxResult,
+    },
     wincode::{Deserialize, Serialize},
 };
 
-const LEGACY_STATE_VERSION: u8 = 2;
+const V1_STATE_VERSION: u8 = 1;
+const V2_STATE_VERSION: u8 = 2;
 const STATE_VERSION: u8 = 3;
 
 fn extract_snapshot_v2(svm: &LiteSVM) -> LiteSvmSnapshotV2 {
@@ -105,7 +109,11 @@ fn restore_from_snapshot(snapshot: LiteSvmSnapshotV3) -> Result<LiteSVM, Persist
 
 fn deserialize_snapshot(version: u8, bytes: &[u8]) -> Result<LiteSvmSnapshotV3, PersistenceError> {
     match version {
-        LEGACY_STATE_VERSION => Ok(LiteSvmSnapshotV2::deserialize(bytes)?.into()),
+        V1_STATE_VERSION => {
+            let snapshot: LiteSvmSnapshotV2 = LiteSvmSnapshotV1::deserialize(bytes)?.into();
+            Ok(snapshot.into())
+        }
+        V2_STATE_VERSION => Ok(LiteSvmSnapshotV2::deserialize(bytes)?.into()),
         STATE_VERSION => Ok(LiteSvmSnapshotV3::deserialize(bytes)?),
         version => Err(PersistenceError::UnsupportedVersion(version)),
     }
@@ -158,7 +166,7 @@ mod tests {
     fn serialize_v2(snapshot: &LiteSvmSnapshotV2) -> Vec<u8> {
         let payload_size = LiteSvmSnapshotV2::serialized_size(snapshot).unwrap() as usize;
         let mut bytes = Vec::with_capacity(1 + payload_size);
-        bytes.push(LEGACY_STATE_VERSION);
+        bytes.push(V2_STATE_VERSION);
         LiteSvmSnapshotV2::serialize_into(&mut bytes, snapshot).unwrap();
         bytes
     }
