@@ -1,5 +1,6 @@
 use {
     litesvm::LiteSVM,
+    solana_account::Account,
     solana_address::Address,
     solana_instruction::error::InstructionError,
     solana_keypair::Keypair,
@@ -47,7 +48,7 @@ fn system_transfer() {
 }
 
 #[test_log::test]
-fn system_create_account() {
+fn rent_epoch_created_account_matches_svm() {
     let from_keypair = Keypair::new();
     let new_account = Keypair::new();
     let from = from_keypair.pubkey();
@@ -78,6 +79,37 @@ fn system_create_account() {
     assert_eq!(account.lamports, rent_amount);
     assert_eq!(account.data.len(), space);
     assert_eq!(account.owner, solana_sdk_ids::system_program::id());
+    assert_eq!(account.rent_epoch, u64::MAX);
+}
+
+#[test_log::test]
+fn rent_epoch_existing_writable_rent_exempt_account_matches_svm() {
+    let payer = Keypair::new();
+    let recipient = Address::new_unique();
+    let mut svm = LiteSVM::new();
+    svm.airdrop(&payer.pubkey(), LAMPORTS_PER_SOL).unwrap();
+    svm.set_account(
+        recipient,
+        Account {
+            lamports: svm.minimum_balance_for_rent_exemption(0),
+            owner: solana_sdk_ids::system_program::id(),
+            rent_epoch: 7,
+            ..Account::default()
+        },
+    )
+    .unwrap();
+
+    let tx = Transaction::new(
+        &[&payer],
+        Message::new(
+            &[transfer(&payer.pubkey(), &recipient, 1)],
+            Some(&payer.pubkey()),
+        ),
+        svm.latest_blockhash(),
+    );
+    svm.send_transaction(tx).unwrap();
+
+    assert_eq!(svm.get_account(&recipient).unwrap().rent_epoch, u64::MAX);
 }
 
 #[test_log::test]
