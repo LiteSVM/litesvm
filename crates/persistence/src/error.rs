@@ -14,6 +14,10 @@ pub enum PersistenceError {
     UnsupportedVersion(u8),
     #[error("failed to rebuild caches: {0}")]
     CacheRebuild(#[from] litesvm::error::LiteSVMError),
+    #[error("invalid epoch stakes: {0}")]
+    InvalidEpochStakes(#[source] litesvm::error::LiteSVMError),
+    #[error("duplicate epoch stake for vote account {0}")]
+    DuplicateEpochStake(solana_address::Address),
     #[error("serialization thread panicked")]
     ThreadPanic,
 }

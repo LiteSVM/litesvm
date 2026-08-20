@@ -32,6 +32,137 @@ pub(crate) struct FeeStructureWire {
     pub compute_fee_bins: Vec<FeeBin>,
 }
 
+/// Compute-budget layout written by persistence version 1 (LiteSVM v0.15.2).
+/// Solana 4.2 removed the two modular-exponentiation fields in the middle of
+/// the layout, so version 1 must be decoded into this exact historical shape
+/// before it can be migrated to the current [`ComputeBudget`].
+#[derive(SchemaRead)]
+pub(crate) struct ComputeBudgetV1 {
+    pub compute_unit_limit: u64,
+    pub log_64_units: u64,
+    pub create_program_address_units: u64,
+    pub invoke_units: u64,
+    pub max_instruction_stack_depth: usize,
+    pub max_instruction_trace_length: usize,
+    pub sha256_base_cost: u64,
+    pub sha256_byte_cost: u64,
+    pub sha256_max_slices: u64,
+    pub max_call_depth: usize,
+    pub stack_frame_size: usize,
+    pub log_pubkey_units: u64,
+    pub cpi_bytes_per_unit: u64,
+    pub sysvar_base_cost: u64,
+    pub secp256k1_recover_cost: u64,
+    pub syscall_base_cost: u64,
+    pub curve25519_edwards_validate_point_cost: u64,
+    pub curve25519_edwards_add_cost: u64,
+    pub curve25519_edwards_subtract_cost: u64,
+    pub curve25519_edwards_multiply_cost: u64,
+    pub curve25519_edwards_msm_base_cost: u64,
+    pub curve25519_edwards_msm_incremental_cost: u64,
+    pub curve25519_ristretto_validate_point_cost: u64,
+    pub curve25519_ristretto_add_cost: u64,
+    pub curve25519_ristretto_subtract_cost: u64,
+    pub curve25519_ristretto_multiply_cost: u64,
+    pub curve25519_ristretto_msm_base_cost: u64,
+    pub curve25519_ristretto_msm_incremental_cost: u64,
+    pub heap_size: u32,
+    pub heap_cost: u64,
+    pub mem_op_base_cost: u64,
+    pub alt_bn128_g1_addition_cost: u64,
+    pub alt_bn128_g2_addition_cost: u64,
+    pub alt_bn128_g1_multiplication_cost: u64,
+    pub alt_bn128_g2_multiplication_cost: u64,
+    pub alt_bn128_pairing_one_pair_cost_first: u64,
+    pub alt_bn128_pairing_one_pair_cost_other: u64,
+    pub big_modular_exponentiation_base_cost: u64,
+    pub big_modular_exponentiation_cost_divisor: u64,
+    pub poseidon_cost_coefficient_a: u64,
+    pub poseidon_cost_coefficient_c: u64,
+    pub get_remaining_compute_units_cost: u64,
+    pub alt_bn128_g1_compress: u64,
+    pub alt_bn128_g1_decompress: u64,
+    pub alt_bn128_g2_compress: u64,
+    pub alt_bn128_g2_decompress: u64,
+    pub bls12_381_g1_add_cost: u64,
+    pub bls12_381_g2_add_cost: u64,
+    pub bls12_381_g1_subtract_cost: u64,
+    pub bls12_381_g2_subtract_cost: u64,
+    pub bls12_381_g1_multiply_cost: u64,
+    pub bls12_381_g2_multiply_cost: u64,
+    pub bls12_381_g1_decompress_cost: u64,
+    pub bls12_381_g2_decompress_cost: u64,
+    pub bls12_381_g1_validate_cost: u64,
+    pub bls12_381_g2_validate_cost: u64,
+    pub bls12_381_one_pair_cost: u64,
+    pub bls12_381_additional_pair_cost: u64,
+}
+
+impl From<ComputeBudgetV1> for ComputeBudget {
+    fn from(value: ComputeBudgetV1) -> Self {
+        Self {
+            compute_unit_limit: value.compute_unit_limit,
+            log_64_units: value.log_64_units,
+            create_program_address_units: value.create_program_address_units,
+            invoke_units: value.invoke_units,
+            max_instruction_stack_depth: value.max_instruction_stack_depth,
+            max_instruction_trace_length: value.max_instruction_trace_length,
+            sha256_base_cost: value.sha256_base_cost,
+            sha256_byte_cost: value.sha256_byte_cost,
+            sha256_max_slices: value.sha256_max_slices,
+            max_call_depth: value.max_call_depth,
+            stack_frame_size: value.stack_frame_size,
+            log_pubkey_units: value.log_pubkey_units,
+            cpi_bytes_per_unit: value.cpi_bytes_per_unit,
+            sysvar_base_cost: value.sysvar_base_cost,
+            secp256k1_recover_cost: value.secp256k1_recover_cost,
+            syscall_base_cost: value.syscall_base_cost,
+            curve25519_edwards_validate_point_cost: value.curve25519_edwards_validate_point_cost,
+            curve25519_edwards_add_cost: value.curve25519_edwards_add_cost,
+            curve25519_edwards_subtract_cost: value.curve25519_edwards_subtract_cost,
+            curve25519_edwards_multiply_cost: value.curve25519_edwards_multiply_cost,
+            curve25519_edwards_msm_base_cost: value.curve25519_edwards_msm_base_cost,
+            curve25519_edwards_msm_incremental_cost: value.curve25519_edwards_msm_incremental_cost,
+            curve25519_ristretto_validate_point_cost: value
+                .curve25519_ristretto_validate_point_cost,
+            curve25519_ristretto_add_cost: value.curve25519_ristretto_add_cost,
+            curve25519_ristretto_subtract_cost: value.curve25519_ristretto_subtract_cost,
+            curve25519_ristretto_multiply_cost: value.curve25519_ristretto_multiply_cost,
+            curve25519_ristretto_msm_base_cost: value.curve25519_ristretto_msm_base_cost,
+            curve25519_ristretto_msm_incremental_cost: value
+                .curve25519_ristretto_msm_incremental_cost,
+            heap_size: value.heap_size,
+            heap_cost: value.heap_cost,
+            mem_op_base_cost: value.mem_op_base_cost,
+            alt_bn128_g1_addition_cost: value.alt_bn128_g1_addition_cost,
+            alt_bn128_g2_addition_cost: value.alt_bn128_g2_addition_cost,
+            alt_bn128_g1_multiplication_cost: value.alt_bn128_g1_multiplication_cost,
+            alt_bn128_g2_multiplication_cost: value.alt_bn128_g2_multiplication_cost,
+            alt_bn128_pairing_one_pair_cost_first: value.alt_bn128_pairing_one_pair_cost_first,
+            alt_bn128_pairing_one_pair_cost_other: value.alt_bn128_pairing_one_pair_cost_other,
+            poseidon_cost_coefficient_a: value.poseidon_cost_coefficient_a,
+            poseidon_cost_coefficient_c: value.poseidon_cost_coefficient_c,
+            get_remaining_compute_units_cost: value.get_remaining_compute_units_cost,
+            alt_bn128_g1_compress: value.alt_bn128_g1_compress,
+            alt_bn128_g1_decompress: value.alt_bn128_g1_decompress,
+            alt_bn128_g2_compress: value.alt_bn128_g2_compress,
+            alt_bn128_g2_decompress: value.alt_bn128_g2_decompress,
+            bls12_381_g1_add_cost: value.bls12_381_g1_add_cost,
+            bls12_381_g2_add_cost: value.bls12_381_g2_add_cost,
+            bls12_381_g1_subtract_cost: value.bls12_381_g1_subtract_cost,
+            bls12_381_g2_subtract_cost: value.bls12_381_g2_subtract_cost,
+            bls12_381_g1_multiply_cost: value.bls12_381_g1_multiply_cost,
+            bls12_381_g2_multiply_cost: value.bls12_381_g2_multiply_cost,
+            bls12_381_g1_decompress_cost: value.bls12_381_g1_decompress_cost,
+            bls12_381_g2_decompress_cost: value.bls12_381_g2_decompress_cost,
+            bls12_381_g1_validate_cost: value.bls12_381_g1_validate_cost,
+            bls12_381_g2_validate_cost: value.bls12_381_g2_validate_cost,
+            bls12_381_one_pair_cost: value.bls12_381_one_pair_cost,
+            bls12_381_additional_pair_cost: value.bls12_381_additional_pair_cost,
+        }
+    }
+}
+
 #[derive(SchemaWrite, SchemaRead)]
 #[wincode(from = "ComputeBudget")]
 pub(crate) struct ComputeBudgetWire {
@@ -209,8 +340,24 @@ impl From<AccountEntryWire> for (Address, AccountSharedData) {
     }
 }
 
+#[derive(SchemaRead)]
+pub(crate) struct LiteSvmSnapshotV1 {
+    pub accounts: Vec<AccountEntryWire>,
+    pub airdrop_kp: [u8; 64],
+    pub feature_set: FeatureSetSnapshot,
+    pub latest_blockhash: Hash,
+    pub history: Vec<(Signature, TxResult)>,
+    pub history_capacity: u64,
+    pub compute_budget: Option<ComputeBudgetV1>,
+    pub sigverify: bool,
+    pub blockhash_check: bool,
+    #[wincode(with = "FeeStructureWire")]
+    pub fee_structure: FeeStructure,
+    pub log_bytes_limit: Option<u64>,
+}
+
 #[derive(SchemaWrite, SchemaRead)]
-pub(crate) struct LiteSvmSnapshot {
+pub(crate) struct LiteSvmSnapshotV2 {
     pub accounts: Vec<AccountEntryWire>,
     pub airdrop_kp: [u8; 64],
     pub feature_set: FeatureSetSnapshot,
@@ -224,4 +371,37 @@ pub(crate) struct LiteSvmSnapshot {
     #[wincode(with = "FeeStructureWire")]
     pub fee_structure: FeeStructure,
     pub log_bytes_limit: Option<u64>,
+}
+
+impl From<LiteSvmSnapshotV1> for LiteSvmSnapshotV2 {
+    fn from(value: LiteSvmSnapshotV1) -> Self {
+        Self {
+            accounts: value.accounts,
+            airdrop_kp: value.airdrop_kp,
+            feature_set: value.feature_set,
+            latest_blockhash: value.latest_blockhash,
+            history: value.history,
+            history_capacity: value.history_capacity,
+            compute_budget: value.compute_budget.map(Into::into),
+            sigverify: value.sigverify,
+            blockhash_check: value.blockhash_check,
+            fee_structure: value.fee_structure,
+            log_bytes_limit: value.log_bytes_limit,
+        }
+    }
+}
+
+#[derive(SchemaWrite, SchemaRead)]
+pub(crate) struct LiteSvmSnapshotV3 {
+    pub state: LiteSvmSnapshotV2,
+    pub epoch_vote_stakes: Vec<(Address, u64)>,
+}
+
+impl From<LiteSvmSnapshotV2> for LiteSvmSnapshotV3 {
+    fn from(state: LiteSvmSnapshotV2) -> Self {
+        Self {
+            state,
+            epoch_vote_stakes: Vec::new(),
+        }
+    }
 }
