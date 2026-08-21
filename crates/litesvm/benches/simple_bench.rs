@@ -47,7 +47,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     svm.add_program(program_id, &read_counter_program())
         .unwrap();
-    svm.airdrop(&payer_pk, 1000000000).unwrap();
+    svm.airdrop(&payer_pk, 100_000_000_000_000).unwrap();
     let counter_address = Address::new_unique();
     c.bench_function("simple_bench", |b| {
         b.iter(|| {

@@ -21,6 +21,10 @@ impl TransactionHistory {
         self.0.get(signature)
     }
 
+    pub fn is_enabled(&self) -> bool {
+        self.0.capacity() != 0
+    }
+
     pub fn add_new_transaction(&mut self, signature: Signature, result: TransactionResult) {
         let capacity = self.0.capacity();
         if capacity != 0 {

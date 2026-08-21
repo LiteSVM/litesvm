@@ -1197,7 +1197,12 @@ impl LiteSVM {
     ) -> TransactionContext<'_> {
         TransactionContext::new(
             accounts,
-            self.get_sysvar(),
+            self.accounts
+                .sysvar_cache
+                .get_rent()
+                .unwrap()
+                .as_ref()
+                .clone(),
             compute_budget.max_instruction_stack_depth,
             compute_budget.max_instruction_trace_length,
             number_of_top_level_instructions,
@@ -1311,12 +1316,14 @@ impl LiteSVM {
             return (Err(e), accumulated_consume_units, None, fee, payer_key);
         }
 
+        let mut pre_rent_states = Vec::with_capacity(account_keys.len());
         let maybe_accounts = account_keys
             .iter()
             .enumerate()
             .map(|(i, key)| {
                 let (loaded_size, account) = if solana_sdk_ids::sysvar::instructions::check_id(key)
                 {
+                    pre_rent_states.push(RentState::Uninitialized);
                     // according to agave code sysvar accounts are 0 loaded size:
                     // https://github.com/anza-xyz/agave/blob/v4.2.0/svm/src/account_loader.rs#L613-L618
                     (0, construct_instructions_account(message)?)
@@ -1348,6 +1355,11 @@ impl LiteSVM {
                                 (default_account.data().len(), default_account)
                             })
                     };
+                    pre_rent_states.push(get_account_rent_state(
+                        &rent,
+                        account.lamports(),
+                        account.data().len(),
+                    ));
                     if message.is_writable(i)
                         && account.rent_epoch() != u64::MAX
                         && rent.is_exempt(account.lamports(), account.data().len())
@@ -1480,7 +1492,8 @@ impl LiteSVM {
                     self.enable_register_tracing,
                 );
 
-                tx_result = tx_result.and_then(|()| self.check_accounts_rent(tx, &context, &rent));
+                tx_result = tx_result
+                    .and_then(|()| check_accounts_rent(tx, &context, &rent, &pre_rent_states));
 
                 (
                     tx_result,
@@ -1492,43 +1505,6 @@ impl LiteSVM {
             }
             Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
         }
-    }
-
-    fn check_accounts_rent(
-        &self,
-        tx: &SanitizedTransaction,
-        context: &TransactionContext,
-        rent: &Rent,
-    ) -> Result<(), TransactionError> {
-        let message = tx.message();
-        for index in 0..message.account_keys().len() {
-            if message.is_writable(index) {
-                let account = context
-                    .accounts()
-                    .try_borrow(index as IndexOfAccount)
-                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
-
-                let pubkey = context
-                    .get_key_of_account_at_index(index as IndexOfAccount)
-                    .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
-
-                let post_rent_state =
-                    get_account_rent_state(rent, account.lamports(), account.data().len());
-                let pre_rent_state = self
-                    .accounts
-                    .get_account_ref(pubkey)
-                    .map(|acc| get_account_rent_state(rent, acc.lamports(), acc.data().len()))
-                    .unwrap_or(RentState::Uninitialized);
-
-                check_rent_state_with_account(
-                    &pre_rent_state,
-                    &post_rent_state,
-                    pubkey,
-                    index as IndexOfAccount,
-                )?;
-            }
-        }
-        Ok(())
     }
 
     fn execute_transaction_no_verify(
@@ -1729,13 +1705,15 @@ impl LiteSVM {
 
         if let Err(tx_err) = tx_result {
             let err = TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta });
-            if included {
+            if included && self.history.is_enabled() {
                 self.history.add_new_transaction(signature, err.clone());
             }
             err
         } else {
-            self.history
-                .add_new_transaction(signature, Ok(meta.clone()));
+            if self.history.is_enabled() {
+                self.history
+                    .add_new_transaction(signature, Ok(meta.clone()));
+            }
             self.accounts
                 .sync_accounts(post_accounts)
                 .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");
@@ -2120,6 +2098,38 @@ fn get_transaction_account_lock_limit(svm: &LiteSVM) -> usize {
     } else {
         64
     }
+}
+
+fn check_accounts_rent(
+    tx: &SanitizedTransaction,
+    context: &TransactionContext,
+    rent: &Rent,
+    pre_rent_states: &[RentState],
+) -> Result<(), TransactionError> {
+    let message = tx.message();
+    for (index, pre_rent_state) in pre_rent_states.iter().enumerate() {
+        if message.is_writable(index) {
+            let account = context
+                .accounts()
+                .try_borrow(index as IndexOfAccount)
+                .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
+
+            let pubkey = context
+                .get_key_of_account_at_index(index as IndexOfAccount)
+                .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
+
+            let post_rent_state =
+                get_account_rent_state(rent, account.lamports(), account.data().len());
+
+            check_rent_state_with_account(
+                pre_rent_state,
+                &post_rent_state,
+                pubkey,
+                index as IndexOfAccount,
+            )?;
+        }
+    }
+    Ok(())
 }
 
 /// Lighter version of the one in the solana-svm crate.
