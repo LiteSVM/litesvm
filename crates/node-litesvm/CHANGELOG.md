@@ -2,20 +2,31 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Bump to Agave 4.2 and support V1 transactions [(#399)](https://github.com/LiteSVM/litesvm/pull/399).
+
+### Removed
+
+- Remove the `bigModularExponentiationBaseCost` and `bigModularExponentiationCostDivisor` compute budget accessors, which no longer exist upstream [(#399)](https://github.com/LiteSVM/litesvm/pull/399).
+
+### Fixed
+
+- Allow `setSlotHashes` to accept plain JavaScript objects [(#400)](https://github.com/LiteSVM/litesvm/pull/400).
+- Build the published binaries with the `register-tracing` feature enabled by default, so setting `SBF_TRACE_DIR` now produces SBPF register traces instead of being silently ignored. Previously this only worked for Rust consumers who opted into the feature, leaving tools such as `sbpf-coverage` reporting 0% coverage for anyone driving LiteSVM from JavaScript [(#397)](https://github.com/LiteSVM/litesvm/pull/397).
+- Clear x87 FPU state after transaction execution [(#398)](https://github.com/LiteSVM/litesvm/pull/398).
+
+## [1.3.0] - 2026-07-13
+
 ### Added
 
-- Add `LiteSVM.getProgramAccounts` to return all accounts owned by a given program, together with their addresses.
+- Add `LiteSVM.getProgramAccounts` to return all accounts owned by a given program, together with their addresses [(#370)](https://github.com/LiteSVM/litesvm/pull/370).
 - Expose activation slots on active feature metadata in the Node bindings [(#378)](https://github.com/LiteSVM/litesvm/pull/378).
 
 ### Changed
 
 - Bump to Agave 4.1 [(#373)](https://github.com/LiteSVM/litesvm/pull/373).
 - Use `wincode` for sysvar serialization in the native bindings [(#376)](https://github.com/LiteSVM/litesvm/pull/376).
-
-### Fixed
-
-- Allow `setSlotHashes` to accept plain JavaScript objects [(#178)](https://github.com/LiteSVM/litesvm/issues/178).
-- Build the published binaries with the `register-tracing` feature enabled by default, so setting `SBF_TRACE_DIR` now produces SBPF register traces instead of being silently ignored. Previously this only worked for Rust consumers who opted into the feature, leaving tools such as `sbpf-coverage` reporting 0% coverage for anyone driving LiteSVM from JavaScript [(#397)](https://github.com/LiteSVM/litesvm/pull/397).
 
 ## [1.2.1] - 2026-07-01
 

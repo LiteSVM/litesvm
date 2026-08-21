@@ -2,10 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- Support V1 transactions, with compute budget and prioritization data taken from the transaction config instead of only from compute budget instructions ([#399](https://github.com/LiteSVM/litesvm/pull/399)).
+
+### Changed
+
+- Bump to Agave 4.2 ([#399](https://github.com/LiteSVM/litesvm/pull/399)).
+
 ### Fixed
 
-- Preserve configured epoch stakes across persistence snapshot round trips.
-- Preserve readability of V1 persistence snapshots after the Solana 4.2 wire-format change.
+- Preserve configured epoch stakes across persistence snapshot round trips ([#403](https://github.com/LiteSVM/litesvm/pull/403)).
+- Preserve readability of V1 persistence snapshots after the Solana 4.2 wire-format change ([#403](https://github.com/LiteSVM/litesvm/pull/403)).
+- Align the rent epoch when loading transaction accounts ([#402](https://github.com/LiteSVM/litesvm/pull/402)).
+- Return an error when the loaded account data size exceeds the transaction allowance ([#399](https://github.com/LiteSVM/litesvm/pull/399)).
+- Clear x87 FPU state after transaction execution ([#398](https://github.com/LiteSVM/litesvm/pull/398)).
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-08-20 ([#405](https://github.com/LiteSVM/litesvm/pull/405)).
 
 ## [0.15.2] - 2026-07-31
 
