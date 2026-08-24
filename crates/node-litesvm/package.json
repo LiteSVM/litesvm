@@ -18,6 +18,10 @@
 		]
 	},
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/LiteSVM/litesvm.git"
+	},
 	"dependencies": {
 		"@solana-program/system": "^0.14.0",
 		"@solana-program/token": "^0.16.0",
@@ -49,7 +53,7 @@
 		"artifacts": "napi artifacts",
 		"build": "napi build --platform --release --output-dir litesvm --dts internal.d.ts --js internal.js",
 		"build:debug": "napi build --platform litesvm --dts internal.d.ts --js internal.js",
-		"prepublishOnly": "napi prepublish -t npm",
+		"prepublishOnly": "napi prepublish -t npm --no-gh-release",
 		"fmt": "yarn fmt:rust && yarn fmt:js",
 		"fmt:rust": "cargo fmt",
 		"fmt:js": "rome format --write litesvm/index.ts tests/ tsconfig.json package.json",
