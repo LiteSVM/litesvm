@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-08-24
+
 ### Added
 
 - Support V1 transactions, with compute budget and prioritization data taken from the transaction config instead of only from compute budget instructions ([#399](https://github.com/LiteSVM/litesvm/pull/399)).
@@ -9,6 +11,8 @@
 ### Changed
 
 - Bump to Agave 4.2 ([#399](https://github.com/LiteSVM/litesvm/pull/399)).
+- Bump the Agave crates to 4.2.1 and tilde-pin `solana-svm-transaction` to the 4.2 line, so it can no longer drift ahead of the rest of the Agave graph ([#408](https://github.com/LiteSVM/litesvm/pull/408)).
+- Cut redundant work out of the transaction path: the rent sysvar is read from the sysvar cache instead of being deserialized, pre-transaction rent states are captured during account loading instead of re-read afterwards, and transaction history is only cloned when history is enabled ([#407](https://github.com/LiteSVM/litesvm/pull/407)).
 
 ### Fixed
 
@@ -17,7 +21,7 @@
 - Align the rent epoch when loading transaction accounts ([#402](https://github.com/LiteSVM/litesvm/pull/402)).
 - Return an error when the loaded account data size exceeds the transaction allowance ([#399](https://github.com/LiteSVM/litesvm/pull/399)).
 - Clear x87 FPU state after transaction execution ([#398](https://github.com/LiteSVM/litesvm/pull/398)).
-- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-08-20 ([#405](https://github.com/LiteSVM/litesvm/pull/405)).
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-08-24 ([#405](https://github.com/LiteSVM/litesvm/pull/405)).
 
 ## [0.15.2] - 2026-07-31
 
@@ -319,7 +323,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.15.2...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/LiteSVM/litesvm/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/LiteSVM/litesvm/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/LiteSVM/litesvm/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/LiteSVM/litesvm/compare/v0.14.0...v0.15.0

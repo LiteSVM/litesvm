@@ -2,9 +2,12 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-24
+
 ### Changed
 
 - Bump to Agave 4.2 and support V1 transactions [(#399)](https://github.com/LiteSVM/litesvm/pull/399).
+- Bump `napi` to 3.12 [(#408)](https://github.com/LiteSVM/litesvm/pull/408).
 
 ### Removed
 

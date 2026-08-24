@@ -1,7 +1,7 @@
 use solana_address::Address;
 
 /// Feature gates currently activated on Solana mainnet-beta, paired with their
-/// activation slot, sourced from the cluster on 2026-08-20.
+/// activation slot, sourced from the cluster on 2026-08-24.
 pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
     (agave_feature_set::deprecate_rewards_sysvar::ID, 55728001),
     (agave_feature_set::pico_inflation::ID, 57456000),
