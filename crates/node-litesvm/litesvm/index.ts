@@ -425,6 +425,7 @@ export class LiteSVM {
 			case "legacy":
 				return internal.sendLegacyTransaction(serialized);
 			case 0:
+			case 1:
 				return internal.sendVersionedTransaction(serialized);
 			default:
 				throw new Error(`Unsupported transaction version: ${version}`);
@@ -453,6 +454,7 @@ export class LiteSVM {
 				case "legacy":
 					return internal.simulateLegacyTransaction(serialized);
 				case 0:
+				case 1:
 					return internal.simulateVersionedTransaction(serialized);
 				default:
 					throw new Error(`Unsupported transaction version: ${version}`);
