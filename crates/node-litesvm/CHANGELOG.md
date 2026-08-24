@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-08-25
+
 ### Fixed
 
 - Route version 1 transactions through the native bindings in `sendTransaction` and `simulateTransaction`. The runtime gained V1 transaction support in v1.4.0, but the JavaScript wrapper still rejected them with `Unsupported transaction version: 1`.
