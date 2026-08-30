@@ -1,3 +1,6 @@
+default:
+    @just --list
+
 update-features:
     python3 scripts/update_features.py
     just fmt

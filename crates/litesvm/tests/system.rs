@@ -1,4 +1,5 @@
 use {
+    agave_feature_set::{relax_post_exec_min_balance_check, FeatureSet},
     litesvm::LiteSVM,
     solana_account::Account,
     solana_address::Address,
@@ -11,6 +12,14 @@ use {
     solana_transaction::Transaction,
     solana_transaction_error::TransactionError,
 };
+
+fn svm_with_simd_0392(active: bool) -> LiteSVM {
+    let mut feature_set = FeatureSet::default();
+    if active {
+        feature_set.activate(&relax_post_exec_min_balance_check::ID, 0);
+    }
+    LiteSVM::new().with_feature_set(feature_set)
+}
 
 #[test_log::test]
 fn system_transfer() {
@@ -169,28 +178,114 @@ fn test_rent_check_does_not_override_program_error() {
 
 #[test_log::test]
 fn test_rent_check_still_fails_successful_transaction() {
-    let from_keypair = Keypair::new();
-    let from = from_keypair.pubkey();
-    let new_account = Keypair::new();
-    let owner = Address::new_unique();
+    for simd_0392_active in [false, true] {
+        let from_keypair = Keypair::new();
+        let from = from_keypair.pubkey();
+        let new_account = Keypair::new();
+        let owner = Address::new_unique();
 
-    let mut svm = LiteSVM::new();
-    svm.airdrop(&from, 10 * LAMPORTS_PER_SOL).unwrap();
+        let mut svm = svm_with_simd_0392(simd_0392_active);
+        svm.airdrop(&from, 10 * LAMPORTS_PER_SOL).unwrap();
 
-    // A single instruction that succeeds but leaves the new account
-    // rent-paying must still fail the post-execution rent check.
-    let instruction = create_account(&from, &new_account.pubkey(), 1, 10, &owner);
-    let tx = Transaction::new(
-        &[&from_keypair, &new_account],
-        Message::new(&[instruction], Some(&from)),
-        svm.latest_blockhash(),
-    );
-    let tx_res = svm.send_transaction(tx);
+        // A newly created account must satisfy the current rent-exempt minimum,
+        // even after the SIMD-0392 relaxation is activated.
+        let instruction = create_account(&from, &new_account.pubkey(), 1, 10, &owner);
+        let tx = Transaction::new(
+            &[&from_keypair, &new_account],
+            Message::new(&[instruction], Some(&from)),
+            svm.latest_blockhash(),
+        );
+        let tx_res = svm.send_transaction(tx);
 
-    assert_eq!(
-        tx_res.unwrap_err().err,
-        TransactionError::InsufficientFundsForRent { account_index: 1 }
-    );
+        assert_eq!(
+            tx_res.unwrap_err().err,
+            TransactionError::InsufficientFundsForRent { account_index: 1 }
+        );
+    }
+}
+
+#[test_log::test]
+fn simd_0392_allows_topping_up_grandfathered_accounts() {
+    for simd_0392_active in [false, true] {
+        let payer = Keypair::new();
+        let recipient = Address::new_unique();
+        let mut svm = svm_with_simd_0392(simd_0392_active);
+        svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let data_size = 64;
+        let initial_balance = svm.minimum_balance_for_rent_exemption(data_size) / 2;
+        svm.set_account(
+            recipient,
+            Account {
+                lamports: initial_balance,
+                data: vec![0; data_size],
+                owner: solana_sdk_ids::system_program::id(),
+                rent_epoch: u64::MAX,
+                executable: false,
+            },
+        )
+        .unwrap();
+
+        let tx = Transaction::new(
+            &[&payer],
+            Message::new(
+                &[transfer(&payer.pubkey(), &recipient, 1)],
+                Some(&payer.pubkey()),
+            ),
+            svm.latest_blockhash(),
+        );
+        let result = svm.send_transaction(tx);
+
+        if simd_0392_active {
+            result.unwrap();
+            assert_eq!(svm.get_balance(&recipient), Some(initial_balance + 1));
+        } else {
+            assert_eq!(
+                result.unwrap_err().err,
+                TransactionError::InsufficientFundsForRent { account_index: 1 }
+            );
+            assert_eq!(svm.get_balance(&recipient), Some(initial_balance));
+        }
+    }
+}
+
+#[test_log::test]
+fn simd_0392_applies_to_fee_payer_debits() {
+    for simd_0392_active in [false, true] {
+        let payer = Keypair::new();
+        let mut svm = svm_with_simd_0392(simd_0392_active);
+        let starting_balance = svm.minimum_balance_for_rent_exemption(0) - 1;
+        svm.set_account(
+            payer.pubkey(),
+            Account {
+                lamports: starting_balance,
+                owner: solana_sdk_ids::system_program::id(),
+                rent_epoch: u64::MAX,
+                ..Account::default()
+            },
+        )
+        .unwrap();
+
+        let tx = Transaction::new(
+            &[&payer],
+            Message::new(&[], Some(&payer.pubkey())),
+            svm.latest_blockhash(),
+        );
+        let result = svm.send_transaction(tx);
+
+        if simd_0392_active {
+            assert_eq!(
+                result.unwrap_err().err,
+                TransactionError::InsufficientFundsForRent { account_index: 0 }
+            );
+        } else {
+            result.unwrap();
+            assert_eq!(
+                svm.get_balance(&payer.pubkey()),
+                Some(starting_balance - 5000)
+            );
+        }
+    }
 }
 
 #[test_log::test]

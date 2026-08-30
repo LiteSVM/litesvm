@@ -337,7 +337,7 @@ use {
         },
         utils::{
             create_blockhash,
-            rent::{check_rent_state_with_account, get_account_rent_state, RentState},
+            rent::{check_rent_state_with_account, RentStateInfo},
             LoadedTransactionDataSize, ADDRESS_LOOKUP_TABLE_BASE_SIZE,
             TRANSACTION_ACCOUNT_BASE_SIZE,
         },
@@ -1289,6 +1289,9 @@ impl LiteSVM {
             )
         });
         let rent = self.accounts.sysvar_cache.get_rent().unwrap();
+        let relax_post_exec_min_balance_check = self
+            .feature_set
+            .is_active(&agave_feature_set::relax_post_exec_min_balance_check::ID);
         let message = tx.message();
         let blockhash = message.recent_blockhash();
         //reload program cache
@@ -1316,14 +1319,13 @@ impl LiteSVM {
             return (Err(e), accumulated_consume_units, None, fee, payer_key);
         }
 
-        let mut pre_rent_states = Vec::with_capacity(account_keys.len());
+        let mut pre_rent_state_infos = Vec::with_capacity(account_keys.len());
         let maybe_accounts = account_keys
             .iter()
             .enumerate()
             .map(|(i, key)| {
                 let (loaded_size, account) = if solana_sdk_ids::sysvar::instructions::check_id(key)
                 {
-                    pre_rent_states.push(RentState::Uninitialized);
                     // according to agave code sysvar accounts are 0 loaded size:
                     // https://github.com/anza-xyz/agave/blob/v4.2.0/svm/src/account_loader.rs#L613-L618
                     (0, construct_instructions_account(message)?)
@@ -1355,11 +1357,6 @@ impl LiteSVM {
                                 (default_account.data().len(), default_account)
                             })
                     };
-                    pre_rent_states.push(get_account_rent_state(
-                        &rent,
-                        account.lamports(),
-                        account.data().len(),
-                    ));
                     if message.is_writable(i)
                         && account.rent_epoch() != u64::MAX
                         && rent.is_exempt(account.lamports(), account.data().len())
@@ -1367,12 +1364,27 @@ impl LiteSVM {
                         account.set_rent_epoch(u64::MAX);
                     }
                     if !validated_fee_payer && (!message.is_invoked(i) || is_instruction_account) {
-                        validate_fee_payer(key, &mut account, i as IndexOfAccount, &rent, fee)?;
+                        validate_fee_payer(
+                            key,
+                            &mut account,
+                            i as IndexOfAccount,
+                            &rent,
+                            fee,
+                            relax_post_exec_min_balance_check,
+                        )?;
                         validated_fee_payer = true;
                         payer_key = Some(*key);
                     }
                     (loaded_size, account)
                 };
+
+                pre_rent_state_infos.push(RentStateInfo::new_pre_exec(
+                    &rent,
+                    account.lamports(),
+                    account.data().len(),
+                    *account.owner(),
+                    relax_post_exec_min_balance_check,
+                ));
 
                 loaded_tx_data_size.increase_calculated_data_size(loaded_size)?;
                 Ok((*key, account))
@@ -1493,7 +1505,7 @@ impl LiteSVM {
                 );
 
                 tx_result = tx_result
-                    .and_then(|()| check_accounts_rent(tx, &context, &rent, &pre_rent_states));
+                    .and_then(|()| check_accounts_rent(tx, &context, &rent, &pre_rent_state_infos));
 
                 (
                     tx_result,
@@ -2104,10 +2116,10 @@ fn check_accounts_rent(
     tx: &SanitizedTransaction,
     context: &TransactionContext,
     rent: &Rent,
-    pre_rent_states: &[RentState],
+    pre_rent_state_infos: &[RentStateInfo],
 ) -> Result<(), TransactionError> {
     let message = tx.message();
-    for (index, pre_rent_state) in pre_rent_states.iter().enumerate() {
+    for (index, pre_rent_state_info) in pre_rent_state_infos.iter().enumerate() {
         if message.is_writable(index) {
             let account = context
                 .accounts()
@@ -2118,11 +2130,15 @@ fn check_accounts_rent(
                 .get_key_of_account_at_index(index as IndexOfAccount)
                 .map_err(|err| TransactionError::InstructionError(index as u8, err))?;
 
-            let post_rent_state =
-                get_account_rent_state(rent, account.lamports(), account.data().len());
+            let post_rent_state = pre_rent_state_info.post_exec_rent_state(
+                rent,
+                account.lamports(),
+                account.data().len(),
+                *account.owner(),
+            );
 
             check_rent_state_with_account(
-                pre_rent_state,
+                pre_rent_state_info.rent_state(),
                 &post_rent_state,
                 pubkey,
                 index as IndexOfAccount,
@@ -2144,6 +2160,7 @@ fn validate_fee_payer(
     payer_index: IndexOfAccount,
     rent: &Rent,
     fee: u64,
+    relax_post_exec_min_balance_check: bool,
 ) -> solana_transaction_error::TransactionResult<()> {
     if payer_account.lamports() == 0 {
         error!("Payer account {payer_address} not found.");
@@ -2175,15 +2192,25 @@ fn validate_fee_payer(
             TransactionError::InsufficientFundsForFee
         })?;
 
-    let payer_len = payer_account.data().len();
-    let payer_pre_rent_state = get_account_rent_state(rent, payer_account.lamports(), payer_len);
+    let pre_rent_state_info = RentStateInfo::new_pre_exec(
+        rent,
+        payer_lamports,
+        payer_account.data().len(),
+        *payer_account.owner(),
+        relax_post_exec_min_balance_check,
+    );
     // we already checked above if we have sufficient balance so this should never error.
     payer_account.checked_sub_lamports(fee).unwrap();
 
-    let payer_post_rent_state = get_account_rent_state(rent, payer_account.lamports(), payer_len);
+    let post_rent_state = pre_rent_state_info.post_exec_rent_state(
+        rent,
+        payer_account.lamports(),
+        payer_account.data().len(),
+        *payer_account.owner(),
+    );
     check_rent_state_with_account(
-        &payer_pre_rent_state,
-        &payer_post_rent_state,
+        pre_rent_state_info.rent_state(),
+        &post_rent_state,
         payer_address,
         payer_index,
     )
