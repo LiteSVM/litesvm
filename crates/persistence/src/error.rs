@@ -18,6 +18,4 @@ pub enum PersistenceError {
     InvalidEpochStakes(#[source] litesvm::error::LiteSVMError),
     #[error("duplicate epoch stake for vote account {0}")]
     DuplicateEpochStake(solana_address::Address),
-    #[error("serialization thread panicked")]
-    ThreadPanic,
 }

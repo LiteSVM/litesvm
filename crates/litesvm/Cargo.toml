@@ -18,7 +18,7 @@ invocation-inspect-callback = []
 nodejs-internal = ["dep:qualifier_attr"]
 hashbrown = ["dep:hashbrown"]
 sbpf-debugger = ["register-tracing", "solana-program-runtime/sbpf-debugger"]
-serde = ["solana-transaction-error/serde", "solana-message/serde"]
+serde = ["dep:serde", "solana-transaction-error/serde", "solana-message/serde"]
 persistence-internal = []
 precompiles = ["dep:agave-precompiles"]
 register-tracing = [
@@ -43,7 +43,7 @@ indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 qualifier_attr = { workspace = true, optional = true }
-serde.workspace = true
+serde = { workspace = true, optional = true }
 solana-account.workspace = true
 solana-address.workspace = true
 solana-address-lookup-table-interface = { workspace = true, features = [
@@ -83,7 +83,6 @@ solana-rent.workspace = true
 solana-runtime-transaction = { workspace = true, features = ["agave-unstable-api"] }
 solana-sdk-ids.workspace = true
 solana-sha256-hasher.workspace = true
-solana-short-vec.workspace = true
 solana-signature.workspace = true
 solana-signer.workspace = true
 solana-slot-hashes.workspace = true

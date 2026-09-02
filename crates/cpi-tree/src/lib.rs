@@ -67,18 +67,6 @@ use {
 mod ext;
 pub use ext::CpiTreeExt;
 
-// `cargo tree` glyphs. Connectors go on a child's line; spines continue
-// under a frame on lines that follow. 4 cols wide so nested frames align.
-const CONN_BRANCH: &str = "├── ";
-const CONN_LAST: &str = "└── ";
-const SPINE_CONTINUE: &str = "│   ";
-const SPINE_END: &str = "    ";
-
-// Narrower spines (2 cols) for `>> log:` / `>> data:` rows so they slot
-// under the header without aligning with sibling connectors.
-const LOG_SPINE_CONTINUE: &str = "│ ";
-const LOG_SPINE_END: &str = "  ";
-
 /// Both values from a `Consumed(N, M)` token. Either both are emitted
 /// (BPF programs) or neither (native programs outside the SBPF VM:
 /// `ComputeBudget`, `BpfLoader`, precompiles). The totals below depend on
@@ -215,25 +203,26 @@ pub fn cpi_tree(logs: &[String]) -> Vec<CpiFrame> {
 }
 
 fn push_into_parent_or_roots(frame: CpiFrame, stack: &mut [CpiFrame], roots: &mut Vec<CpiFrame>) {
-    if let Some(parent) = stack.last_mut() {
-        parent.children.push(frame);
-    } else {
-        roots.push(frame);
-    }
+    stack
+        .last_mut()
+        .map_or(roots, |parent| &mut parent.children)
+        .push(frame);
 }
 
 /// Thousand-separated integer (`53402` -> `"53,402"`). Used wherever CU
 /// values land in user-facing output.
 pub fn with_commas(n: u64) -> String {
     let s = n.to_string();
-    let mut out = String::with_capacity(s.len() + s.len() / 3);
-    for (i, b) in s.bytes().enumerate() {
-        if i > 0 && (s.len() - i).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(b as char);
-    }
-    out
+    s.as_bytes()
+        .rchunks(3)
+        .rev()
+        .fold(String::new(), |mut out, chunk| {
+            if !out.is_empty() {
+                out.push(',');
+            }
+            out.push_str(std::str::from_utf8(chunk).unwrap());
+            out
+        })
 }
 
 /// Sum of top-level frames' `consumed`, or `None` if no frame reported CU
@@ -347,7 +336,7 @@ fn write_frame(
     is_last: bool,
     program_label: &dyn Fn(&Address) -> String,
 ) {
-    let connector = if is_last { CONN_LAST } else { CONN_BRANCH };
+    let connector = if is_last { "└── " } else { "├── " };
     write!(out, "{prefix}{connector}").unwrap();
     if let Some(name) = &frame.instruction_name {
         write!(out, "{name} ").unwrap();
@@ -371,16 +360,16 @@ fn write_frame(
     writeln!(out, "{}", program_label(&frame.program_id)).unwrap();
 
     let child_prefix = if is_last {
-        format!("{prefix}{SPINE_END}")
+        format!("{prefix}    ")
     } else {
-        format!("{prefix}{SPINE_CONTINUE}")
+        format!("{prefix}│   ")
     };
-    // `LOG_SPINE_CONTINUE` (`│ `) when children follow; `LOG_SPINE_END`
-    // (`  `) otherwise, to avoid a dangling `│` under a leaf frame.
+    // Continue the narrow spine when children follow; otherwise avoid a
+    // dangling `│` under a leaf frame.
     let log_spine = if frame.children.is_empty() {
-        LOG_SPINE_END
+        "  "
     } else {
-        LOG_SPINE_CONTINUE
+        "│ "
     };
     for entry in &frame.logs {
         match entry {

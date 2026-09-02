@@ -5,7 +5,6 @@ use {
         SyncNative,
     },
     solana_keypair::Keypair,
-    solana_native_token::LAMPORTS_PER_SOL,
     solana_signer::Signer,
 };
 
@@ -16,7 +15,7 @@ fn test() {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
 
-    svm.airdrop(&payer_pk, LAMPORTS_PER_SOL * 10).unwrap();
+    svm.airdrop(&payer_pk, 10_000_000_000).unwrap();
 
     CreateNativeMint::new(svm, &payer_kp).send().unwrap();
 
@@ -46,7 +45,7 @@ fn test_token_program_id() {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
 
-    svm.airdrop(&payer_pk, LAMPORTS_PER_SOL * 10).unwrap();
+    svm.airdrop(&payer_pk, 10_000_000_000).unwrap();
 
     CreateNativeMint::new(svm, &payer_kp)
         .token_program_id(&spl_token_2022_interface::ID)

@@ -11,7 +11,6 @@ use {
         Transfer, TransferChecked, TOKEN_ID,
     },
     solana_keypair::Keypair,
-    solana_native_token::LAMPORTS_PER_SOL,
     solana_signer::Signer,
 };
 
@@ -22,7 +21,7 @@ fn test() {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
 
-    svm.airdrop(&payer_pk, LAMPORTS_PER_SOL * 10).unwrap();
+    svm.airdrop(&payer_pk, 10_000_000_000).unwrap();
 
     let owner_kp = Keypair::new();
     let owner_pk = owner_kp.pubkey();
@@ -172,7 +171,7 @@ fn test_with_account_keypair() {
     let svm = &mut LiteSVM::new();
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
-    svm.airdrop(&payer_pk, LAMPORTS_PER_SOL * 10).unwrap();
+    svm.airdrop(&payer_pk, 10_000_000_000).unwrap();
 
     let mint_pk = CreateMint::new(svm, &payer_kp).send().unwrap();
 
