@@ -292,7 +292,6 @@ Other things you can do with `litesvm` include:
 | `hashbrown` | Switches internal hash maps to `hashbrown`. |
 | `serde` | Enables serde serialization/deserialization on internal types. |
 | `nodejs-internal` | Used by the Node.js bindings; not intended for direct use. |
-| `internal-test` | Enables internal test helpers; not intended for direct use. |
 
 ## When should I use `solana-test-validator`?
 
@@ -1806,11 +1805,6 @@ impl LiteSVM {
     /// Returns whether transaction signature verification is enabled.
     pub fn get_sigverify(&self) -> bool {
         self.sigverify
-    }
-
-    #[cfg(feature = "internal-test")]
-    pub fn get_feature_set(&self) -> Arc<FeatureSet> {
-        self.feature_set.clone().into()
     }
 
     fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
