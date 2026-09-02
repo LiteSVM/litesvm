@@ -707,6 +707,7 @@ impl LiteSVM {
 
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_builtins(&mut self) {
+        let (lamports, rent_epoch) = solana_account::DUMMY_INHERITABLE_ACCOUNT_FIELDS;
         BUILTINS.iter().for_each(|builtint| {
             if builtint
                 .enable_feature_id
@@ -717,9 +718,15 @@ impl LiteSVM {
                 self.accounts
                     .programs_cache
                     .replenish(builtint.program_id, Arc::new(loaded_program));
-                self.accounts.add_builtin_account(
+                self.accounts.add_account_no_checks(
                     builtint.program_id,
-                    crate::utils::create_loadable_account_for_test(builtint.name),
+                    AccountSharedData::from(Account {
+                        lamports,
+                        owner: native_loader::id(),
+                        data: builtint.name.as_bytes().to_vec(),
+                        executable: true,
+                        rent_epoch,
+                    }),
                 );
             }
         });

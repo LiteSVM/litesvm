@@ -10,7 +10,6 @@ use {
         CreateMultisig, MintTo, MintToChecked, Revoke, SetAuthority, Transfer, TransferChecked,
     },
     solana_keypair::Keypair,
-    solana_native_token::LAMPORTS_PER_SOL,
     solana_signer::Signer,
 };
 
@@ -21,7 +20,7 @@ fn test() {
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
 
-    svm.airdrop(&payer_pk, LAMPORTS_PER_SOL * 10).unwrap();
+    svm.airdrop(&payer_pk, 10_000_000_000).unwrap();
 
     let signer1 = Keypair::new();
     let signer2 = Keypair::new();

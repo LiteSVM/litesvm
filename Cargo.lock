@@ -1938,7 +1938,6 @@ dependencies = [
  "solana-sdk-ids",
  "solana-secp256k1-program",
  "solana-sha256-hasher",
- "solana-short-vec",
  "solana-signature",
  "solana-signer",
  "solana-slot-hashes",
@@ -2051,7 +2050,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.20",
  "wincode",
- "wincode-derive",
 ]
 
 [[package]]
@@ -2063,10 +2061,7 @@ dependencies = [
  "solana-account",
  "solana-address 2.6.1",
  "solana-keypair",
- "solana-native-token",
- "solana-program-option",
  "solana-program-pack",
- "solana-rent",
  "solana-signer",
  "solana-system-interface",
  "solana-transaction",
