@@ -19,8 +19,8 @@ publish:
     cargo publish -p litesvm-cpi-tree
 
 bench:
-    cd svm/test_programs && cargo build-sbf
-    RUST_LOG= cargo bench --features internal-test
+    cd crates/litesvm/test_programs && cargo build-sbf --tools-version v1.53
+    RUST_LOG= cargo bench -p litesvm
 
 # If "perf record" is slow: https://github.com/flamegraph-rs/flamegraph/issues/74#issuecomment-1909417039
 flamegraph:
