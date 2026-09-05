@@ -107,6 +107,34 @@ cargo add --dev litesvm-utils
 
 See the [litesvm-utils testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-utils) for a full walkthrough.
 
+### `litesvm-scope`
+
+[`litesvm-scope`](https://crates.io/crates/litesvm-scope) names everything in a transaction. `litesvm-cpi-tree` turns the logs into a tree of program invocations; `litesvm-scope` fills that tree in from the programs' Anchor IDLs and from built-in layouts for the native and SPL programs that have none:
+
+- **Instructions** — the name (`Transfer Checked`, `Route V2`), the Borsh-decoded arguments, and the role of every account (`Source`, `Authority`, `Remaining Account #1`), for top-level instructions and every CPI, nested by stack height.
+- **Outcomes** — per-instruction success, compute units, and the failing instruction's error by name: the IDL's custom error, an Anchor framework error (`ConstraintRentExempt`), a native program's error (`InsufficientFunds`), or the runtime's own.
+- **Events and accounts** — `emit!` payloads decoded through the IDL, and account data decoded into named fields (SPL token accounts and mints, lookup tables, stake and nonce accounts, any Anchor account type by discriminator).
+
+It is pure and offline: IDL JSON comes from you through an `IdlRegistry`, and nothing is fetched.
+
+```sh
+cargo add --dev litesvm-scope
+```
+
+```rust
+use litesvm_scope::{IdlRegistry, ScopeExt};
+
+let mut idls = IdlRegistry::new();
+idls.insert(program_id, &serde_json::from_str(include_str!("../idl/my_program.json"))?);
+
+let meta = svm.send_transaction(tx.clone())?;
+let decoded = meta.decode(&svm, &tx.message, &idls);
+println!("{}", decoded.pretty());
+if let Some(failed) = decoded.failing_instruction() {
+    println!("{:?} failed: {:?}", failed.name, failed.error);
+}
+```
+
 ### `anchor-litesvm`
 
 [`anchor-litesvm`](https://crates.io/crates/anchor-litesvm) brings Anchor-native testing to LiteSVM with syntax mirroring `anchor-client` — but with no RPC overhead. It's the recommended way to test Anchor programs with LiteSVM.

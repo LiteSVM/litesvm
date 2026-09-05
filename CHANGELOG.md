@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `litesvm-scope`: a sibling crate that names every instruction, account role, argument, event and error of a transaction — for top-level instructions and every CPI — from the programs' Anchor IDLs and built-in layouts for the native and SPL programs, and decodes account data into named fields. Pure and offline; joins `litesvm-cpi-tree`'s log-derived frames with the runtime's inner-instruction list for per-instruction outcomes and compute.
+
 ## [0.16.0] - 2026-08-24
 
 ### Added

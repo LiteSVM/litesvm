@@ -1,0 +1,38 @@
+[package]
+name = "litesvm-scope"
+description = "Name every instruction, account, argument, event and error of a LiteSVM transaction from IDLs and native layouts"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+litesvm.workspace = true
+litesvm-cpi-tree.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+sha2.workspace = true
+solana-address = { workspace = true, features = ["std"] }
+solana-message.workspace = true
+solana-transaction-error.workspace = true
+
+[dev-dependencies]
+solana-account.workspace = true
+solana-keypair.workspace = true
+solana-signer.workspace = true
+solana-system-interface.workspace = true
+solana-transaction = { workspace = true, features = ["verify"] }
+solana-program-pack.workspace = true
+spl-token-interface.workspace = true
+spl-associated-token-account-interface.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+doctest = false

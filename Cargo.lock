@@ -2053,6 +2053,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "litesvm-scope"
+version = "0.16.0"
+dependencies = [
+ "base64",
+ "litesvm",
+ "litesvm-cpi-tree",
+ "serde_json",
+ "sha2 0.10.9",
+ "solana-account",
+ "solana-address 2.6.1",
+ "solana-keypair",
+ "solana-message",
+ "solana-program-pack",
+ "solana-signer",
+ "solana-system-interface",
+ "solana-transaction",
+ "solana-transaction-error",
+ "spl-associated-token-account-interface",
+ "spl-token-interface",
+]
+
+[[package]]
 name = "litesvm-token"
 version = "0.16.0"
 dependencies = [
