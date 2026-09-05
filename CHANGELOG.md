@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `InvocationInspectCallback::before_instruction` / `after_instruction`: per-top-level-instruction hooks (default no-op) that expose the `InvokeContext`, and therefore every account's state, between instructions of a transaction.
+
 ## [0.16.0] - 2026-08-24
 
 ### Added

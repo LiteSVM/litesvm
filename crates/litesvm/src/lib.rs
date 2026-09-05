@@ -287,7 +287,7 @@ Other things you can do with `litesvm` include:
 | Feature | Description |
 |---|---|
 | `precompiles` | Loads the standard precompiles (ed25519, secp256k1) alongside the builtins. Enables [`with_precompiles`](LiteSVM::with_precompiles). |
-| `invocation-inspect-callback` | Enables the [`InvocationInspectCallback`] trait and [`set_invocation_inspect_callback`](LiteSVM::set_invocation_inspect_callback), giving low-level access to the `InvokeContext` before and after each transaction. |
+| `invocation-inspect-callback` | Enables the [`InvocationInspectCallback`] trait and [`set_invocation_inspect_callback`](LiteSVM::set_invocation_inspect_callback), giving low-level access to the `InvokeContext` before and after each transaction, and before and after each top-level instruction. |
 | `register-tracing` | Enables BPF register-level tracing. Implies `invocation-inspect-callback`. See [`LiteSVM::new_debuggable`] and [`register_tracing::DefaultRegisterTracingCallback`]. |
 | `hashbrown` | Switches internal hash maps to `hashbrown`. |
 | `serde` | Enables serde serialization/deserialization on internal types. |
@@ -317,6 +317,7 @@ use indexmap::IndexMap;
 use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
+use solana_instruction_error::InstructionError;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
@@ -1492,12 +1493,33 @@ impl LiteSVM {
                     self.enable_register_tracing,
                 );
 
+                #[cfg(feature = "invocation-inspect-callback")]
+                let inspect = Arc::clone(&self.invocation_inspect_callback);
+                #[cfg(feature = "invocation-inspect-callback")]
+                let mut before_instruction = |index: usize, ctx: &mut InvokeContext| {
+                    inspect.before_instruction(self, tx, index, ctx);
+                };
+                #[cfg(feature = "invocation-inspect-callback")]
+                let mut after_instruction = |index: usize,
+                                             ctx: &InvokeContext,
+                                             result: &Result<(), InstructionError>,
+                                             cu: u64| {
+                    inspect.after_instruction(self, tx, index, ctx, result, cu);
+                };
+                #[cfg(not(feature = "invocation-inspect-callback"))]
+                let mut before_instruction = |_: usize, _: &mut InvokeContext| {};
+                #[cfg(not(feature = "invocation-inspect-callback"))]
+                let mut after_instruction =
+                    |_: usize, _: &InvokeContext, _: &Result<(), InstructionError>, _: u64| {};
+
                 let mut tx_result = process_message(
                     message,
                     &program_indices,
                     &mut invoke_context,
                     &mut ExecuteTimings::default(),
                     &mut accumulated_consume_units,
+                    &mut before_instruction,
+                    &mut after_instruction,
                 )
                 .map(|_| ());
 
@@ -2249,6 +2271,38 @@ pub trait InvocationInspectCallback: Send + Sync {
         invoke_context: &InvokeContext,
         enable_register_tracing: bool,
     );
+
+    /// Called right before top-level instruction `instruction_index` executes.
+    ///
+    /// Default: no-op, so existing callbacks keep compiling.
+    fn before_instruction(
+        &self,
+        _svm: &LiteSVM,
+        _tx: &SanitizedTransaction,
+        _instruction_index: usize,
+        _invoke_context: &mut InvokeContext,
+    ) {
+    }
+
+    /// Called right after top-level instruction `instruction_index` executes,
+    /// with its result and the compute units it consumed.
+    ///
+    /// The transaction's accounts are still loaded in
+    /// `invoke_context.transaction_context`, so this is the place to observe
+    /// state *between* instructions: what every account looked like after
+    /// instruction 2 and before instruction 3, without replaying prefixes.
+    ///
+    /// Default: no-op.
+    fn after_instruction(
+        &self,
+        _svm: &LiteSVM,
+        _tx: &SanitizedTransaction,
+        _instruction_index: usize,
+        _invoke_context: &InvokeContext,
+        _result: &Result<(), InstructionError>,
+        _compute_units_consumed: u64,
+    ) {
+    }
 }
 
 #[cfg(feature = "invocation-inspect-callback")]
