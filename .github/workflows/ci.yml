@@ -40,6 +40,11 @@ jobs:
         env:
           RUST_BACKTRACE: 1
 
+      - name: Run scope tests with the profiler
+        run: cargo test -p svmscope --all-features
+        env:
+          RUST_BACKTRACE: 1
+
   lints:
     name: Lints
     runs-on: ubuntu-latest

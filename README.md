@@ -91,6 +91,14 @@ cargo add --dev litesvm-loader
 
 See the [loader API docs](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-loader) for the available helpers.
 
+### `svmscope`
+
+[`svmscope`](https://crates.io/crates/svmscope) starts from a mainnet transaction signature. It fetches the transaction and every account, program and IDL it touched, rebuilds that world in LiteSVM and replays it locally: the full CPI tree with instructions, accounts and arguments named from IDLs, balance and token changes, compute per program, what-if mutations by field name, clock and feature-gate travel, an instruction-by-instruction trace, and fixtures that freeze the whole world for deterministic replay in CI.
+
+```sh
+cargo add --dev svmscope
+```
+
 ### `litesvm-utils`
 
 [`litesvm-utils`](https://crates.io/crates/litesvm-utils) dramatically reduces test boilerplate through three ergonomic traits that extend `LiteSVM`:

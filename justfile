@@ -17,6 +17,7 @@ publish:
     cargo publish -p litesvm-token
     cargo publish -p litesvm-persistence
     cargo publish -p litesvm-cpi-tree
+    cargo publish -p svmscope
 
 bench:
     cd crates/litesvm/test_programs && cargo build-sbf --tools-version v1.53

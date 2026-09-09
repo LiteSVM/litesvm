@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `svmscope`: decode, replay and mutate mainnet transactions in LiteSVM, with IDL-named CPI trees, what-if mutations, time travel, an instruction-level trace, hermetic fixtures and a compute profiler.
+
 ## [0.16.0] - 2026-08-24
 
 ### Added
