@@ -23,6 +23,7 @@ mod mutation;
 mod preflight;
 mod replay;
 pub mod report;
+mod rpc;
 mod search;
 mod session;
 pub mod spec;
