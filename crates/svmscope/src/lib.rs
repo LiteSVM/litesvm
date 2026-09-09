@@ -19,6 +19,7 @@ mod idl_model;
 mod invariant;
 pub(crate) mod ixname;
 mod mutation;
+mod replay;
 mod search;
 pub(crate) mod utils;
 
@@ -37,6 +38,7 @@ pub use {
     fixture::{Fixture, FixtureEntry, OnchainRecord, FIXTURE_VERSION},
     invariant::Invariant,
     mutation::Mutation,
+    replay::{FeatureToggle, TimeTravel},
     search::Threshold,
 };
 
