@@ -11,6 +11,8 @@ mod cpi_tree;
 mod decode;
 mod diffs;
 mod error;
+mod fidelity;
+mod fixture;
 pub mod idl;
 mod idl_encode;
 mod idl_model;
@@ -31,6 +33,8 @@ pub use {
     decode::{AccountInfo, DecodedAccount, Field},
     diffs::{BalanceChange, TokenChange},
     error::{Error, Result},
+    fidelity::{AccountProvenance, AccountState, Fidelity, FidelityCertificate, Provenance},
+    fixture::{Fixture, FixtureEntry, OnchainRecord, FIXTURE_VERSION},
     invariant::Invariant,
     mutation::Mutation,
     search::Threshold,
