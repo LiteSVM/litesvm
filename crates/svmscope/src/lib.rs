@@ -9,6 +9,7 @@ mod check;
 mod compute;
 mod cpi_tree;
 mod decode;
+mod diagnose;
 mod diffs;
 mod error;
 mod fidelity;
@@ -19,6 +20,7 @@ mod idl_model;
 mod invariant;
 pub(crate) mod ixname;
 mod mutation;
+mod preflight;
 mod replay;
 pub mod report;
 mod search;
@@ -39,12 +41,14 @@ pub use {
     compute::CuUsage,
     cpi_tree::{CpiEntry, IxAccount, IxArg},
     decode::{AccountInfo, DecodedAccount, Field},
+    diagnose::Diagnosis,
     diffs::{BalanceChange, TokenChange},
     error::{Error, Result},
     fidelity::{AccountProvenance, AccountState, Fidelity, FidelityCertificate, Provenance},
     fixture::{Fixture, FixtureEntry, OnchainRecord, FIXTURE_VERSION},
     invariant::Invariant,
     mutation::Mutation,
+    preflight::compute_breakdown,
     replay::{FeatureToggle, TimeTravel},
     search::Threshold,
     session::{PatchComparison, Replay, Replayed},
