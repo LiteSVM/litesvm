@@ -21,6 +21,8 @@ mod invariant;
 pub(crate) mod ixname;
 mod mutation;
 mod preflight;
+#[cfg(feature = "profiler")]
+pub mod profile;
 mod program;
 pub mod reconstruct;
 mod replay;
