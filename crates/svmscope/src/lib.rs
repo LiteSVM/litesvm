@@ -20,8 +20,10 @@ mod invariant;
 pub(crate) mod ixname;
 mod mutation;
 mod replay;
+pub mod report;
 mod search;
 pub mod spec;
+mod trace;
 pub(crate) mod utils;
 
 pub use {
@@ -41,6 +43,10 @@ pub use {
     mutation::Mutation,
     replay::{FeatureToggle, TimeTravel},
     search::Threshold,
+    trace::{
+        DecodedEvent, DriftedAccount, ReturnData, Step, StepAccountState, StepDiff, StepError,
+        StepSummary, Trace, TraceDiff,
+    },
 };
 
 /// Compile-checks every Rust example in the README as part of `cargo test`.
