@@ -21,6 +21,7 @@ pub(crate) mod ixname;
 mod mutation;
 mod replay;
 mod search;
+pub mod spec;
 pub(crate) mod utils;
 
 pub use {
