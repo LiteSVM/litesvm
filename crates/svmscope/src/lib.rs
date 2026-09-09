@@ -3,6 +3,7 @@
 
 //! Decode, replay and mutate Solana transactions in LiteSVM.
 
+mod analyze;
 mod bundled_idls;
 mod compute;
 mod cpi_tree;
@@ -16,6 +17,10 @@ pub(crate) mod ixname;
 pub(crate) mod utils;
 
 pub use {
+    analyze::{
+        AccountDiff, AccountOverview, AccountRole, Analysis, Explanation, FieldDiff, Overview,
+        PreflightIx, PreflightOverview, ProgramInfo, ReplayResult, SigInfo, SimulationReport,
+    },
     compute::CuUsage,
     cpi_tree::{CpiEntry, IxAccount, IxArg},
     decode::{AccountInfo, DecodedAccount, Field},
