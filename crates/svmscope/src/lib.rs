@@ -5,6 +5,7 @@
 
 mod analyze;
 mod bundled_idls;
+mod check;
 mod compute;
 mod cpi_tree;
 mod decode;
@@ -13,7 +14,10 @@ mod error;
 pub mod idl;
 mod idl_encode;
 mod idl_model;
+mod invariant;
 pub(crate) mod ixname;
+mod mutation;
+mod search;
 pub(crate) mod utils;
 
 pub use {
@@ -21,11 +25,15 @@ pub use {
         AccountDiff, AccountOverview, AccountRole, Analysis, Explanation, FieldDiff, Overview,
         PreflightIx, PreflightOverview, ProgramInfo, ReplayResult, SigInfo, SimulationReport,
     },
+    check::{AccountCheck, AssertOutcome, Check, Cmp, Scenario, ScenarioOutcome},
     compute::CuUsage,
     cpi_tree::{CpiEntry, IxAccount, IxArg},
     decode::{AccountInfo, DecodedAccount, Field},
     diffs::{BalanceChange, TokenChange},
     error::{Error, Result},
+    invariant::Invariant,
+    mutation::Mutation,
+    search::Threshold,
 };
 
 /// Compile-checks every Rust example in the README as part of `cargo test`.
