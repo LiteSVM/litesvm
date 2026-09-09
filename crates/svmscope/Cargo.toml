@@ -1,0 +1,54 @@
+[package]
+name = "svmscope"
+description = "Decode, replay and mutate Solana transactions in LiteSVM: named CPI trees, mainnet state reconstruction, what-if mutations, time travel, fixtures and a compute profiler"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+include = ["/src/**", "/idls/**", "/symbols/**", "/tests/**", "/README.md"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+litesvm = { workspace = true, features = ["precompiles"] }
+litesvm-cpi-tree.workspace = true
+base64.workspace = true
+bincode.workspace = true
+bs58.workspace = true
+flate2.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+solana-account.workspace = true
+solana-address = { workspace = true, features = ["curve25519", "sha2"] }
+solana-blake3-hasher.workspace = true
+solana-client.workspace = true
+solana-clock.workspace = true
+solana-instruction.workspace = true
+solana-message.workspace = true
+solana-pubkey.workspace = true
+solana-signer.workspace = true
+solana-transaction = { workspace = true, features = ["serde", "wincode"] }
+solana-transaction-error.workspace = true
+# `profiler` only
+solana-program-runtime = { workspace = true, optional = true }
+solana-transaction-context = { workspace = true, optional = true }
+rustc-demangle = { workspace = true, optional = true }
+
+[features]
+default = []
+# Compute profiler: every BPF instruction a replay executes, attributed to
+# functions and syscalls through LiteSVM's register tracing.
+profiler = ["litesvm/register-tracing", "dep:solana-program-runtime", "dep:solana-transaction-context", "dep:rustc-demangle"]
+
+[dev-dependencies]
+litesvm = { workspace = true, features = ["persistence-internal"] }
+solana-keypair.workspace = true
+solana-system-interface = { workspace = true, features = ["bincode"] }
+
+[lints]
+workspace = true
