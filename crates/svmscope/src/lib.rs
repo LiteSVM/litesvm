@@ -24,6 +24,7 @@ mod preflight;
 mod replay;
 pub mod report;
 mod rpc;
+mod scope;
 mod search;
 mod session;
 pub mod spec;
@@ -51,6 +52,7 @@ pub use {
     mutation::Mutation,
     preflight::compute_breakdown,
     replay::{FeatureToggle, TimeTravel},
+    scope::Scope,
     search::Threshold,
     session::{PatchComparison, Replay, Replayed},
     submit::CapturedTransaction,
