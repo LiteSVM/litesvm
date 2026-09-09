@@ -4,15 +4,22 @@
 //! Decode, replay and mutate Solana transactions in LiteSVM.
 
 mod bundled_idls;
+mod compute;
+mod cpi_tree;
 mod decode;
+mod diffs;
 mod error;
 pub mod idl;
 mod idl_encode;
 mod idl_model;
+pub(crate) mod ixname;
 pub(crate) mod utils;
 
 pub use {
+    compute::CuUsage,
+    cpi_tree::{CpiEntry, IxAccount, IxArg},
     decode::{AccountInfo, DecodedAccount, Field},
+    diffs::{BalanceChange, TokenChange},
     error::{Error, Result},
 };
 
