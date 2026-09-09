@@ -4,6 +4,8 @@
 //! Decode, replay and mutate Solana transactions in LiteSVM.
 
 mod error;
+mod idl_encode;
+mod idl_model;
 pub(crate) mod utils;
 
 pub use error::{Error, Result};
