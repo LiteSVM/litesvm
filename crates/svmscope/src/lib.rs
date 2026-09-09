@@ -21,9 +21,12 @@ mod invariant;
 pub(crate) mod ixname;
 mod mutation;
 mod preflight;
+mod program;
+pub mod reconstruct;
 mod replay;
 pub mod report;
 mod rpc;
+pub mod scan;
 mod scope;
 mod search;
 mod session;
@@ -51,7 +54,9 @@ pub use {
     invariant::Invariant,
     mutation::Mutation,
     preflight::compute_breakdown,
+    program::{MethodBuilder, ProgramClient},
     replay::{FeatureToggle, TimeTravel},
+    scan::{scan_breaking_points, BreakingPoint, ScanOptions},
     scope::Scope,
     search::Threshold,
     session::{PatchComparison, Replay, Replayed},
