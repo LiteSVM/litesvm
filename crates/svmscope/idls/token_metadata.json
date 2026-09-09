@@ -1,0 +1,7978 @@
+{
+  "version": "1.14.0",
+  "name": "token_metadata",
+  "instructions": [
+    {
+      "name": "CreateMetadataAccount",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "update authority info"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
+      "name": "UpdateMetadataAccount",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority key"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
+      "name": "DeprecatedCreateMasterEdition",
+      "accounts": [
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Unallocated edition V1 account with address as pda of ['metadata', program id, mint, 'edition']"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata mint"
+          ]
+        },
+        {
+          "name": "printingMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Printing mint - A mint you control that can mint tokens that can be exchanged for limited editions of your master edition via the MintNewEditionFromMasterEditionViaToken endpoint"
+          ]
+        },
+        {
+          "name": "oneTimePrintingAuthorizationMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "One time authorization printing mint - A mint you control that prints tokens that gives the bearer permission to mint any number of tokens from the printing mint one time via an endpoint with the token-metadata program for your metadata. Also burns the token."
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Current Update authority key"
+          ]
+        },
+        {
+          "name": "printingMintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Printing mint authority - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY."
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority on the metadata's mint - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent info"
+          ]
+        },
+        {
+          "name": "oneTimePrintingAuthorizationMintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "One time authorization printing mint authority - must be provided if using max supply. THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY."
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 2
+      }
+    },
+    {
+      "name": "DeprecatedMintNewEditionFromMasterEditionViaPrintingToken",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Edition V1 (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Master Record Edition V1 (pda of ['metadata', program id, master metadata mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of new token - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority of new mint"
+          ]
+        },
+        {
+          "name": "printingMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Printing Mint of master record edition"
+          ]
+        },
+        {
+          "name": "masterTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account containing Printing mint token to be transferred"
+          ]
+        },
+        {
+          "name": "editionMarker",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition pda to mark creation - will be checked for pre-existence. (pda of ['metadata', program id, master mint id, edition_number])"
+          ]
+        },
+        {
+          "name": "burnAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Burn authority for this token"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "masterUpdateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "update authority info for new metadata account"
+          ]
+        },
+        {
+          "name": "masterMetadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Master record metadata account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent info"
+          ]
+        },
+        {
+          "name": "reservationList",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Reservation List - If present, and you are on this list, you can get an edition number given by your position on the list."
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    },
+    {
+      "name": "UpdatePrimarySaleHappenedViaToken",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Owner on the token account"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Account containing tokens from the metadata's mint"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    },
+    {
+      "name": "DeprecatedSetReservationList",
+      "accounts": [
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Master Edition V1 key (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "reservationList",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "PDA for ReservationList of ['metadata', program id, master edition key, 'reservation', resource-key]"
+          ]
+        },
+        {
+          "name": "resource",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The resource you tied the reservation list too"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 5
+      }
+    },
+    {
+      "name": "DeprecatedCreateReservationList",
+      "accounts": [
+        {
+          "name": "reservationList",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "PDA for ReservationList of ['metadata', program id, master edition key, 'reservation', resource-key]"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            " Master Edition V1 key (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "resource",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "A resource you wish to tie the reservation list to. This is so your later visitors who come to redeem can derive your reservation list PDA with something they can easily get at. You choose what this should be."
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
+      }
+    },
+    {
+      "name": "SignMetadata",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "creator",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Creator"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 7
+      }
+    },
+    {
+      "name": "DeprecatedMintPrintingTokensViaToken",
+      "accounts": [
+        {
+          "name": "destination",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Destination account"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account containing one time authorization token"
+          ]
+        },
+        {
+          "name": "oneTimePrintingAuthorizationMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "One time authorization mint"
+          ]
+        },
+        {
+          "name": "printingMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Printing mint"
+          ]
+        },
+        {
+          "name": "burnAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Burn authority"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Master Edition V1 key (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 8
+      }
+    },
+    {
+      "name": "DeprecatedMintPrintingTokens",
+      "accounts": [
+        {
+          "name": "destination",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Destination account"
+          ]
+        },
+        {
+          "name": "printingMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Printing mint"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Master Edition V1 key (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 9
+      }
+    },
+    {
+      "name": "CreateMasterEdition",
+      "accounts": [
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Unallocated edition V2 account with address as pda of ['metadata', program id, mint, 'edition']"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata mint"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority"
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority on the metadata's mint - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 10
+      }
+    },
+    {
+      "name": "MintNewEditionFromMasterEditionViaToken",
+      "accounts": [
+        {
+          "name": "newMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "newEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Edition (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Master Record Edition V2 (pda of ['metadata', program id, master metadata mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "newMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of new token - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "editionMarkPda",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition pda to mark creation - will be checked for pre-existence. (pda of ['metadata', program id, master metadata mint id, 'edition', edition_number]) where edition_number is NOT the edition number you pass in args but actually edition_number = floor(edition/EDITION_MARKER_BIT_SIZE)."
+          ]
+        },
+        {
+          "name": "newMintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority of new mint"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "tokenAccountOwner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "owner of token account containing master token (#8)"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "token account containing token from master metadata mint"
+          ]
+        },
+        {
+          "name": "newMetadataUpdateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Update authority info for new metadata"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Master record metadata account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "mintNewEditionFromMasterEditionViaTokenArgs",
+          "type": {
+            "defined": "MintNewEditionFromMasterEditionViaTokenArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 11
+      }
+    },
+    {
+      "name": "ConvertMasterEditionV1ToV2",
+      "accounts": [
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Master Record Edition V1 (pda of ['metadata', program id, master metadata mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "oneTimeAuth",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "One time authorization mint"
+          ]
+        },
+        {
+          "name": "printingMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Printing mint"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 12
+      }
+    },
+    {
+      "name": "MintNewEditionFromMasterEditionViaVaultProxy",
+      "accounts": [
+        {
+          "name": "newMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "newEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Edition (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Master Record Edition V2 (pda of ['metadata', program id, master metadata mint id, 'edition']"
+          ]
+        },
+        {
+          "name": "newMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of new token - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "editionMarkPda",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition pda to mark creation - will be checked for pre-existence. (pda of ['metadata', program id, master metadata mint id, 'edition', edition_number]) where edition_number is NOT the edition number you pass in args but actually edition_number = floor(edition/EDITION_MARKER_BIT_SIZE)."
+          ]
+        },
+        {
+          "name": "newMintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority of new mint"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "vaultAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Vault authority"
+          ]
+        },
+        {
+          "name": "safetyDepositStore",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Safety deposit token store account"
+          ]
+        },
+        {
+          "name": "safetyDepositBox",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Safety deposit box"
+          ]
+        },
+        {
+          "name": "vault",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Vault"
+          ]
+        },
+        {
+          "name": "newMetadataUpdateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Update authority info for new metadata"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Master record metadata account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "tokenVaultProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token vault program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "mintNewEditionFromMasterEditionViaTokenArgs",
+          "type": {
+            "defined": "MintNewEditionFromMasterEditionViaTokenArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 13
+      }
+    },
+    {
+      "name": "PuffMetadata",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 14
+      }
+    },
+    {
+      "name": "UpdateMetadataAccountV2",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority key"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "updateMetadataAccountArgsV2",
+          "type": {
+            "defined": "UpdateMetadataAccountArgsV2"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 15
+      }
+    },
+    {
+      "name": "CreateMetadataAccountV2",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "update authority info"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 16
+      }
+    },
+    {
+      "name": "CreateMasterEditionV3",
+      "accounts": [
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Unallocated edition V2 account with address as pda of ['metadata', program id, mint, 'edition']"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata mint"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority"
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority on the metadata's mint - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "createMasterEditionArgs",
+          "type": {
+            "defined": "CreateMasterEditionArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 17
+      }
+    },
+    {
+      "name": "VerifyCollection",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Collection Update authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collection",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEditionAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 18
+      }
+    },
+    {
+      "name": "Utilize",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token Account Of NFT"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Metadata"
+          ]
+        },
+        {
+          "name": "useAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "A Use Authority / Can be the current Owner of the NFT"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Owner"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Associated Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent info"
+          ]
+        },
+        {
+          "name": "useAuthorityRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Use Authority Record PDA If present the program Assumes a delegated use authority"
+          ]
+        },
+        {
+          "name": "burner",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Program As Signer (Burner)"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "utilizeArgs",
+          "type": {
+            "defined": "UtilizeArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 19
+      }
+    },
+    {
+      "name": "ApproveUseAuthority",
+      "accounts": [
+        {
+          "name": "useAuthorityRecord",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Use Authority Record PDA"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Owner"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "A Use Authority"
+          ]
+        },
+        {
+          "name": "ownerTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Owned Token Account Of Mint"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of Metadata"
+          ]
+        },
+        {
+          "name": "burner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Program As Signer (Burner)"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "approveUseAuthorityArgs",
+          "type": {
+            "defined": "ApproveUseAuthorityArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 20
+      }
+    },
+    {
+      "name": "RevokeUseAuthority",
+      "accounts": [
+        {
+          "name": "useAuthorityRecord",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Use Authority Record PDA"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Owner"
+          ]
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "A Use Authority"
+          ]
+        },
+        {
+          "name": "ownerTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Owned Token Account Of Mint"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of Metadata"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 21
+      }
+    },
+    {
+      "name": "UnverifyCollection",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Collection Authority"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collection",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEditionAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 22
+      }
+    },
+    {
+      "name": "ApproveCollectionAuthority",
+      "accounts": [
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        },
+        {
+          "name": "newCollectionAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "A Collection Authority"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Update Authority of Collection NFT"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Collection Metadata account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of Collection Metadata"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 23
+      }
+    },
+    {
+      "name": "RevokeCollectionAuthority",
+      "accounts": [
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        },
+        {
+          "name": "delegateAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Delegated Collection Authority"
+          ]
+        },
+        {
+          "name": "revokeAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Update Authority, or Delegated Authority, of Collection NFT"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of Metadata"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 24
+      }
+    },
+    {
+      "name": "SetAndVerifyCollection",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Collection Update authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Update Authority of Collection NFT and NFT"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collection",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEditionAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 25
+      }
+    },
+    {
+      "name": "FreezeDelegatedAccount",
+      "accounts": [
+        {
+          "name": "delegate",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Delegate"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account to freeze"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Edition"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token mint"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token Program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 26
+      }
+    },
+    {
+      "name": "ThawDelegatedAccount",
+      "accounts": [
+        {
+          "name": "delegate",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Delegate"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account to thaw"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Edition"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token mint"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token Program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 27
+      }
+    },
+    {
+      "name": "RemoveCreatorVerification",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "creator",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Creator"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 28
+      }
+    },
+    {
+      "name": "BurnNft",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "NFT owner"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of the NFT"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account to close"
+          ]
+        },
+        {
+          "name": "masterEditionAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 of the NFT"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "collectionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Metadata of the Collection"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 29
+      }
+    },
+    {
+      "name": "VerifySizedCollectionItem",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Collection Update authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collection",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEditionAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 30
+      }
+    },
+    {
+      "name": "UnverifySizedCollectionItem",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Collection Authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collection",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEditionAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 31
+      }
+    },
+    {
+      "name": "SetAndVerifySizedCollectionItem",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Collection Update authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Update Authority of Collection NFT and NFT"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collection",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEditionAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 32
+      }
+    },
+    {
+      "name": "CreateMetadataAccountV3",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptionalSigner": true,
+          "docs": [
+            "update authority info"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Rent info"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "createMetadataAccountArgsV3",
+          "type": {
+            "defined": "CreateMetadataAccountArgsV3"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 33
+      }
+    },
+    {
+      "name": "SetCollectionSize",
+      "accounts": [
+        {
+          "name": "collectionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Collection Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Collection Update authority"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "setCollectionSizeArgs",
+          "type": {
+            "defined": "SetCollectionSizeArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 34
+      }
+    },
+    {
+      "name": "SetTokenStandard",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Metadata update authority"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition account"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 35
+      }
+    },
+    {
+      "name": "BubblegumSetCollectionSize",
+      "accounts": [
+        {
+          "name": "collectionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Collection Metadata account"
+          ]
+        },
+        {
+          "name": "collectionAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Collection Update authority"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "bubblegumSigner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Signing PDA of Bubblegum program"
+          ]
+        },
+        {
+          "name": "collectionAuthorityRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Collection Authority Record PDA"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "setCollectionSizeArgs",
+          "type": {
+            "defined": "SetCollectionSizeArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 36
+      }
+    },
+    {
+      "name": "BurnEditionNft",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "NFT owner"
+          ]
+        },
+        {
+          "name": "printEditionMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of the print edition NFT"
+          ]
+        },
+        {
+          "name": "masterEditionMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of the original/master NFT"
+          ]
+        },
+        {
+          "name": "printEditionTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account the print edition NFT is in"
+          ]
+        },
+        {
+          "name": "masterEditionTokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token account the Master Edition NFT is in"
+          ]
+        },
+        {
+          "name": "masterEditionAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "MasterEdition2 of the original NFT"
+          ]
+        },
+        {
+          "name": "printEditionAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Print Edition account of the NFT"
+          ]
+        },
+        {
+          "name": "editionMarkerAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition Marker PDA of the NFT"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token Program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 37
+      }
+    },
+    {
+      "name": "CreateEscrowAccount",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Escrow account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token account of the token"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Wallet paying for the transaction and new account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "Authority/creator of the escrow account"
+          ]
+        }
+      ],
+      "args": [],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 38
+      }
+    },
+    {
+      "name": "CloseEscrowAccount",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Escrow account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Wallet paying for the transaction and new account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 39
+      }
+    },
+    {
+      "name": "TransferOutOfEscrow",
+      "accounts": [
+        {
+          "name": "escrow",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Escrow account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Wallet paying for the transaction and new account"
+          ]
+        },
+        {
+          "name": "attributeMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account for the new attribute"
+          ]
+        },
+        {
+          "name": "attributeSrc",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account source for the new attribute"
+          ]
+        },
+        {
+          "name": "attributeDst",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account, owned by TM, destination for the new attribute"
+          ]
+        },
+        {
+          "name": "escrowMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account that the escrow is attached"
+          ]
+        },
+        {
+          "name": "escrowAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token account that holds the token the escrow is attached to"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Associated Token program"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "Authority/creator of the escrow account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "transferOutOfEscrowArgs",
+          "type": {
+            "defined": "TransferOutOfEscrowArgs"
+          }
+        }
+      ],
+      "legacyOptionalAccountsStrategy": true,
+      "discriminant": {
+        "type": "u8",
+        "value": 40
+      }
+    },
+    {
+      "name": "Burn",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Asset owner or Utility delegate"
+          ]
+        },
+        {
+          "name": "collectionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Metadata of the Collection"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition of the asset"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account to close"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master edition account"
+          ]
+        },
+        {
+          "name": "masterEditionMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master edition mint of the asset"
+          ]
+        },
+        {
+          "name": "masterEditionToken",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master edition token account"
+          ]
+        },
+        {
+          "name": "editionMarker",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition marker account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token Program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "burnArgs",
+          "type": {
+            "defined": "BurnArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 41
+      }
+    },
+    {
+      "name": "Create",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Unallocated metadata account with address as pda of ['metadata', program id, mint id]"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Unallocated edition account with address as pda of ['metadata', program id, mint, 'edition']"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Update authority for the metadata account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "SPL Token program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "createArgs",
+          "type": {
+            "defined": "CreateArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 42
+      }
+    },
+    {
+      "name": "Mint",
+      "accounts": [
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token or Associated Token account"
+          ]
+        },
+        {
+          "name": "tokenOwner",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Owner of the token account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metadata account (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master Edition account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "(Mint or Update) authority"
+          ]
+        },
+        {
+          "name": "delegateRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Metadata delegate record"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token program"
+          ]
+        },
+        {
+          "name": "splAtaProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Associated Token Account program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "mintArgs",
+          "type": {
+            "defined": "MintArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 43
+      }
+    },
+    {
+      "name": "Delegate",
+      "accounts": [
+        {
+          "name": "delegateRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Delegate record account"
+          ]
+        },
+        {
+          "name": "delegate",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Owner of the delegated account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master Edition account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of metadata"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token account of mint"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority or token owner"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System Program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "delegateArgs",
+          "type": {
+            "defined": "DelegateArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 44
+      }
+    },
+    {
+      "name": "Revoke",
+      "accounts": [
+        {
+          "name": "delegateRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Delegate record account"
+          ]
+        },
+        {
+          "name": "delegate",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Owner of the delegated account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master Edition account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of metadata"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token account of mint"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority or token owner"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System Program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "revokeArgs",
+          "type": {
+            "defined": "RevokeArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 45
+      }
+    },
+    {
+      "name": "Lock",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Delegate or freeze authority"
+          ]
+        },
+        {
+          "name": "tokenOwner",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token owner account"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "lockArgs",
+          "type": {
+            "defined": "LockArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 46
+      }
+    },
+    {
+      "name": "Unlock",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Delegate or freeze authority"
+          ]
+        },
+        {
+          "name": "tokenOwner",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token owner account"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "unlockArgs",
+          "type": {
+            "defined": "UnlockArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 47
+      }
+    },
+    {
+      "name": "Migrate",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "tokenOwner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token account owner"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority"
+          ]
+        },
+        {
+          "name": "collectionMetadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Collection metadata account"
+          ]
+        },
+        {
+          "name": "delegateRecord",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Delegate record account"
+          ]
+        },
+        {
+          "name": "tokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instruction sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 48
+      }
+    },
+    {
+      "name": "Transfer",
+      "accounts": [
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "tokenOwner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token account owner"
+          ]
+        },
+        {
+          "name": "destination",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Destination token account"
+          ]
+        },
+        {
+          "name": "destinationOwner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Destination token account owner"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition of token asset"
+          ]
+        },
+        {
+          "name": "ownerTokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Owner token record account"
+          ]
+        },
+        {
+          "name": "destinationTokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Destination token record account"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Transfer authority (token owner or delegate)"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System Program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "splAtaProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Associated Token Account program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "transferArgs",
+          "type": {
+            "defined": "TransferArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 49
+      }
+    },
+    {
+      "name": "Update",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Update authority or delegate"
+          ]
+        },
+        {
+          "name": "delegateRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Delegate record PDA"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "updateArgs",
+          "type": {
+            "defined": "UpdateArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 50
+      }
+    },
+    {
+      "name": "Use",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Token owner or delegate"
+          ]
+        },
+        {
+          "name": "delegateRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Delegate record PDA"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint account"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Edition account"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Payer"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "SPL Token Program"
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules Program"
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token Authorization Rules account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "useArgs",
+          "type": {
+            "defined": "UseArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 51
+      }
+    },
+    {
+      "name": "Verify",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Creator to verify, collection update authority or delegate"
+          ]
+        },
+        {
+          "name": "delegateRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Delegate record PDA"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMasterEdition",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Master Edition Account of the Collection Token"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "verificationArgs",
+          "type": {
+            "defined": "VerificationArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 52
+      }
+    },
+    {
+      "name": "Unverify",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Creator to verify, collection (or metadata if parent burned) update authority or delegate"
+          ]
+        },
+        {
+          "name": "delegateRecord",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Delegate record PDA"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata account"
+          ]
+        },
+        {
+          "name": "collectionMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Mint of the Collection"
+          ]
+        },
+        {
+          "name": "collectionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Metadata Account of the Collection"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "verificationArgs",
+          "type": {
+            "defined": "VerificationArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 53
+      }
+    },
+    {
+      "name": "Collect",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Authority to collect fees"
+          ]
+        },
+        {
+          "name": "recipient",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The account to transfer collected fees to"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 54
+      }
+    },
+    {
+      "name": "Print",
+      "accounts": [
+        {
+          "name": "editionMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Metadata key (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "New Edition (pda of ['metadata', program id, mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "editionMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of new token - THIS WILL TRANSFER AUTHORITY AWAY FROM THIS KEY"
+          ]
+        },
+        {
+          "name": "editionTokenAccountOwner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Owner of the token account of new token"
+          ]
+        },
+        {
+          "name": "editionTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token account of new token"
+          ]
+        },
+        {
+          "name": "editionMintAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Mint authority of new mint"
+          ]
+        },
+        {
+          "name": "editionTokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token record account"
+          ]
+        },
+        {
+          "name": "masterEdition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Master Record Edition V2 (pda of ['metadata', program id, master metadata mint id, 'edition'])"
+          ]
+        },
+        {
+          "name": "editionMarkerPda",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition pda to mark creation - will be checked for pre-existence. (pda of ['metadata', program id, master metadata mint id, 'edition', edition_number]) where edition_number is NOT the edition number you pass in args but actually edition_number = floor(edition/EDITION_MARKER_BIT_SIZE)."
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "payer"
+          ]
+        },
+        {
+          "name": "masterTokenAccountOwner",
+          "isMut": false,
+          "isSigner": false,
+          "isOptionalSigner": true,
+          "docs": [
+            "owner of token account containing master token"
+          ]
+        },
+        {
+          "name": "masterTokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "token account containing token from master metadata mint"
+          ]
+        },
+        {
+          "name": "masterMetadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Master record metadata account"
+          ]
+        },
+        {
+          "name": "updateAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The update authority of the master edition."
+          ]
+        },
+        {
+          "name": "splTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "splAtaProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Associated Token Account program"
+          ]
+        },
+        {
+          "name": "sysvarInstructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions sysvar account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "printArgs",
+          "type": {
+            "defined": "PrintArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 55
+      }
+    },
+    {
+      "name": "Resize",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The metadata account of the digital asset"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The master edition or edition account of the digital asset, an uninitialized account for fungible assets"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": false,
+          "isOptionalSigner": true,
+          "docs": [
+            "The recipient of the excess rent and authority if the authority account is not present"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "Owner of the asset for (p)NFTs, or mint authority for fungible assets, if different from the payer"
+          ]
+        },
+        {
+          "name": "token",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Token or Associated Token account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 56
+      }
+    },
+    {
+      "name": "CloseAccounts",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metadata (pda of ['metadata', program id, mint id])"
+          ]
+        },
+        {
+          "name": "edition",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Edition of the asset"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Mint of token asset"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Authority to close ownerless accounts"
+          ]
+        },
+        {
+          "name": "destination",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The destination account that will receive the rent."
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 57
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CollectionAuthorityRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "updateAuthority",
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MetadataDelegateRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "delegate",
+            "type": "publicKey"
+          },
+          {
+            "name": "updateAuthority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HolderDelegateRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "delegate",
+            "type": "publicKey"
+          },
+          {
+            "name": "updateAuthority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Edition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "parent",
+            "type": "publicKey"
+          },
+          {
+            "name": "edition",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EditionMarker",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "ledger",
+            "type": {
+              "array": [
+                "u8",
+                31
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EditionMarkerV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "ledger",
+            "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenOwnedEscrow",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "baseToken",
+            "type": "publicKey"
+          },
+          {
+            "name": "authority",
+            "type": {
+              "defined": "EscrowAuthority"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MasterEditionV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "supply",
+            "type": "u64"
+          },
+          {
+            "name": "maxSupply",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MasterEditionV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "supply",
+            "type": "u64"
+          },
+          {
+            "name": "maxSupply",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "printingMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "oneTimePrintingAuthorizationMint",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Metadata",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "updateAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "data",
+            "type": {
+              "defined": "Data"
+            }
+          },
+          {
+            "name": "primarySaleHappened",
+            "type": "bool"
+          },
+          {
+            "name": "isMutable",
+            "type": "bool"
+          },
+          {
+            "name": "editionNonce",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "tokenStandard",
+            "type": {
+              "option": {
+                "defined": "TokenStandard"
+              }
+            }
+          },
+          {
+            "name": "collection",
+            "type": {
+              "option": {
+                "defined": "Collection"
+              }
+            }
+          },
+          {
+            "name": "uses",
+            "type": {
+              "option": {
+                "defined": "Uses"
+              }
+            }
+          },
+          {
+            "name": "collectionDetails",
+            "type": {
+              "option": {
+                "defined": "CollectionDetails"
+              }
+            }
+          },
+          {
+            "name": "programmableConfig",
+            "type": {
+              "option": {
+                "defined": "ProgrammableConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": "TokenState"
+            }
+          },
+          {
+            "name": "ruleSetRevision",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "delegate",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "delegateRole",
+            "type": {
+              "option": {
+                "defined": "TokenDelegateRole"
+              }
+            }
+          },
+          {
+            "name": "lockedTransfer",
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReservationListV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "masterEdition",
+            "type": "publicKey"
+          },
+          {
+            "name": "supplySnapshot",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "reservations",
+            "type": {
+              "vec": {
+                "defined": "Reservation"
+              }
+            }
+          },
+          {
+            "name": "totalReservationSpots",
+            "type": "u64"
+          },
+          {
+            "name": "currentReservationSpots",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReservationListV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "masterEdition",
+            "type": "publicKey"
+          },
+          {
+            "name": "supplySnapshot",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "reservations",
+            "type": {
+              "vec": {
+                "defined": "ReservationV1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UseAuthorityRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": "Key"
+            }
+          },
+          {
+            "name": "allowedUses",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SetCollectionSizeArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "size",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMasterEditionArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maxSupply",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MintNewEditionFromMasterEditionViaTokenArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "edition",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferOutOfEscrowArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMetadataAccountArgsV3",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "defined": "DataV2"
+            }
+          },
+          {
+            "name": "isMutable",
+            "type": "bool"
+          },
+          {
+            "name": "collectionDetails",
+            "type": {
+              "option": {
+                "defined": "CollectionDetails"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateMetadataAccountArgsV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "option": {
+                "defined": "DataV2"
+              }
+            }
+          },
+          {
+            "name": "updateAuthority",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "primarySaleHappened",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "isMutable",
+            "type": {
+              "option": "bool"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApproveUseAuthorityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "numberOfUses",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UtilizeArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "numberOfUses",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthorizationData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payload",
+            "type": {
+              "defined": "Payload"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AssetData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "sellerFeeBasisPoints",
+            "type": "u16"
+          },
+          {
+            "name": "creators",
+            "type": {
+              "option": {
+                "vec": {
+                  "defined": "Creator"
+                }
+              }
+            }
+          },
+          {
+            "name": "primarySaleHappened",
+            "type": "bool"
+          },
+          {
+            "name": "isMutable",
+            "type": "bool"
+          },
+          {
+            "name": "tokenStandard",
+            "type": {
+              "defined": "TokenStandard"
+            }
+          },
+          {
+            "name": "collection",
+            "type": {
+              "option": {
+                "defined": "Collection"
+              }
+            }
+          },
+          {
+            "name": "uses",
+            "type": {
+              "option": {
+                "defined": "Uses"
+              }
+            }
+          },
+          {
+            "name": "collectionDetails",
+            "type": {
+              "option": {
+                "defined": "CollectionDetails"
+              }
+            }
+          },
+          {
+            "name": "ruleSet",
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Collection",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "verified",
+            "type": "bool"
+          },
+          {
+            "name": "key",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Creator",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "verified",
+            "type": "bool"
+          },
+          {
+            "name": "share",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Data",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "sellerFeeBasisPoints",
+            "type": "u16"
+          },
+          {
+            "name": "creators",
+            "type": {
+              "option": {
+                "vec": {
+                  "defined": "Creator"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "DataV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "sellerFeeBasisPoints",
+            "type": "u16"
+          },
+          {
+            "name": "creators",
+            "type": {
+              "option": {
+                "vec": {
+                  "defined": "Creator"
+                }
+              }
+            }
+          },
+          {
+            "name": "collection",
+            "type": {
+              "option": {
+                "defined": "Collection"
+              }
+            }
+          },
+          {
+            "name": "uses",
+            "type": {
+              "option": {
+                "defined": "Uses"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Reservation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "spotsRemaining",
+            "type": "u64"
+          },
+          {
+            "name": "totalSpots",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReservationV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "spotsRemaining",
+            "type": "u8"
+          },
+          {
+            "name": "totalSpots",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SeedsVec",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seeds",
+            "type": {
+              "vec": "bytes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProofInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proof",
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Payload",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "map",
+            "type": {
+              "hashMap": [
+                "string",
+                {
+                  "defined": "PayloadType"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Uses",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "useMethod",
+            "type": {
+              "defined": "UseMethod"
+            }
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BurnArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "DelegateArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CollectionV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "SaleV1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "TransferV1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "DataV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "UtilityV1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "StakingV1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "StandardV1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "LockedTransferV1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "locked_address",
+                "type": "publicKey"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "ProgrammableConfigV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AuthorityItemV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "DataItemV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "CollectionItemV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "ProgrammableConfigItemV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "PrintDelegateV1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "RevokeArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CollectionV1"
+          },
+          {
+            "name": "SaleV1"
+          },
+          {
+            "name": "TransferV1"
+          },
+          {
+            "name": "DataV1"
+          },
+          {
+            "name": "UtilityV1"
+          },
+          {
+            "name": "StakingV1"
+          },
+          {
+            "name": "StandardV1"
+          },
+          {
+            "name": "LockedTransferV1"
+          },
+          {
+            "name": "ProgrammableConfigV1"
+          },
+          {
+            "name": "MigrationV1"
+          },
+          {
+            "name": "AuthorityItemV1"
+          },
+          {
+            "name": "DataItemV1"
+          },
+          {
+            "name": "CollectionItemV1"
+          },
+          {
+            "name": "ProgrammableConfigItemV1"
+          },
+          {
+            "name": "PrintDelegateV1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MetadataDelegateRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "AuthorityItem"
+          },
+          {
+            "name": "Collection"
+          },
+          {
+            "name": "Use"
+          },
+          {
+            "name": "Data"
+          },
+          {
+            "name": "ProgrammableConfig"
+          },
+          {
+            "name": "DataItem"
+          },
+          {
+            "name": "CollectionItem"
+          },
+          {
+            "name": "ProgrammableConfigItem"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HolderDelegateRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PrintDelegate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "asset_data",
+                "type": {
+                  "defined": "AssetData"
+                }
+              },
+              {
+                "name": "decimals",
+                "type": {
+                  "option": "u8"
+                }
+              },
+              {
+                "name": "print_supply",
+                "type": {
+                  "option": {
+                    "defined": "PrintSupply"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "MintArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "new_update_authority",
+                "type": {
+                  "option": "publicKey"
+                }
+              },
+              {
+                "name": "data",
+                "type": {
+                  "option": {
+                    "defined": "Data"
+                  }
+                }
+              },
+              {
+                "name": "primary_sale_happened",
+                "type": {
+                  "option": "bool"
+                }
+              },
+              {
+                "name": "is_mutable",
+                "type": {
+                  "option": "bool"
+                }
+              },
+              {
+                "name": "collection",
+                "type": {
+                  "defined": "CollectionToggle"
+                }
+              },
+              {
+                "name": "collection_details",
+                "type": {
+                  "defined": "CollectionDetailsToggle"
+                }
+              },
+              {
+                "name": "uses",
+                "type": {
+                  "defined": "UsesToggle"
+                }
+              },
+              {
+                "name": "rule_set",
+                "type": {
+                  "defined": "RuleSetToggle"
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsUpdateAuthorityV2",
+            "fields": [
+              {
+                "name": "new_update_authority",
+                "type": {
+                  "option": "publicKey"
+                }
+              },
+              {
+                "name": "data",
+                "type": {
+                  "option": {
+                    "defined": "Data"
+                  }
+                }
+              },
+              {
+                "name": "primary_sale_happened",
+                "type": {
+                  "option": "bool"
+                }
+              },
+              {
+                "name": "is_mutable",
+                "type": {
+                  "option": "bool"
+                }
+              },
+              {
+                "name": "collection",
+                "type": {
+                  "defined": "CollectionToggle"
+                }
+              },
+              {
+                "name": "collection_details",
+                "type": {
+                  "defined": "CollectionDetailsToggle"
+                }
+              },
+              {
+                "name": "uses",
+                "type": {
+                  "defined": "UsesToggle"
+                }
+              },
+              {
+                "name": "rule_set",
+                "type": {
+                  "defined": "RuleSetToggle"
+                }
+              },
+              {
+                "name": "token_standard",
+                "type": {
+                  "option": {
+                    "defined": "TokenStandard"
+                  }
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsAuthorityItemDelegateV2",
+            "fields": [
+              {
+                "name": "new_update_authority",
+                "type": {
+                  "option": "publicKey"
+                }
+              },
+              {
+                "name": "primary_sale_happened",
+                "type": {
+                  "option": "bool"
+                }
+              },
+              {
+                "name": "is_mutable",
+                "type": {
+                  "option": "bool"
+                }
+              },
+              {
+                "name": "token_standard",
+                "type": {
+                  "option": {
+                    "defined": "TokenStandard"
+                  }
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsCollectionDelegateV2",
+            "fields": [
+              {
+                "name": "collection",
+                "type": {
+                  "defined": "CollectionToggle"
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsDataDelegateV2",
+            "fields": [
+              {
+                "name": "data",
+                "type": {
+                  "option": {
+                    "defined": "Data"
+                  }
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsProgrammableConfigDelegateV2",
+            "fields": [
+              {
+                "name": "rule_set",
+                "type": {
+                  "defined": "RuleSetToggle"
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsDataItemDelegateV2",
+            "fields": [
+              {
+                "name": "data",
+                "type": {
+                  "option": {
+                    "defined": "Data"
+                  }
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsCollectionItemDelegateV2",
+            "fields": [
+              {
+                "name": "collection",
+                "type": {
+                  "defined": "CollectionToggle"
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "AsProgrammableConfigItemDelegateV2",
+            "fields": [
+              {
+                "name": "rule_set",
+                "type": {
+                  "defined": "RuleSetToggle"
+                }
+              },
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectionToggle",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Clear"
+          },
+          {
+            "name": "Set",
+            "fields": [
+              {
+                "defined": "Collection"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "UsesToggle",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Clear"
+          },
+          {
+            "name": "Set",
+            "fields": [
+              {
+                "defined": "Uses"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectionDetailsToggle",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Clear"
+          },
+          {
+            "name": "Set",
+            "fields": [
+              {
+                "defined": "CollectionDetails"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "RuleSetToggle",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Clear"
+          },
+          {
+            "name": "Set",
+            "fields": [
+              "publicKey"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrintArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "edition",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "V2",
+            "fields": [
+              {
+                "name": "edition",
+                "type": "u64"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "LockArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "UnlockArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "UseArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "authorization_data",
+                "type": {
+                  "option": {
+                    "defined": "AuthorizationData"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "VerificationArgs",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CreatorV1"
+          },
+          {
+            "name": "CollectionV1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenStandard",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NonFungible"
+          },
+          {
+            "name": "FungibleAsset"
+          },
+          {
+            "name": "Fungible"
+          },
+          {
+            "name": "NonFungibleEdition"
+          },
+          {
+            "name": "ProgrammableNonFungible"
+          },
+          {
+            "name": "ProgrammableNonFungibleEdition"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Key",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Uninitialized"
+          },
+          {
+            "name": "EditionV1"
+          },
+          {
+            "name": "MasterEditionV1"
+          },
+          {
+            "name": "ReservationListV1"
+          },
+          {
+            "name": "MetadataV1"
+          },
+          {
+            "name": "ReservationListV2"
+          },
+          {
+            "name": "MasterEditionV2"
+          },
+          {
+            "name": "EditionMarker"
+          },
+          {
+            "name": "UseAuthorityRecord"
+          },
+          {
+            "name": "CollectionAuthorityRecord"
+          },
+          {
+            "name": "TokenOwnedEscrow"
+          },
+          {
+            "name": "TokenRecord"
+          },
+          {
+            "name": "MetadataDelegate"
+          },
+          {
+            "name": "EditionMarkerV2"
+          },
+          {
+            "name": "HolderDelegate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectionDetails",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "size",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "V2",
+            "fields": [
+              {
+                "name": "padding",
+                "type": {
+                  "array": [
+                    "u8",
+                    8
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowAuthority",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "TokenOwner"
+          },
+          {
+            "name": "Creator",
+            "fields": [
+              "publicKey"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrintSupply",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Zero"
+          },
+          {
+            "name": "Limited",
+            "fields": [
+              "u64"
+            ]
+          },
+          {
+            "name": "Unlimited"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgrammableConfig",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "V1",
+            "fields": [
+              {
+                "name": "rule_set",
+                "type": {
+                  "option": "publicKey"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrationType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CollectionV1"
+          },
+          {
+            "name": "ProgrammableV1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unlocked"
+          },
+          {
+            "name": "Locked"
+          },
+          {
+            "name": "Listed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenDelegateRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Sale"
+          },
+          {
+            "name": "Transfer"
+          },
+          {
+            "name": "Utility"
+          },
+          {
+            "name": "Staking"
+          },
+          {
+            "name": "Standard"
+          },
+          {
+            "name": "LockedTransfer"
+          },
+          {
+            "name": "Migration"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuthorityType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Metadata"
+          },
+          {
+            "name": "Holder"
+          },
+          {
+            "name": "MetadataDelegate"
+          },
+          {
+            "name": "TokenDelegate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayloadKey",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Amount"
+          },
+          {
+            "name": "Authority"
+          },
+          {
+            "name": "AuthoritySeeds"
+          },
+          {
+            "name": "Delegate"
+          },
+          {
+            "name": "DelegateSeeds"
+          },
+          {
+            "name": "Destination"
+          },
+          {
+            "name": "DestinationSeeds"
+          },
+          {
+            "name": "Holder"
+          },
+          {
+            "name": "Source"
+          },
+          {
+            "name": "SourceSeeds"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayloadType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pubkey",
+            "fields": [
+              "publicKey"
+            ]
+          },
+          {
+            "name": "Seeds",
+            "fields": [
+              {
+                "defined": "SeedsVec"
+              }
+            ]
+          },
+          {
+            "name": "MerkleProof",
+            "fields": [
+              {
+                "defined": "ProofInfo"
+              }
+            ]
+          },
+          {
+            "name": "Number",
+            "fields": [
+              "u64"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "UseMethod",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Burn"
+          },
+          {
+            "name": "Multiple"
+          },
+          {
+            "name": "Single"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 0,
+      "name": "InstructionUnpackError",
+      "msg": ""
+    },
+    {
+      "code": 1,
+      "name": "InstructionPackError",
+      "msg": ""
+    },
+    {
+      "code": 2,
+      "name": "NotRentExempt",
+      "msg": "Lamport balance below rent-exempt threshold"
+    },
+    {
+      "code": 3,
+      "name": "AlreadyInitialized",
+      "msg": "Already initialized"
+    },
+    {
+      "code": 4,
+      "name": "Uninitialized",
+      "msg": "Uninitialized"
+    },
+    {
+      "code": 5,
+      "name": "InvalidMetadataKey",
+      "msg": " Metadata's key must match seed of ['metadata', program id, mint] provided"
+    },
+    {
+      "code": 6,
+      "name": "InvalidEditionKey",
+      "msg": "Edition's key must match seed of ['metadata', program id, name, 'edition'] provided"
+    },
+    {
+      "code": 7,
+      "name": "UpdateAuthorityIncorrect",
+      "msg": "Update Authority given does not match"
+    },
+    {
+      "code": 8,
+      "name": "UpdateAuthorityIsNotSigner",
+      "msg": "Update Authority needs to be signer to update metadata"
+    },
+    {
+      "code": 9,
+      "name": "NotMintAuthority",
+      "msg": "You must be the mint authority and signer on this transaction"
+    },
+    {
+      "code": 10,
+      "name": "InvalidMintAuthority",
+      "msg": "Mint authority provided does not match the authority on the mint"
+    },
+    {
+      "code": 11,
+      "name": "NameTooLong",
+      "msg": "Name too long"
+    },
+    {
+      "code": 12,
+      "name": "SymbolTooLong",
+      "msg": "Symbol too long"
+    },
+    {
+      "code": 13,
+      "name": "UriTooLong",
+      "msg": "URI too long"
+    },
+    {
+      "code": 14,
+      "name": "UpdateAuthorityMustBeEqualToMetadataAuthorityAndSigner",
+      "msg": ""
+    },
+    {
+      "code": 15,
+      "name": "MintMismatch",
+      "msg": "Mint given does not match mint on Metadata"
+    },
+    {
+      "code": 16,
+      "name": "EditionsMustHaveExactlyOneToken",
+      "msg": "Editions must have exactly one token"
+    },
+    {
+      "code": 17,
+      "name": "MaxEditionsMintedAlready",
+      "msg": ""
+    },
+    {
+      "code": 18,
+      "name": "TokenMintToFailed",
+      "msg": ""
+    },
+    {
+      "code": 19,
+      "name": "MasterRecordMismatch",
+      "msg": ""
+    },
+    {
+      "code": 20,
+      "name": "DestinationMintMismatch",
+      "msg": ""
+    },
+    {
+      "code": 21,
+      "name": "EditionAlreadyMinted",
+      "msg": ""
+    },
+    {
+      "code": 22,
+      "name": "PrintingMintDecimalsShouldBeZero",
+      "msg": ""
+    },
+    {
+      "code": 23,
+      "name": "OneTimePrintingAuthorizationMintDecimalsShouldBeZero",
+      "msg": ""
+    },
+    {
+      "code": 24,
+      "name": "EditionMintDecimalsShouldBeZero",
+      "msg": "EditionMintDecimalsShouldBeZero"
+    },
+    {
+      "code": 25,
+      "name": "TokenBurnFailed",
+      "msg": ""
+    },
+    {
+      "code": 26,
+      "name": "TokenAccountOneTimeAuthMintMismatch",
+      "msg": ""
+    },
+    {
+      "code": 27,
+      "name": "DerivedKeyInvalid",
+      "msg": "Derived key invalid"
+    },
+    {
+      "code": 28,
+      "name": "PrintingMintMismatch",
+      "msg": "The Printing mint does not match that on the master edition!"
+    },
+    {
+      "code": 29,
+      "name": "OneTimePrintingAuthMintMismatch",
+      "msg": "The One Time Printing Auth mint does not match that on the master edition!"
+    },
+    {
+      "code": 30,
+      "name": "TokenAccountMintMismatch",
+      "msg": "The mint of the token account does not match the Printing mint!"
+    },
+    {
+      "code": 31,
+      "name": "TokenAccountMintMismatchV2",
+      "msg": "The mint of the token account does not match the master metadata mint!"
+    },
+    {
+      "code": 32,
+      "name": "NotEnoughTokens",
+      "msg": "Not enough tokens to mint a limited edition"
+    },
+    {
+      "code": 33,
+      "name": "PrintingMintAuthorizationAccountMismatch",
+      "msg": ""
+    },
+    {
+      "code": 34,
+      "name": "AuthorizationTokenAccountOwnerMismatch",
+      "msg": ""
+    },
+    {
+      "code": 35,
+      "name": "Disabled",
+      "msg": ""
+    },
+    {
+      "code": 36,
+      "name": "CreatorsTooLong",
+      "msg": "Creators list too long"
+    },
+    {
+      "code": 37,
+      "name": "CreatorsMustBeAtleastOne",
+      "msg": "Creators must be at least one if set"
+    },
+    {
+      "code": 38,
+      "name": "MustBeOneOfCreators",
+      "msg": ""
+    },
+    {
+      "code": 39,
+      "name": "NoCreatorsPresentOnMetadata",
+      "msg": "This metadata does not have creators"
+    },
+    {
+      "code": 40,
+      "name": "CreatorNotFound",
+      "msg": "This creator address was not found"
+    },
+    {
+      "code": 41,
+      "name": "InvalidBasisPoints",
+      "msg": "Basis points cannot be more than 10000"
+    },
+    {
+      "code": 42,
+      "name": "PrimarySaleCanOnlyBeFlippedToTrue",
+      "msg": "Primary sale can only be flipped to true and is immutable"
+    },
+    {
+      "code": 43,
+      "name": "OwnerMismatch",
+      "msg": "Owner does not match that on the account given"
+    },
+    {
+      "code": 44,
+      "name": "NoBalanceInAccountForAuthorization",
+      "msg": "This account has no tokens to be used for authorization"
+    },
+    {
+      "code": 45,
+      "name": "ShareTotalMustBe100",
+      "msg": "Share total must equal 100 for creator array"
+    },
+    {
+      "code": 46,
+      "name": "ReservationExists",
+      "msg": ""
+    },
+    {
+      "code": 47,
+      "name": "ReservationDoesNotExist",
+      "msg": ""
+    },
+    {
+      "code": 48,
+      "name": "ReservationNotSet",
+      "msg": ""
+    },
+    {
+      "code": 49,
+      "name": "ReservationAlreadyMade",
+      "msg": ""
+    },
+    {
+      "code": 50,
+      "name": "BeyondMaxAddressSize",
+      "msg": ""
+    },
+    {
+      "code": 51,
+      "name": "NumericalOverflowError",
+      "msg": "NumericalOverflowError"
+    },
+    {
+      "code": 52,
+      "name": "ReservationBreachesMaximumSupply",
+      "msg": ""
+    },
+    {
+      "code": 53,
+      "name": "AddressNotInReservation",
+      "msg": ""
+    },
+    {
+      "code": 54,
+      "name": "CannotVerifyAnotherCreator",
+      "msg": "You cannot unilaterally verify another creator, they must sign"
+    },
+    {
+      "code": 55,
+      "name": "CannotUnverifyAnotherCreator",
+      "msg": "You cannot unilaterally unverify another creator"
+    },
+    {
+      "code": 56,
+      "name": "SpotMismatch",
+      "msg": ""
+    },
+    {
+      "code": 57,
+      "name": "IncorrectOwner",
+      "msg": "Incorrect account owner"
+    },
+    {
+      "code": 58,
+      "name": "PrintingWouldBreachMaximumSupply",
+      "msg": ""
+    },
+    {
+      "code": 59,
+      "name": "DataIsImmutable",
+      "msg": "Data is immutable"
+    },
+    {
+      "code": 60,
+      "name": "DuplicateCreatorAddress",
+      "msg": "No duplicate creator addresses"
+    },
+    {
+      "code": 61,
+      "name": "ReservationSpotsRemainingShouldMatchTotalSpotsAtStart",
+      "msg": ""
+    },
+    {
+      "code": 62,
+      "name": "InvalidTokenProgram",
+      "msg": "Invalid token program"
+    },
+    {
+      "code": 63,
+      "name": "DataTypeMismatch",
+      "msg": "Data type mismatch"
+    },
+    {
+      "code": 64,
+      "name": "BeyondAlottedAddressSize",
+      "msg": ""
+    },
+    {
+      "code": 65,
+      "name": "ReservationNotComplete",
+      "msg": ""
+    },
+    {
+      "code": 66,
+      "name": "TriedToReplaceAnExistingReservation",
+      "msg": ""
+    },
+    {
+      "code": 67,
+      "name": "InvalidOperation",
+      "msg": "Invalid operation"
+    },
+    {
+      "code": 68,
+      "name": "InvalidOwner",
+      "msg": "Invalid Owner"
+    },
+    {
+      "code": 69,
+      "name": "PrintingMintSupplyMustBeZeroForConversion",
+      "msg": "Printing mint supply must be zero for conversion"
+    },
+    {
+      "code": 70,
+      "name": "OneTimeAuthMintSupplyMustBeZeroForConversion",
+      "msg": "One Time Auth mint supply must be zero for conversion"
+    },
+    {
+      "code": 71,
+      "name": "InvalidEditionIndex",
+      "msg": "You tried to insert one edition too many into an edition mark pda"
+    },
+    {
+      "code": 72,
+      "name": "ReservationArrayShouldBeSizeOne",
+      "msg": ""
+    },
+    {
+      "code": 73,
+      "name": "IsMutableCanOnlyBeFlippedToFalse",
+      "msg": "Is Mutable can only be flipped to false"
+    },
+    {
+      "code": 74,
+      "name": "CollectionCannotBeVerifiedInThisInstruction",
+      "msg": "Collection cannot be verified in this instruction"
+    },
+    {
+      "code": 75,
+      "name": "Removed",
+      "msg": "This instruction was deprecated in a previous release and is now removed"
+    },
+    {
+      "code": 76,
+      "name": "MustBeBurned",
+      "msg": ""
+    },
+    {
+      "code": 77,
+      "name": "InvalidUseMethod",
+      "msg": "This use method is invalid"
+    },
+    {
+      "code": 78,
+      "name": "CannotChangeUseMethodAfterFirstUse",
+      "msg": "Cannot Change Use Method after the first use"
+    },
+    {
+      "code": 79,
+      "name": "CannotChangeUsesAfterFirstUse",
+      "msg": "Cannot Change Remaining or Available uses after the first use"
+    },
+    {
+      "code": 80,
+      "name": "CollectionNotFound",
+      "msg": "Collection Not Found on Metadata"
+    },
+    {
+      "code": 81,
+      "name": "InvalidCollectionUpdateAuthority",
+      "msg": "Collection Update Authority is invalid"
+    },
+    {
+      "code": 82,
+      "name": "CollectionMustBeAUniqueMasterEdition",
+      "msg": "Collection Must Be a Unique Master Edition v2"
+    },
+    {
+      "code": 83,
+      "name": "UseAuthorityRecordAlreadyExists",
+      "msg": "The Use Authority Record Already Exists, to modify it Revoke, then Approve"
+    },
+    {
+      "code": 84,
+      "name": "UseAuthorityRecordAlreadyRevoked",
+      "msg": "The Use Authority Record is empty or already revoked"
+    },
+    {
+      "code": 85,
+      "name": "Unusable",
+      "msg": "This token has no uses"
+    },
+    {
+      "code": 86,
+      "name": "NotEnoughUses",
+      "msg": "There are not enough Uses left on this token."
+    },
+    {
+      "code": 87,
+      "name": "CollectionAuthorityRecordAlreadyExists",
+      "msg": "This Collection Authority Record Already Exists."
+    },
+    {
+      "code": 88,
+      "name": "CollectionAuthorityDoesNotExist",
+      "msg": "This Collection Authority Record Does Not Exist."
+    },
+    {
+      "code": 89,
+      "name": "InvalidUseAuthorityRecord",
+      "msg": "This Use Authority Record is invalid."
+    },
+    {
+      "code": 90,
+      "name": "InvalidCollectionAuthorityRecord",
+      "msg": ""
+    },
+    {
+      "code": 91,
+      "name": "InvalidFreezeAuthority",
+      "msg": "Metadata does not match the freeze authority on the mint"
+    },
+    {
+      "code": 92,
+      "name": "InvalidDelegate",
+      "msg": "All tokens in this account have not been delegated to this user."
+    },
+    {
+      "code": 93,
+      "name": "CannotAdjustVerifiedCreator",
+      "msg": ""
+    },
+    {
+      "code": 94,
+      "name": "CannotRemoveVerifiedCreator",
+      "msg": "Verified creators cannot be removed."
+    },
+    {
+      "code": 95,
+      "name": "CannotWipeVerifiedCreators",
+      "msg": ""
+    },
+    {
+      "code": 96,
+      "name": "NotAllowedToChangeSellerFeeBasisPoints",
+      "msg": ""
+    },
+    {
+      "code": 97,
+      "name": "EditionOverrideCannotBeZero",
+      "msg": "Edition override cannot be zero"
+    },
+    {
+      "code": 98,
+      "name": "InvalidUser",
+      "msg": "Invalid User"
+    },
+    {
+      "code": 99,
+      "name": "RevokeCollectionAuthoritySignerIncorrect",
+      "msg": "Revoke Collection Authority signer is incorrect"
+    },
+    {
+      "code": 100,
+      "name": "TokenCloseFailed",
+      "msg": ""
+    },
+    {
+      "code": 101,
+      "name": "UnsizedCollection",
+      "msg": "Can't use this function on unsized collection"
+    },
+    {
+      "code": 102,
+      "name": "SizedCollection",
+      "msg": "Can't use this function on a sized collection"
+    },
+    {
+      "code": 103,
+      "name": "MissingCollectionMetadata",
+      "msg": "Missing collection metadata account"
+    },
+    {
+      "code": 104,
+      "name": "NotAMemberOfCollection",
+      "msg": "This NFT is not a member of the specified collection."
+    },
+    {
+      "code": 105,
+      "name": "NotVerifiedMemberOfCollection",
+      "msg": "This NFT is not a verified member of the specified collection."
+    },
+    {
+      "code": 106,
+      "name": "NotACollectionParent",
+      "msg": "This NFT is not a collection parent NFT."
+    },
+    {
+      "code": 107,
+      "name": "CouldNotDetermineTokenStandard",
+      "msg": "Could not determine a TokenStandard type."
+    },
+    {
+      "code": 108,
+      "name": "MissingEditionAccount",
+      "msg": "This mint account has an edition but none was provided."
+    },
+    {
+      "code": 109,
+      "name": "NotAMasterEdition",
+      "msg": "This edition is not a Master Edition"
+    },
+    {
+      "code": 110,
+      "name": "MasterEditionHasPrints",
+      "msg": "This Master Edition has existing prints"
+    },
+    {
+      "code": 111,
+      "name": "BorshDeserializationError",
+      "msg": ""
+    },
+    {
+      "code": 112,
+      "name": "CannotUpdateVerifiedCollection",
+      "msg": "Cannot update a verified collection in this command"
+    },
+    {
+      "code": 113,
+      "name": "CollectionMasterEditionAccountInvalid",
+      "msg": "Edition account doesnt match collection "
+    },
+    {
+      "code": 114,
+      "name": "AlreadyVerified",
+      "msg": "Item is already verified."
+    },
+    {
+      "code": 115,
+      "name": "AlreadyUnverified",
+      "msg": ""
+    },
+    {
+      "code": 116,
+      "name": "NotAPrintEdition",
+      "msg": "This edition is not a Print Edition"
+    },
+    {
+      "code": 117,
+      "name": "InvalidMasterEdition",
+      "msg": "Invalid Master Edition"
+    },
+    {
+      "code": 118,
+      "name": "InvalidPrintEdition",
+      "msg": "Invalid Print Edition"
+    },
+    {
+      "code": 119,
+      "name": "InvalidEditionMarker",
+      "msg": "Invalid Edition Marker"
+    },
+    {
+      "code": 120,
+      "name": "ReservationListDeprecated",
+      "msg": "Reservation List is Deprecated"
+    },
+    {
+      "code": 121,
+      "name": "PrintEditionDoesNotMatchMasterEdition",
+      "msg": "Print Edition does not match Master Edition"
+    },
+    {
+      "code": 122,
+      "name": "EditionNumberGreaterThanMaxSupply",
+      "msg": "Edition Number greater than max supply"
+    },
+    {
+      "code": 123,
+      "name": "MustUnverify",
+      "msg": "Must unverify before migrating collections."
+    },
+    {
+      "code": 124,
+      "name": "InvalidEscrowBumpSeed",
+      "msg": "Invalid Escrow Account Bump Seed"
+    },
+    {
+      "code": 125,
+      "name": "MustBeEscrowAuthority",
+      "msg": "Must Escrow Authority"
+    },
+    {
+      "code": 126,
+      "name": "InvalidSystemProgram",
+      "msg": "Invalid System Program"
+    },
+    {
+      "code": 127,
+      "name": "MustBeNonFungible",
+      "msg": "Must be a Non Fungible Token"
+    },
+    {
+      "code": 128,
+      "name": "InsufficientTokens",
+      "msg": "Insufficient tokens for transfer"
+    },
+    {
+      "code": 129,
+      "name": "BorshSerializationError",
+      "msg": "Borsh Serialization Error"
+    },
+    {
+      "code": 130,
+      "name": "NoFreezeAuthoritySet",
+      "msg": "Cannot create NFT with no Freeze Authority."
+    },
+    {
+      "code": 131,
+      "name": "InvalidCollectionSizeChange",
+      "msg": "Invalid collection size change"
+    },
+    {
+      "code": 132,
+      "name": "InvalidBubblegumSigner",
+      "msg": "Invalid bubblegum signer"
+    },
+    {
+      "code": 133,
+      "name": "EscrowParentHasDelegate",
+      "msg": "Escrow parent cannot have a delegate"
+    },
+    {
+      "code": 134,
+      "name": "MintIsNotSigner",
+      "msg": "Mint needs to be signer to initialize the account"
+    },
+    {
+      "code": 135,
+      "name": "InvalidTokenStandard",
+      "msg": "Invalid token standard"
+    },
+    {
+      "code": 136,
+      "name": "InvalidMintForTokenStandard",
+      "msg": "Invalid mint account for specified token standard"
+    },
+    {
+      "code": 137,
+      "name": "InvalidAuthorizationRules",
+      "msg": "Invalid authorization rules account"
+    },
+    {
+      "code": 138,
+      "name": "MissingAuthorizationRules",
+      "msg": "Missing authorization rules account"
+    },
+    {
+      "code": 139,
+      "name": "MissingProgrammableConfig",
+      "msg": "Missing programmable configuration"
+    },
+    {
+      "code": 140,
+      "name": "InvalidProgrammableConfig",
+      "msg": "Invalid programmable configuration"
+    },
+    {
+      "code": 141,
+      "name": "DelegateAlreadyExists",
+      "msg": "Delegate already exists"
+    },
+    {
+      "code": 142,
+      "name": "DelegateNotFound",
+      "msg": "Delegate not found"
+    },
+    {
+      "code": 143,
+      "name": "MissingAccountInBuilder",
+      "msg": "Required account not set in instruction builder"
+    },
+    {
+      "code": 144,
+      "name": "MissingArgumentInBuilder",
+      "msg": "Required argument not set in instruction builder"
+    },
+    {
+      "code": 145,
+      "name": "FeatureNotSupported",
+      "msg": "Feature not supported currently"
+    },
+    {
+      "code": 146,
+      "name": "InvalidSystemWallet",
+      "msg": "Invalid system wallet"
+    },
+    {
+      "code": 147,
+      "name": "OnlySaleDelegateCanTransfer",
+      "msg": "Only the sale delegate can transfer while its set"
+    },
+    {
+      "code": 148,
+      "name": "MissingTokenAccount",
+      "msg": "Missing token account"
+    },
+    {
+      "code": 149,
+      "name": "MissingSplTokenProgram",
+      "msg": "Missing SPL token program"
+    },
+    {
+      "code": 150,
+      "name": "MissingAuthorizationRulesProgram",
+      "msg": "Missing authorization rules program"
+    },
+    {
+      "code": 151,
+      "name": "InvalidDelegateRoleForTransfer",
+      "msg": "Invalid delegate role for transfer"
+    },
+    {
+      "code": 152,
+      "name": "InvalidTransferAuthority",
+      "msg": "Invalid transfer authority"
+    },
+    {
+      "code": 153,
+      "name": "InstructionNotSupported",
+      "msg": "Instruction not supported for ProgrammableNonFungible assets"
+    },
+    {
+      "code": 154,
+      "name": "KeyMismatch",
+      "msg": "Public key does not match expected value"
+    },
+    {
+      "code": 155,
+      "name": "LockedToken",
+      "msg": "Token is locked"
+    },
+    {
+      "code": 156,
+      "name": "UnlockedToken",
+      "msg": "Token is unlocked"
+    },
+    {
+      "code": 157,
+      "name": "MissingDelegateRole",
+      "msg": "Missing delegate role"
+    },
+    {
+      "code": 158,
+      "name": "InvalidAuthorityType",
+      "msg": "Invalid authority type"
+    },
+    {
+      "code": 159,
+      "name": "MissingTokenRecord",
+      "msg": "Missing token record account"
+    },
+    {
+      "code": 160,
+      "name": "MintSupplyMustBeZero",
+      "msg": "Mint supply must be zero for programmable assets"
+    },
+    {
+      "code": 161,
+      "name": "DataIsEmptyOrZeroed",
+      "msg": "Data is empty or zeroed"
+    },
+    {
+      "code": 162,
+      "name": "MissingTokenOwnerAccount",
+      "msg": "Missing token owner"
+    },
+    {
+      "code": 163,
+      "name": "InvalidMasterEditionAccountLength",
+      "msg": "Master edition account has an invalid length"
+    },
+    {
+      "code": 164,
+      "name": "IncorrectTokenState",
+      "msg": "Incorrect token state"
+    },
+    {
+      "code": 165,
+      "name": "InvalidDelegateRole",
+      "msg": "Invalid delegate role"
+    },
+    {
+      "code": 166,
+      "name": "MissingPrintSupply",
+      "msg": "Print supply is required for non-fungibles"
+    },
+    {
+      "code": 167,
+      "name": "MissingMasterEditionAccount",
+      "msg": "Missing master edition account"
+    },
+    {
+      "code": 168,
+      "name": "AmountMustBeGreaterThanZero",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 169,
+      "name": "InvalidDelegateArgs",
+      "msg": "Invalid delegate args"
+    },
+    {
+      "code": 170,
+      "name": "MissingLockedTransferAddress",
+      "msg": "Missing address for locked transfer"
+    },
+    {
+      "code": 171,
+      "name": "InvalidLockedTransferAddress",
+      "msg": "Invalid destination address for locked transfer"
+    },
+    {
+      "code": 172,
+      "name": "DataIncrementLimitExceeded",
+      "msg": "Exceeded account realloc increase limit"
+    },
+    {
+      "code": 173,
+      "name": "CannotUpdateAssetWithDelegate",
+      "msg": "Cannot update the rule set of a programmable asset that has a delegate"
+    },
+    {
+      "code": 174,
+      "name": "InvalidAmount",
+      "msg": "Invalid token amount for this operation or token standard"
+    },
+    {
+      "code": 175,
+      "name": "MissingMasterEditionMintAccount",
+      "msg": "Missing master edition mint account"
+    },
+    {
+      "code": 176,
+      "name": "MissingMasterEditionTokenAccount",
+      "msg": "Missing master edition token account"
+    },
+    {
+      "code": 177,
+      "name": "MissingEditionMarkerAccount",
+      "msg": "Missing edition marker account"
+    },
+    {
+      "code": 178,
+      "name": "CannotBurnWithDelegate",
+      "msg": "Cannot burn while persistent delegate is set"
+    },
+    {
+      "code": 179,
+      "name": "MissingEdition",
+      "msg": "Missing edition account"
+    },
+    {
+      "code": 180,
+      "name": "InvalidAssociatedTokenAccountProgram",
+      "msg": "Invalid Associated Token Account Program"
+    },
+    {
+      "code": 181,
+      "name": "InvalidInstructionsSysvar",
+      "msg": "Invalid InstructionsSysvar"
+    },
+    {
+      "code": 182,
+      "name": "InvalidParentAccounts",
+      "msg": "Invalid or Unneeded parent accounts"
+    },
+    {
+      "code": 183,
+      "name": "InvalidUpdateArgs",
+      "msg": "Authority cannot apply all update args"
+    },
+    {
+      "code": 184,
+      "name": "InsufficientTokenBalance",
+      "msg": "Token account does not have enough tokens"
+    },
+    {
+      "code": 185,
+      "name": "MissingCollectionMint",
+      "msg": "Missing collection account"
+    },
+    {
+      "code": 186,
+      "name": "MissingCollectionMasterEdition",
+      "msg": "Missing collection master edition account"
+    },
+    {
+      "code": 187,
+      "name": "InvalidTokenRecord",
+      "msg": "Invalid token record account"
+    },
+    {
+      "code": 188,
+      "name": "InvalidCloseAuthority",
+      "msg": "The close authority needs to be revoked by the Utility Delegate"
+    },
+    {
+      "code": 189,
+      "name": "InvalidInstruction",
+      "msg": "Invalid or removed instruction"
+    },
+    {
+      "code": 190,
+      "name": "MissingDelegateRecord",
+      "msg": "Missing delegate record"
+    },
+    {
+      "code": 191,
+      "name": "InvalidFeeAccount",
+      "msg": ""
+    },
+    {
+      "code": 192,
+      "name": "InvalidMetadataFlags",
+      "msg": ""
+    },
+    {
+      "code": 193,
+      "name": "CannotChangeUpdateAuthorityWithDelegate",
+      "msg": "Cannot change the update authority with a delegate"
+    },
+    {
+      "code": 194,
+      "name": "InvalidMintExtensionType",
+      "msg": "Invalid mint extension type"
+    },
+    {
+      "code": 195,
+      "name": "InvalidMintCloseAuthority",
+      "msg": "Invalid mint close authority"
+    },
+    {
+      "code": 196,
+      "name": "InvalidMetadataPointer",
+      "msg": "Invalid metadata pointer"
+    },
+    {
+      "code": 197,
+      "name": "InvalidTokenExtensionType",
+      "msg": "Invalid token extension type"
+    },
+    {
+      "code": 198,
+      "name": "MissingImmutableOwnerExtension",
+      "msg": "Missing immutable owner extension"
+    },
+    {
+      "code": 199,
+      "name": "ExpectedUninitializedAccount",
+      "msg": "Expected account to be uninitialized"
+    },
+    {
+      "code": 200,
+      "name": "InvalidEditionAccountLength",
+      "msg": "Edition account has an invalid length"
+    },
+    {
+      "code": 201,
+      "name": "AccountAlreadyResized",
+      "msg": "Account has already been resized"
+    },
+    {
+      "code": 202,
+      "name": "ConditionsForClosingNotMet",
+      "msg": "Conditions for closing not met"
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+    "binaryVersion": "0.3.0",
+    "libVersion": "0.3.0"
+  }
+}

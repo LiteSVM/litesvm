@@ -3,12 +3,18 @@
 
 //! Decode, replay and mutate Solana transactions in LiteSVM.
 
+mod bundled_idls;
+mod decode;
 mod error;
+pub mod idl;
 mod idl_encode;
 mod idl_model;
 pub(crate) mod utils;
 
-pub use error::{Error, Result};
+pub use {
+    decode::{AccountInfo, DecodedAccount, Field},
+    error::{Error, Result},
+};
 
 /// Compile-checks every Rust example in the README as part of `cargo test`.
 
