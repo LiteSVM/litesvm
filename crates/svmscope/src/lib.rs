@@ -22,9 +22,13 @@ mod mutation;
 mod replay;
 pub mod report;
 mod search;
+mod session;
 pub mod spec;
+mod submit;
 mod trace;
 pub(crate) mod utils;
+#[cfg(test)]
+mod wire_format_tests;
 
 pub use {
     analyze::{
@@ -43,6 +47,8 @@ pub use {
     mutation::Mutation,
     replay::{FeatureToggle, TimeTravel},
     search::Threshold,
+    session::{PatchComparison, Replay, Replayed},
+    submit::CapturedTransaction,
     trace::{
         DecodedEvent, DriftedAccount, ReturnData, Step, StepAccountState, StepDiff, StepError,
         StepSummary, Trace, TraceDiff,
