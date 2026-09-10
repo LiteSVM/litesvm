@@ -277,6 +277,14 @@ export declare class LiteSvm {
   /** Creates the basic test environment. */
   constructor()
   static default(): LiteSvm
+  /** Restores an instance from a snapshot file written by `saveToFile`. */
+  static loadFromFile(path: string): LiteSvm
+  /** Restores an instance from snapshot bytes produced by `toBytes`. */
+  static fromBytes(bytes: Uint8Array): LiteSvm
+  /** Saves the full state (accounts, sysvars, feature set, transaction history) to a file. */
+  saveToFile(path: string): void
+  /** Serializes the full state (accounts, sysvars, feature set, transaction history) to bytes. */
+  toBytes(): Uint8Array
   setComputeBudget(budget: ComputeBudget): void
   /** Enables or disables sigverify */
   setSigverify(sigverify: boolean): void

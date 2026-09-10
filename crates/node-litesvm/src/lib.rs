@@ -29,6 +29,7 @@ use {
         },
         LiteSVM as LiteSVMOriginal,
     },
+    litesvm_persistence::PersistenceError,
     napi::bindgen_prelude::*,
     solana_clock::Clock as ClockOriginal,
     solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
@@ -56,6 +57,10 @@ mod util;
 extern crate napi_derive;
 
 fn to_js_error(e: LiteSVMError, msg: &str) -> Error {
+    Error::new(Status::GenericFailure, format!("{msg}: {e}"))
+}
+
+fn persistence_error(e: PersistenceError, msg: &str) -> Error {
     Error::new(Status::GenericFailure, format!("{msg}: {e}"))
 }
 
@@ -105,6 +110,37 @@ impl LiteSvm {
     #[napi(factory, js_name = "default")]
     pub fn new_default() -> Self {
         Self(LiteSVMOriginal::default())
+    }
+
+    #[napi(factory)]
+    /// Restores an instance from a snapshot file written by `saveToFile`.
+    pub fn load_from_file(path: String) -> Result<Self> {
+        litesvm_persistence::load_from_file(path)
+            .map(Self)
+            .map_err(|e| persistence_error(e, "Failed to load snapshot"))
+    }
+
+    #[napi(factory)]
+    /// Restores an instance from snapshot bytes produced by `toBytes`.
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        litesvm_persistence::from_bytes(bytes)
+            .map(Self)
+            .map_err(|e| persistence_error(e, "Failed to load snapshot"))
+    }
+
+    #[napi]
+    /// Saves the full state (accounts, sysvars, feature set, transaction history) to a file.
+    pub fn save_to_file(&self, path: String) -> Result<()> {
+        litesvm_persistence::save_to_file(&self.0, path)
+            .map_err(|e| persistence_error(e, "Failed to save snapshot"))
+    }
+
+    #[napi]
+    /// Serializes the full state (accounts, sysvars, feature set, transaction history) to bytes.
+    pub fn to_bytes(&self) -> Result<Uint8Array> {
+        litesvm_persistence::to_bytes(&self.0)
+            .map(Uint8Array::from)
+            .map_err(|e| persistence_error(e, "Failed to serialize snapshot"))
     }
 
     #[napi]

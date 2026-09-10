@@ -2001,6 +2001,7 @@ dependencies = [
  "agave-feature-set",
  "bv",
  "litesvm",
+ "litesvm-persistence",
  "napi",
  "napi-build",
  "napi-derive",

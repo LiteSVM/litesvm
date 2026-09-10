@@ -108,6 +108,46 @@ export class LiteSVM {
 	}
 
 	/**
+	 * Restore a LiteSVM instance from a snapshot file written by {@link saveToFile}.
+	 * @param path - The path of the snapshot file
+	 * @returns A new LiteSVM instance with the saved state
+	 */
+	static loadFromFile(path: string): LiteSVM {
+		const svm = new LiteSVM();
+		svm.inner = LiteSVMInner.loadFromFile(path);
+		return svm;
+	}
+
+	/**
+	 * Restore a LiteSVM instance from snapshot bytes produced by {@link toBytes}.
+	 * @param bytes - The snapshot bytes
+	 * @returns A new LiteSVM instance with the saved state
+	 */
+	static fromBytes(bytes: Uint8Array): LiteSVM {
+		const svm = new LiteSVM();
+		svm.inner = LiteSVMInner.fromBytes(bytes);
+		return svm;
+	}
+
+	/**
+	 * Save the full state (accounts, sysvars, feature set, transaction history)
+	 * to a file. Restore it with {@link LiteSVM.loadFromFile}.
+	 * @param path - The path to write the snapshot to
+	 */
+	saveToFile(path: string) {
+		this.inner.saveToFile(path);
+	}
+
+	/**
+	 * Serialize the full state (accounts, sysvars, feature set, transaction history)
+	 * to bytes. Restore it with {@link LiteSVM.fromBytes}.
+	 * @returns The snapshot bytes
+	 */
+	toBytes(): Uint8Array {
+		return this.inner.toBytes();
+	}
+
+	/**
 	 * Set the compute budget
 	 * @param budget - The new compute budget
 	 * @returns The modified LiteSVM instance

@@ -19,6 +19,7 @@ test = false
 agave-feature-set.workspace = true
 bv.workspace = true
 litesvm = { workspace = true, features = ["nodejs-internal", "precompiles"] }
+litesvm-persistence.workspace = true
 napi = { workspace = true, features = ["napi4", "napi6"] }
 napi-derive.workspace = true
 solana-account.workspace = true

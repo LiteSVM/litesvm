@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add `toBytes`, `fromBytes`, `saveToFile` and `loadFromFile` to snapshot the full LiteSVM state and restore it into a new instance, backed by the `litesvm-persistence` crate [(#420)](https://github.com/LiteSVM/litesvm/pull/420).
+
 ## [1.4.1] - 2026-08-25
 
 ### Fixed

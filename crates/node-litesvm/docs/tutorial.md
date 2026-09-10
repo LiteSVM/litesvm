@@ -52,6 +52,19 @@ and passes it to LiteSVM:
 
 <<< @/../no-ci-tests/copyAccounts.test.ts
 
+## Snapshots
+
+Setting up an environment (deploying programs, minting tokens, seeding accounts)
+can dominate the runtime of a test suite. `toBytes` and `saveToFile` capture the
+full state of a `LiteSVM` instance, including accounts, sysvars, the feature set
+and the transaction history, and `fromBytes` and `loadFromFile` restore that
+state into a fresh instance:
+
+<<< @/../tests/snapshot.test.ts
+
+Snapshots use the same format as the `litesvm-persistence` Rust crate, so a
+file written from Rust can be loaded from JavaScript and vice versa.
+
 ## Other features
 
 Other things you can do with `litesvm` include:
