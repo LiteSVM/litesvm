@@ -104,7 +104,7 @@ impl AccountsDb {
         } else {
             self.maybe_handle_sysvar_account(pubkey, &account)?;
         }
-        if account.lamports() == 0 {
+        if account.lamports() == 0 && !account.ephemeral() {
             self.inner.remove(&pubkey);
         } else {
             self.add_account_no_checks(pubkey, account);
@@ -255,7 +255,10 @@ impl AccountsDb {
             x.1.owner() == &bpf_loader_upgradeable::id()
                 && x.1.data().first().is_some_and(|byte| *byte == 3)
         });
-        for (address, acc) in accounts {
+        for (address, mut acc) in accounts {
+            if let Some(existing) = self.inner.get(&address) {
+                crate::account_compat::preserve_fork_flags(existing, &mut acc);
+            }
             self.add_account(address, acc)?;
         }
         Ok(())

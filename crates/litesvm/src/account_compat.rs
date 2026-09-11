@@ -38,3 +38,29 @@ pub(crate) fn stock_to_fork(account: &StockAccountSharedData) -> ForkAccountShar
         rent_epoch: StockReadableAccount::rent_epoch(account),
     })
 }
+
+/// Copies MagicBlock fork flags from `pre` onto `post` when the stock runtime
+/// round-trip dropped them.
+pub(crate) fn preserve_fork_flags(
+    pre: &ForkAccountSharedData,
+    post: &mut ForkAccountSharedData,
+) {
+    if pre.delegated() {
+        post.set_delegated(true);
+    }
+    if pre.undelegating() {
+        post.set_undelegating(true);
+    }
+    if pre.privileged() {
+        post.set_privileged(true);
+    }
+    if pre.compressed() {
+        post.set_compressed(true);
+    }
+    if pre.confined() {
+        post.set_confined(true);
+    }
+    if pre.ephemeral() {
+        post.set_ephemeral(true);
+    }
+}

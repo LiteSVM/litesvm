@@ -7,7 +7,7 @@ exclude = ["crates/node-litesvm/tests/clock-example"]
 version = "0.12.0"
 edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/LiteSVM/litesvm"
+repository = "https://github.com/magicblock-labs/litesvm"
 rust-version = "1.86.0"
 
 [workspace.dependencies]
