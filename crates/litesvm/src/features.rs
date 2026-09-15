@@ -1,7 +1,7 @@
 use solana_address::Address;
 
 /// Feature gates currently activated on Solana mainnet-beta, paired with their
-/// activation slot, sourced from the cluster on 2026-08-30.
+/// activation slot, sourced from the cluster on 2026-09-15.
 pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
     (agave_feature_set::deprecate_rewards_sysvar::ID, 55728001),
     (agave_feature_set::pico_inflation::ID, 57456000),
@@ -697,7 +697,19 @@ pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
         agave_feature_set::commission_rate_in_basis_points::ID,
         433296000,
     ),
+    (
+        agave_feature_set::custom_commission_collector::ID,
+        445392000,
+    ),
     (agave_feature_set::enable_bls12_381_syscall::ID, 425952004),
+    (
+        agave_feature_set::set_lamports_per_byte_to_6333::ID,
+        444096000,
+    ),
+    (
+        agave_feature_set::set_lamports_per_byte_to_5080::ID,
+        446256000,
+    ),
     (
         agave_feature_set::remove_simple_vote_from_cost_model::ID,
         423792000,
@@ -718,9 +730,18 @@ pub const MAINNET_ACTIVE_FEATURES: &[(Address, u64)] = &[
         427248000,
     ),
     (
+        agave_feature_set::relax_post_exec_min_balance_check::ID,
+        443664000,
+    ),
+    (agave_feature_set::enable_tx_v1::ID, 447120000),
+    (
         agave_feature_set::define_ltds_fee_only_semantics::ID,
         435456000,
     ),
     (agave_feature_set::reduce_slot_time_to_350ms::ID, 440208000),
     (agave_feature_set::reduce_slot_time_to_300ms::ID, 441936000),
+    (
+        agave_feature_set::upgrade_bpf_stake_program_to_v5_1::ID,
+        443232000,
+    ),
 ];
