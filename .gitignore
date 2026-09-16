@@ -1,3 +1,9 @@
 target/
 tarpaulin-out/
 tarpaulin-out-up/
+
+scripts/node_modules/
+scripts/.yarn
+.yarn/
+.pnp.cjs
+.pnp.loader.mjs
