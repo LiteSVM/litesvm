@@ -15,6 +15,7 @@ agave-precompiles = "4.2.1"
 agave-reserved-account-keys = "4.2.1"
 solana-syscalls = "4.2.1"
 ansi_term = "0.12"
+base64 = "0.22"
 bv = "0.11.1"
 criterion = "0.8.2"
 ed25519-dalek = "2.2.0"
@@ -24,6 +25,9 @@ indexmap = "2.14"
 itertools = "0.15"
 libsecp256k1 = "0.7.2"
 litesvm = { path = "crates/litesvm", version = "0.16" }
+litesvm-core = { path = "crates/litesvm-core", version = "0.16" }
+litesvm-fixture = { path = "crates/fixture", version = "0.16" }
+litesvm-fixture-derive = { path = "crates/fixture-derive", version = "0.16" }
 litesvm-persistence = { path = "crates/persistence", version = "0.16" }
 log = "0.4"
 napi = { version = "3.12.2", default-features = false }
@@ -31,7 +35,11 @@ napi-build = "2.4.1"
 napi-derive = "3.6.3"
 nom = "8.0.0"
 qualifier_attr = "0.2.2"
+proc-macro-crate = "3"
+proc-macro2 = "1"
+quote = "1"
 serde = "1.0.229"
+serde_json = "1"
 sha2 = "0.10.9"
 smallvec = "1.15"
 solana-account = "4.3.0"
@@ -65,6 +73,7 @@ solana-precompile-error = "3.0.0"
 solana-program-error = "3.0.1"
 solana-program-option = "3.1.0"
 solana-program-pack = "3.1.0"
+solana-pubkey = "4.2"
 solana-program-runtime = "4.2.1"
 solana-rent = "~4.3.0"
 solana-runtime-transaction = "4.2.1"
@@ -90,11 +99,14 @@ solana-transaction-context = "4.2.1"
 solana-transaction-error = "~3.3.1"
 solana-vote-interface = "6.0.3"
 spl-associated-token-account-interface = "2.0.0"
+spl-token = { version = "=9.0.0", default-features = false }
 spl-token-2022-interface = "3.1.1"
 spl-token-interface = "3.0.0"
+syn = "2"
 tempfile = "3"
 test-log = "0.2"
 thiserror = "2.0.20"
+ureq = { version = "2.12", default-features = false }
 wincode = "0.5.5"
 
 [profile.bench]

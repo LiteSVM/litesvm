@@ -1,0 +1,20 @@
+[package]
+name = "litesvm-fixture-derive"
+description = "Attribute macro for LiteSVM's fixture harness"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+proc-macro = true
+doctest = false
+
+[dependencies]
+proc-macro-crate.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = ["full"] }
+
+[lints]
+workspace = true
