@@ -1,5 +1,5 @@
 use {
-    crate::{backend::ExecutionResult, Account, AccountChange, ProgramError, Pubkey},
+    crate::fixture::{backend::ExecutionResult, Account, AccountChange, ProgramError, Pubkey},
     base64::{engine::general_purpose::STANDARD, Engine as _},
 };
 
@@ -161,20 +161,20 @@ impl Outcome {
             .collect()
     }
 
-    /// Run one check or one [`bundle`](crate::bundle). Chainable.
+    /// Run one check or one [`bundle`](crate::fixture::bundle). Chainable.
     ///
     /// Facts self-diagnose: any account or transaction fact running against a
     /// failed transaction panics leading with the transaction's error and
     /// logs, so an unstated [`Outcome::success`] still fails loudly with the
     /// real cause. Verdicts are checks too: [`Outcome::success`] and
     /// [`Outcome::error`].
-    pub fn check(&self, check: crate::CheckFn) -> &Self {
+    pub fn check(&self, check: crate::fixture::CheckFn) -> &Self {
         check.run(self);
         self
     }
 
     /// Run several checks and/or bundles. Chainable.
-    pub fn checks(&self, checks: impl IntoIterator<Item = crate::CheckFn>) -> &Self {
+    pub fn checks(&self, checks: impl IntoIterator<Item = crate::fixture::CheckFn>) -> &Self {
         for check in checks {
             check.run(self);
         }

@@ -13,7 +13,7 @@
 //! installed at the response's observed slot.
 
 use {
-    crate::{world::Ctx, Account, Pubkey},
+    crate::fixture::{world::Ctx, Account, Pubkey},
     base64::{engine::general_purpose::STANDARD, Engine as _},
     serde_json::{json, Value},
     solana_sdk_ids::bpf_loader_upgradeable,
@@ -26,7 +26,7 @@ use {
     },
 };
 
-/// Default endpoint used when a world sets no [`rpc`](crate::CtxBuilder::rpc):
+/// Default endpoint used when a world sets no [`rpc`](crate::fixture::CtxBuilder::rpc):
 /// the public mainnet-beta RPC. This is a code-only default — there is
 /// deliberately no environment-variable override.
 pub(crate) const DEFAULT_RPC_URL: &str = "https://api.mainnet-beta.solana.com";
@@ -232,7 +232,7 @@ fn read_dump_file(path: &Path, bytes: &[u8]) -> Result<DumpFile, String> {
 /// The committed `.parallax/` store: a directory of `<primary-address>.dump`
 /// files, each a self-contained [`DumpFile`]. Because a store file *is* a dump
 /// file, users share a dump by copying the file out of `.parallax/` and
-/// [`Load`](crate::fixture::Load)-ing it by path. Only the core reads or writes
+/// [`Load`](crate::fixture::Load)-ing it by path. Only the harness reads or writes
 /// the store, so the format has exactly one implementation.
 pub(crate) struct DumpStore {
     dir: PathBuf,

@@ -1,9 +1,9 @@
 use {
-    crate::Pubkey, core::fmt, solana_instruction_error::InstructionError,
+    crate::fixture::Pubkey, core::fmt, solana_instruction_error::InstructionError,
     solana_transaction_error::TransactionError,
 };
 
-/// An account stored in a [`Ctx`](crate::Ctx) world.
+/// An account stored in a [`Ctx`](crate::fixture::Ctx) world.
 ///
 /// This is the portable account shape used by the test harness. It deliberately
 /// does not expose the account type of the runtime that executes the test.

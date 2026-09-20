@@ -55,27 +55,20 @@ pub fn parallax_test(attr: TokenStream, item: TokenStream) -> TokenStream {
         return error.to_compile_error().into();
     }
 
-    let test_crate = match crate_name("litesvm") {
+    let fixture = match crate_name("litesvm") {
         Ok(FoundCrate::Itself) => quote! { crate::fixture },
         Ok(FoundCrate::Name(name)) => {
             let name = format_ident!("{name}", span = Span::call_site());
             quote! { ::#name::fixture }
         }
-        Err(_) => match crate_name("litesvm-fixture") {
-            Ok(FoundCrate::Itself) => quote! { crate },
-            Ok(FoundCrate::Name(name)) => {
-                let name = format_ident!("{name}", span = Span::call_site());
-                quote! { ::#name }
-            }
-            Err(error) => {
-                return syn::Error::new(
-                    Span::call_site(),
-                    format!("could not resolve `litesvm` or `litesvm-fixture`: {error}"),
-                )
-                .to_compile_error()
-                .into();
-            }
-        },
+        Err(error) => {
+            return syn::Error::new(
+                Span::call_site(),
+                format!("could not resolve `litesvm`: {error}"),
+            )
+            .to_compile_error()
+            .into();
+        }
     };
 
     let attributes = &function.attrs;
@@ -95,7 +88,7 @@ pub fn parallax_test(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
         _ => (
             syn::Ident::new("ctx", Span::call_site()),
-            quote! { &mut #test_crate::Ctx },
+            quote! { &mut #fixture::Ctx },
         ),
     };
     let body = &function.block;
@@ -104,7 +97,7 @@ pub fn parallax_test(attr: TokenStream, item: TokenStream) -> TokenStream {
         #(#attributes)*
         #[test]
         #visibility fn #name() #output {
-            let mut __parallax_world = #test_crate::Ctx::builder(#program_id)
+            let mut __parallax_world = #fixture::Ctx::builder(#program_id)
                 .crate_name(env!("CARGO_PKG_NAME"))
                 .project_dir(env!("CARGO_MANIFEST_DIR"))
                 .build()

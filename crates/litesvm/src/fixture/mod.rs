@@ -1,7 +1,7 @@
 //! Parallax: a fixture-based testing harness for Solana programs on LiteSVM.
 //!
 //! [`parallax_test`] turns an ordinary Rust test into an isolated [`Ctx`]
-//! world loaded with the current program. [`fixture`] provides composable
+//! world loaded with the current program. Fixtures provide composable
 //! account setup, while [`Outcome`] keeps execution assertions structured and
 //! independent of the SVM that ran the transaction. Typed account state is
 //! read and written with [wincode](https://docs.rs/wincode) — a serialization
@@ -18,8 +18,8 @@
 //! }
 //! ```
 //!
-//! [`fixture::Wallet::account`] funds an actor with the default balance;
-//! [`fixture::Wallet::fund`] sets an exact one. Any signer a transaction names
+//! [`Wallet::account`] funds an actor with the default balance;
+//! [`Wallet::fund`] sets an exact one. Any signer a transaction names
 //! but never installs is auto-funded on send, so co-signers cost nothing extra.
 //!
 //! The name is the pitch: the same program observed from multiple vantage
@@ -47,7 +47,7 @@ mod accounts;
 mod backend;
 mod check;
 mod dump;
-pub mod fixture;
+mod fixtures;
 mod outcome;
 mod setup;
 mod types;
@@ -57,6 +57,10 @@ pub use {
     check::{
         bundle, CheckFn, Cu, DataExpected, Expected, ExpectedBytes, IntoTransactionError, Raw,
         ReturnData, Typed,
+    },
+    fixtures::{
+        AssociatedTokenAccount, Dump, Fixture, Load, Mint, Program, TokenAccount, TokenProgram,
+        Wallet,
     },
     litesvm_fixture_derive::parallax_test,
     outcome::Outcome,
@@ -97,15 +101,12 @@ pub fn co_signers(addresses: &[Pubkey]) -> Vec<AccountMeta> {
 
 /// Imports used by most program tests.
 pub mod prelude {
-    pub use crate::{
-        bundle, co_signers,
-        fixture::{
-            AssociatedTokenAccount, Dump, Fixture, Load, Mint, Program, TokenAccount, TokenProgram,
-            Wallet,
-        },
-        parallax_test, system_program, Account, AccountChange, AccountMeta, CheckFn, Ctx, Cu,
-        Instruction, Outcome, ProgramError, Pubkey, ReturnData, Snapshot, DEFAULT_WALLET_LAMPORTS,
-        SPL_ASSOCIATED_TOKEN_PROGRAM_ID, SPL_TOKEN_2022_PROGRAM_ID, SPL_TOKEN_PROGRAM_ID,
+    pub use crate::fixture::{
+        bundle, co_signers, parallax_test, system_program, Account, AccountChange, AccountMeta,
+        AssociatedTokenAccount, CheckFn, Ctx, Cu, Dump, Fixture, Instruction, Load, Mint, Outcome,
+        Program, ProgramError, Pubkey, ReturnData, Snapshot, TokenAccount, TokenProgram, Wallet,
+        DEFAULT_WALLET_LAMPORTS, SPL_ASSOCIATED_TOKEN_PROGRAM_ID, SPL_TOKEN_2022_PROGRAM_ID,
+        SPL_TOKEN_PROGRAM_ID,
     };
 }
 
@@ -113,10 +114,8 @@ pub mod prelude {
 mod tests {
     use {
         super::{
-            backend::Backend,
-            dump::DEFAULT_RPC_URL,
-            fixture::{Mint, TokenAccount, TokenProgram, Wallet},
-            Ctx, Pubkey, SPL_TOKEN_2022_PROGRAM_ID,
+            backend::Backend, dump::DEFAULT_RPC_URL, Ctx, Mint, Pubkey, TokenAccount, TokenProgram,
+            Wallet, SPL_TOKEN_2022_PROGRAM_ID,
         },
         std::path::PathBuf,
     };

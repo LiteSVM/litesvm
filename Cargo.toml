@@ -25,8 +25,6 @@ indexmap = "2.14"
 itertools = "0.15"
 libsecp256k1 = "0.7.2"
 litesvm = { path = "crates/litesvm", version = "0.16" }
-litesvm-core = { path = "crates/litesvm-core", version = "0.16" }
-litesvm-fixture = { path = "crates/fixture", version = "0.16" }
 litesvm-fixture-derive = { path = "crates/fixture-derive", version = "0.16" }
 litesvm-persistence = { path = "crates/persistence", version = "0.16" }
 log = "0.4"

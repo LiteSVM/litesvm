@@ -5,7 +5,7 @@
 //! [`fixture`]: crate::fixture
 
 use {
-    crate::{system_program, Account, Pubkey, SPL_ASSOCIATED_TOKEN_PROGRAM_ID},
+    crate::fixture::{system_program, Account, Pubkey, SPL_ASSOCIATED_TOKEN_PROGRAM_ID},
     solana_rent::Rent,
     spl_token::{
         solana_program::program_pack::Pack,

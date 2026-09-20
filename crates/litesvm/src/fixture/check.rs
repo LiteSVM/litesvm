@@ -1,7 +1,7 @@
 //! Check values: the verification half of the harness.
 //!
-//! The verdict methods ([`succeeds`](crate::Outcome::succeeds) /
-//! [`fails`](crate::Outcome::fails) / [`fails_with`](crate::Outcome::fails_with))
+//! The verdict methods ([`succeeds`](crate::fixture::Outcome::succeeds) /
+//! [`fails`](crate::fixture::Outcome::fails) / [`fails_with`](crate::fixture::Outcome::fails_with))
 //! produce a transaction witness; everything asserted about that transaction is
 //! a [`CheckFn`] — built from the fact namespaces, a [`bundle`] of other
 //! checks, or [`CheckFn::new`] over the whole transaction. Every fact takes its
@@ -22,7 +22,7 @@
 //! their source, so they fail with the location of the line that built them.
 
 use {
-    crate::{
+    crate::fixture::{
         outcome::{mint_supply, token_amount},
         Outcome, ProgramError, Pubkey,
     },
@@ -217,13 +217,13 @@ fn live(tx: &Outcome) {
     }
 }
 
-fn required(tx: &Outcome, address: Pubkey) -> &crate::Account {
+fn required(tx: &Outcome, address: Pubkey) -> &crate::fixture::Account {
     live(tx);
     tx.account(address)
         .unwrap_or_else(|| panic!("transaction does not contain account {address}"))
 }
 
-fn change(tx: &Outcome, address: Pubkey) -> &crate::AccountChange {
+fn change(tx: &Outcome, address: Pubkey) -> &crate::fixture::AccountChange {
     live(tx);
     tx.account_changes()
         .iter()
@@ -247,9 +247,9 @@ impl Cu {
     }
 }
 
-/// The account-scoped facts, hung off the [`Account`](crate::Account) type
+/// The account-scoped facts, hung off the [`Account`](crate::fixture::Account) type
 /// itself: one noun installs raw accounts and measures them.
-impl crate::Account {
+impl crate::fixture::Account {
     /// The lamport balance of the account at `address`.
     #[track_caller]
     pub fn lamports(address: Pubkey, expected: impl Expected<u64> + 'static) -> CheckFn {
@@ -274,7 +274,7 @@ impl crate::Account {
 
     /// The data of the account at `address` — raw bytes when expected raw,
     /// decoded through `T`'s wincode schema (the same decode path as
-    /// [`Ctx::read`](crate::Ctx::read)) when the predicate takes `&T`:
+    /// [`Ctx::read`](crate::fixture::Ctx::read)) when the predicate takes `&T`:
     ///
     /// ```rust,ignore
     /// Account::data(config, [1, 0, 0, 0]),                     // raw
@@ -330,7 +330,7 @@ impl crate::Account {
                 );
                 assert_eq!(
                     account.owner,
-                    crate::system_program::ID,
+                    crate::fixture::system_program::ID,
                     "closed account {address} is not system-owned"
                 );
             }
@@ -371,7 +371,7 @@ where
     F: Fn(&T) -> bool,
 {
     fn verify(&self, address: Pubkey, location: &'static Location<'static>, data: &[u8]) {
-        let actual = crate::world::decode::<T>("data", address, data, 0);
+        let actual = crate::fixture::world::decode::<T>("data", address, data, 0);
         if !self(&actual) {
             panic!("data of {address}: predicate at {location} failed — actual: {actual:#?}");
         }

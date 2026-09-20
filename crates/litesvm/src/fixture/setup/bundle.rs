@@ -1,6 +1,6 @@
 use {
     super::SetupError,
-    crate::Pubkey,
+    crate::fixture::Pubkey,
     std::{
         fs,
         path::{Path, PathBuf},

@@ -1,10 +1,9 @@
 use {
-    crate::{
+    crate::fixture::{
         accounts,
         backend::Backend,
-        fixture::{Fixture, TokenProgram},
         outcome::{mint_supply, token_amount, TrackedAccount},
-        Account, CtxBuilder, Instruction, Outcome, Pubkey, SetupError,
+        Account, CtxBuilder, Fixture, Instruction, Outcome, Pubkey, SetupError, TokenProgram,
     },
     std::{ops::Deref, path::Path},
     wincode::{config::DefaultConfig, SchemaRead, SchemaWrite},
@@ -85,7 +84,7 @@ pub struct Ctx {
     /// Whether the mixed-slot coherence warning has already fired for this world.
     pub(super) dump_warned: bool,
     /// Checks verified against every committed execution's outcome.
-    pub(super) invariants: Vec<crate::CheckFn>,
+    pub(super) invariants: Vec<crate::fixture::CheckFn>,
 }
 
 impl Ctx {
@@ -196,7 +195,7 @@ impl Ctx {
     pub fn derive_ata(&self, owner: Pubkey, mint: Pubkey, token_program: TokenProgram) -> Pubkey {
         Pubkey::find_program_address(
             &[owner.as_ref(), token_program.id().as_ref(), mint.as_ref()],
-            &crate::SPL_ASSOCIATED_TOKEN_PROGRAM_ID,
+            &crate::fixture::SPL_ASSOCIATED_TOKEN_PROGRAM_ID,
         )
         .0
     }
@@ -225,7 +224,7 @@ impl Ctx {
     /// check the account's owner. This differs from the TypeScript harness by
     /// design: there, codecs carry and validate `owner` because generated
     /// bundles are self-framing; in Rust owner stays an orthogonal
-    /// [`Account::owner`](crate::Account::owner) check.
+    /// [`Account::owner`](crate::fixture::Account::owner) check.
     ///
     /// # Trailing bytes
     ///
@@ -298,7 +297,7 @@ impl Ctx {
     /// Note the asymmetry with [`Self::read`], which takes only an address:
     /// `owner` is required to *install* the account (every Solana account has
     /// one) but is never validated by a read. Pair a read with
-    /// [`Account::owner`](crate::Account::owner) when ownership matters.
+    /// [`Account::owner`](crate::fixture::Account::owner) when ownership matters.
     pub fn write<T>(&mut self, address: Pubkey, owner: Pubkey, value: T) -> Pubkey
     where
         T: SchemaWrite<DefaultConfig, Src = T>,
@@ -335,21 +334,21 @@ impl Ctx {
     /// reconfigures the budget on an already-built world, preserving every
     /// loaded program and installed account.
     ///
-    /// [`CtxBuilder::compute_unit_limit`]: crate::CtxBuilder::compute_unit_limit
+    /// [`CtxBuilder::compute_unit_limit`]: crate::fixture::CtxBuilder::compute_unit_limit
     pub fn set_compute_unit_limit(&mut self, limit: u64) {
         self.backend.set_compute_unit_limit(limit);
     }
 
-    /// Register a [`CheckFn`](crate::CheckFn) verified after every
+    /// Register a [`CheckFn`](crate::fixture::CheckFn) verified after every
     /// successful committed execution.
     ///
-    /// Define a protocol invariant once — a fact, a [`bundle`](crate::bundle),
-    /// or a [`CheckFn::new`](crate::CheckFn::new) closure — and every
+    /// Define a protocol invariant once — a fact, a [`bundle`](crate::fixture::bundle),
+    /// or a [`CheckFn::new`](crate::fixture::CheckFn::new) closure — and every
     /// succeeding `execute` in the test enforces it against the same witness the
     /// test would check. Failed sends commit nothing (an invariant that held
     /// before still holds) and simulations never run invariants. An invariant
     /// sees the transaction only: the accounts it reads must be part of it.
-    pub fn invariant(&mut self, check: crate::CheckFn) {
+    pub fn invariant(&mut self, check: crate::fixture::CheckFn) {
         self.invariants.push(check);
     }
 
@@ -513,7 +512,7 @@ impl Ctx {
             })
             .flatten();
         let outcome = Outcome::from_backend(result, tracked)
-            .with_hint(crate::dump::missing_account_hint(hint));
+            .with_hint(crate::fixture::dump::missing_account_hint(hint));
         if commit && outcome.is_ok() {
             for invariant in &self.invariants {
                 invariant.run(&outcome);

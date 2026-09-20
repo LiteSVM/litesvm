@@ -1,6 +1,8 @@
 use {
-    crate::{Account, Instruction, ProgramError, Pubkey, DEFAULT_WALLET_LAMPORTS},
-    litesvm_core::LiteSVM,
+    crate::{
+        fixture::{Account, Instruction, ProgramError, Pubkey, DEFAULT_WALLET_LAMPORTS},
+        LiteSVM,
+    },
     solana_account::{Account as SolanaAccount, AccountSharedData, ReadableAccount},
     solana_clock::Clock,
     solana_compute_budget::compute_budget::ComputeBudget,
@@ -56,11 +58,11 @@ impl Backend {
             .with_blockhash_check(false);
         // The live runtime charges no fees here: the harness measures compute,
         // not economics, and spoofed signers never fund a fee.
-        svm.set_fee_structure(FeeStructure {
+        svm.fee_structure = FeeStructure {
             lamports_per_signature: 0,
             lamports_per_write_lock: 0,
             compute_fee_bins: vec![],
-        });
+        };
         Self { svm }
     }
 

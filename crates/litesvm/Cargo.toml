@@ -14,63 +14,132 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = []
-fixture = ["dep:litesvm-fixture"]
-invocation-inspect-callback = ["litesvm-core/invocation-inspect-callback"]
-nodejs-internal = ["litesvm-core/nodejs-internal"]
-hashbrown = ["litesvm-core/hashbrown"]
-sbpf-debugger = ["litesvm-core/sbpf-debugger"]
-serde = ["litesvm-core/serde"]
-persistence-internal = ["litesvm-core/persistence-internal"]
-precompiles = ["litesvm-core/precompiles"]
-register-tracing = ["litesvm-core/register-tracing"]
+fixture = [
+    "dep:base64",
+    "dep:litesvm-fixture-derive",
+    "dep:serde_json",
+    "dep:solana-pubkey",
+    "dep:spl-token",
+    "dep:ureq",
+    "wincode/derive",
+]
+invocation-inspect-callback = []
+nodejs-internal = ["dep:qualifier_attr"]
+hashbrown = ["dep:hashbrown"]
+sbpf-debugger = ["register-tracing", "solana-program-runtime/sbpf-debugger"]
+serde = ["dep:serde", "solana-transaction-error/serde", "solana-message/serde"]
+persistence-internal = []
+precompiles = ["dep:agave-precompiles"]
+register-tracing = [
+    "invocation-inspect-callback",
+    "dep:hex",
+    "dep:sha2",
+    "dep:nom",
+]
 
 [dependencies]
-litesvm-core.workspace = true
-litesvm-fixture = { workspace = true, optional = true }
-
-[dev-dependencies]
 agave-feature-set.workspace = true
-criterion.workspace = true
-ed25519-dalek.workspace = true
-hashbrown.workspace = true
-libsecp256k1.workspace = true
-serde.workspace = true
+agave-precompiles = { workspace = true, optional = true, features = [
+    "agave-unstable-api",
+] }
+agave-reserved-account-keys = { workspace = true, features = [
+    "agave-unstable-api",
+] }
+solana-syscalls.workspace = true
+ansi_term.workspace = true
+base64 = { workspace = true, optional = true }
+hashbrown = { workspace = true, optional = true }
+indexmap.workspace = true
+itertools.workspace = true
+log.workspace = true
+litesvm-fixture-derive = { workspace = true, optional = true }
+qualifier_attr = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 solana-account.workspace = true
 solana-address.workspace = true
-solana-address-lookup-table-interface = { workspace = true, features = ["bincode", "bytemuck"] }
-solana-clock.workspace = true
+solana-address-lookup-table-interface = { workspace = true, features = [
+    "bincode",
+    "bytemuck",
+] }
+solana-builtins = { workspace = true, features = ["agave-unstable-api"] }
+solana-clock = { workspace = true, features = ["wincode"] }
 solana-compute-budget.workspace = true
-solana-compute-budget-interface.workspace = true
-solana-ed25519-program.workspace = true
-solana-epoch-schedule.workspace = true
+solana-compute-budget-instruction = { workspace = true, features = [
+    "agave-unstable-api",
+] }
+solana-epoch-rewards = { workspace = true, features = ["wincode"] }
+solana-epoch-schedule = { workspace = true, features = ["wincode"] }
+solana-fee = { workspace = true, features = ["agave-unstable-api"] }
+# Keep this direct dependency pinned to constrain the transitive
+# Solana wincode graph to the 0.5.x-compatible fee-calculator line.
+solana-fee-calculator.workspace = true
 solana-feature-gate-interface = { workspace = true, features = ["bincode"] }
+solana-fee-structure.workspace = true
 solana-hash.workspace = true
 solana-instruction.workspace = true
+solana-instruction-error.workspace = true
+solana-instructions-sysvar.workspace = true
 solana-keypair.workspace = true
+solana-last-restart-slot.workspace = true
 solana-loader-v3-interface = { workspace = true, features = ["wincode"] }
+solana-loader-v4-interface.workspace = true
 solana-message.workspace = true
 solana-native-token.workspace = true
 solana-nonce.workspace = true
-solana-program-option.workspace = true
-solana-program-pack.workspace = true
+solana-nonce-account.workspace = true
+solana-precompile-error.workspace = true
 solana-program-error.workspace = true
 solana-program-runtime.workspace = true
+solana-pubkey = { workspace = true, optional = true, features = ["curve25519"] }
 solana-rent.workspace = true
-solana-secp256k1-program = { workspace = true, features = ["bincode"] }
+solana-runtime-transaction = { workspace = true, features = ["agave-unstable-api"] }
 solana-sdk-ids.workspace = true
+solana-sha256-hasher.workspace = true
 solana-signature.workspace = true
 solana-signer.workspace = true
-solana-stake-interface.workspace = true
-solana-svm-callback = { workspace = true, features = ["agave-unstable-api"] }
+solana-slot-hashes.workspace = true
+solana-slot-history.workspace = true
+solana-stake-history.workspace = true
+solana-svm-callback.workspace = true
+solana-svm-log-collector.workspace = true
+solana-svm-timings.workspace = true
+solana-svm-transaction.workspace = true
 solana-system-interface = { workspace = true, features = ["bincode"] }
+solana-system-program.workspace = true
+solana-sysvar = { workspace = true, features = ["wincode"] }
+solana-sysvar-id.workspace = true
 solana-transaction = { workspace = true, features = ["verify"] }
 solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
+spl-token = { workspace = true, optional = true, features = ["no-entrypoint"] }
+thiserror.workspace = true
+ureq = { workspace = true, optional = true, features = ["tls"] }
+sha2 = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+nom = { workspace = true, optional = true }
+wincode.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+ed25519-dalek.workspace = true
+libsecp256k1.workspace = true
+serde.workspace = true
+solana-address.workspace = true
+solana-clock.workspace = true
+solana-compute-budget-interface.workspace = true
+solana-ed25519-program.workspace = true
+solana-keypair.workspace = true
+solana-program-option.workspace = true
+solana-program-pack.workspace = true
+solana-secp256k1-program = { workspace = true, features = ["bincode"] }
+solana-signer.workspace = true
+solana-stake-interface.workspace = true
+solana-svm-callback = { workspace = true, features = ["agave-unstable-api"] }
 solana-vote-interface = { workspace = true, features = ["bincode"] }
 spl-associated-token-account-interface.workspace = true
 spl-token-interface.workspace = true
 test-log.workspace = true
-wincode.workspace = true
 
 [lints]
 workspace = true

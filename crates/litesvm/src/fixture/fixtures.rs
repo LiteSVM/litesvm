@@ -1,7 +1,9 @@
 //! Composable fixtures for common Solana accounts and programs.
 
 use {
-    crate::{accounts, Account, Ctx, Pubkey, SPL_TOKEN_2022_PROGRAM_ID, SPL_TOKEN_PROGRAM_ID},
+    crate::fixture::{
+        accounts, Account, Ctx, Pubkey, SPL_TOKEN_2022_PROGRAM_ID, SPL_TOKEN_PROGRAM_ID,
+    },
     std::path::PathBuf,
 };
 
@@ -88,12 +90,12 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    /// One wallet with [`crate::DEFAULT_WALLET_LAMPORTS`] at the world's next
+    /// One wallet with [`crate::fixture::DEFAULT_WALLET_LAMPORTS`] at the world's next
     /// deterministic address.
     pub fn account() -> Self {
         Self {
             address: None,
-            lamports: crate::DEFAULT_WALLET_LAMPORTS,
+            lamports: crate::fixture::DEFAULT_WALLET_LAMPORTS,
             holdings: Vec::new(),
         }
     }
@@ -129,7 +131,7 @@ impl Fixture for Wallet {
                 address,
                 mint,
                 amount,
-                crate::SPL_TOKEN_PROGRAM_ID,
+                crate::fixture::SPL_TOKEN_PROGRAM_ID,
             ));
         }
         address
@@ -376,7 +378,7 @@ impl Fixture for AssociatedTokenAccount {
 /// `Dump` fills a committed `.parallax/` store next to the consuming project's
 /// manifest, so the first run fetches once and every later run is fully offline
 /// and deterministic. The RPC endpoint comes from
-/// [`Ctx::builder(id).rpc(url)`](crate::CtxBuilder::rpc); unset, it defaults to
+/// [`Ctx::builder(id).rpc(url)`](crate::fixture::CtxBuilder::rpc); unset, it defaults to
 /// the public mainnet-beta RPC.
 ///
 /// ```rust,ignore

@@ -1,5 +1,5 @@
 use {
-    crate::{backend::Backend, Ctx, Pubkey},
+    crate::fixture::{backend::Backend, Ctx, Pubkey},
     std::{
         env,
         error::Error,
@@ -13,7 +13,7 @@ mod bundle;
 use bundle::discover_program_bundle;
 
 /// Environment variable naming the compiled program artifact to load. A test
-/// runner (or [`crate::parallax_test`]) may set it to a freshly built program;
+/// runner (or [`crate::fixture::parallax_test`]) may set it to a freshly built program;
 /// left unset, the artifact is discovered under an ancestor `target/deploy`.
 pub const PROGRAM_PATH_ENV: &str = "PARALLAX_PROGRAM_PATH";
 
@@ -88,10 +88,10 @@ impl CtxBuilder {
     ///
     /// Use when the caller already holds the compiled program, such as a test
     /// embedding the artifact with `include_bytes!`. When set, [`Self::build`] loads exactly this ELF
-    /// under the id passed to [`Ctx::builder`](crate::Ctx::builder) and
+    /// under the id passed to [`Ctx::builder`](crate::fixture::Ctx::builder) and
     /// ignores [`Self::program_path`], [`Self::crate_name`], and
     /// [`PROGRAM_PATH_ENV`]. Additional programs are added afterwards with
-    /// [`Ctx::preload_program`](crate::Ctx::preload_program).
+    /// [`Ctx::preload_program`](crate::fixture::Ctx::preload_program).
     ///
     /// Empty bytes are equivalent to [`Self::no_program`].
     pub fn program_bytes(mut self, elf: impl Into<Vec<u8>>) -> Self {
@@ -106,10 +106,10 @@ impl CtxBuilder {
     /// Use for tests that exercise only those built-ins — a bare token transfer,
     /// an account layout — without a program of their own, or when every program
     /// under test is added afterwards with
-    /// [`Ctx::preload_program`](crate::Ctx::preload_program). Like
+    /// [`Ctx::preload_program`](crate::fixture::Ctx::preload_program). Like
     /// [`Self::program_bytes`], this skips on-disk artifact discovery and the
     /// sibling CPI-bundle scan; the id passed to
-    /// [`Ctx::builder`](crate::Ctx::builder) still names the world for PDA
+    /// [`Ctx::builder`](crate::fixture::Ctx::builder) still names the world for PDA
     /// derivation.
     pub fn no_program(mut self) -> Self {
         self.program_elf = Some(Vec::new());
@@ -127,7 +127,7 @@ impl CtxBuilder {
             rpc_url,
             project_dir,
         } = self;
-        let rpc_url = rpc_url.unwrap_or_else(|| crate::dump::DEFAULT_RPC_URL.to_string());
+        let rpc_url = rpc_url.unwrap_or_else(|| crate::fixture::dump::DEFAULT_RPC_URL.to_string());
 
         if let Some(elf) = program_elf {
             let mut backend = Backend::new();
