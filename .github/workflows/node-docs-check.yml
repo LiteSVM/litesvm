@@ -25,10 +25,8 @@ jobs:
         with:
           node-version: 22
           cache: yarn
-          cache-dependency-path: crates/node-litesvm/yarn.lock
+          cache-dependency-path: yarn.lock
       - name: Install dependencies
-        working-directory: crates/node-litesvm
-        run: yarn install
+        run: corepack enable && yarn install --immutable
       - name: Build with VitePress
-        working-directory: crates/node-litesvm
-        run: yarn predocs && yarn docs:build
+        run: yarn workspace litesvm predocs && yarn workspace litesvm docs:build

@@ -9,7 +9,7 @@ on:
       - LICENSE
       - '**/*.gitignore'
       - .editorconfig
-      - node-litesvm/docs/**
+      - crates/node-litesvm/docs/**
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -20,13 +20,19 @@ jobs:
         with:
           node-version: 22
           check-latest: true
-      - name: Rustup install
+          cache: yarn
+          cache-dependency-path: yarn.lock
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
       - name: Install dependencies
-        run: cd crates/node-litesvm && corepack enable && yarn install
-      - name: Lint rust
-        run: cd crates/node-litesvm && yarn lint:rust
-      - name: Lint JS
-        run: cd crates/node-litesvm && yarn lint:js
+        run: corepack enable && yarn install --immutable
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Lint Rust core
+        run: yarn workspace litesvm-core lint
+      - name: Lint Kit wrapper
+        run: yarn workspace litesvm lint:js
+      - name: Lint Web3.js wrapper
+        run: yarn workspace litesvm-web3js lint
