@@ -4,10 +4,7 @@
 
 ### Changed
 
-- Bump the Agave crates to 4.3.0, `solana-svm-transaction` to the 5.0 line and `wincode` to 0.6.
-- Top-level instructions are processed through agave's `InvokeContext::process_message` instead of a local copy.
-- Program owner (loader) accounts are no longer appended to the transaction accounts, matching agave 4.3.
-- Persistence snapshots are written as version 4, which stores the reintroduced modular-exponentiation compute budget costs. Versions 1–3 still load; versions 2 and 3 restore those two costs as defaults.
+- Bump to Agave 4.3 ([#425](https://github.com/LiteSVM/litesvm/pull/425)).
 
 ## [0.16.0] - 2026-08-24
 
