@@ -4,10 +4,10 @@ mod types;
 pub use error::PersistenceError;
 use {
     litesvm::LiteSVM,
-    std::marker::PhantomData,
     std::{
         fs::File,
         io::{BufWriter, Read, Write},
+        marker::PhantomData,
         path::Path,
     },
     types::{
