@@ -68,8 +68,10 @@ function fromAccountInfo(acc: AccountInfoBytes): Account {
 	);
 }
 
-function convertAddressAndAccount(val: AddressAndAccount): [Address, Account] {
-	return [new Address(val.address), val.account()];
+function convertAddressAndAccount(
+	val: AddressAndAccount,
+): [Address, AccountInfoBytes] {
+	return [new Address(val.address), toAccountInfo(val.account())];
 }
 
 async function serializeTransaction(
@@ -92,7 +94,7 @@ export class SimulatedTransactionInfo {
 	meta(): TransactionMetadata {
 		return this.inner.meta();
 	}
-	postAccounts(): [Address, Account][] {
+	postAccounts(): [Address, AccountInfoBytes][] {
 		return this.inner.postAccounts().map(convertAddressAndAccount);
 	}
 }
@@ -302,10 +304,7 @@ export class LiteSVM {
 	getProgramAccounts(programAddress: Address): [Address, AccountInfoBytes][] {
 		return this.inner
 			.getProgramAccounts(programAddress.toBytes())
-			.map((addressAndAccount: AddressAndAccount) => [
-				new Address(addressAndAccount.address),
-				toAccountInfo(addressAndAccount.account()),
-			]);
+			.map(convertAddressAndAccount);
 	}
 
 	/**

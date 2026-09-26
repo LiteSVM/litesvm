@@ -47,6 +47,13 @@ test("web3.js legacy transactions can simulate, send, and read state", async () 
 
 	const simulation = await svm.simulateTransaction(transaction);
 	assert(!(simulation instanceof FailedTransactionMetadata));
+	const postAccounts: [Address, AccountInfoBytes][] = simulation.postAccounts();
+	const simulatedRecipient = postAccounts.find(([address]) =>
+		address.equals(recipient),
+	)?.[1];
+	assert(simulatedRecipient);
+	assert(simulatedRecipient.owner instanceof Address);
+	assert.equal(simulatedRecipient.lamports, transferLamports);
 
 	const result = await svm.sendTransaction(transaction);
 	assert(result instanceof TransactionMetadata);
@@ -58,6 +65,7 @@ test("web3.js legacy transactions can simulate, send, and read state", async () 
 	assert(recipientAccount !== null);
 	assert(recipientAccount.owner instanceof Address);
 	assert.equal(recipientAccount.space, 0n);
+	assert.deepEqual(simulatedRecipient, recipientAccount);
 
 	const account: AccountInfoBytes = {
 		executable: false,

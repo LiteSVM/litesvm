@@ -88,4 +88,14 @@ yarn add litesvm
 
 Make sure you have Yarn and the Rust toolchain installed.
 
-Then run `yarn` to install deps, run `yarn build` to build the binary and `yarn test` to run the tests.
+From the repository root, run:
+
+```sh
+yarn install --immutable
+yarn build
+yarn test
+```
+
+The root build compiles the native binary and both wrappers. Running `yarn build`
+inside this package only compiles TypeScript; to build the native binary from
+there, run `yarn workspace litesvm-core build` first.
