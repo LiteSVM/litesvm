@@ -325,11 +325,10 @@ use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use std::collections::{hash_map::Entry, HashMap};
 use {
     crate::{
-        accounts_db::AccountsDb,
+        accounts_db::{load_preverified, visible_deployment_slot, AccountsDb},
         error::LiteSVMError,
         features::MAINNET_ACTIVE_FEATURES,
         history::TransactionHistory,
-        message_processor::process_message,
         programs::load_default_programs,
         types::{
             ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult,
@@ -366,7 +365,7 @@ use {
     solana_program_runtime::{
         invoke_context::{BuiltinFunctionRegisterer, EnvironmentConfig, InvokeContext},
         loaded_programs::{ProgramRuntimeEnvironment, ProgramRuntimeEnvironments},
-        program_cache_entry::{ProgramCacheEntry, DELAY_VISIBILITY_SLOT_OFFSET},
+        program_cache_entry::ProgramCacheEntry,
         program_metrics::LoadProgramMetrics,
         solana_sbpf::program::BuiltinProgram,
     },
@@ -383,7 +382,7 @@ use {
     solana_stake_history::StakeHistory,
     solana_svm_log_collector::LogCollector,
     solana_svm_timings::ExecuteTimings,
-    solana_svm_transaction::svm_message::SVMStaticMessage,
+    solana_svm_transaction::svm_message::{SVMMessage, SVMStaticMessage},
     solana_syscalls::create_program_runtime_environment,
     solana_system_program::{get_system_account_kind, SystemAccountKind},
     solana_sysvar::Sysvar,
@@ -416,7 +415,6 @@ pub mod debugger;
 pub mod features;
 mod format_logs;
 mod history;
-mod message_processor;
 #[cfg(feature = "precompiles")]
 mod precompiles;
 mod programs;
@@ -713,8 +711,7 @@ impl LiteSVM {
                 .enable_feature_id
                 .is_none_or(|x| self.feature_set.is_active(&x))
             {
-                let loaded_program =
-                    ProgramCacheEntry::new_builtin(0, builtint.name.len(), builtint.register_fn);
+                let loaded_program = ProgramCacheEntry::new_builtin(0, builtint.register_fn);
                 self.accounts
                     .programs_cache
                     .replenish(builtint.program_id, Arc::new(loaded_program));
@@ -1028,7 +1025,6 @@ impl LiteSVM {
                 .get_clock()
                 .unwrap_or_default()
                 .slot,
-            1,
             entrypoint,
         );
 
@@ -1066,7 +1062,7 @@ impl LiteSVM {
             .unwrap_or_default()
             .slot;
 
-        let program_size = if bpf_loader_upgradeable::check_id(loader_id) {
+        if bpf_loader_upgradeable::check_id(loader_id) {
             let (programdata_address, _bump) =
                 Address::find_program_address(&[program_id.as_ref()], loader_id);
 
@@ -1106,8 +1102,6 @@ impl LiteSVM {
                 .add_account_no_checks(programdata_address, programdata_account);
             self.accounts
                 .add_account_no_checks(program_id, program_account);
-
-            programdata_len
         } else if bpf_loader::check_id(loader_id) || bpf_loader_deprecated::check_id(loader_id) {
             let program_len = program_bytes.len();
             let lamports = self.minimum_balance_for_rent_exemption(program_len);
@@ -1116,43 +1110,32 @@ impl LiteSVM {
             account.set_data_from_slice(program_bytes);
 
             self.accounts.add_account_no_checks(program_id, account);
-
-            program_len
         } else {
             return Err(LiteSVMError::InvalidLoader(format!(
                 "Unsupported loader: {loader_id}"
             )));
-        };
+        }
 
-        let effective_slot = current_slot.saturating_add(DELAY_VISIBILITY_SLOT_OFFSET);
         let program_runtime_for_deployment =
             self.accounts.environments.get_env_for_deployment().clone();
-        let mut loaded_program = if PREVERIFIED {
-            // Safety: PREVERIFIED means the program was previously verified.
-            unsafe {
-                ProgramCacheEntry::reload(
-                    loader_id,
-                    program_runtime_for_deployment.clone(),
-                    current_slot,
-                    effective_slot,
-                    program_bytes,
-                    program_size,
-                    &mut LoadProgramMetrics::default(),
-                )
-            }
-        } else {
-            ProgramCacheEntry::new(
+        let deployment_slot = visible_deployment_slot(current_slot);
+        let loaded_program = if PREVERIFIED {
+            load_preverified(
                 loader_id,
                 program_runtime_for_deployment,
-                current_slot,
-                effective_slot,
+                deployment_slot,
                 program_bytes,
-                program_size,
+            )
+        } else {
+            ProgramCacheEntry::load(
+                loader_id,
+                program_runtime_for_deployment,
+                deployment_slot,
+                program_bytes,
                 &mut LoadProgramMetrics::default(),
             )
         }
         .map_err(|e| LiteSVMError::ProgramLoad(e.to_string()))?;
-        loaded_program.effective_slot = current_slot;
 
         self.accounts
             .programs_cache
@@ -1309,7 +1292,7 @@ impl LiteSVM {
             message,
             self.fee_structure.lamports_per_signature,
             prioritization_fee,
-            FeeFeatures::from(&self.feature_set),
+            FeeFeatures {},
         );
         let mut validated_fee_payer = false;
         let mut payer_key = None;
@@ -1336,7 +1319,8 @@ impl LiteSVM {
                     // https://github.com/anza-xyz/agave/blob/v4.2.0/svm/src/account_loader.rs#L613-L618
                     (0, construct_instructions_account(message)?)
                 } else {
-                    let is_instruction_account = message.is_instruction_account(i);
+                    let is_instruction_account =
+                        SVMStaticMessage::is_instruction_account(message, i);
                     let (loaded_size, mut account) = if !is_instruction_account
                         && !message.is_writable(i)
                         && self.accounts.programs_cache.find(key).is_some()
@@ -1396,7 +1380,7 @@ impl LiteSVM {
                 Ok((*key, account))
             })
             .collect::<solana_transaction_error::TransactionResult<Vec<_>>>();
-        let mut accounts = match maybe_accounts {
+        let accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
                 return (Err(e), accumulated_consume_units, None, fee, payer_key);
@@ -1412,7 +1396,6 @@ impl LiteSVM {
                 payer_key,
             );
         }
-        let builtins_start_index = accounts.len();
         let maybe_program_indices = tx
             .message()
             .instructions()
@@ -1434,31 +1417,22 @@ impl LiteSVM {
                     return Ok(program_index as IndexOfAccount);
                 }
 
-                if !accounts
-                    .get(builtins_start_index..)
-                    .ok_or(TransactionError::ProgramAccountNotFound)?
-                    .iter()
-                    .any(|(key, _)| key == owner_id)
-                {
-                    let owner_account = self.accounts.get_account(owner_id).unwrap();
-                    if !native_loader::check_id(owner_account.owner()) {
-                        error!(
-                            "Owner account {owner_id} is not owned by the native loader program."
-                        );
-                        return Err(TransactionError::InvalidProgramForExecution);
-                    }
-                    if !owner_account.executable() {
-                        error!("Owner account {owner_id} is not executable");
-                        return Err(TransactionError::InvalidProgramForExecution);
-                    }
-                    //Add program_id to the stuff
-                    accounts.push((*owner_id, owner_account));
+                let owner_account = self.accounts.get_account(owner_id).unwrap();
+                if !native_loader::check_id(owner_account.owner()) {
+                    error!("Owner account {owner_id} is not owned by the native loader program.");
+                    return Err(TransactionError::InvalidProgramForExecution);
+                }
+                if !owner_account.executable() {
+                    error!("Owner account {owner_id} is not executable");
+                    return Err(TransactionError::InvalidProgramForExecution);
                 }
                 Ok(program_index as IndexOfAccount)
             })
             .collect::<Result<Vec<u16>, TransactionError>>();
 
         match maybe_program_indices {
+            // Only the invocation inspect callback consumes the indices.
+            #[cfg_attr(not(feature = "invocation-inspect-callback"), allow(unused_variables))]
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(
                     compute_budget,
@@ -1492,14 +1466,13 @@ impl LiteSVM {
                     self.enable_register_tracing,
                 );
 
-                let mut tx_result = process_message(
-                    message,
-                    &program_indices,
-                    &mut invoke_context,
-                    &mut ExecuteTimings::default(),
-                    &mut accumulated_consume_units,
-                )
-                .map(|_| ());
+                let mut tx_result = invoke_context
+                    .process_message(
+                        message,
+                        &mut ExecuteTimings::default(),
+                        &mut accumulated_consume_units,
+                    )
+                    .map_err(|(index, err)| TransactionError::InstructionError(index, err));
 
                 #[cfg(feature = "invocation-inspect-callback")]
                 self.invocation_inspect_callback.after_invocation(
@@ -1845,8 +1818,7 @@ impl LiteSVM {
     }
 
     fn check_message_for_nonce(&self, message: &SanitizedMessage) -> bool {
-        message
-            .get_durable_nonce()
+        SVMMessage::get_durable_nonce(message)
             .and_then(|nonce_address| self.accounts.get_account_ref(nonce_address))
             .and_then(|nonce_account| {
                 solana_nonce_account::verify_nonce_account(
@@ -1855,8 +1827,7 @@ impl LiteSVM {
                 )
             })
             .is_some_and(|nonce_data| {
-                message
-                    .get_ix_signers(NONCED_TX_MARKER_IX_INDEX as usize)
+                SVMStaticMessage::get_ix_signers(message, NONCED_TX_MARKER_IX_INDEX as usize)
                     .any(|signer| signer == &nonce_data.authority)
             })
     }

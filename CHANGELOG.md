@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Bump to Agave 4.3 ([#425](https://github.com/LiteSVM/litesvm/pull/425)).
+
 ## [0.16.0] - 2026-08-24
 
 ### Added

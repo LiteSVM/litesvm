@@ -22,9 +22,12 @@ use {
         loaded_programs::{
             ProgramCacheForTxBatch, ProgramRuntimeEnvironment, ProgramRuntimeEnvironments,
         },
-        program_cache_entry::{ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType},
+        program_cache_entry::{
+            ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType,
+            DELAY_VISIBILITY_SLOT_OFFSET,
+        },
         program_metrics::LoadProgramMetrics,
-        solana_sbpf::program::BuiltinProgram,
+        solana_sbpf::{elf::Executable, program::BuiltinProgram},
         sysvar_cache::SysvarCache,
     },
     solana_sdk_ids::{
@@ -297,15 +300,14 @@ impl AccountsDb {
         let owner = program_account.owner();
         let program_runtime_for_execution = self.environments.get_env_for_execution().clone();
         let slot = self.sysvar_cache.get_clock().map(|c| c.slot).unwrap_or(0);
+        let deployment_slot = visible_deployment_slot(slot);
 
         if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
-            ProgramCacheEntry::new(
+            ProgramCacheEntry::load(
                 owner,
                 program_runtime_for_execution,
-                slot,
-                slot,
+                deployment_slot,
                 program_account.data(),
-                program_account.data().len(),
                 metrics,
             )
             .map_err(|e| {
@@ -323,28 +325,22 @@ impl AccountsDb {
                 return Err(InstructionError::InvalidAccountData);
             };
             let Some(programdata_account) = self.get_account_ref(&programdata_address) else {
-                return Ok(ProgramCacheEntry::new_tombstone(
+                return Ok(ProgramCacheEntry::new_closed_tombstone(
                     slot,
                     ProgramCacheEntryOwner::LoaderV3,
-                    ProgramCacheEntryType::Closed,
                 ));
             };
             let program_data = programdata_account.data();
             if let Some(programdata) =
                 program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
             {
-                ProgramCacheEntry::new(
+                ProgramCacheEntry::load(
                     owner,
                     program_runtime_for_execution,
-                    slot,
-                    slot,
+                    deployment_slot,
                     programdata,
-                    program_account
-                        .data()
-                        .len()
-                        .saturating_add(program_data.len()),
                     metrics).map_err(|e| {
-                        error!("Error encountered when calling ProgramCacheEntry::new() for bpf_loader_upgradeable: {e:?}");
+                        error!("Error encountered when calling ProgramCacheEntry::load() for bpf_loader_upgradeable: {e:?}");
                         InstructionError::InvalidAccountData
                     })
             } else {
@@ -356,13 +352,11 @@ impl AccountsDb {
                 .data()
                 .get(LoaderV4State::program_data_offset()..)
             {
-                ProgramCacheEntry::new(
+                ProgramCacheEntry::load(
                     &loader_v4::id(),
                     program_runtime_for_execution,
-                    slot,
-                    slot,
+                    deployment_slot,
                     elf_bytes,
-                    program_account.data().len(),
                     metrics,
                 )
                 .map_err(|_| {
@@ -518,4 +512,33 @@ impl AddressLoader for &AccountsDb {
             })
             .collect()
     }
+}
+
+/// Deployment slot that makes a freshly loaded program already effective at `current_slot`.
+// ponytail: agave derives effective slot as deployment_slot + 1; wraps to u64::MAX at slot 0.
+// The entry is hidden only if the clock is warped back to exactly this slot.
+pub(crate) fn visible_deployment_slot(current_slot: u64) -> u64 {
+    current_slot.wrapping_sub(DELAY_VISIBILITY_SLOT_OFFSET)
+}
+
+/// [`ProgramCacheEntry::load`] minus bytecode verification, for bundled programs
+/// known to verify. Agave 4.3 dropped the equivalent `ProgramCacheEntry::reload`.
+// ponytail: mirrors upstream `load` without `verify`; re-diff it on agave upgrades.
+pub(crate) fn load_preverified(
+    loader_key: &Address,
+    environment: ProgramRuntimeEnvironment,
+    deployment_slot: u64,
+    elf_bytes: &[u8],
+) -> Result<ProgramCacheEntry, Box<dyn std::error::Error>> {
+    let executable = Executable::load(elf_bytes, Arc::clone(&*environment))?;
+    #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
+    executable.jit_compile()?;
+    Ok(ProgramCacheEntry {
+        program: ProgramCacheEntryType::Loaded(executable),
+        account_owner: ProgramCacheEntryOwner::try_from(loader_key)
+            .map_err(|()| format!("unsupported loader {loader_key}"))?,
+        deployment_slot,
+        stats: Default::default(),
+        latest_access_slot: Default::default(),
+    })
 }

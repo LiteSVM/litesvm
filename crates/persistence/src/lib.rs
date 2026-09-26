@@ -7,21 +7,23 @@ use {
     std::{
         fs::File,
         io::{BufWriter, Read, Write},
+        marker::PhantomData,
         path::Path,
     },
     types::{
-        AccountEntryWire, FeatureSetSnapshot, LiteSvmSnapshotV1, LiteSvmSnapshotV2,
-        LiteSvmSnapshotV3, TxResult,
+        AccountEntryWire, ComputeBudgetV2Wire, FeatureSetSnapshot, LiteSvmSnapshot, LiteSvmState,
+        TxResult,
     },
     wincode::{Deserialize, Serialize},
 };
 
 const V1_STATE_VERSION: u8 = 1;
 const V2_STATE_VERSION: u8 = 2;
-const STATE_VERSION: u8 = 3;
+const V3_STATE_VERSION: u8 = 3;
+const STATE_VERSION: u8 = 4;
 
-fn extract_snapshot_v2(svm: &LiteSVM) -> LiteSvmSnapshotV2 {
-    LiteSvmSnapshotV2 {
+fn extract_state(svm: &LiteSVM) -> LiteSvmState {
+    LiteSvmState {
         // AccountSharedData::clone is an Arc bump — no underlying data copy.
         // The actual data bytes are written once during serialization via AccountSchema.
         accounts: svm
@@ -44,23 +46,24 @@ fn extract_snapshot_v2(svm: &LiteSVM) -> LiteSvmSnapshotV2 {
         blockhash_check: svm.get_blockhash_check(),
         fee_structure: svm.get_fee_structure().clone(),
         log_bytes_limit: svm.get_log_bytes_limit().map(|v| v as u64),
+        budget_layout: PhantomData,
     }
 }
 
-fn extract_snapshot(svm: &LiteSVM) -> LiteSvmSnapshotV3 {
+fn extract_snapshot(svm: &LiteSVM) -> LiteSvmSnapshot {
     let mut epoch_vote_stakes: Vec<_> = svm
         .epoch_vote_stakes()
         .map(|(vote_account, stake)| (*vote_account, *stake))
         .collect();
     epoch_vote_stakes.sort_unstable_by_key(|(vote_account, _)| *vote_account);
-    LiteSvmSnapshotV3 {
-        state: extract_snapshot_v2(svm),
+    LiteSvmSnapshot {
+        state: extract_state(svm),
         epoch_vote_stakes,
     }
 }
 
-fn restore_from_snapshot(snapshot: LiteSvmSnapshotV3) -> Result<LiteSVM, PersistenceError> {
-    let LiteSvmSnapshotV3 {
+fn restore_from_snapshot(snapshot: LiteSvmSnapshot) -> Result<LiteSVM, PersistenceError> {
+    let LiteSvmSnapshot {
         state,
         mut epoch_vote_stakes,
     } = snapshot;
@@ -107,14 +110,16 @@ fn restore_from_snapshot(snapshot: LiteSvmSnapshotV3) -> Result<LiteSVM, Persist
     Ok(svm)
 }
 
-fn deserialize_snapshot(version: u8, bytes: &[u8]) -> Result<LiteSvmSnapshotV3, PersistenceError> {
+fn deserialize_snapshot(version: u8, bytes: &[u8]) -> Result<LiteSvmSnapshot, PersistenceError> {
     match version {
-        V1_STATE_VERSION => {
-            let snapshot: LiteSvmSnapshotV2 = LiteSvmSnapshotV1::deserialize(bytes)?.into();
-            Ok(snapshot.into())
+        V1_STATE_VERSION => Ok(LiteSvmState::deserialize(bytes)?.into()),
+        V2_STATE_VERSION => Ok(LiteSvmState::<ComputeBudgetV2Wire>::deserialize(bytes)?
+            .with_layout()
+            .into()),
+        V3_STATE_VERSION => {
+            Ok(LiteSvmSnapshot::<ComputeBudgetV2Wire>::deserialize(bytes)?.with_layout())
         }
-        V2_STATE_VERSION => Ok(LiteSvmSnapshotV2::deserialize(bytes)?.into()),
-        STATE_VERSION => Ok(LiteSvmSnapshotV3::deserialize(bytes)?),
+        STATE_VERSION => Ok(LiteSvmSnapshot::deserialize(bytes)?),
         version => Err(PersistenceError::UnsupportedVersion(version)),
     }
 }
@@ -123,9 +128,9 @@ fn deserialize_snapshot(version: u8, bytes: &[u8]) -> Result<LiteSvmSnapshotV3, 
 pub fn save_to_file(svm: &LiteSVM, path: impl AsRef<Path>) -> Result<(), PersistenceError> {
     let snapshot = extract_snapshot(svm);
     let mut writer = BufWriter::new(File::create(path)?);
-    let payload_size = LiteSvmSnapshotV3::serialized_size(&snapshot)? as usize;
+    let payload_size = LiteSvmSnapshot::serialized_size(&snapshot)? as usize;
     let mut payload = Vec::with_capacity(payload_size);
-    LiteSvmSnapshotV3::serialize_into(&mut payload, &snapshot)?;
+    LiteSvmSnapshot::serialize_into(&mut payload, &snapshot)?;
     writer.write_all(&[STATE_VERSION])?;
     writer.write_all(&payload)?;
     writer.flush()?;
@@ -145,10 +150,10 @@ pub fn load_from_file(path: impl AsRef<Path>) -> Result<LiteSVM, PersistenceErro
 /// Serializes the full LiteSVM state to bytes.
 pub fn to_bytes(svm: &LiteSVM) -> Result<Vec<u8>, PersistenceError> {
     let snapshot = extract_snapshot(svm);
-    let payload_size = LiteSvmSnapshotV3::serialized_size(&snapshot)? as usize;
+    let payload_size = LiteSvmSnapshot::serialized_size(&snapshot)? as usize;
     let mut buf = Vec::with_capacity(1 + payload_size);
     buf.push(STATE_VERSION);
-    LiteSvmSnapshotV3::serialize_into(&mut buf, &snapshot)?;
+    LiteSvmSnapshot::serialize_into(&mut buf, &snapshot)?;
     Ok(buf)
 }
 
@@ -161,52 +166,86 @@ pub fn from_bytes(bytes: &[u8]) -> Result<LiteSVM, PersistenceError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use {super::*, solana_compute_budget::compute_budget::ComputeBudget};
 
-    fn serialize_v2(snapshot: &LiteSvmSnapshotV2) -> Vec<u8> {
-        let payload_size = LiteSvmSnapshotV2::serialized_size(snapshot).unwrap() as usize;
-        let mut bytes = Vec::with_capacity(1 + payload_size);
-        bytes.push(V2_STATE_VERSION);
-        LiteSvmSnapshotV2::serialize_into(&mut bytes, snapshot).unwrap();
+    fn serialize<T: Serialize<Src = T>>(version: u8, snapshot: &T) -> Vec<u8> {
+        let mut bytes = vec![version];
+        T::serialize_into(&mut bytes, snapshot).unwrap();
         bytes
     }
 
-    fn serialize_v3(snapshot: &LiteSvmSnapshotV3) -> Vec<u8> {
-        let payload_size = LiteSvmSnapshotV3::serialized_size(snapshot).unwrap() as usize;
-        let mut bytes = Vec::with_capacity(1 + payload_size);
-        bytes.push(STATE_VERSION);
-        LiteSvmSnapshotV3::serialize_into(&mut bytes, snapshot).unwrap();
-        bytes
+    fn custom_budget() -> ComputeBudget {
+        ComputeBudget {
+            compute_unit_limit: 123,
+            big_modular_exponentiation_base_cost: 7,
+            ..ComputeBudget::new_with_defaults(false)
+        }
     }
 
     #[test]
     fn version_two_snapshot_is_still_loadable() {
-        let mut svm = LiteSVM::new();
+        let mut svm = LiteSVM::new().with_compute_budget(custom_budget());
         svm.set_epoch_stake(solana_address::Address::new_unique(), 456)
             .unwrap();
 
-        let restored = from_bytes(&serialize_v2(&extract_snapshot_v2(&svm))).unwrap();
+        let state = extract_state(&svm).with_layout::<ComputeBudgetV2Wire>();
+        let restored = from_bytes(&serialize(V2_STATE_VERSION, &state)).unwrap();
         assert_eq!(restored.epoch_total_stake(), 0);
+        // Version 2 predates the modexp costs: they come back as defaults.
+        let budget = restored.get_compute_budget().unwrap();
+        assert_eq!(budget.compute_unit_limit, 123);
+        assert_eq!(
+            budget.big_modular_exponentiation_base_cost,
+            ComputeBudget::new_with_defaults(false).big_modular_exponentiation_base_cost
+        );
+    }
+
+    #[test]
+    fn version_three_snapshot_is_still_loadable() {
+        let mut svm = LiteSVM::new().with_compute_budget(custom_budget());
+        svm.set_epoch_stake(solana_address::Address::new_unique(), 456)
+            .unwrap();
+
+        let snapshot = extract_snapshot(&svm).with_layout::<ComputeBudgetV2Wire>();
+        let restored = from_bytes(&serialize(V3_STATE_VERSION, &snapshot)).unwrap();
+        assert_eq!(restored.epoch_total_stake(), 456);
+        assert_eq!(
+            restored.get_compute_budget().unwrap().compute_unit_limit,
+            123
+        );
+    }
+
+    #[test]
+    fn modexp_costs_round_trip() {
+        let svm = LiteSVM::new().with_compute_budget(custom_budget());
+        let restored = from_bytes(&to_bytes(&svm).unwrap()).unwrap();
+        assert_eq!(
+            restored
+                .get_compute_budget()
+                .unwrap()
+                .big_modular_exponentiation_base_cost,
+            7
+        );
     }
 
     #[test]
     fn duplicate_epoch_stakes_are_rejected() {
         let vote_account = solana_address::Address::new_unique();
-        let snapshot = LiteSvmSnapshotV3 {
-            state: extract_snapshot_v2(&LiteSVM::new()),
+        let snapshot = LiteSvmSnapshot {
+            state: extract_state(&LiteSVM::new()),
             epoch_vote_stakes: vec![(vote_account, 100), (vote_account, 200)],
         };
 
         assert!(matches!(
-            from_bytes(&serialize_v3(&snapshot)),
+            from_bytes(&serialize(STATE_VERSION, &snapshot)),
             Err(PersistenceError::DuplicateEpochStake(address)) if address == vote_account
         ));
     }
 
     #[test]
     fn overflowing_unique_epoch_stakes_are_rejected() {
-        let snapshot = LiteSvmSnapshotV3 {
-            state: extract_snapshot_v2(&LiteSVM::new()),
+        let snapshot = LiteSvmSnapshot {
+            state: extract_state(&LiteSVM::new()),
             epoch_vote_stakes: vec![
                 (solana_address::Address::new_unique(), u64::MAX),
                 (solana_address::Address::new_unique(), 1),
@@ -214,7 +253,7 @@ mod tests {
         };
 
         assert!(matches!(
-            from_bytes(&serialize_v3(&snapshot)),
+            from_bytes(&serialize(STATE_VERSION, &snapshot)),
             Err(PersistenceError::InvalidEpochStakes(
                 litesvm::error::LiteSVMError::EpochStakeOverflow
             ))
