@@ -14,7 +14,7 @@
 	"dependencies": {
 		"@solana-program/system": "^0.14.0",
 		"@solana-program/token": "^0.16.0",
-		"litesvm-core": "workspace:^"
+		"litesvm-core": "workspace:*"
 	},
 	"peerDependencies": {
 		"@solana/kit": "^8.0.0"

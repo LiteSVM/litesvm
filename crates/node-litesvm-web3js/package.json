@@ -13,7 +13,7 @@
 		"url": "git+https://github.com/LiteSVM/litesvm.git"
 	},
 	"dependencies": {
-		"litesvm-core": "workspace:^"
+		"litesvm-core": "workspace:*"
 	},
 	"peerDependencies": {
 		"@solana/web3.js": "^3.0.0-rc.2"
