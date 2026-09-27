@@ -1,0 +1,56 @@
+name: Update mainnet features
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+# Enable "Allow GitHub Actions to create and approve pull requests" in repository settings.
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-mainnet-features
+  cancel-in-progress: false
+
+jobs:
+  update-features:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Update mainnet features
+        run: just update-features
+
+      - name: Ignore date-only changes
+        run: |
+          if git diff --quiet --ignore-matching-lines='^/// activation slot, sourced from the cluster on ' -- crates/litesvm/src/features.rs; then
+            git restore -- crates/litesvm/src/features.rs
+          fi
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: automation/update-mainnet-features
+          delete-branch: true
+          add-paths: crates/litesvm/src/features.rs
+          commit-message: 'chore: update mainnet active features'
+          title: 'chore: update mainnet active features'
+          body: |
+            Regenerate mainnet feature IDs and activation slots with `just update-features`.
+
+            Run CI before merging: pull requests created with `GITHUB_TOKEN` do not trigger pull request workflows automatically.
