@@ -58,6 +58,11 @@ impl LoadedTransactionDataSize {
         }
     }
 
+    /// The loaded accounts data size counted so far.
+    pub(crate) fn size(&self) -> u32 {
+        self.loaded_accounts_data_size
+    }
+
     /// Increases the loaded accounts data size by the given delta, and checks if it exceeds the requested limit.
     pub(crate) fn increase_calculated_data_size(
         &mut self,

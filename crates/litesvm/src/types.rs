@@ -20,6 +20,10 @@ pub struct TransactionMetadata {
     pub compute_units_consumed: u64,
     pub return_data: TransactionReturnData,
     pub fee: u64,
+    /// The size of the accounts the transaction loaded, as SIMD-0186 counts it
+    /// against the transaction's loaded accounts data size limit.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub loaded_accounts_data_size: u32,
 }
 
 impl TransactionMetadata {
@@ -66,6 +70,7 @@ pub(crate) struct ExecutionResult {
     /// Whether the transaction can be included in a block
     pub(crate) included: bool,
     pub(crate) fee: u64,
+    pub(crate) loaded_accounts_data_size: u32,
 }
 
 impl Default for ExecutionResult {
@@ -79,6 +84,7 @@ impl Default for ExecutionResult {
             return_data: Default::default(),
             included: false,
             fee: 0,
+            loaded_accounts_data_size: 0,
         }
     }
 }

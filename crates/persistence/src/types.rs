@@ -204,7 +204,8 @@ impl From<FeatureActivationWire> for (Address, u64) {
     }
 }
 
-wire!(TransactionMetadataWire => TransactionMetadata {
+// `loaded_accounts_data_size` is not persisted, so restored history reports 0.
+wire!(TransactionMetadataWire => TransactionMetadata [..Default::default()] {
     signature: Signature,
     logs: Vec<String>,
     #[wincode(with = "Vec<Vec<FromInto<InnerInstructionWire, InnerInstruction>>>")]

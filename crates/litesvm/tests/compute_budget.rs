@@ -280,6 +280,42 @@ fn test_loaded_accounts_data_size_counts_account_base_size() {
 }
 
 #[test_log::test]
+fn test_transaction_metadata_reports_loaded_accounts_data_size() {
+    // the size metered against the limit is reported when the transaction is
+    // simulated, when it succeeds, and when it fails in execution
+    let from_keypair = Keypair::new();
+    let from = from_keypair.pubkey();
+
+    let mut svm = LiteSVM::new();
+    svm.airdrop(&from, LAMPORTS_PER_SOL).unwrap();
+    let to = create_account_with_data(&mut svm, 10_000);
+
+    let limit = MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES.get();
+    let tx = transfer_tx_with_data_size_limit(&svm, &from_keypair, &to, limit);
+    let expected = expected_loaded_data_size(&svm, &tx);
+    let overdraft = Transaction::new(
+        &[&from_keypair],
+        Message::new(
+            &[
+                ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(limit),
+                transfer(&from, &to, 2 * LAMPORTS_PER_SOL),
+            ],
+            Some(&from),
+        ),
+        svm.latest_blockhash(),
+    );
+
+    let simulated = svm.simulate_transaction(tx.clone()).unwrap().meta;
+    let succeeded = svm.send_transaction(tx).unwrap();
+    let failed = svm.send_transaction(overdraft).unwrap_err().meta;
+
+    assert_eq!(
+        [simulated, succeeded, failed].map(|meta| meta.loaded_accounts_data_size),
+        [expected; 3]
+    );
+}
+
+#[test_log::test]
 fn test_loaded_accounts_data_size_counts_address_lookup_tables() {
     // a resolved lookup table is charged a base size of its own, on top of the
     // accounts it resolves to

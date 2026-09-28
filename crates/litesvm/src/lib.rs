@@ -1265,6 +1265,7 @@ impl LiteSVM {
         Option<TransactionContext<'b>>,
         u64,
         Option<Address>,
+        u32,
     )
     where
         'a: 'b,
@@ -1305,7 +1306,14 @@ impl LiteSVM {
                 .num_lookup_tables()
                 .saturating_mul(ADDRESS_LOOKUP_TABLE_BASE_SIZE),
         ) {
-            return (Err(e), accumulated_consume_units, None, fee, payer_key);
+            return (
+                Err(e),
+                accumulated_consume_units,
+                None,
+                fee,
+                payer_key,
+                loaded_tx_data_size.size(),
+            );
         }
 
         let mut pre_rent_state_infos = Vec::with_capacity(account_keys.len());
@@ -1398,7 +1406,14 @@ impl LiteSVM {
         let accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
-                return (Err(e), accumulated_consume_units, None, fee, payer_key);
+                return (
+                    Err(e),
+                    accumulated_consume_units,
+                    None,
+                    fee,
+                    payer_key,
+                    loaded_tx_data_size.size(),
+                );
             }
         };
         if !validated_fee_payer {
@@ -1409,6 +1424,7 @@ impl LiteSVM {
                 None,
                 fee,
                 payer_key,
+                loaded_tx_data_size.size(),
             );
         }
         let maybe_program_indices = tx
@@ -1507,9 +1523,17 @@ impl LiteSVM {
                     Some(context),
                     fee,
                     payer_key,
+                    loaded_tx_data_size.size(),
                 )
             }
-            Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
+            Err(e) => (
+                Err(e),
+                accumulated_consume_units,
+                None,
+                fee,
+                payer_key,
+                loaded_tx_data_size.size(),
+            ),
         }
     }
 
@@ -1547,13 +1571,20 @@ impl LiteSVM {
                 },
             fee,
             payer_key,
+            loaded_accounts_data_size,
         } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
             Ok(value) => value,
             Err(value) => return value,
         };
         if let Some(ctx) = context {
-            let mut exec_result =
-                execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed, fee);
+            let mut exec_result = execution_result_if_context(
+                sanitized_tx,
+                ctx,
+                result,
+                compute_units_consumed,
+                fee,
+                loaded_accounts_data_size,
+            );
 
             if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
                 exec_result.tx_result = self
@@ -1567,6 +1598,7 @@ impl LiteSVM {
                 tx_result: result,
                 compute_units_consumed,
                 fee,
+                loaded_accounts_data_size,
                 ..Default::default()
             }
         }
@@ -1585,18 +1617,27 @@ impl LiteSVM {
                     context,
                 },
             fee,
+            loaded_accounts_data_size,
             ..
         } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
             Ok(value) => value,
             Err(value) => return value,
         };
         if let Some(ctx) = context {
-            execution_result_if_context(sanitized_tx, ctx, result, compute_units_consumed, fee)
+            execution_result_if_context(
+                sanitized_tx,
+                ctx,
+                result,
+                compute_units_consumed,
+                fee,
+                loaded_accounts_data_size,
+            )
         } else {
             ExecutionResult {
                 tx_result: result,
                 compute_units_consumed,
                 fee,
+                loaded_accounts_data_size,
                 ..Default::default()
             }
         }
@@ -1613,7 +1654,7 @@ impl LiteSVM {
         self.maybe_blockhash_check(sanitized_tx)?;
         let tx_config = get_transaction_config(sanitized_tx, &self.feature_set)?;
         self.maybe_history_check(sanitized_tx)?;
-        let (result, compute_units_consumed, context, fee, payer_key) =
+        let (result, compute_units_consumed, context, fee, payer_key, loaded_accounts_data_size) =
             self.process_transaction(sanitized_tx, tx_config, log_collector);
         #[cfg(target_arch = "x86_64")]
         unsafe {
@@ -1629,6 +1670,7 @@ impl LiteSVM {
             },
             fee,
             payer_key,
+            loaded_accounts_data_size,
         })
     }
 
@@ -1692,6 +1734,7 @@ impl LiteSVM {
             return_data,
             included,
             fee,
+            loaded_accounts_data_size,
         } = if self.sigverify {
             self.execute_transaction(vtx, log_collector.clone())
         } else {
@@ -1707,6 +1750,7 @@ impl LiteSVM {
             return_data,
             signature,
             fee,
+            loaded_accounts_data_size,
         };
 
         if let Err(tx_err) = tx_result {
@@ -1746,6 +1790,7 @@ impl LiteSVM {
             inner_instructions,
             return_data,
             fee,
+            loaded_accounts_data_size,
             ..
         } = if self.sigverify {
             self.execute_transaction_readonly(tx.into(), log_collector.clone())
@@ -1762,6 +1807,7 @@ impl LiteSVM {
             compute_units_consumed,
             return_data,
             fee,
+            loaded_accounts_data_size,
         };
 
         if let Err(tx_err) = tx_result {
@@ -2027,6 +2073,7 @@ struct CheckAndProcessTransactionSuccess<'ix_data> {
     core: CheckAndProcessTransactionSuccessCore<'ix_data>,
     fee: u64,
     payer_key: Option<Address>,
+    loaded_accounts_data_size: u32,
 }
 
 fn execution_result_if_context(
@@ -2035,6 +2082,7 @@ fn execution_result_if_context(
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
     fee: u64,
+    loaded_accounts_data_size: u32,
 ) -> ExecutionResult {
     let (signature, return_data, inner_instructions, post_accounts) =
         execute_tx_helper(sanitized_tx, ctx);
@@ -2047,6 +2095,7 @@ fn execution_result_if_context(
         return_data,
         included: true,
         fee,
+        loaded_accounts_data_size,
     }
 }
 
