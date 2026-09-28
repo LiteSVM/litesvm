@@ -2,9 +2,15 @@
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-28
+
 ### Added
 
 - Add `toBytes`, `fromBytes`, `saveToFile` and `loadFromFile` to snapshot the full LiteSVM state and restore it into a new instance, backed by the `litesvm-persistence` crate [(#420)](https://github.com/LiteSVM/litesvm/pull/420).
+
+### Changed
+
+- Bump to Agave 4.3 [(#425)](https://github.com/LiteSVM/litesvm/pull/425).
 
 ## [1.4.1] - 2026-08-25
 

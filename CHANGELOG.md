@@ -2,9 +2,24 @@
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-28
+
+### Added
+
+- Support the `relax_post_exec_min_balance_check` feature, relaxing the post-execution rent check when it is active ([#415](https://github.com/LiteSVM/litesvm/pull/415)).
+
 ### Changed
 
 - Bump to Agave 4.3 ([#425](https://github.com/LiteSVM/litesvm/pull/425)).
+- Make `serde` an optional dependency of `litesvm`, only pulled in by the `serde` feature, and drop unused dependencies across the workspace crates ([#417](https://github.com/LiteSVM/litesvm/pull/417)).
+
+### Removed
+
+- Remove the `internal-test` feature and the `LiteSVM::get_feature_set` method it gated ([#416](https://github.com/LiteSVM/litesvm/pull/416)).
+
+### Fixed
+
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-09-15 ([#415](https://github.com/LiteSVM/litesvm/pull/415), [#423](https://github.com/LiteSVM/litesvm/pull/423)).
 
 ## [0.16.0] - 2026-08-24
 
@@ -327,7 +342,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/LiteSVM/litesvm/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/LiteSVM/litesvm/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/LiteSVM/litesvm/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/LiteSVM/litesvm/compare/v0.15.0...v0.15.1
