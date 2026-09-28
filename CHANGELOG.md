@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Count the programdata of loader-v3 programs toward the loaded accounts data size, once per transaction, as Agave does.
+
 ## [0.17.0] - 2026-09-28
 
 ### Added

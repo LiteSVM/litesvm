@@ -310,7 +310,7 @@ much easier.
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
 #[cfg(feature = "hashbrown")]
-use hashbrown::{hash_map::Entry, HashMap};
+use hashbrown::{hash_map::Entry, HashMap, HashSet};
 #[cfg(feature = "persistence-internal")]
 use indexmap::IndexMap;
 #[cfg(feature = "precompiles")]
@@ -322,7 +322,7 @@ use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
 use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 #[cfg(not(feature = "hashbrown"))]
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::{hash_map::Entry, HashMap, HashSet};
 use {
     crate::{
         accounts_db::{load_preverified, visible_deployment_slot, AccountsDb},
@@ -1309,6 +1309,7 @@ impl LiteSVM {
         }
 
         let mut pre_rent_state_infos = Vec::with_capacity(account_keys.len());
+        let mut counted_programdata = HashSet::new();
         let maybe_accounts = account_keys
             .iter()
             .enumerate()
@@ -1377,6 +1378,20 @@ impl LiteSVM {
                 ));
 
                 loaded_tx_data_size.increase_calculated_data_size(loaded_size)?;
+                // A loader-v3 program also counts its programdata, once, unless the transaction
+                // loads that account itself:
+                // https://github.com/anza-xyz/agave/blob/v4.2.0/svm/src/account_loader.rs#L543-L563
+                if let Some(programdata_address) = programdata_address(&account).filter(|address| {
+                    !account_keys.iter().any(|key| key == address)
+                        && !counted_programdata.contains(address)
+                }) {
+                    if let Some(programdata) = self.accounts.get_account(&programdata_address) {
+                        counted_programdata.insert(programdata_address);
+                        loaded_tx_data_size.increase_calculated_data_size(
+                            TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(programdata.data().len()),
+                        )?;
+                    }
+                }
                 Ok((*key, account))
             })
             .collect::<solana_transaction_error::TransactionResult<Vec<_>>>();
@@ -2032,6 +2047,19 @@ fn execution_result_if_context(
         return_data,
         included: true,
         fee,
+    }
+}
+
+/// The programdata account a loader-v3 program account points at.
+fn programdata_address(account: &AccountSharedData) -> Option<Address> {
+    if !bpf_loader_upgradeable::check_id(account.owner()) {
+        return None;
+    }
+    match UpgradeableLoaderState::deserialize_from(account.data()) {
+        Ok(UpgradeableLoaderState::Program {
+            programdata_address,
+        }) => Some(programdata_address),
+        _ => None,
     }
 }
 
