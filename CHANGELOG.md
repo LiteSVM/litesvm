@@ -6,6 +6,10 @@
 
 - `TransactionMetadata::loaded_accounts_data_size`: the loaded accounts data size the transaction was metered at, as SIMD-0186 counts it. Code that builds `TransactionMetadata` with a struct literal needs to set it. Persistence snapshots do not store it, so restored history reports 0.
 
+### Changed
+
+- Apply the SIMD-0437 `set_lamports_per_byte_to_*` feature gates (and the SIMD-0438 reset) to the `Rent` sysvar, so the default feature set now yields 5080 lamports per byte like mainnet.
+
 ### Fixed
 
 - Count the programdata of loader-v3 programs toward the loaded accounts data size, once per transaction, as Agave does.

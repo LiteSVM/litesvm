@@ -617,6 +617,43 @@ impl LiteSVM {
                 rent_account.exemption_threshold = 2.0f64.to_le_bytes();
                 rent_account.lamports_per_byte = solana_rent::DEFAULT_LAMPORTS_PER_BYTE / 2;
             }
+            // SIMD-0437 lowers lamports_per_byte in steps. Agave applies these in
+            // activation order, so the last active gate in the list wins, and the
+            // SIMD-0438 safeguard resets the value to 6960 regardless of the others.
+            let rent_feature_gates = [
+                (
+                    agave_feature_set::set_lamports_per_byte_to_6333::id(),
+                    agave_feature_set::set_lamports_per_byte_to_6333::LAMPORTS_PER_BYTE,
+                ),
+                (
+                    agave_feature_set::set_lamports_per_byte_to_5080::id(),
+                    agave_feature_set::set_lamports_per_byte_to_5080::LAMPORTS_PER_BYTE,
+                ),
+                (
+                    agave_feature_set::set_lamports_per_byte_to_2575::id(),
+                    agave_feature_set::set_lamports_per_byte_to_2575::LAMPORTS_PER_BYTE,
+                ),
+                (
+                    agave_feature_set::set_lamports_per_byte_to_1322::id(),
+                    agave_feature_set::set_lamports_per_byte_to_1322::LAMPORTS_PER_BYTE,
+                ),
+                (
+                    agave_feature_set::set_lamports_per_byte_to_696::id(),
+                    agave_feature_set::set_lamports_per_byte_to_696::LAMPORTS_PER_BYTE,
+                ),
+            ];
+            for (feature_id, lamports_per_byte) in rent_feature_gates {
+                if self.feature_set.is_active(&feature_id) {
+                    rent_account.lamports_per_byte = lamports_per_byte;
+                }
+            }
+            if self
+                .feature_set
+                .is_active(&agave_feature_set::set_lamports_per_byte_to_6960::id())
+            {
+                rent_account.lamports_per_byte =
+                    agave_feature_set::set_lamports_per_byte_to_6960::LAMPORTS_PER_BYTE;
+            }
             self.set_sysvar(&rent_account);
         }
         self.set_sysvar(&SlotHashes::new(&[(
