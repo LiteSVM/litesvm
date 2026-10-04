@@ -10,8 +10,9 @@ use {
         compute_budget::ComputeBudget, compute_budget_limits::MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES,
     },
     solana_compute_budget_interface::ComputeBudgetInstruction,
-    solana_instruction::error::InstructionError,
+    solana_instruction::{error::InstructionError, AccountMeta},
     solana_keypair::Keypair,
+    solana_loader_v3_interface::get_program_data_address,
     solana_message::{
         v0::Message as MessageV0, AddressLookupTableAccount, Message, VersionedMessage,
     },
@@ -279,6 +280,42 @@ fn test_loaded_accounts_data_size_counts_account_base_size() {
 }
 
 #[test_log::test]
+fn test_transaction_metadata_reports_loaded_accounts_data_size() {
+    // the size metered against the limit is reported when the transaction is
+    // simulated, when it succeeds, and when it fails in execution
+    let from_keypair = Keypair::new();
+    let from = from_keypair.pubkey();
+
+    let mut svm = LiteSVM::new();
+    svm.airdrop(&from, LAMPORTS_PER_SOL).unwrap();
+    let to = create_account_with_data(&mut svm, 10_000);
+
+    let limit = MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES.get();
+    let tx = transfer_tx_with_data_size_limit(&svm, &from_keypair, &to, limit);
+    let expected = expected_loaded_data_size(&svm, &tx);
+    let overdraft = Transaction::new(
+        &[&from_keypair],
+        Message::new(
+            &[
+                ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(limit),
+                transfer(&from, &to, 2 * LAMPORTS_PER_SOL),
+            ],
+            Some(&from),
+        ),
+        svm.latest_blockhash(),
+    );
+
+    let simulated = svm.simulate_transaction(tx.clone()).unwrap().meta;
+    let succeeded = svm.send_transaction(tx).unwrap();
+    let failed = svm.send_transaction(overdraft).unwrap_err().meta;
+
+    assert_eq!(
+        [simulated, succeeded, failed].map(|meta| meta.loaded_accounts_data_size),
+        [expected; 3]
+    );
+}
+
+#[test_log::test]
 fn test_loaded_accounts_data_size_counts_address_lookup_tables() {
     // a resolved lookup table is charged a base size of its own, on top of the
     // accounts it resolves to
@@ -330,4 +367,59 @@ fn test_loaded_accounts_data_size_counts_address_lookup_tables() {
         tx_res.unwrap_err().err,
         TransactionError::MaxLoadedAccountsDataSizeExceeded
     );
+}
+
+#[test_log::test]
+fn test_loaded_accounts_data_size_counts_programdata() {
+    // a loader-v3 program also counts its programdata, once: on its own when
+    // the transaction does not list it, and only as a listed account when it does
+    let from_keypair = Keypair::new();
+    let from = from_keypair.pubkey();
+    let program_id = Address::new_unique();
+    let programdata_address = get_program_data_address(&program_id);
+
+    let mut svm = LiteSVM::new();
+    svm.airdrop(&from, LAMPORTS_PER_SOL).unwrap();
+    let to = create_account_with_data(&mut svm, 0);
+    svm.add_program(
+        program_id,
+        include_bytes!("../test_programs/DF1ow3DqMj3HvTj8i8J9yM2hE9hCrLLXpdbaKZu4ZPnz.so"),
+    )
+    .unwrap();
+    let programdata_size = TRANSACTION_ACCOUNT_BASE_SIZE
+        + svm.get_account(&programdata_address).unwrap().data.len() as u32;
+
+    let tx = |extra_accounts: &[Address], limit| {
+        let mut transfer = transfer(&from, &to, 1);
+        transfer.accounts.extend(
+            extra_accounts
+                .iter()
+                .map(|address| AccountMeta::new_readonly(*address, false)),
+        );
+        Transaction::new(
+            &[&from_keypair],
+            Message::new(
+                &[
+                    ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(limit),
+                    transfer,
+                ],
+                Some(&from),
+            ),
+            svm.latest_blockhash(),
+        )
+    };
+    let unlisted = [program_id];
+    let listed = [program_id, programdata_address];
+    let unlisted_limit = expected_loaded_data_size(&svm, &tx(&unlisted, 1)) + programdata_size;
+    let listed_limit = expected_loaded_data_size(&svm, &tx(&listed, 1));
+    let txs = [
+        tx(&unlisted, unlisted_limit - 1),
+        tx(&unlisted, unlisted_limit),
+        tx(&listed, listed_limit - 1),
+        tx(&listed, listed_limit),
+    ];
+
+    let results = txs.map(|tx| svm.send_transaction(tx).map(|_| ()).map_err(|e| e.err));
+    let exceeded = Err(TransactionError::MaxLoadedAccountsDataSizeExceeded);
+    assert_eq!(results, [exceeded.clone(), Ok(()), exceeded, Ok(())]);
 }

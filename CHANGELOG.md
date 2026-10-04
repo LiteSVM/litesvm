@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `TransactionMetadata::loaded_accounts_data_size`: the loaded accounts data size the transaction was metered at, as SIMD-0186 counts it. Code that builds `TransactionMetadata` with a struct literal needs to set it. Persistence snapshots do not store it, so restored history reports 0.
+
+### Fixed
+
+- Count the programdata of loader-v3 programs toward the loaded accounts data size, once per transaction, as Agave does.
+
 ## [0.17.0] - 2026-09-28
 
 ### Added
