@@ -2,17 +2,20 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-09
+
 ### Added
 
-- `TransactionMetadata::loaded_accounts_data_size`: the loaded accounts data size the transaction was metered at, as SIMD-0186 counts it. Code that builds `TransactionMetadata` with a struct literal needs to set it. Persistence snapshots do not store it, so restored history reports 0.
+- `TransactionMetadata::loaded_accounts_data_size`: the loaded accounts data size the transaction was metered at, as SIMD-0186 counts it. Code that builds `TransactionMetadata` with a struct literal needs to set it. Persistence snapshots do not store it, so restored history reports 0 ([#428](https://github.com/LiteSVM/litesvm/pull/428)).
 
 ### Changed
 
-- Apply the SIMD-0437 `set_lamports_per_byte_to_*` feature gates (and the SIMD-0438 reset) to the `Rent` sysvar, so the default feature set now yields 5080 lamports per byte like mainnet.
+- Apply the SIMD-0437 `set_lamports_per_byte_to_*` feature gates (and the SIMD-0438 reset) to the `Rent` sysvar, so the default feature set now yields 5080 lamports per byte like mainnet ([#431](https://github.com/LiteSVM/litesvm/pull/431)).
+- Raise the minimum supported Rust version from 1.89.0 to 1.97.1 and update dependency bounds for Agave 4.3 compatibility ([#429](https://github.com/LiteSVM/litesvm/pull/429)).
 
 ### Fixed
 
-- Count the programdata of loader-v3 programs toward the loaded accounts data size, once per transaction, as Agave does.
+- Count the programdata of loader-v3 programs toward the loaded accounts data size, once per transaction, as Agave does ([#428](https://github.com/LiteSVM/litesvm/pull/428)).
 
 ## [0.17.0] - 2026-09-28
 
@@ -354,7 +357,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/LiteSVM/litesvm/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/LiteSVM/litesvm/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/LiteSVM/litesvm/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/LiteSVM/litesvm/compare/v0.15.1...v0.15.2
