@@ -1,6 +1,7 @@
 use {
     agave_feature_set::{
-        deprecate_rent_exemption_threshold, set_lamports_per_byte_to_5080,
+        deprecate_rent_exemption_threshold, set_lamports_per_byte_to_1322,
+        set_lamports_per_byte_to_2575, set_lamports_per_byte_to_5080,
         set_lamports_per_byte_to_6333, set_lamports_per_byte_to_696, set_lamports_per_byte_to_6960,
         FeatureSet,
     },
@@ -49,17 +50,21 @@ fn no_rent_reduction_keeps_the_default_value() {
 #[test]
 fn later_rent_reductions_can_be_activated() {
     let mut feature_set = LiteSVM::mainnet_feature_set();
-    feature_set.activate(&set_lamports_per_byte_to_696::id(), 0);
-    assert_eq!(
-        rent_with(feature_set).lamports_per_byte,
-        set_lamports_per_byte_to_696::LAMPORTS_PER_BYTE
-    );
+    for (feature_id, lamports_per_byte) in [
+        (set_lamports_per_byte_to_2575::id(), 2575),
+        (set_lamports_per_byte_to_1322::id(), 1322),
+        (set_lamports_per_byte_to_696::id(), 696),
+    ] {
+        feature_set.activate(&feature_id, 0);
+        let rent = rent_with(feature_set.clone());
+        assert_eq!(rent.lamports_per_byte, lamports_per_byte);
+        assert_eq!(rent.minimum_balance(123), 251 * lamports_per_byte);
+    }
 }
 
 #[test]
 fn reset_safeguard_overrides_the_reductions() {
-    let mut feature_set = LiteSVM::mainnet_feature_set();
-    feature_set.activate(&set_lamports_per_byte_to_6960::id(), 0);
+    let feature_set = FeatureSet::all_enabled();
     assert_eq!(
         rent_with(feature_set).lamports_per_byte,
         set_lamports_per_byte_to_6960::LAMPORTS_PER_BYTE
