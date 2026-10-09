@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-09
+
+### Changed
+
+- Apply the active rent feature gates to the default `Rent` sysvar, yielding 5080 lamports per byte with the mainnet feature set [(#431)](https://github.com/LiteSVM/litesvm/pull/431).
+
+### Fixed
+
+- Count upgradeable (loader-v3) programdata toward the loaded accounts data size, so transactions with a tight `setTransactionMessageLoadedAccountsDataSizeLimit` can now fail with `MaxLoadedAccountsDataSizeExceeded` [(#428)](https://github.com/LiteSVM/litesvm/pull/428).
+
 ## [1.5.0] - 2026-09-28
 
 ### Added

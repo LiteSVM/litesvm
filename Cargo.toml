@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.17.0"
+version = "0.18.0"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/LiteSVM/litesvm"
@@ -23,8 +23,8 @@ hex = "0.4.3"
 indexmap = "2.14"
 itertools = "0.15"
 libsecp256k1 = "0.7.2"
-litesvm = { path = "crates/litesvm", version = "0.17" }
-litesvm-persistence = { path = "crates/persistence", version = "0.17" }
+litesvm = { path = "crates/litesvm", version = "0.18" }
+litesvm-persistence = { path = "crates/persistence", version = "0.18" }
 log = "0.4"
 napi = { version = "3.12.2", default-features = false }
 napi-build = "2.4.1"
