@@ -1,12 +1,14 @@
 use {
     litesvm::LiteSVM,
     solana_address::Address,
-    solana_address_lookup_table_interface::instruction::{
-        create_lookup_table, extend_lookup_table,
+    solana_address_lookup_table_interface::{
+        instruction::{create_lookup_table, extend_lookup_table},
+        state::LOOKUP_TABLE_META_SIZE,
     },
     solana_keypair::Keypair,
     solana_message::Message,
     solana_signer::Signer,
+    solana_system_interface::instruction::transfer,
     solana_transaction::Transaction,
 };
 
@@ -40,7 +42,12 @@ fn test_inner_instruction_parsing() {
         result.inner_instructions[0][0].instruction.accounts
     );
     assert_eq!(
-        vec![2, 0, 0, 0, 128, 138, 19, 0, 0, 0, 0, 0],
+        transfer(
+            &payer_pk,
+            &lookup_table_address,
+            svm.minimum_balance_for_rent_exemption(LOOKUP_TABLE_META_SIZE),
+        )
+        .data,
         result.inner_instructions[0][0].instruction.data
     );
 }

@@ -41,8 +41,9 @@ impl Rent {
     /// Rental rate in lamports/byte-year.
     ///
     /// Note: since SIMD-0194 the underlying sysvar stores lamports/byte with
-    /// the exemption threshold folded in (default 6960, threshold 1.0), so on
-    /// current clusters this returns double the historical 3480 value.
+    /// the exemption threshold folded in (threshold 1.0, 6960 per byte before the
+    /// SIMD-0437 reductions and 5080 with the mainnet feature set), so on current
+    /// clusters this returns more than the historical 3480 value.
     #[napi(getter)]
     pub fn lamports_per_byte_year(&self) -> u64 {
         self.0.lamports_per_byte
