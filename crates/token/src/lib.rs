@@ -49,14 +49,11 @@ pub fn get_spl_account<T: Pack + IsInitialized>(
     svm: &LiteSVM,
     account: &Address,
 ) -> Result<T, FailedTransactionMetadata> {
-    let account = T::unpack(
-        &svm.get_account(account)
-            .ok_or(FailedTransactionMetadata {
-                err: TransactionError::AccountNotFound,
-                meta: Default::default(),
-            })?
-            .data[..T::LEN],
-    )?;
+    let account = svm.get_account(account).ok_or(FailedTransactionMetadata {
+        err: TransactionError::AccountNotFound,
+        meta: Default::default(),
+    })?;
+    let account = T::unpack(account.data.get(..T::LEN).unwrap_or(&account.data))?;
 
     Ok(account)
 }

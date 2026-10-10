@@ -192,3 +192,23 @@ fn test_with_account_keypair() {
     let token_account: Account = get_spl_account(svm, &returned_pk).unwrap();
     assert_eq!(token_account.state, AccountState::Initialized);
 }
+
+#[test]
+fn test_get_spl_account_with_short_data() {
+    let svm = &mut LiteSVM::new();
+    let payer_kp = Keypair::new();
+    let payer_pk = payer_kp.pubkey();
+    svm.airdrop(&payer_pk, 10_000_000_000).unwrap();
+
+    let mint_pk = CreateMint::new(svm, &payer_kp).send().unwrap();
+
+    assert!(get_spl_account::<Account>(svm, &mint_pk).is_err());
+    assert!(get_spl_account::<Mint>(svm, &payer_pk).is_err());
+
+    let destination_pk = Keypair::new().pubkey();
+    assert!(
+        TransferChecked::new(svm, &payer_kp, &payer_pk, &destination_pk, 1)
+            .send()
+            .is_err()
+    );
+}
