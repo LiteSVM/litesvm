@@ -1,3 +1,7 @@
 target/
 tarpaulin-out/
 tarpaulin-out-up/
+node_modules/
+.yarn/*
+!.yarn/releases
+!.yarn/releases/yarn-4.10.3.cjs

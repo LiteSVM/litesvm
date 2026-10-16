@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"declaration": true,
+		"module": "CommonJS",
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"target": "es2020",
+		"noImplicitAny": true,
+		"sourceMap": true,
+		"outDir": "dist",
+		"baseUrl": "./src",
+		"paths": {
+			"litesvm-web3js": ["./"]
+		},
+		"resolveJsonModule": true,
+		"skipLibCheck": true
+	},
+	"include": ["src/**/*"]
+}

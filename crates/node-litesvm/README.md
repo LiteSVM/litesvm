@@ -9,6 +9,10 @@
 This is the NodeJS wrapper for [LiteSVM](https://github.com/LiteSVM/litesvm). It brings best-in-class Solana testing
 to NodeJS, giving you a powerful, fast and ergonomic way to test Solana programs in TS/JS.
 
+This package provides the `@solana/kit` API and delegates native execution to
+`litesvm-core`. Install `litesvm-web3js` instead when using
+`@solana/web3.js` v3.
+
 For a standard testing workflow, LiteSVM offers an experience superior to `solana-test-validator` (slow, unwieldy)
 and `bankrun` (reasonably fast and powerful, but inherits a lot of warts from `solana-program-test`).
 
@@ -84,4 +88,14 @@ yarn add litesvm
 
 Make sure you have Yarn and the Rust toolchain installed.
 
-Then run `yarn` to install deps, run `yarn build` to build the binary and `yarn test` to run the tests.
+From the repository root, run:
+
+```sh
+yarn install --immutable
+yarn build
+yarn test
+```
+
+The root build compiles the native binary and both wrappers. Running `yarn build`
+inside this package only compiles TypeScript; to build the native binary from
+there, run `yarn workspace litesvm-core build` first.

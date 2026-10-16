@@ -3,8 +3,9 @@ name: release NodeJS
 on:
   push:
     tags:
-    - "node-v[0-9]+.[0-9]+.[0-9]+"
-    - "node-v[0-9]+.[0-9]+.[0-9]+-*"
+      - "node-v[0-9]+.[0-9]+.[0-9]+"
+      - "node-v[0-9]+.[0-9]+.[0-9]+-*"
+
 permissions:
   contents: read
   id-token: write
@@ -20,28 +21,49 @@ jobs:
         with:
           node-version: 22
           check-latest: true
+          registry-url: https://registry.npmjs.org
           cache: yarn
-          cache-dependency-path: crates/node-litesvm/yarn.lock
+          cache-dependency-path: yarn.lock
+      - name: Check package versions match the release tag
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const version = process.env.GITHUB_REF_NAME.replace(/^node-v/, '');
+          for (const workspace of require('./package.json').workspaces) {
+            const pkg = require(`./${workspace}/package.json`);
+            assert.equal(pkg.version, version, `${pkg.name} must match release version ${version}`);
+          }
+          NODE
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
       - name: Install dependencies
-        run: cd crates/node-litesvm/ && corepack enable && yarn install
-      - name: Create npm dirs
-        run: cd crates/node-litesvm/ && yarn napi create-npm-dirs
-      - name: Download all artifacts
+        run: corepack enable && yarn install --immutable
+      - name: Create native package directories
+        run: yarn workspace litesvm-core napi create-npm-dirs
+      - name: Download all native artifacts
         uses: dawidd6/action-download-artifact@v11
         with:
           workflow: node-build.yml
-          path: crates/node-litesvm/artifacts
-      - name: Move artifacts
-        run: cd crates/node-litesvm/ && yarn artifacts
-      - name: Compile Typescript
-        run: cd crates/node-litesvm/ && yarn build:js
-      - name: List packages
-        run: cd crates/node-litesvm/ && ls -R ./npm
-      - name: Publish
+          path: crates/node-litesvm-core/artifacts
+      - name: Move native artifacts
+        run: yarn workspace litesvm-core artifacts
+      - name: Build wrappers
         run: |
-          cd crates/node-litesvm/
+          yarn workspace litesvm build
+          yarn workspace litesvm-web3js build
+      - name: List native packages
+        run: ls -R crates/node-litesvm-core/npm
+      - name: Publish core and wrappers
+        env:
+          # Bootstrap the eight new packages with a granular write token that can
+          # create packages and bypass 2FA. After configuring trusted publishing
+          # for litesvm-core, litesvm-web3js and all six platform packages, remove it.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
           TAG=latest
           [[ "$GITHUB_REF_NAME" == *-rc.* ]] && TAG=next
-          npm publish --access public --tag "$TAG"
+          (cd crates/node-litesvm-core && npm publish --access public --tag "$TAG")
+          yarn workspace litesvm pack --out "$RUNNER_TEMP/litesvm.tgz"
+          yarn workspace litesvm-web3js pack --out "$RUNNER_TEMP/litesvm-web3js.tgz"
+          npm publish "$RUNNER_TEMP/litesvm.tgz" --access public --tag "$TAG"
+          npm publish "$RUNNER_TEMP/litesvm-web3js.tgz" --access public --tag "$TAG"

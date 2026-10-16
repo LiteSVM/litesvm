@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
+exclude = ["crates/node-litesvm", "crates/node-litesvm-web3js"]
 
 [workspace.package]
 version = "0.18.0"

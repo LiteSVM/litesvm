@@ -22,38 +22,6 @@ on:
       - crates/node-litesvm/docs/**
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: crates/node-litesvm
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: 'yarn'
-          cache-dependency-path: crates/node-litesvm/yarn.lock
-
-      - name: Install
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: clippy, rustfmt
-
-      - name: Install dependencies
-        run: yarn install
-
-      - name: Oxlint
-        run: yarn lint
-
-      - name: Cargo fmt
-        run: cargo fmt -- --check
-
-      - name: Clippy
-        run: cargo clippy
   build:
     strategy:
       fail-fast: false
@@ -61,27 +29,24 @@ jobs:
         settings:
           - host: macos-latest
             target: x86_64-apple-darwin
-            build: yarn build --target x86_64-apple-darwin
+            build: yarn workspace litesvm-core build --target x86_64-apple-darwin
           - host: macos-latest
             target: aarch64-apple-darwin
-            build: yarn build --target aarch64-apple-darwin
+            build: yarn workspace litesvm-core build --target aarch64-apple-darwin
           - host: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            build: yarn build --target x86_64-unknown-linux-gnu --use-napi-cross
+            build: yarn workspace litesvm-core build --target x86_64-unknown-linux-gnu --use-napi-cross
           - host: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
-            build: yarn build --target aarch64-unknown-linux-gnu --use-napi-cross
+            build: yarn workspace litesvm-core build --target aarch64-unknown-linux-gnu --use-napi-cross
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            build: yarn build --target x86_64-unknown-linux-musl -x
+            build: yarn workspace litesvm-core build --target x86_64-unknown-linux-musl -x
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
-            build: yarn build --target aarch64-unknown-linux-musl -x
+            build: yarn workspace litesvm-core build --target aarch64-unknown-linux-musl -x
     name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v6
       - name: Setup node
@@ -89,8 +54,8 @@ jobs:
         with:
           node-version: 22
           cache: yarn
-          cache-dependency-path: crates/node-litesvm/yarn.lock
-      - name: Install
+          cache-dependency-path: yarn.lock
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: stable
@@ -122,7 +87,7 @@ jobs:
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
-        run: yarn install
+        run: corepack enable && yarn install --immutable
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
@@ -130,8 +95,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: crates/node-litesvm/litesvm/litesvm.*.node
+          path: crates/node-litesvm-core/litesvm/litesvm.*.node
           if-no-files-found: error
+
   test-macOS-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:
@@ -150,9 +116,6 @@ jobs:
           - '20'
           - '22'
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v6
       - name: Setup node
@@ -161,19 +124,25 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: yarn
           architecture: ${{ matrix.settings.architecture }}
-          cache-dependency-path: crates/node-litesvm/yarn.lock
+          cache-dependency-path: yarn.lock
       - name: Install dependencies
-        run: yarn install
+        run: corepack enable && yarn install --immutable
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: crates/node-litesvm/litesvm
-      - name: List packages
-        run: ls -R .
+          path: crates/node-litesvm-core/litesvm
+      - name: List bindings
+        run: ls -R crates/node-litesvm-core/litesvm
         shell: bash
-      - name: Test bindings
-        run: yarn test
+      - name: Test core and wrappers
+        run: |
+          yarn workspace litesvm-core test
+          yarn workspace litesvm build
+          yarn workspace litesvm test
+          yarn workspace litesvm-web3js build
+          yarn workspace litesvm-web3js test
+
   test-linux-binding:
     name: Test ${{ matrix.target }} - node@${{ matrix.node }}
     needs:
@@ -186,14 +155,10 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-gnu
           - aarch64-unknown-linux-musl
-          # - armv7-unknown-linux-gnueabihf
         node:
           - '20'
           - '22'
     runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
-    defaults:
-        run:
-          working-directory: crates/node-litesvm
     steps:
       - uses: actions/checkout@v6
       - name: Setup node
@@ -201,15 +166,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-          cache-dependency-path: crates/node-litesvm/yarn.lock
+          cache-dependency-path: yarn.lock
       - name: Output docker params
         id: docker
         run: |
           node -e "
             if ('${{ matrix.target }}'.startsWith('aarch64')) {
               console.log('PLATFORM=linux/arm64')
-            } else if ('${{ matrix.target }}'.startsWith('armv7')) {
-              console.log('PLATFORM=linux/arm/v7')
             } else {
               console.log('PLATFORM=linux/amd64')
             }
@@ -223,27 +186,21 @@ jobs:
           " >> $GITHUB_OUTPUT
       - name: Install dependencies
         run: |
-          yarn config set --json supportedArchitectures.cpu '["current", "arm64", "x64", "arm"]'
+          corepack enable
+          yarn config set --json supportedArchitectures.cpu '["current", "arm64", "x64"]'
           yarn config set --json supportedArchitectures.libc '["current", "musl", "gnu"]'
-          yarn install
+          yarn install --immutable
       - name: Download artifacts
         uses: actions/download-artifact@v6
         with:
           name: bindings-${{ matrix.target }}
-          path: crates/node-litesvm/litesvm
-      - name: List packages
-        run: ls -R .
+          path: crates/node-litesvm-core/litesvm
+      - name: List bindings
+        run: ls -R crates/node-litesvm-core/litesvm
         shell: bash
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
-      #   if: ${{ contains(matrix.target, 'armv7') }}
-      #   with:
-      #     platforms: all
-      # - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      #   if: ${{ contains(matrix.target, 'armv7') }}
-      - name: Test bindings
+      - name: Test core and wrappers
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ steps.docker.outputs.IMAGE }}
-          options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }}/crates/node-litesvm --platform ${{ steps.docker.outputs.PLATFORM }} -e RUST_MIN_STACK=8388608
-          run: yarn test
+          options: -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }} -e RUST_MIN_STACK=8388608
+          run: corepack enable && yarn workspace litesvm-core test && yarn workspace litesvm build && yarn workspace litesvm test && yarn workspace litesvm-web3js build && yarn workspace litesvm-web3js test
