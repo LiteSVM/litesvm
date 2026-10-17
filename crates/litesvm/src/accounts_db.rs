@@ -60,6 +60,7 @@ fn handle_sysvar<T>(
 where
     T: Sysvar + DeserializeOwned<Dst = T>,
 {
+    let _parsed = T::deserialize_from(account.data()).map_err(|_| err_variant)?;
     cache.reset();
     cache.fill_missing_entries(|pubkey, set_sysvar| {
         if *pubkey == address {
@@ -68,7 +69,6 @@ where
             set_sysvar(acc.data())
         }
     });
-    let _parsed = T::deserialize_from(account.data()).map_err(|_| err_variant)?;
     Ok(())
 }
 
