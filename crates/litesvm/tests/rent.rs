@@ -6,7 +6,10 @@ use {
         FeatureSet,
     },
     litesvm::LiteSVM,
+    solana_account::Account,
+    solana_address::Address,
     solana_rent::{Rent, DEFAULT_LAMPORTS_PER_BYTE},
+    solana_sdk_ids::sysvar,
 };
 
 fn rent_with(feature_set: FeatureSet) -> Rent {
@@ -83,4 +86,21 @@ fn legacy_rent_representation_without_the_threshold_feature() {
         rent.minimum_balance(123),
         Rent::default().minimum_balance(123)
     );
+}
+
+#[test]
+fn rejected_rent_write_keeps_the_cached_rent() {
+    let mut svm = LiteSVM::new();
+    let min_balance = svm.minimum_balance_for_rent_exemption(0);
+    let invalid_rent = Account {
+        lamports: 1,
+        data: vec![0; 3],
+        owner: sysvar::id(),
+        executable: false,
+        rent_epoch: 0,
+    };
+
+    assert!(svm.set_account(sysvar::rent::id(), invalid_rent).is_err());
+    assert_eq!(svm.minimum_balance_for_rent_exemption(0), min_balance);
+    svm.airdrop(&Address::new_unique(), min_balance).unwrap();
 }
