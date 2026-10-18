@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Keep the sysvar cache unchanged when `LiteSVM::set_account` rejects invalid sysvar data. The rejected write used to drop that sysvar from the cache, so the next transaction panicked ([#436](https://github.com/LiteSVM/litesvm/pull/436)).
 - Return an error instead of panicking from `litesvm_token::get_spl_account` (and the `*Checked` token helpers that read the mint through it) when the account data is shorter than the requested state ([#433](https://github.com/LiteSVM/litesvm/pull/433)).
 
 ## [0.18.0] - 2026-10-09
