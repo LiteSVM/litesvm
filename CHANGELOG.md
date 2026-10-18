@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-10-19
+
+### Changed
+
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-10-15 ([#435](https://github.com/LiteSVM/litesvm/pull/435)).
+
 ### Fixed
 
 - Keep the sysvar cache unchanged when `LiteSVM::set_account` rejects invalid sysvar data. The rejected write used to drop that sysvar from the cache, so the next transaction panicked ([#436](https://github.com/LiteSVM/litesvm/pull/436)).
@@ -362,7 +368,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.18.1...HEAD
+[0.18.1]: https://github.com/LiteSVM/litesvm/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/LiteSVM/litesvm/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/LiteSVM/litesvm/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/LiteSVM/litesvm/compare/v0.15.2...v0.16.0

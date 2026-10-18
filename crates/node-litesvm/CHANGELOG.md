@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-10-19
+
+### Changed
+
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-10-15 [(#435)](https://github.com/LiteSVM/litesvm/pull/435).
+
+### Fixed
+
+- Keep the sysvar cache unchanged when `setAccount` rejects invalid sysvar data, preventing a panic in the next transaction [(#436)](https://github.com/LiteSVM/litesvm/pull/436).
+
 ## [1.6.0] - 2026-10-09
 
 ### Changed
