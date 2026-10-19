@@ -487,7 +487,7 @@ export declare class StakeHistoryEntry {
   /**
    * @param effective - effective stake at this epoch
    * @param activating - sum of portion of stakes not fully warmed up
-   * @param effective - requested to be cooled down, not fully deactivated yet
+   * @param deactivating - requested to be cooled down, not fully deactivated yet
    */
   constructor(effective: bigint, activating: bigint, deactivating: bigint)
   /** effective stake at this epoch */
