@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Honor the configured transaction history capacity independently of its backing allocation, including after resizing, re-enabling, and snapshot restoration.
+
 ## [0.18.1] - 2026-10-19
 
 ### Changed

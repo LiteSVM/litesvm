@@ -1,57 +1,62 @@
 use {crate::types::TransactionResult, indexmap::IndexMap, solana_signature::Signature};
 
 #[derive(Clone)]
-pub struct TransactionHistory(IndexMap<Signature, TransactionResult>);
+pub struct TransactionHistory {
+    entries: IndexMap<Signature, TransactionResult>,
+    capacity: usize,
+}
 
 impl TransactionHistory {
     pub fn new() -> Self {
-        TransactionHistory(IndexMap::with_capacity(32))
-    }
-
-    pub fn set_capacity(&mut self, new_cap: usize) {
-        if new_cap <= self.0.capacity() {
-            self.0.truncate(new_cap);
-            self.0.shrink_to_fit();
-        } else {
-            self.0.reserve(new_cap - self.0.capacity())
+        Self {
+            entries: IndexMap::with_capacity(32),
+            capacity: 32,
         }
     }
 
+    pub fn set_capacity(&mut self, new_cap: usize) {
+        if new_cap <= self.capacity {
+            self.entries.truncate(new_cap);
+            self.entries.shrink_to_fit();
+        }
+        self.capacity = new_cap;
+    }
+
     pub fn get_transaction(&self, signature: &Signature) -> Option<&TransactionResult> {
-        self.0.get(signature)
+        self.entries.get(signature)
     }
 
     pub fn is_enabled(&self) -> bool {
-        self.0.capacity() != 0
+        self.capacity != 0
     }
 
     pub fn add_new_transaction(&mut self, signature: Signature, result: TransactionResult) {
-        let capacity = self.0.capacity();
+        let capacity = self.capacity;
         if capacity != 0 {
-            if self.0.len() == capacity {
-                self.0.shift_remove_index(0);
+            if self.entries.len() == capacity {
+                self.entries.shift_remove_index(0);
             }
-            self.0.insert(signature, result);
+            self.entries.insert(signature, result);
         }
     }
 
     pub fn check_transaction(&self, signature: &Signature) -> bool {
-        self.0.contains_key(signature)
+        self.entries.contains_key(signature)
     }
 
     #[cfg(feature = "persistence-internal")]
     pub fn entries(&self) -> &IndexMap<Signature, TransactionResult> {
-        &self.0
+        &self.entries
     }
 
     #[cfg(feature = "persistence-internal")]
     pub fn capacity(&self) -> usize {
-        self.0.capacity()
+        self.capacity
     }
 
     #[cfg(feature = "persistence-internal")]
     pub fn from_entries(entries: IndexMap<Signature, TransactionResult>, capacity: usize) -> Self {
-        let mut history = TransactionHistory(entries);
+        let mut history = Self { entries, capacity };
         history.set_capacity(capacity);
         history
     }
