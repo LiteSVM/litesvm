@@ -1,7 +1,3 @@
-#[cfg(not(feature = "token-2022"))]
-use solana_program_pack::Pack;
-#[cfg(feature = "token-2022")]
-use spl_token_2022_interface::extension::ExtensionType;
 use {
     super::{
         spl_token::{instruction::initialize_account3, state::Account},
@@ -10,9 +6,15 @@ use {
     litesvm::{types::FailedTransactionMetadata, LiteSVM},
     solana_address::Address,
     solana_keypair::Keypair,
+    solana_program_pack::Pack,
     solana_signer::Signer,
     solana_system_interface::instruction::create_account,
     solana_transaction::Transaction,
+};
+#[cfg(feature = "token-2022")]
+use {
+    solana_transaction_error::TransactionError,
+    spl_token_2022_interface::extension::account_len::try_calculate_account_len_from_mint_data,
 };
 
 /// ### Description
@@ -28,8 +30,6 @@ pub struct CreateAccount<'a> {
     owner: Option<&'a Address>,
     account_kp: Option<Keypair>,
     token_program_id: Option<&'a Address>,
-    #[cfg(feature = "token-2022")]
-    extensions: Vec<ExtensionType>,
 }
 
 impl<'a> CreateAccount<'a> {
@@ -42,8 +42,6 @@ impl<'a> CreateAccount<'a> {
             owner: None,
             account_kp: None,
             token_program_id: None,
-            #[cfg(feature = "token-2022")]
-            extensions: vec![],
         }
     }
 
@@ -67,8 +65,20 @@ impl<'a> CreateAccount<'a> {
 
     /// Sends the transaction.
     pub fn send(self) -> Result<Address, FailedTransactionMetadata> {
+        let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         #[cfg(feature = "token-2022")]
-        let account_len = ExtensionType::try_calculate_account_len::<Account>(&self.extensions)?;
+        let account_len = if token_program_id == &TOKEN_ID {
+            let mint = self
+                .svm
+                .get_account(self.mint)
+                .ok_or(FailedTransactionMetadata {
+                    err: TransactionError::AccountNotFound,
+                    meta: Default::default(),
+                })?;
+            try_calculate_account_len_from_mint_data(&mint.data, &[])?
+        } else {
+            Account::LEN
+        };
         #[cfg(not(feature = "token-2022"))]
         let account_len = Account::LEN;
 
@@ -76,7 +86,6 @@ impl<'a> CreateAccount<'a> {
 
         let account_kp = self.account_kp.unwrap_or(Keypair::new());
         let account_pk = account_kp.pubkey();
-        let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let payer_pk = self.payer.pubkey();
 
         let ix1 = create_account(
