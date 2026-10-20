@@ -1320,7 +1320,6 @@ impl LiteSVM {
             .feature_set
             .is_active(&agave_feature_set::relax_post_exec_min_balance_check::ID);
         let message = tx.message();
-        let blockhash = message.recent_blockhash();
         //reload program cache
         let mut program_cache_for_tx_batch = self.accounts.programs_cache.clone();
         let mut accumulated_consume_units = 0;
@@ -1512,7 +1511,7 @@ impl LiteSVM {
                     &mut context,
                     &mut program_cache_for_tx_batch,
                     EnvironmentConfig::new(
-                        *blockhash,
+                        self.latest_blockhash,
                         self.fee_structure.lamports_per_signature,
                         false,
                         self,

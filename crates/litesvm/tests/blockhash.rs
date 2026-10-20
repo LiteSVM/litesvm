@@ -84,4 +84,14 @@ fn test_durable_nonce() {
     let tx_using_nonce = Transaction::new(&[&from_keypair], msg, nonce);
     svm.expire_blockhash();
     svm.send_transaction(tx_using_nonce).unwrap();
+
+    // The nonce can advance only once per blockhash.
+    let advanced = data_from_account(&svm.get_account(&nonce_kp.pubkey()).unwrap()).blockhash();
+    let advance_ix = advance_nonce_account(&nonce_kp.pubkey(), &from);
+    let msg = Message::new_with_blockhash(&[advance_ix], Some(&from), &advanced);
+    let tx = Transaction::new(&[&from_keypair], msg, advanced);
+    assert_eq!(
+        svm.send_transaction(tx).unwrap_err().err,
+        TransactionError::BlockhashNotFound
+    );
 }
