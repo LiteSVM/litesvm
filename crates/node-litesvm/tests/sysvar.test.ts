@@ -1,4 +1,4 @@
-import { Clock, LiteSVM, Rent, SlotHash } from "litesvm";
+import { Clock, LiteSVM, Rent, SlotHash, StakeHistoryEntry } from "litesvm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -38,4 +38,20 @@ test("setSlotHashes accepts object literals", () => {
 	assert(slotHash instanceof SlotHash);
 	assert.strictEqual(slotHash.slot, slotHashes[0].slot);
 	assert.strictEqual(slotHash.hash, slotHashes[0].hash);
+});
+
+test("StakeHistoryEntry setters write their own fields", () => {
+	const entry = new StakeHistoryEntry(1n, 2n, 3n);
+	entry.activating = 20n;
+	assert.strictEqual(entry.effective, 1n);
+	assert.strictEqual(entry.activating, 20n);
+	assert.strictEqual(entry.deactivating, 3n);
+	entry.deactivating = 30n;
+	assert.strictEqual(entry.effective, 1n);
+	assert.strictEqual(entry.activating, 20n);
+	assert.strictEqual(entry.deactivating, 30n);
+	entry.effective = 10n;
+	assert.strictEqual(entry.effective, 10n);
+	assert.strictEqual(entry.activating, 20n);
+	assert.strictEqual(entry.deactivating, 30n);
 });

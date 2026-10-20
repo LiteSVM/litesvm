@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Make the `StakeHistoryEntry` `activating` and `deactivating` setters write their own fields. Both used to overwrite `effective` and leave the field being set unchanged [(#438)](https://github.com/LiteSVM/litesvm/pull/438).
+
 ## [1.6.1] - 2026-10-19
 
 ### Changed
