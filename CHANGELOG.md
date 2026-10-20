@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Size accounts created by `litesvm-token::CreateAccount` for the extensions required by their Token-2022 mint.
+
 ## [0.18.1] - 2026-10-19
 
 ### Changed
