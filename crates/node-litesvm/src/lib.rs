@@ -44,6 +44,7 @@ use {
     util::{bigint_to_u64, bigint_to_usize},
     wincode::deserialize,
 };
+
 mod account;
 mod compute_budget;
 mod feature_set;
@@ -96,36 +97,84 @@ fn convert_sim_result(
     }
 }
 
-#[napi]
-pub struct LiteSvm(LiteSVMOriginal);
+/// Bytes the Node binding charges V8 for the native memory held by a single
+/// `LiteSVM` instance, as a conservative upper bound. V8 uses this hint via
+/// `napi_adjust_external_memory` to schedule global garbage collections sooner
+/// when the wrapper is unreferenced, addressing the RSS leak reported in
+/// <https://github.com/LiteSVM/litesvm/issues/345>. Measured footprint for an
+/// empty `new()` is ~7.5MB; we charge a 16MB headroom so subsequent account
+/// additions do not under-report.
+const EXTERNAL_MEMORY_HINT_BYTES: i64 = 16 * 1024 * 1024;
+
+/// The wrapped `LiteSVM` plus the total bytes currently charged to V8's
+/// external-memory budget for this instance (see `EXTERNAL_MEMORY_HINT_BYTES`).
+/// The second field keeps construction, later state loads and finalization
+/// arithmetically balanced.
+#[napi(custom_finalize)]
+pub struct LiteSvm(LiteSVMOriginal, i64);
+
+impl ObjectFinalize for LiteSvm {
+    fn finalize(self, env: Env) -> Result<()> {
+        // The wrapper is unreachable: hand back everything we charged so
+        // global GC pressure decays to baseline instead of staying latched
+        // to instances that no longer exist.
+        if self.1 > 0 {
+            let _ = env.adjust_external_memory(-self.1);
+        }
+        Ok(())
+    }
+}
 
 #[napi]
 impl LiteSvm {
+    fn build(env: &Env, inner: LiteSVMOriginal, extra_bytes: i64) -> Self {
+        let mut this = Self(inner, 0);
+        this.charge(env, EXTERNAL_MEMORY_HINT_BYTES + extra_bytes);
+        this
+    }
+
+    /// Charge `bytes` of native memory to V8 for this instance. Approximate
+    /// values are explicitly supported by N-API (`napi_adjust_external_memory`):
+    /// they only affect GC scheduling, and over-charging errs on the side of
+    /// collecting earlier.
+    fn charge(&mut self, env: &Env, bytes: i64) {
+        if bytes > 0 && env.adjust_external_memory(bytes).is_ok() {
+            self.1 += bytes;
+        }
+    }
+
     /// Creates the basic test environment.
     #[napi(constructor)]
-    pub fn new() -> Self {
-        Self(LiteSVMOriginal::new())
+    pub fn new(env: Env) -> Self {
+        Self::build(&env, LiteSVMOriginal::new(), 0)
     }
 
     #[napi(factory, js_name = "default")]
-    pub fn new_default() -> Self {
-        Self(LiteSVMOriginal::default())
+    pub fn new_default(env: Env) -> Self {
+        Self::build(&env, LiteSVMOriginal::default(), 0)
     }
 
     #[napi(factory)]
     /// Restores an instance from a snapshot file written by `saveToFile`.
-    pub fn load_from_file(path: String) -> Result<Self> {
-        litesvm_persistence::load_from_file(path)
-            .map(Self)
-            .map_err(|e| persistence_error(e, "Failed to load snapshot"))
+    pub fn load_from_file(path: String, env: Env) -> Result<Self> {
+        let loaded = litesvm_persistence::load_from_file(path.clone())
+            .map_err(|e| persistence_error(e, "Failed to load snapshot"))?;
+        // Snapshot size approximates the restored state on top of the base
+        // hint. The file exists by now; a metadata failure only means we under-
+        // charge the extra bytes, never that the load fails.
+        let restored = std::fs::metadata(&path)
+            .map(|m| m.len() as i64)
+            .unwrap_or(0);
+        Ok(Self::build(&env, loaded, restored))
     }
 
     #[napi(factory)]
     /// Restores an instance from snapshot bytes produced by `toBytes`.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        litesvm_persistence::from_bytes(bytes)
-            .map(Self)
-            .map_err(|e| persistence_error(e, "Failed to load snapshot"))
+    pub fn from_bytes(bytes: &[u8], env: Env) -> Result<Self> {
+        let restored = bytes.len() as i64;
+        let loaded = litesvm_persistence::from_bytes(bytes)
+            .map_err(|e| persistence_error(e, "Failed to load snapshot"))?;
+        Ok(Self::build(&env, loaded, restored))
     }
 
     #[napi]
@@ -242,10 +291,14 @@ impl LiteSvm {
 
     #[napi]
     /// Sets all information associated with the account of the provided pubkey.
-    pub fn set_account(&mut self, pubkey: &[u8], data: &Account) -> Result<()> {
+    pub fn set_account(&mut self, env: Env, pubkey: &[u8], data: &Account) -> Result<()> {
         self.0
             .set_account(convert_pubkey(pubkey), data.0.clone())
-            .map_err(|e| to_js_error(e, "Failed to set account"))
+            .map_err(|e| to_js_error(e, "Failed to set account"))?;
+        // Account data lives inside the Rust `LiteSVM` and is invisible to V8's
+        // own heap accounting; charging it keeps instance churn proportional.
+        self.charge(&env, data.0.data.len() as i64);
+        Ok(())
     }
 
     #[napi]
@@ -279,20 +332,31 @@ impl LiteSvm {
 
     #[napi]
     /// Adds am SBF program to the test environment from the file specified.
-    pub fn add_program_from_file(&mut self, program_id: &[u8], path: String) -> Result<()> {
+    pub fn add_program_from_file(
+        &mut self,
+        env: Env,
+        program_id: &[u8],
+        path: String,
+    ) -> Result<()> {
         self.0
-            .add_program_from_file(convert_pubkey(program_id), path)
+            .add_program_from_file(convert_pubkey(program_id), path.clone())
             .map_err(|e| {
                 Error::new(
                     Status::GenericFailure,
                     format!("Failed to add program: {e}"),
                 )
-            })
+            })?;
+        // SBF bytecode stays alive in the program cache; account for it.
+        let program_bytes = std::fs::metadata(&path)
+            .map(|m| m.len() as i64)
+            .unwrap_or(0);
+        self.charge(&env, program_bytes);
+        Ok(())
     }
 
     #[napi]
     /// Adds am SBF program to the test environment.
-    pub fn add_program(&mut self, program_id: &[u8], program_bytes: &[u8]) -> Result<()> {
+    pub fn add_program(&mut self, env: Env, program_id: &[u8], program_bytes: &[u8]) -> Result<()> {
         self.0
             .add_program(convert_pubkey(program_id), program_bytes)
             .map_err(|e| {
@@ -300,13 +364,16 @@ impl LiteSvm {
                     Status::GenericFailure,
                     format!("Failed to add program: {e}"),
                 )
-            })
+            })?;
+        self.charge(&env, program_bytes.len() as i64);
+        Ok(())
     }
 
     #[napi]
     /// Adds an SBF program with a specific loader.
     pub fn add_program_with_loader(
         &mut self,
+        env: Env,
         program_id: &[u8],
         program_bytes: &[u8],
         loader_id: &[u8],
@@ -322,7 +389,9 @@ impl LiteSvm {
                     Status::GenericFailure,
                     format!("Failed to add program: {e}"),
                 )
-            })
+            })?;
+        self.charge(&env, program_bytes.len() as i64);
+        Ok(())
     }
 
     #[napi(ts_return_type = "TransactionMetadata | FailedTransactionMetadata")]
