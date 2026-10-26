@@ -25,7 +25,7 @@ pub fn set_upgrade_authority(
             new_authority_address,
         )],
         Some(&from_keypair.pubkey()),
-        &[&from_keypair],
+        &[from_keypair, current_authority_keypair],
         svm.latest_blockhash(),
     );
 

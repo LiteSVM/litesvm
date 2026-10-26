@@ -6,6 +6,7 @@
 
 - Size accounts created by `litesvm-token::CreateAccount` for the extensions required by their Token-2022 mint.
 - Use the latest blockhash in durable nonce instructions, not the transaction's recent blockhash. A nonce used to advance more than once per blockhash.
+- Sign `litesvm-loader::set_upgrade_authority` with the current authority. It used to panic with `NotEnoughSigners` when the payer was not the current authority.
 
 ## [0.18.1] - 2026-10-19
 
