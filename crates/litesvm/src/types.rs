@@ -49,10 +49,7 @@ pub struct FailedTransactionMetadata {
 impl From<ProgramError> for FailedTransactionMetadata {
     fn from(value: ProgramError) -> Self {
         FailedTransactionMetadata {
-            err: TransactionError::InstructionError(
-                0,
-                InstructionError::Custom(u64::from(value) as u32),
-            ),
+            err: TransactionError::InstructionError(0, InstructionError::from(u64::from(value))),
             meta: Default::default(),
         }
     }
@@ -95,5 +92,18 @@ impl From<TransactionError> for ExecutionResult {
             tx_result: Err(err),
             ..Default::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn program_error_keeps_builtin_variant() {
+        assert_eq!(
+            FailedTransactionMetadata::from(ProgramError::InvalidAccountData).err,
+            TransactionError::InstructionError(0, InstructionError::InvalidAccountData)
+        );
     }
 }
