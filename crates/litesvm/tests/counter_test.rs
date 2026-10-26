@@ -167,6 +167,21 @@ pub fn test_nonexistent_program() {
     );
     let err = svm.send_transaction(tx).unwrap_err();
     assert_eq!(err.err, TransactionError::InvalidProgramForExecution);
+
+    // A deleted program fails the same way, even while it is in the program cache.
+    svm.add_program(program_id, &read_counter_program())
+        .unwrap();
+    svm.set_account(program_id, Account::default()).unwrap();
+    let tx = make_tx(
+        program_id,
+        counter_address,
+        &payer_pk,
+        blockhash,
+        &payer_kp,
+        1,
+    );
+    let err = svm.send_transaction(tx).unwrap_err();
+    assert_eq!(err.err, TransactionError::InvalidProgramForExecution);
 }
 
 #[cfg(feature = "register-tracing")]

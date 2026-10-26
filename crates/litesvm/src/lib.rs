@@ -1310,32 +1310,20 @@ impl LiteSVM {
                 } else {
                     let is_instruction_account =
                         SVMStaticMessage::is_instruction_account(message, i);
-                    let (loaded_size, mut account) = if !is_instruction_account
-                        && !message.is_writable(i)
-                        && self.accounts.programs_cache.find(key).is_some()
-                    {
-                        // Optimization to skip loading of accounts which are only used as
-                        // programs in top-level instructions and not passed as instruction accounts.
-                        let account = self.accounts.get_account(key).unwrap();
-                        (
-                            TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(account.data().len()),
-                            account,
-                        )
-                    } else {
-                        self.accounts
-                            .get_account(key)
-                            .map(|acc| {
-                                (
-                                    TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(acc.data().len()),
-                                    acc,
-                                )
-                            })
-                            .unwrap_or_else(|| {
-                                let mut default_account = AccountSharedData::default();
-                                default_account.set_rent_epoch(u64::MAX);
-                                (default_account.data().len(), default_account)
-                            })
-                    };
+                    let (loaded_size, mut account) = self
+                        .accounts
+                        .get_account(key)
+                        .map(|acc| {
+                            (
+                                TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(acc.data().len()),
+                                acc,
+                            )
+                        })
+                        .unwrap_or_else(|| {
+                            let mut default_account = AccountSharedData::default();
+                            default_account.set_rent_epoch(u64::MAX);
+                            (default_account.data().len(), default_account)
+                        });
                     if message.is_writable(i)
                         && account.rent_epoch() != u64::MAX
                         && rent.is_exempt(account.lamports(), account.data().len())
