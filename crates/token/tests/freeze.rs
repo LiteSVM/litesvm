@@ -46,3 +46,40 @@ fn test() {
     let account: Account = get_spl_account(svm, &account_pk).unwrap();
     assert!(!account.is_frozen());
 }
+
+#[test]
+fn test_holder_account() {
+    let svm = &mut LiteSVM::new();
+
+    let authority_kp = Keypair::new();
+    let authority_pk = authority_kp.pubkey();
+    let holder_pk = Keypair::new().pubkey();
+
+    svm.airdrop(&authority_pk, 10_000_000_000).unwrap();
+
+    let mint_pk = CreateMint::new(svm, &authority_kp)
+        .freeze_authority(&authority_pk)
+        .send()
+        .unwrap();
+
+    let account_pk = CreateAssociatedTokenAccountIdempotent::new(svm, &authority_kp, &mint_pk)
+        .owner(&holder_pk)
+        .send()
+        .unwrap();
+
+    FreezeAccount::new(svm, &authority_kp, &mint_pk)
+        .account(&account_pk)
+        .send()
+        .unwrap();
+
+    let account: Account = get_spl_account(svm, &account_pk).unwrap();
+    assert!(account.is_frozen());
+
+    ThawAccount::new(svm, &authority_kp, &mint_pk)
+        .account(&account_pk)
+        .send()
+        .unwrap();
+
+    let account: Account = get_spl_account(svm, &account_pk).unwrap();
+    assert!(!account.is_frozen());
+}

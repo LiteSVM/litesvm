@@ -8,6 +8,7 @@
 - Use the latest blockhash in durable nonce instructions, not the transaction's recent blockhash. A nonce used to advance more than once per blockhash.
 - Sign `litesvm-loader::set_upgrade_authority` with the current authority. It used to panic with `NotEnoughSigners` when the payer was not the current authority.
 - Keep the variant of a builtin `ProgramError` when converting it to `FailedTransactionMetadata`. Every builtin error used to become `Custom(0)`.
+- Let `litesvm-token::FreezeAccount` and `ThawAccount` target any token account with `account()`. They used to target only the associated token account of the freeze authority.
 
 ## [0.18.1] - 2026-10-19
 

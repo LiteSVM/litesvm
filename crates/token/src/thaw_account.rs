@@ -12,8 +12,8 @@ use {
 /// Builder for the [`thaw_account`] instruction.
 ///
 /// ### Optional fields
-/// - `account`: associated token account of the `payer` by default.
-/// - `authority`: `payer` by default.
+/// - `account`: associated token account of the owner by default.
+/// - `owner`: `payer` by default.
 /// - `token_program_id`: [`TOKEN_ID`] by default.
 pub struct ThawAccount<'a> {
     svm: &'a mut LiteSVM,
@@ -42,6 +42,12 @@ impl<'a> ThawAccount<'a> {
     /// Sets the token program id for the instruction.
     pub fn token_program_id(mut self, program_id: &'a Address) -> Self {
         self.token_program_id = Some(program_id);
+        self
+    }
+
+    /// Sets the token account to thaw.
+    pub fn account(mut self, account: &'a Address) -> Self {
+        self.account = Some(account);
         self
     }
 
