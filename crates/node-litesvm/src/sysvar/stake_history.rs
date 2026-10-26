@@ -14,7 +14,7 @@ pub struct StakeHistoryEntry(pub(crate) StakeHistoryEntryOriginal);
 impl StakeHistoryEntry {
     /// @param effective - effective stake at this epoch
     /// @param activating - sum of portion of stakes not fully warmed up
-    /// @param effective - requested to be cooled down, not fully deactivated yet
+    /// @param deactivating - requested to be cooled down, not fully deactivated yet
     #[napi(constructor)]
     pub fn new(effective: BigInt, activating: BigInt, deactivating: BigInt) -> Result<Self> {
         Ok(Self(StakeHistoryEntryOriginal {
@@ -43,7 +43,7 @@ impl StakeHistoryEntry {
 
     #[napi(setter)]
     pub fn set_activating(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.effective = bigint_to_u64(&val)?)
+        Ok(self.0.activating = bigint_to_u64(&val)?)
     }
 
     /// requested to be cooled down, not fully deactivated yet
@@ -54,7 +54,7 @@ impl StakeHistoryEntry {
 
     #[napi(setter)]
     pub fn set_deactivating(&mut self, val: BigInt) -> Result<()> {
-        Ok(self.0.effective = bigint_to_u64(&val)?)
+        Ok(self.0.deactivating = bigint_to_u64(&val)?)
     }
 }
 
