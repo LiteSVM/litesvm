@@ -4,12 +4,7 @@ mod types;
 pub use error::PersistenceError;
 use {
     litesvm::LiteSVM,
-    std::{
-        fs::File,
-        io::{BufWriter, Read, Write},
-        marker::PhantomData,
-        path::Path,
-    },
+    std::{marker::PhantomData, path::Path},
     types::{
         AccountEntryWire, ComputeBudgetV2Wire, FeatureSetSnapshot, LiteSvmSnapshot, LiteSvmState,
         TxResult,
@@ -126,25 +121,13 @@ fn deserialize_snapshot(version: u8, bytes: &[u8]) -> Result<LiteSvmSnapshot, Pe
 
 /// Saves the full LiteSVM state to a file.
 pub fn save_to_file(svm: &LiteSVM, path: impl AsRef<Path>) -> Result<(), PersistenceError> {
-    let snapshot = extract_snapshot(svm);
-    let mut writer = BufWriter::new(File::create(path)?);
-    let payload_size = LiteSvmSnapshot::serialized_size(&snapshot)? as usize;
-    let mut payload = Vec::with_capacity(payload_size);
-    LiteSvmSnapshot::serialize_into(&mut payload, &snapshot)?;
-    writer.write_all(&[STATE_VERSION])?;
-    writer.write_all(&payload)?;
-    writer.flush()?;
+    std::fs::write(path, to_bytes(svm)?)?;
     Ok(())
 }
 
 /// Loads a full LiteSVM state from a file.
 pub fn load_from_file(path: impl AsRef<Path>) -> Result<LiteSVM, PersistenceError> {
-    let mut reader = File::open(path)?;
-    let mut bytes = Vec::new();
-    reader.read_to_end(&mut bytes)?;
-    let (version, rest) = bytes.split_first().ok_or(PersistenceError::EmptyInput)?;
-    let snapshot = deserialize_snapshot(*version, rest)?;
-    restore_from_snapshot(snapshot)
+    from_bytes(&std::fs::read(path)?)
 }
 
 /// Serializes the full LiteSVM state to bytes.

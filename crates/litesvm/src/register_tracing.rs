@@ -1,4 +1,4 @@
-#[allow(unused_imports)]
+#[cfg(feature = "sbpf-debugger")]
 use solana_account::ReadableAccount;
 use {
     crate::{
@@ -28,7 +28,8 @@ impl Default for DefaultRegisterTracingCallback {
     fn default() -> Self {
         Self {
             // User can override default path with `SBF_TRACE_DIR` environment variable.
-            sbf_trace_dir: std::env::var("SBF_TRACE_DIR").unwrap_or(DEFAULT_PATH.to_string()),
+            sbf_trace_dir: std::env::var("SBF_TRACE_DIR")
+                .unwrap_or_else(|_| DEFAULT_PATH.to_string()),
             sbf_trace_disassemble: std::env::var("SBF_TRACE_DISASSEMBLE").is_ok(),
             sbf_trace_filter: std::env::var("SBF_TRACE_FILTER").unwrap_or_default(),
             // The port that will be used for debugging.
@@ -92,12 +93,11 @@ impl DefaultRegisterTracingCallback {
                 let mut program_ids = std::collections::HashSet::new();
 
                 // Programs directly invoked by the transaction's instructions.
-                let top_level_program_ids: Vec<_> = tx
-                    .message()
-                    .program_instructions_iter()
-                    .map(|(pid, _)| pid.to_string())
-                    .collect();
-                program_ids.extend(top_level_program_ids);
+                program_ids.extend(
+                    tx.message()
+                        .program_instructions_iter()
+                        .map(|(pid, _)| pid.to_string()),
+                );
 
                 // Collect executable accounts from non-system/non-loader instructions.
                 // These are potential CPI targets that won't appear as top-level program_ids.
@@ -105,32 +105,30 @@ impl DefaultRegisterTracingCallback {
                 // account included in the instruction but never actually CPI'd into).
                 // Without wrapping the CPI syscall (possible with anza-xyz/sbpf#153),
                 // this can't be made more granular.
-                let might_cpi_program_ids: Vec<_> = tx
-                    .message()
-                    .program_instructions_iter()
-                    .filter(|(program_id, _)| {
-                        !solana_sdk_ids::bpf_loader_upgradeable::check_id(program_id)
-                            && !solana_sdk_ids::bpf_loader::check_id(program_id)
-                            && !solana_sdk_ids::bpf_loader_deprecated::check_id(program_id)
-                            && !solana_sdk_ids::system_program::check_id(program_id)
-                    })
-                    .flat_map(|(_, instruction)| {
-                        instruction
-                            .accounts
-                            .iter()
-                            .filter_map(|index| tx.account_keys().get(*index as usize))
-                    })
-                    .filter(|addr| {
-                        svm.accounts_db()
-                            .get_account(addr)
-                            .is_some_and(|acc| acc.executable())
-                    })
-                    .map(|addr| addr.to_string())
-                    .collect();
-                program_ids.extend(might_cpi_program_ids);
+                program_ids.extend(
+                    tx.message()
+                        .program_instructions_iter()
+                        .filter(|(program_id, _)| {
+                            !solana_sdk_ids::bpf_loader_upgradeable::check_id(program_id)
+                                && !solana_sdk_ids::bpf_loader::check_id(program_id)
+                                && !solana_sdk_ids::bpf_loader_deprecated::check_id(program_id)
+                                && !solana_sdk_ids::system_program::check_id(program_id)
+                        })
+                        .flat_map(|(_, instruction)| {
+                            instruction
+                                .accounts
+                                .iter()
+                                .filter_map(|index| tx.account_keys().get(*index as usize))
+                        })
+                        .filter(|addr| {
+                            svm.accounts_db()
+                                .get_account_ref(addr)
+                                .is_some_and(|acc| acc.executable())
+                        })
+                        .map(ToString::to_string),
+                );
 
-                let signatures: Vec<_> =
-                    tx.signatures().iter().map(|sig| sig.to_string()).collect();
+                let signatures = tx.signatures().iter().map(ToString::to_string).collect();
                 if self.match_filter(signatures, program_ids.into_iter().collect()) {
                     invoke_context.debug_port = Some(debug_port);
                 }
@@ -153,7 +151,7 @@ impl DefaultRegisterTracingCallback {
 
         // Get program_id.
         let program_id = instruction_context.get_program_key()?;
-        let signatures: Vec<_> = tx.signatures().iter().map(|sig| sig.to_string()).collect();
+        let signatures = tx.signatures().iter().map(ToString::to_string).collect();
         if !self.match_filter(signatures, vec![program_id.to_string()]) {
             // Skip this one since no filter has matched.
             return Ok(());
@@ -226,21 +224,23 @@ impl DefaultRegisterTracingCallback {
             // Map the top-level program being invoked.
             maybe_elf_program_ids.insert(program_id);
             // Map any instruction accounts that are programs (potential CPI targets).
-            instruction
-                .accounts
-                .iter()
-                .filter_map(|index| tx.account_keys().get(*index as usize))
-                .for_each(|key| {
-                    maybe_elf_program_ids.insert(key);
-                });
+            maybe_elf_program_ids.extend(
+                instruction
+                    .accounts
+                    .iter()
+                    .filter_map(|index| tx.account_keys().get(*index as usize)),
+            );
         }
 
-        maybe_elf_program_ids.iter().for_each(|maybe_program_id| {
+        for maybe_program_id in maybe_elf_program_ids {
             if let Ok(elf_data) = svm.accounts_db().try_program_elf_bytes(maybe_program_id) {
-                let _ = program_ids_file
-                    .write(format!("{}={}\n", maybe_program_id, compute_hash(elf_data)).as_bytes());
+                let _ = writeln!(
+                    program_ids_file,
+                    "{maybe_program_id}={}",
+                    compute_hash(elf_data)
+                );
             }
-        });
+        }
 
         Ok(())
     }

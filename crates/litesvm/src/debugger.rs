@@ -27,17 +27,19 @@ pub fn read_reply<R: BufRead>(reader: &mut R) -> std::io::Result<String> {
     let _ = buf.write(&cbuf)?;
     let _ = reader.read(&mut cbuf)?;
     let _ = buf.write(&cbuf)?;
-    let reply = String::from_utf8_lossy(&buf).to_string();
+    Ok(String::from_utf8_lossy(&buf).into_owned())
+}
 
-    Ok(reply)
+/// Frames `payload` as a GDB RSP packet: `$payload#checksum`.
+fn gdb_packet(payload: &str) -> Vec<u8> {
+    let checksum = payload.bytes().fold(0u8, u8::wrapping_add);
+    format!("${payload}#{checksum:02x}").into_bytes()
 }
 
 /// Builds a GDB `m` (read memory) command packet for the given address and
 /// size.
 pub fn gdb_read_memory_cmd(addr: u64, size: usize) -> Vec<u8> {
-    let payload = format!("m{addr:x},{size:x}");
-    let checksum: u8 = payload.bytes().fold(0u8, |acc, b| acc.wrapping_add(b));
-    format!("${payload}#{checksum:02x}").into_bytes()
+    gdb_packet(&format!("m{addr:x},{size:x}"))
 }
 
 /// Parses a GDB RSP packet payload into raw bytes.
@@ -53,16 +55,14 @@ pub fn gdb_parse_packet(input: &str) -> Option<Vec<u8>> {
     let data = data.split('#').next()?;
 
     let mut hex_str = String::new();
-    let mut chars = data.chars().peekable();
+    let mut chars = data.chars();
 
     while let Some(c) = chars.next() {
         if c == '*' {
             let count_char = chars.next()?;
             let repeat = (count_char as u8).saturating_sub(GDB_RLE_OFFSET) as usize;
-            let last = hex_str.chars().last()?;
-            for _ in 0..repeat {
-                hex_str.push(last);
-            }
+            let last = hex_str.chars().next_back()?;
+            hex_str.extend(std::iter::repeat_n(last, repeat));
         } else {
             hex_str.push(c);
         }
@@ -74,9 +74,7 @@ pub fn gdb_parse_packet(input: &str) -> Option<Vec<u8>> {
 /// Builds a GDB `p` (read single register) command packet for the given
 /// register number.
 pub fn gdb_read_register_cmd(reg_num: usize) -> Vec<u8> {
-    let payload = format!("p{reg_num:x}");
-    let checksum: u8 = payload.bytes().fold(0u8, |acc, b| acc.wrapping_add(b));
-    format!("${payload}#{checksum:02x}").into_bytes()
+    gdb_packet(&format!("p{reg_num:x}"))
 }
 
 /// Reads a contiguous memory region from the stub in fixed-size chunks.
@@ -97,10 +95,8 @@ pub fn stub_read_memory_chunked<R: BufRead, W: Write>(
         writer.flush()?;
 
         let reply = read_reply(reader)?;
-        let parsed_reply = gdb_parse_packet(&reply).ok_or(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Invalid data",
-        ))?;
+        let parsed_reply = gdb_parse_packet(&reply)
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid data"))?;
         result.extend_from_slice(&parsed_reply);
 
         offset += size;
@@ -119,13 +115,13 @@ pub fn stub_read_register<R: BufRead, W: Write>(
     writer.write_all(&cmd)?;
     writer.flush()?;
     let reply = read_reply(reader)?;
-    let parsed_reply = gdb_parse_packet(&reply).ok_or(std::io::Error::other("invalid packet"))?;
+    let parsed_reply =
+        gdb_parse_packet(&reply).ok_or_else(|| std::io::Error::other("invalid packet"))?;
     let data = parsed_reply
         .get(..8)
         .and_then(|s| s.try_into().ok())
-        .ok_or(std::io::Error::other("expected 8 bytes"))?;
-    let reg_value = u64::from_le_bytes(data);
-    Ok(reg_value)
+        .ok_or_else(|| std::io::Error::other("expected 8 bytes"))?;
+    Ok(u64::from_le_bytes(data))
 }
 
 /// Fetches debug metadata from the stub via the `qRcmd,metadata` monitor
@@ -141,24 +137,24 @@ pub fn stub_fetch_debug_metadata<R: BufRead, W: Write>(
     // "metadata" -> 6d65746164617461
     writer.write_all(b"$qRcmd,6d65746164617461#9d")?;
     let reply = read_reply(&mut reader)?;
-    let parsed = gdb_parse_packet(&reply).ok_or(std::io::Error::new(
-        std::io::ErrorKind::InvalidInput,
-        "Can't parse metadata monitor command reply",
-    ))?;
+    let parsed = gdb_parse_packet(&reply).ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Can't parse metadata monitor command reply",
+        )
+    })?;
 
     // Drain the OK following.
     let reply = read_reply(&mut reader)?;
     assert_eq!("$OK#9a", reply);
 
     // We expect a plain text metadata with a newline appended so have it trimmed.
-    let parsed = String::from_utf8_lossy(&parsed).trim_end().to_string();
-    let parsed_map: HashMap<_, _> = parsed
+    Ok(String::from_utf8_lossy(&parsed)
+        .trim_end()
         .split(';')
         .filter_map(|e| e.split_once('='))
         .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
-
-    Ok(parsed_map)
+        .collect())
 }
 
 /// Sends a `vCont;c` (continue all threads) command and waits for the
@@ -179,18 +175,14 @@ pub fn stub_connect<A: ToSocketAddrs>(
     stub_addr: A,
     mut retries: usize,
 ) -> Result<(BufReader<TcpStream>, TcpStream), std::io::Error> {
-    let (reader, writer) = loop {
-        match std::net::TcpStream::connect(&stub_addr) {
-            Err(e) => {
-                if retries == 0 {
-                    return Err(e);
-                }
+    loop {
+        match TcpStream::connect(&stub_addr) {
+            Ok(stream) => return Ok((BufReader::new(stream.try_clone()?), stream)),
+            Err(e) if retries == 0 => return Err(e),
+            Err(_) => {
                 retries -= 1;
                 std::thread::sleep(Duration::from_millis(100));
-                continue;
             }
-            Ok(stream) => break (BufReader::new(stream.try_clone()?), stream),
         }
-    };
-    Ok((reader, writer))
+    }
 }

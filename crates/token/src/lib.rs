@@ -65,6 +65,6 @@ fn get_multisig_signers<'a>(
     if signing_pubkeys == [*authority] {
         vec![]
     } else {
-        signing_pubkeys.iter().collect::<Vec<_>>()
+        signing_pubkeys.iter().collect()
     }
 }

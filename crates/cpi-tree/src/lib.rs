@@ -155,7 +155,7 @@ pub fn cpi_tree(logs: &[String]) -> Vec<CpiFrame> {
 
         match classify(log) {
             LogLine::Invoke(program) => {
-                let Ok(program_id) = Address::from_str(&program) else {
+                let Ok(program_id) = Address::from_str(program) else {
                     continue;
                 };
                 // PUSH with `outcome: Truncated` pre-seeded; the EOF drain
@@ -256,8 +256,8 @@ pub fn transaction_compute_budget(frames: &[CpiFrame]) -> Option<u64> {
         .find_map(|f| f.compute_units.as_ref().map(|cu| cu.available_at_start))
 }
 
-enum LogLine {
-    Invoke(String),
+enum LogLine<'a> {
+    Invoke(&'a str),
     Consumed(ComputeUnits),
     Status(Status),
     Other,
@@ -271,11 +271,11 @@ enum Status {
 /// Layer-1 FSA: tokenize on spaces and match the slice shape at known
 /// indices. Malformed structural shapes degrade to `Other` rather than
 /// constructing partial tokens.
-fn classify(log: &str) -> LogLine {
+fn classify(log: &str) -> LogLine<'_> {
     let tokens: Vec<&str> = log.split(' ').collect();
     match tokens.as_slice() {
-        ["Program", _name, "invoke", bracket] if parse_depth_bracket(bracket).is_some() => {
-            LogLine::Invoke(tokens[1].to_string())
+        ["Program", name, "invoke", bracket] if parse_depth_bracket(bracket).is_some() => {
+            LogLine::Invoke(name)
         }
         ["Program", _, "success"] => LogLine::Status(Status::Success),
         ["Program", _, "failed:", ..] => {

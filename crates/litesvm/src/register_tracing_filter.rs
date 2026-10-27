@@ -132,21 +132,19 @@ pub fn eval(expr: &Expr, row: &HashMap<&str, Vec<String>>) -> bool {
         Expr::Cond(c) => {
             let vals = row.get(c.field).map(Vec::as_slice).unwrap_or(&[]);
             match c.op {
-                Op::Eq => vals.contains(&c.value.to_string()),
+                Op::Eq => vals.iter().any(|v| v == c.value),
                 Op::Neq => vals.iter().all(|v| *v != c.value),
             }
         }
         Expr::And(xs) => {
             let mut eq_by_field: HashMap<&str, &str> = HashMap::new();
             for x in xs {
-                if let Expr::Cond(c) = x {
-                    if matches!(c.op, Op::Eq) {
-                        if let Some(prev) = eq_by_field.get(c.field) {
-                            if *prev != c.value {
-                                return false;
-                            }
-                        }
-                        eq_by_field.insert(c.field, c.value);
+                if let Expr::Cond(c @ Cond { op: Op::Eq, .. }) = x {
+                    if eq_by_field
+                        .insert(c.field, c.value)
+                        .is_some_and(|prev| prev != c.value)
+                    {
+                        return false;
                     }
                 }
             }

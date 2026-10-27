@@ -50,7 +50,7 @@ fn test_account_loaded_twice() {
                 CompiledInstruction {
                     program_id_index: 3,
                     accounts: [0, 2].to_vec(),
-                    data: data.clone(),
+                    data,
                 },
             ],
         },
