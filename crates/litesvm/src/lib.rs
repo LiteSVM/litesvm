@@ -357,9 +357,7 @@ use {
     solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
     solana_loader_v3_interface::state::UpgradeableLoaderState,
-    solana_message::{
-        inner_instruction::InnerInstructionsList, Message, SanitizedMessage, VersionedMessage,
-    },
+    solana_message::{Message, SanitizedMessage, VersionedMessage},
     solana_native_token::LAMPORTS_PER_SOL,
     solana_nonce::{state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
     solana_program_runtime::{
@@ -467,14 +465,11 @@ pub struct LiteSVM {
 
 impl Default for LiteSVM {
     fn default() -> Self {
-        let _enable_register_tracing = false;
-
         // Allow users to virtually get register tracing data without
         // doing any changes to their code provided `SBF_TRACE_DIR` is set.
-        #[cfg(feature = "register-tracing")]
-        let _enable_register_tracing = std::env::var("SBF_TRACE_DIR").is_ok();
-
-        Self::new_inner(_enable_register_tracing)
+        Self::new_inner(
+            cfg!(feature = "register-tracing") && std::env::var("SBF_TRACE_DIR").is_ok(),
+        )
     }
 }
 
@@ -618,8 +613,8 @@ impl LiteSVM {
                 rent_account.lamports_per_byte = solana_rent::DEFAULT_LAMPORTS_PER_BYTE / 2;
             }
             // SIMD-0437 lowers lamports_per_byte in steps. Agave applies these in
-            // activation order, so the last active gate in the list wins, and the
-            // SIMD-0438 safeguard resets the value to 6960 regardless of the others.
+            // activation order, so the last active gate in the list wins; the
+            // SIMD-0438 safeguard, listed last, resets the value to 6960.
             let rent_feature_gates = [
                 (
                     agave_feature_set::set_lamports_per_byte_to_6333::id(),
@@ -641,18 +636,15 @@ impl LiteSVM {
                     agave_feature_set::set_lamports_per_byte_to_696::id(),
                     agave_feature_set::set_lamports_per_byte_to_696::LAMPORTS_PER_BYTE,
                 ),
+                (
+                    agave_feature_set::set_lamports_per_byte_to_6960::id(),
+                    agave_feature_set::set_lamports_per_byte_to_6960::LAMPORTS_PER_BYTE,
+                ),
             ];
             for (feature_id, lamports_per_byte) in rent_feature_gates {
                 if self.feature_set.is_active(&feature_id) {
                     rent_account.lamports_per_byte = lamports_per_byte;
                 }
-            }
-            if self
-                .feature_set
-                .is_active(&agave_feature_set::set_lamports_per_byte_to_6960::id())
-            {
-                rent_account.lamports_per_byte =
-                    agave_feature_set::set_lamports_per_byte_to_6960::LAMPORTS_PER_BYTE;
             }
             self.set_sysvar(&rent_account);
         }
@@ -743,27 +735,26 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_builtins(&mut self) {
         let (lamports, rent_epoch) = solana_account::DUMMY_INHERITABLE_ACCOUNT_FIELDS;
-        BUILTINS.iter().for_each(|builtint| {
-            if builtint
+        for builtin in BUILTINS.iter().filter(|builtin| {
+            builtin
                 .enable_feature_id
                 .is_none_or(|x| self.feature_set.is_active(&x))
-            {
-                let loaded_program = ProgramCacheEntry::new_builtin(0, builtint.register_fn);
-                self.accounts
-                    .programs_cache
-                    .replenish(builtint.program_id, Arc::new(loaded_program));
-                self.accounts.add_account_no_checks(
-                    builtint.program_id,
-                    AccountSharedData::from(Account {
-                        lamports,
-                        owner: native_loader::id(),
-                        data: builtint.name.as_bytes().to_vec(),
-                        executable: true,
-                        rent_epoch,
-                    }),
-                );
-            }
-        });
+        }) {
+            let loaded_program = ProgramCacheEntry::new_builtin(0, builtin.register_fn);
+            self.accounts
+                .programs_cache
+                .replenish(builtin.program_id, Arc::new(loaded_program));
+            self.accounts.add_account_no_checks(
+                builtin.program_id,
+                AccountSharedData::from(Account {
+                    lamports,
+                    owner: native_loader::id(),
+                    data: builtin.name.as_bytes().to_vec(),
+                    executable: true,
+                    rent_epoch,
+                }),
+            );
+        }
 
         self.accounts.environments = self.create_program_runtime_environments();
     }
@@ -779,9 +770,7 @@ impl LiteSVM {
     #[cfg_attr(feature = "nodejs-internal", qualifiers(pub))]
     fn set_lamports(&mut self, lamports: u64) {
         self.accounts.add_account_no_checks(
-            Keypair::try_from(self.airdrop_kp.as_slice())
-                .unwrap()
-                .pubkey(),
+            self.airdrop_pubkey(),
             AccountSharedData::new(lamports, 0, &system_program::id()),
         );
     }
@@ -1029,14 +1018,16 @@ impl LiteSVM {
 
     /// Returns the pubkey of the internal airdrop account.
     pub fn airdrop_pubkey(&self) -> Address {
-        Keypair::try_from(self.airdrop_kp.as_slice())
-            .unwrap()
-            .pubkey()
+        self.airdrop_keypair().pubkey()
+    }
+
+    fn airdrop_keypair(&self) -> Keypair {
+        Keypair::try_from(self.airdrop_kp.as_slice()).unwrap()
     }
 
     /// Airdrops the account with the lamports specified.
     pub fn airdrop(&mut self, address: &Address, lamports: u64) -> TransactionResult {
-        let payer = Keypair::try_from(self.airdrop_kp.as_slice()).unwrap();
+        let payer = self.airdrop_keypair();
         let tx = VersionedTransaction::try_new(
             VersionedMessage::Legacy(Message::new_with_blockhash(
                 &[solana_system_interface::instruction::transfer(
@@ -1235,59 +1226,26 @@ impl LiteSVM {
         )
     }
 
-    fn sanitize_transaction_no_verify_inner(
+    fn sanitize_transaction(
         &self,
         tx: VersionedTransaction,
+        verify: bool,
     ) -> Result<SanitizedTransaction, TransactionError> {
-        let res = SanitizedTransaction::try_create(
+        let tx = SanitizedTransaction::try_create(
             tx,
             MessageHash::Compute,
             Some(false),
             &self.accounts,
             &self.reserved_account_keys.active,
-        );
-        res.inspect_err(|_| {
-            log::error!("Transaction sanitization failed");
-        })
-        .and_then(|tx| {
-            SanitizedTransaction::validate_account_locks(
-                tx.message(),
-                get_transaction_account_lock_limit(self),
-            )?;
-            Ok(tx)
-        })
-    }
-
-    fn sanitize_transaction_no_verify(
-        &self,
-        tx: VersionedTransaction,
-    ) -> Result<SanitizedTransaction, ExecutionResult> {
-        self.sanitize_transaction_no_verify_inner(tx)
-            .map_err(|err| ExecutionResult {
-                tx_result: Err(err),
-                ..Default::default()
-            })
-    }
-
-    fn sanitize_transaction(
-        &self,
-        tx: VersionedTransaction,
-    ) -> Result<SanitizedTransaction, ExecutionResult> {
-        self.sanitize_transaction_inner(tx)
-            .map_err(|err| ExecutionResult {
-                tx_result: Err(err),
-                ..Default::default()
-            })
-    }
-
-    fn sanitize_transaction_inner(
-        &self,
-        tx: VersionedTransaction,
-    ) -> Result<SanitizedTransaction, TransactionError> {
-        let tx = self.sanitize_transaction_no_verify_inner(tx)?;
-
-        tx.verify()?;
-
+        )
+        .inspect_err(|_| log::error!("Transaction sanitization failed"))?;
+        SanitizedTransaction::validate_account_locks(
+            tx.message(),
+            get_transaction_account_lock_limit(self),
+        )?;
+        if verify {
+            tx.verify()?;
+        }
         Ok(tx)
     }
 
@@ -1296,14 +1254,7 @@ impl LiteSVM {
         tx: &'b SanitizedTransaction,
         tx_config: TransactionConfiguration,
         log_collector: Rc<RefCell<LogCollector>>,
-    ) -> (
-        Result<(), TransactionError>,
-        u64,
-        Option<TransactionContext<'b>>,
-        u64,
-        Option<Address>,
-        u32,
-    )
+    ) -> ProcessedTransaction<'b>
     where
         'a: 'b,
     {
@@ -1342,14 +1293,7 @@ impl LiteSVM {
                 .num_lookup_tables()
                 .saturating_mul(ADDRESS_LOOKUP_TABLE_BASE_SIZE),
         ) {
-            return (
-                Err(e),
-                accumulated_consume_units,
-                None,
-                fee,
-                payer_key,
-                loaded_tx_data_size.size(),
-            );
+            return ProcessedTransaction::failed(e, fee, payer_key, loaded_tx_data_size.size());
         }
 
         let mut pre_rent_state_infos = Vec::with_capacity(account_keys.len());
@@ -1429,7 +1373,7 @@ impl LiteSVM {
                     !account_keys.iter().any(|key| key == address)
                         && !counted_programdata.contains(address)
                 }) {
-                    if let Some(programdata) = self.accounts.get_account(&programdata_address) {
+                    if let Some(programdata) = self.accounts.get_account_ref(&programdata_address) {
                         counted_programdata.insert(programdata_address);
                         loaded_tx_data_size.increase_calculated_data_size(
                             TRANSACTION_ACCOUNT_BASE_SIZE.saturating_add(programdata.data().len()),
@@ -1442,22 +1386,13 @@ impl LiteSVM {
         let accounts = match maybe_accounts {
             Ok(accs) => accs,
             Err(e) => {
-                return (
-                    Err(e),
-                    accumulated_consume_units,
-                    None,
-                    fee,
-                    payer_key,
-                    loaded_tx_data_size.size(),
-                );
+                return ProcessedTransaction::failed(e, fee, payer_key, loaded_tx_data_size.size())
             }
         };
         if !validated_fee_payer {
             error!("Failed to validate fee payer");
-            return (
-                Err(TransactionError::AccountNotFound),
-                accumulated_consume_units,
-                None,
+            return ProcessedTransaction::failed(
+                TransactionError::AccountNotFound,
                 fee,
                 payer_key,
                 loaded_tx_data_size.size(),
@@ -1484,7 +1419,7 @@ impl LiteSVM {
                     return Ok(program_index as IndexOfAccount);
                 }
 
-                let owner_account = self.accounts.get_account(owner_id).unwrap();
+                let owner_account = self.accounts.get_account_ref(owner_id).unwrap();
                 if !native_loader::check_id(owner_account.owner()) {
                     error!("Owner account {owner_id} is not owned by the native loader program.");
                     return Err(TransactionError::InvalidProgramForExecution);
@@ -1553,44 +1488,17 @@ impl LiteSVM {
                 tx_result = tx_result
                     .and_then(|()| check_accounts_rent(tx, &context, &rent, &pre_rent_state_infos));
 
-                (
-                    tx_result,
-                    accumulated_consume_units,
-                    Some(context),
+                ProcessedTransaction {
+                    result: tx_result,
+                    compute_units_consumed: accumulated_consume_units,
+                    context: Some(context),
                     fee,
                     payer_key,
-                    loaded_tx_data_size.size(),
-                )
+                    loaded_accounts_data_size: loaded_tx_data_size.size(),
+                }
             }
-            Err(e) => (
-                Err(e),
-                accumulated_consume_units,
-                None,
-                fee,
-                payer_key,
-                loaded_tx_data_size.size(),
-            ),
+            Err(e) => ProcessedTransaction::failed(e, fee, payer_key, loaded_tx_data_size.size()),
         }
-    }
-
-    fn execute_transaction_no_verify(
-        &mut self,
-        tx: VersionedTransaction,
-        log_collector: Rc<RefCell<LogCollector>>,
-    ) -> ExecutionResult {
-        map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
-            self.execute_sanitized_transaction(&s_tx, log_collector)
-        })
-    }
-
-    fn execute_transaction(
-        &mut self,
-        tx: VersionedTransaction,
-        log_collector: Rc<RefCell<LogCollector>>,
-    ) -> ExecutionResult {
-        map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
-            self.execute_sanitized_transaction(&s_tx, log_collector)
-        })
     }
 
     fn execute_sanitized_transaction(
@@ -1598,159 +1506,87 @@ impl LiteSVM {
         sanitized_tx: &SanitizedTransaction,
         log_collector: Rc<RefCell<LogCollector>>,
     ) -> ExecutionResult {
-        let CheckAndProcessTransactionSuccess {
-            core:
-                CheckAndProcessTransactionSuccessCore {
-                    result,
-                    compute_units_consumed,
-                    context,
-                },
-            fee,
-            payer_key,
-            loaded_accounts_data_size,
-        } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
-            Ok(value) => value,
-            Err(value) => return value,
-        };
-        if let Some(ctx) = context {
-            let mut exec_result = execution_result_if_context(
-                sanitized_tx,
-                ctx,
-                result,
-                compute_units_consumed,
-                fee,
-                loaded_accounts_data_size,
-            );
-
-            if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
-                exec_result.tx_result = self
-                    .accounts
-                    .withdraw(&payer, fee)
-                    .and(exec_result.tx_result);
-            }
-            exec_result
-        } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                fee,
-                loaded_accounts_data_size,
-                ..Default::default()
-            }
+        let (mut exec_result, payer_key) =
+            match self.check_and_process_transaction(sanitized_tx, log_collector) {
+                Ok(value) => value,
+                Err(value) => return value,
+            };
+        if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
+            exec_result.tx_result = self
+                .accounts
+                .withdraw(&payer, exec_result.fee)
+                .and(exec_result.tx_result);
         }
+        exec_result
     }
 
-    fn execute_sanitized_transaction_readonly(
+    /// Runs the transaction without committing anything. The returned payer is
+    /// set only when the transaction executed, i.e. when its fee must be charged.
+    fn check_and_process_transaction(
         &self,
         sanitized_tx: &SanitizedTransaction,
         log_collector: Rc<RefCell<LogCollector>>,
-    ) -> ExecutionResult {
-        let CheckAndProcessTransactionSuccess {
-            core:
-                CheckAndProcessTransactionSuccessCore {
-                    result,
-                    compute_units_consumed,
-                    context,
-                },
-            fee,
-            loaded_accounts_data_size,
-            ..
-        } = match self.check_and_process_transaction(sanitized_tx, log_collector) {
-            Ok(value) => value,
-            Err(value) => return value,
-        };
-        if let Some(ctx) = context {
-            execution_result_if_context(
-                sanitized_tx,
-                ctx,
-                result,
-                compute_units_consumed,
-                fee,
-                loaded_accounts_data_size,
-            )
-        } else {
-            ExecutionResult {
-                tx_result: result,
-                compute_units_consumed,
-                fee,
-                loaded_accounts_data_size,
-                ..Default::default()
-            }
+    ) -> Result<(ExecutionResult, Option<Address>), ExecutionResult> {
+        if self.blockhash_check {
+            self.check_transaction_age(sanitized_tx)?;
         }
-    }
-
-    fn check_and_process_transaction<'a, 'b>(
-        &'a self,
-        sanitized_tx: &'b SanitizedTransaction,
-        log_collector: Rc<RefCell<LogCollector>>,
-    ) -> Result<CheckAndProcessTransactionSuccess<'b>, ExecutionResult>
-    where
-        'a: 'b,
-    {
-        self.maybe_blockhash_check(sanitized_tx)?;
-        let tx_config = get_transaction_config(sanitized_tx, &self.feature_set)?;
-        self.maybe_history_check(sanitized_tx)?;
-        let (result, compute_units_consumed, context, fee, payer_key, loaded_accounts_data_size) =
-            self.process_transaction(sanitized_tx, tx_config, log_collector);
+        let tx_config = TransactionConfiguration::try_from_sanitized_message(
+            sanitized_tx.message(),
+            &self.feature_set,
+        )?;
+        if self.sigverify && self.history.check_transaction(sanitized_tx.signature()) {
+            return Err(TransactionError::AlreadyProcessed.into());
+        }
+        let ProcessedTransaction {
+            result,
+            compute_units_consumed,
+            context,
+            fee,
+            payer_key,
+            loaded_accounts_data_size,
+        } = self.process_transaction(sanitized_tx, tx_config, log_collector);
         #[cfg(target_arch = "x86_64")]
         unsafe {
             core::arch::asm!("emms", options(nomem, nostack, preserves_flags));
         }
-        Ok(CheckAndProcessTransactionSuccess {
-            core: {
-                CheckAndProcessTransactionSuccessCore {
-                    result,
+        let Some(ctx) = context else {
+            return Ok((
+                ExecutionResult {
+                    tx_result: result,
                     compute_units_consumed,
-                    context,
-                }
+                    fee,
+                    loaded_accounts_data_size,
+                    ..Default::default()
+                },
+                None,
+            ));
+        };
+        let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
+        let ExecutionRecord {
+            accounts,
+            return_data,
+            ..
+        } = ctx.into();
+        let message = sanitized_tx.message();
+        let post_accounts = accounts
+            .into_iter()
+            .enumerate()
+            .filter_map(|(idx, pair)| message.is_writable(idx).then_some(pair))
+            .collect();
+        Ok((
+            ExecutionResult {
+                tx_result: result,
+                signature: *sanitized_tx.signature(),
+                post_accounts,
+                inner_instructions,
+                compute_units_consumed,
+                return_data,
+                included: true,
+                fee,
+                loaded_accounts_data_size,
             },
-            fee,
             payer_key,
-            loaded_accounts_data_size,
-        })
-    }
-
-    fn maybe_history_check(
-        &self,
-        sanitized_tx: &SanitizedTransaction,
-    ) -> Result<(), ExecutionResult> {
-        if self.sigverify && self.history.check_transaction(sanitized_tx.signature()) {
-            return Err(ExecutionResult {
-                tx_result: Err(TransactionError::AlreadyProcessed),
-                ..Default::default()
-            });
-        }
-        Ok(())
-    }
-
-    fn maybe_blockhash_check(
-        &self,
-        sanitized_tx: &SanitizedTransaction,
-    ) -> Result<(), ExecutionResult> {
-        if self.blockhash_check {
-            self.check_transaction_age(sanitized_tx)?;
-        }
-        Ok(())
-    }
-
-    fn execute_transaction_readonly(
-        &self,
-        tx: VersionedTransaction,
-        log_collector: Rc<RefCell<LogCollector>>,
-    ) -> ExecutionResult {
-        map_sanitize_result(self.sanitize_transaction(tx), |s_tx| {
-            self.execute_sanitized_transaction_readonly(&s_tx, log_collector)
-        })
-    }
-
-    fn execute_transaction_no_verify_readonly(
-        &self,
-        tx: VersionedTransaction,
-        log_collector: Rc<RefCell<LogCollector>>,
-    ) -> ExecutionResult {
-        map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
-            self.execute_sanitized_transaction_readonly(&s_tx, log_collector)
-        })
+        ))
     }
 
     /// Submits a signed transaction.
@@ -1760,7 +1596,6 @@ impl LiteSVM {
             ..Default::default()
         };
         let log_collector = Rc::new(RefCell::new(log_collector));
-        let vtx: VersionedTransaction = tx.into();
         let ExecutionResult {
             post_accounts,
             tx_result,
@@ -1771,10 +1606,9 @@ impl LiteSVM {
             included,
             fee,
             loaded_accounts_data_size,
-        } = if self.sigverify {
-            self.execute_transaction(vtx, log_collector.clone())
-        } else {
-            self.execute_transaction_no_verify(vtx, log_collector.clone())
+        } = match self.sanitize_transaction(tx.into(), self.sigverify) {
+            Ok(s_tx) => self.execute_sanitized_transaction(&s_tx, log_collector.clone()),
+            Err(e) => e.into(),
         };
         let Ok(logs) = Rc::try_unwrap(log_collector).map(|lc| lc.into_inner().messages) else {
             unreachable!("Log collector should not be used after send_transaction returns")
@@ -1828,11 +1662,11 @@ impl LiteSVM {
             fee,
             loaded_accounts_data_size,
             ..
-        } = if self.sigverify {
-            self.execute_transaction_readonly(tx.into(), log_collector.clone())
-        } else {
-            self.execute_transaction_no_verify_readonly(tx.into(), log_collector.clone())
-        };
+        } = self
+            .sanitize_transaction(tx.into(), self.sigverify)
+            .map_err(ExecutionResult::from)
+            .and_then(|s_tx| self.check_and_process_transaction(&s_tx, log_collector.clone()))
+            .map_or_else(|e| e, |(result, _)| result);
         let Ok(logs) = Rc::try_unwrap(log_collector).map(|lc| lc.into_inner().messages) else {
             unreachable!("Log collector should not be used after simulate_transaction returns")
         };
@@ -1884,15 +1718,7 @@ impl LiteSVM {
         self.sigverify
     }
 
-    fn check_transaction_age(&self, tx: &SanitizedTransaction) -> Result<(), ExecutionResult> {
-        self.check_transaction_age_inner(tx)
-            .map_err(|e| ExecutionResult {
-                tx_result: Err(e),
-                ..Default::default()
-            })
-    }
-
-    fn check_transaction_age_inner(
+    fn check_transaction_age(
         &self,
         tx: &SanitizedTransaction,
     ) -> solana_transaction_error::TransactionResult<()> {
@@ -2099,39 +1925,31 @@ impl LiteSVM {
     }
 }
 
-struct CheckAndProcessTransactionSuccessCore<'ix_data> {
+struct ProcessedTransaction<'ix_data> {
     result: Result<(), TransactionError>,
     compute_units_consumed: u64,
     context: Option<TransactionContext<'ix_data>>,
-}
-
-struct CheckAndProcessTransactionSuccess<'ix_data> {
-    core: CheckAndProcessTransactionSuccessCore<'ix_data>,
     fee: u64,
     payer_key: Option<Address>,
     loaded_accounts_data_size: u32,
 }
 
-fn execution_result_if_context(
-    sanitized_tx: &SanitizedTransaction,
-    ctx: TransactionContext,
-    result: Result<(), TransactionError>,
-    compute_units_consumed: u64,
-    fee: u64,
-    loaded_accounts_data_size: u32,
-) -> ExecutionResult {
-    let (signature, return_data, inner_instructions, post_accounts) =
-        execute_tx_helper(sanitized_tx, ctx);
-    ExecutionResult {
-        tx_result: result,
-        signature,
-        post_accounts,
-        inner_instructions,
-        compute_units_consumed,
-        return_data,
-        included: true,
-        fee,
-        loaded_accounts_data_size,
+impl ProcessedTransaction<'_> {
+    /// A transaction rejected before any instruction ran.
+    fn failed(
+        err: TransactionError,
+        fee: u64,
+        payer_key: Option<Address>,
+        loaded_accounts_data_size: u32,
+    ) -> Self {
+        Self {
+            result: Err(err),
+            compute_units_consumed: 0,
+            context: None,
+            fee,
+            payer_key,
+            loaded_accounts_data_size,
+        }
     }
 }
 
@@ -2146,43 +1964,6 @@ fn programdata_address(account: &AccountSharedData) -> Option<Address> {
         }) => Some(programdata_address),
         _ => None,
     }
-}
-
-fn execute_tx_helper(
-    sanitized_tx: &SanitizedTransaction,
-    ctx: TransactionContext,
-) -> (
-    Signature,
-    solana_transaction_context::transaction::TransactionReturnData,
-    InnerInstructionsList,
-    Vec<(Address, AccountSharedData)>,
-) {
-    let signature = sanitized_tx.signature().to_owned();
-    let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
-    let ExecutionRecord {
-        accounts,
-        return_data,
-        touched_flags: _,
-        accounts_resize_delta: _,
-    } = ctx.into();
-    let msg = sanitized_tx.message();
-    let post_accounts = accounts
-        .into_iter()
-        .enumerate()
-        .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
-        .collect();
-    (signature, return_data, inner_instructions, post_accounts)
-}
-
-fn get_transaction_config(
-    sanitized_tx: &SanitizedTransaction,
-    feature_set: &FeatureSet,
-) -> Result<TransactionConfiguration, ExecutionResult> {
-    TransactionConfiguration::try_from_sanitized_message(sanitized_tx.message(), feature_set)
-        .map_err(|e| ExecutionResult {
-            tx_result: Err(e),
-            ..Default::default()
-        })
 }
 
 /// Get the max number of accounts that a transaction may lock in this block
@@ -2301,19 +2082,6 @@ fn validate_fee_payer(
     )
 }
 
-fn map_sanitize_result<F>(
-    res: Result<SanitizedTransaction, ExecutionResult>,
-    op: F,
-) -> ExecutionResult
-where
-    F: FnOnce(SanitizedTransaction) -> ExecutionResult,
-{
-    match res {
-        Ok(s_tx) => op(s_tx),
-        Err(e) => e,
-    }
-}
-
 #[cfg(feature = "invocation-inspect-callback")]
 pub trait InvocationInspectCallback: Send + Sync {
     fn before_invocation(
@@ -2386,7 +2154,7 @@ mod tests {
         let message = Message::new(&[ix], Some(&payer.pubkey()));
         let tx =
             VersionedTransaction::try_new(VersionedMessage::Legacy(message), &[&payer]).unwrap();
-        let sanitized = svm.sanitize_transaction_no_verify_inner(tx).unwrap();
+        let sanitized = svm.sanitize_transaction(tx, false).unwrap();
 
         assert!(!sanitized.message().is_writable(1));
     }

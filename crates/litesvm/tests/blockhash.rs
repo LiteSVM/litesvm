@@ -23,7 +23,7 @@ fn data_from_state(state: &NonceState) -> &Data {
 }
 
 fn data_from_account<T: ReadableAccount + StateMut<Versions>>(account: &T) -> Data {
-    data_from_state(&state_from_account(account).clone()).clone()
+    data_from_state(&state_from_account(account)).clone()
 }
 
 fn state_from_account<T: ReadableAccount + StateMut<Versions>>(account: &T) -> NonceState {

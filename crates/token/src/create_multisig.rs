@@ -51,7 +51,7 @@ impl<'a> CreateMultisig<'a> {
     pub fn send(self) -> Result<Address, FailedTransactionMetadata> {
         let token_program_id = self.token_program_id.unwrap_or(&TOKEN_ID);
         let multisig_len = Multisig::LEN;
-        let multisig_kp = self.multisig_kp.unwrap_or(Keypair::new());
+        let multisig_kp = self.multisig_kp.unwrap_or_else(Keypair::new);
         let multisig_pk = multisig_kp.pubkey();
 
         let ix1 = create_account(

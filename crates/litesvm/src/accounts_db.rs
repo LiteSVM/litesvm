@@ -56,11 +56,11 @@ fn handle_sysvar<T>(
     account: &AccountSharedData,
     accounts: &HashMap<Address, AccountSharedData>,
     address: Address,
-) -> Result<(), InvalidSysvarDataError>
+) -> Result<T, InvalidSysvarDataError>
 where
     T: Sysvar + DeserializeOwned<Dst = T>,
 {
-    let _parsed = T::deserialize_from(account.data()).map_err(|_| err_variant)?;
+    let parsed = T::deserialize_from(account.data()).map_err(|_| err_variant)?;
     cache.reset();
     cache.fill_missing_entries(|pubkey, set_sysvar| {
         if *pubkey == address {
@@ -69,7 +69,7 @@ where
             set_sysvar(acc.data())
         }
     });
-    Ok(())
+    Ok(parsed)
 }
 
 pub struct AccountsDb {
@@ -159,18 +159,14 @@ impl AccountsDb {
         #[allow(deprecated)]
         match pubkey {
             CLOCK_ID => {
-                let parsed = Clock::deserialize_from(account.data())
-                    .map_err(|_| InvalidSysvarDataError::Clock)?;
-                self.programs_cache.set_slot_for_tests(parsed.slot);
-                let accounts = &self.inner;
-                cache.reset();
-                cache.fill_missing_entries(|sysvar_pubkey, set_sysvar| {
-                    if *sysvar_pubkey == pubkey {
-                        set_sysvar(account.data())
-                    } else if let Some(acc) = accounts.get(sysvar_pubkey) {
-                        set_sysvar(acc.data())
-                    }
-                });
+                let clock = handle_sysvar::<Clock>(
+                    cache,
+                    InvalidSysvarDataError::Clock,
+                    account,
+                    &self.inner,
+                    pubkey,
+                )?;
+                self.programs_cache.set_slot_for_tests(clock.slot);
             }
             EPOCH_REWARDS_ID => {
                 handle_sysvar::<solana_epoch_rewards::EpochRewards>(
@@ -262,16 +258,13 @@ impl AccountsDb {
     /// Scans all accounts for executable BPF programs and loads them into the program cache.
     #[cfg(feature = "persistence-internal")]
     pub(crate) fn load_all_existing_programs(&mut self) -> Result<(), LiteSVMError> {
-        let executable_keys = self
+        for (key, account) in self
             .inner
             .iter()
             .filter(|(_, acc)| acc.executable() && acc.owner() != &native_loader::ID)
-            .map(|(k, _)| *k);
-
-        for key in executable_keys {
-            let account = self.inner.get(&key).unwrap().clone();
-            let loaded = self.load_program(&account)?;
-            self.programs_cache.replenish(key, Arc::new(loaded));
+        {
+            let loaded = self.load_program(account)?;
+            self.programs_cache.replenish(*key, Arc::new(loaded));
         }
         Ok(())
     }
@@ -295,26 +288,37 @@ impl AccountsDb {
         &self,
         program_account: &AccountSharedData,
     ) -> Result<ProgramCacheEntry, InstructionError> {
-        let metrics = &mut LoadProgramMetrics::default();
-
-        let owner = program_account.owner();
-        let program_runtime_for_execution = self.environments.get_env_for_execution().clone();
         let slot = self.sysvar_cache.get_clock().map(|c| c.slot).unwrap_or(0);
-        let deployment_slot = visible_deployment_slot(slot);
+        let Some(elf_bytes) = self.program_elf_bytes(program_account)? else {
+            return Ok(ProgramCacheEntry::new_closed_tombstone(
+                slot,
+                ProgramCacheEntryOwner::LoaderV3,
+            ));
+        };
+        ProgramCacheEntry::load(
+            program_account.owner(),
+            self.environments.get_env_for_execution().clone(),
+            visible_deployment_slot(slot),
+            elf_bytes,
+            &mut LoadProgramMetrics::default(),
+        )
+        .map_err(|e| {
+            error!("Failed to load program: {e:?}");
+            InstructionError::InvalidAccountData
+        })
+    }
 
+    /// The ELF bytes of `program_account`, or `None` for a loader-v3 program
+    /// whose programdata account doesn't exist.
+    fn program_elf_bytes<'a>(
+        &'a self,
+        program_account: &'a AccountSharedData,
+    ) -> Result<Option<&'a [u8]>, InstructionError> {
+        let owner = program_account.owner();
         if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
-            ProgramCacheEntry::load(
-                owner,
-                program_runtime_for_execution,
-                deployment_slot,
-                program_account.data(),
-                metrics,
-            )
-            .map_err(|e| {
-                error!("Failed to load program: {e:?}");
-                InstructionError::InvalidAccountData
-            })
-        } else if bpf_loader_upgradeable::check_id(owner) {
+            return Ok(Some(program_account.data()));
+        }
+        let (data, offset) = if bpf_loader_upgradeable::check_id(owner) {
             let Ok(UpgradeableLoaderState::Program {
                 programdata_address,
             }) = UpgradeableLoaderState::deserialize_from(program_account.data())
@@ -325,52 +329,22 @@ impl AccountsDb {
                 return Err(InstructionError::InvalidAccountData);
             };
             let Some(programdata_account) = self.get_account_ref(&programdata_address) else {
-                return Ok(ProgramCacheEntry::new_closed_tombstone(
-                    slot,
-                    ProgramCacheEntryOwner::LoaderV3,
-                ));
+                return Ok(None);
             };
-            let program_data = programdata_account.data();
-            if let Some(programdata) =
-                program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
-            {
-                ProgramCacheEntry::load(
-                    owner,
-                    program_runtime_for_execution,
-                    deployment_slot,
-                    programdata,
-                    metrics).map_err(|e| {
-                        error!("Error encountered when calling ProgramCacheEntry::load() for bpf_loader_upgradeable: {e:?}");
-                        InstructionError::InvalidAccountData
-                    })
-            } else {
-                error!("Index out of bounds using bpf_loader_upgradeable.");
-                Err(InstructionError::InvalidAccountData)
-            }
+            (
+                programdata_account.data(),
+                UpgradeableLoaderState::size_of_programdata_metadata(),
+            )
         } else if loader_v4::check_id(owner) {
-            if let Some(elf_bytes) = program_account
-                .data()
-                .get(LoaderV4State::program_data_offset()..)
-            {
-                ProgramCacheEntry::load(
-                    &loader_v4::id(),
-                    program_runtime_for_execution,
-                    deployment_slot,
-                    elf_bytes,
-                    metrics,
-                )
-                .map_err(|_| {
-                    error!("Error encountered when calling LoadedProgram::new() for loader_v4.");
-                    InstructionError::InvalidAccountData
-                })
-            } else {
-                error!("Index out of bounds using loader_v4.");
-                Err(InstructionError::InvalidAccountData)
-            }
+            (program_account.data(), LoaderV4State::program_data_offset())
         } else {
             error!("Owner does not match any expected loader.");
-            Err(InstructionError::IncorrectProgramId)
-        }
+            return Err(InstructionError::IncorrectProgramId);
+        };
+        data.get(offset..).map(Some).ok_or_else(|| {
+            error!("Program data of {owner} program is shorter than its header.");
+            InstructionError::InvalidAccountData
+        })
     }
 
     fn load_lookup_table_addresses(
@@ -409,82 +383,38 @@ impl AccountsDb {
         address: &Address,
         lamports: u64,
     ) -> solana_transaction_error::TransactionResult<()> {
-        match self.inner.get_mut(address) {
-            Some(account) => {
-                let min_balance = match get_system_account_kind(account) {
-                    Some(SystemAccountKind::Nonce) => self
-                        .sysvar_cache
-                        .get_rent()
-                        .unwrap()
-                        .minimum_balance(nonce::state::State::size()),
-                    _ => 0,
-                };
+        let Some(account) = self.inner.get_mut(address) else {
+            error!("Account {address} not found when trying to withdraw fee.");
+            return Err(TransactionError::AccountNotFound);
+        };
+        let min_balance = match get_system_account_kind(account) {
+            Some(SystemAccountKind::Nonce) => self
+                .sysvar_cache
+                .get_rent()
+                .unwrap()
+                .minimum_balance(nonce::state::State::size()),
+            _ => 0,
+        };
 
-                lamports
-                    .checked_add(min_balance)
-                    .filter(|required_balance| *required_balance <= account.lamports())
-                    .ok_or(TransactionError::InsufficientFundsForFee)?;
-                account
-                    .checked_sub_lamports(lamports)
-                    .map_err(|_| TransactionError::InsufficientFundsForFee)?;
-
-                Ok(())
-            }
-            None => {
-                error!("Account {address} not found when trying to withdraw fee.");
-                Err(TransactionError::AccountNotFound)
-            }
-        }
+        lamports
+            .checked_add(min_balance)
+            .filter(|required_balance| *required_balance <= account.lamports())
+            .ok_or(TransactionError::InsufficientFundsForFee)?;
+        account
+            .checked_sub_lamports(lamports)
+            .map_err(|_| TransactionError::InsufficientFundsForFee)
     }
 
     /// Returns a borrowed slice of ELF bytes for this account.
     /// Fails if the account is not a program account.
-    pub fn try_program_elf_bytes<'a>(
-        &'a self,
-        program_key: &Address,
-    ) -> std::result::Result<&'a [u8], InstructionError> {
+    pub fn try_program_elf_bytes(&self, program_key: &Address) -> Result<&[u8], InstructionError> {
         let program_account = self
             .get_account_ref(program_key)
             .ok_or(InstructionError::MissingAccount)?;
-        let owner = program_account.owner();
-
-        if bpf_loader::check_id(owner) || bpf_loader_deprecated::check_id(owner) {
-            Ok(program_account.data())
-        } else if bpf_loader_upgradeable::check_id(owner) {
-            let Ok(UpgradeableLoaderState::Program {
-                programdata_address,
-            }) = UpgradeableLoaderState::deserialize_from(program_account.data())
-            else {
-                return Err(InstructionError::InvalidAccountData);
-            };
-            let programdata_account =
-                self.get_account_ref(&programdata_address).ok_or_else(|| {
-                    error!("Program data account {programdata_address} not found");
-                    InstructionError::MissingAccount
-                })?;
-            let program_data = programdata_account.data();
-            if let Some(programdata) =
-                program_data.get(UpgradeableLoaderState::size_of_programdata_metadata()..)
-            {
-                Ok(programdata)
-            } else {
-                error!("Index out of bounds using bpf_loader_upgradeable.");
-                Err(InstructionError::InvalidAccountData)
-            }
-        } else if loader_v4::check_id(owner) {
-            if let Some(elf_bytes) = program_account
-                .data()
-                .get(LoaderV4State::program_data_offset()..)
-            {
-                Ok(elf_bytes)
-            } else {
-                error!("Index out of bounds using loader_v4.");
-                Err(InstructionError::InvalidAccountData)
-            }
-        } else {
-            error!("Owner does not match any expected loader.");
-            Err(InstructionError::IncorrectProgramId)
-        }
+        self.program_elf_bytes(program_account)?.ok_or_else(|| {
+            error!("Program data account of {program_key} not found");
+            InstructionError::MissingAccount
+        })
     }
 }
 

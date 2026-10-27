@@ -88,3 +88,12 @@ impl Default for ExecutionResult {
         }
     }
 }
+
+impl From<TransactionError> for ExecutionResult {
+    fn from(err: TransactionError) -> Self {
+        Self {
+            tx_result: Err(err),
+            ..Default::default()
+        }
+    }
+}

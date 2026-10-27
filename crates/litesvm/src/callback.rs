@@ -11,10 +11,7 @@ impl InvokeContextCallback for LiteSVM {
     }
 
     fn get_epoch_stake_for_vote_account(&self, vote_address: &Address) -> u64 {
-        self.epoch_vote_stakes
-            .get(vote_address)
-            .copied()
-            .unwrap_or(0)
+        self.epoch_stake(vote_address)
     }
 
     #[cfg(feature = "precompiles")]

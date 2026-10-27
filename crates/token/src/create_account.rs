@@ -84,7 +84,7 @@ impl<'a> CreateAccount<'a> {
 
         let lamports = self.svm.minimum_balance_for_rent_exemption(account_len);
 
-        let account_kp = self.account_kp.unwrap_or(Keypair::new());
+        let account_kp = self.account_kp.unwrap_or_else(Keypair::new);
         let account_pk = account_kp.pubkey();
         let payer_pk = self.payer.pubkey();
 

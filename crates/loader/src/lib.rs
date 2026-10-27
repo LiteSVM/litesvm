@@ -62,9 +62,8 @@ fn load_upgradeable_buffer(
 
     svm.send_transaction(tx)?;
 
-    let chunk_size = CHUNK_SIZE;
     let mut offset = 0;
-    for chunk in program_bytes.chunks(chunk_size) {
+    for chunk in program_bytes.chunks(CHUNK_SIZE) {
         let tx = Transaction::new_signed_with_payer(
             &[bpf_loader_upgradeable::write(
                 &buffer_pk,
@@ -78,7 +77,7 @@ fn load_upgradeable_buffer(
         );
 
         svm.send_transaction(tx)?;
-        offset += chunk_size as u32;
+        offset += CHUNK_SIZE as u32;
     }
 
     Ok(buffer_pk)

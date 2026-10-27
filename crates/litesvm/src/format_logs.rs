@@ -48,18 +48,10 @@ fn format_line(line: &str) -> String {
     const PROCESS_INSTRUCTION: &str = "process_instruction:";
     const SOLANA_RUNTIME: &str = "solana_runtime:";
     // Check for optional prefixes
-    let (program_source, program_log) = match line {
-        s if s.starts_with(PROGRAM_LOG) => (PROGRAM_LOG, s[PROGRAM_LOG.len()..].trim_start()),
-        s if s.starts_with(PROGRAM) => (PROGRAM, s[PROGRAM.len()..].trim_start()),
-        s if s.starts_with(PROCESS_INSTRUCTION) => (
-            PROCESS_INSTRUCTION,
-            s[PROCESS_INSTRUCTION.len()..].trim_start(),
-        ),
-        s if s.starts_with(SOLANA_RUNTIME) => {
-            (SOLANA_RUNTIME, s[SOLANA_RUNTIME.len()..].trim_start())
-        }
-        s => ("", s),
-    };
+    let (program_source, program_log) = [PROGRAM_LOG, PROGRAM, PROCESS_INSTRUCTION, SOLANA_RUNTIME]
+        .into_iter()
+        .find_map(|prefix| Some((prefix, line.strip_prefix(prefix)?.trim_start())))
+        .unwrap_or(("", line));
     let importance = get_importance(program_source, program_log);
     let log = if ["", PROGRAM_LOG].contains(&program_source) {
         program_log.to_string()
@@ -102,7 +94,6 @@ mod tests {
         );
         let line = "Program log: static string";
         let formatted = format_line(line);
-        eprintln!("{formatted}");
         assert_eq!(formatted, "\u{1b}[32mstatic string\u{1b}[0m");
     }
 
