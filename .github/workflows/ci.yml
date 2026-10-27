@@ -21,11 +21,10 @@ jobs:
       - name: Rustup install
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Solana CLI
+      - name: Install Agave CLI
         run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/v4.1.2/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v4.3.2/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-          export PATH="$GITHUB_PATH:$PATH"
 
       - name: Build test programs
         run: cd crates/litesvm/test_programs && cargo build-sbf
