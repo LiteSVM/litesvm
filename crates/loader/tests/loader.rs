@@ -80,4 +80,13 @@ fn hello_world_with_deploy_upgradeable() {
         Some(&new_authority.pubkey()),
     )
     .unwrap();
+    // The current authority must sign even when it does not pay the fee.
+    set_upgrade_authority(
+        &mut svm,
+        &payer_kp,
+        &program_id,
+        &new_authority,
+        Some(&payer_pk),
+    )
+    .unwrap();
 }
