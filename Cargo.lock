@@ -2005,6 +2005,8 @@ dependencies = [
  "solana-transaction-error",
  "solana-vote-interface",
  "spl-associated-token-account-interface",
+ "spl-generic-token",
+ "spl-token-2022-interface",
  "spl-token-interface",
  "test-log",
  "thiserror 2.0.21",
@@ -4669,6 +4671,16 @@ dependencies = [
  "sha2 0.10.9",
  "syn 2.0.119",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "spl-generic-token"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "233df81b75ab99b42f002b5cdd6e65a7505ffa930624f7096a7580a56765e9cf"
+dependencies = [
+ "bytemuck",
+ "solana-pubkey 3.0.0",
 ]
 
 [[package]]

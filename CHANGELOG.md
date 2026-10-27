@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Opt-in pre/post lamport and raw SPL Token / Token-2022 balance recording for `send_transaction` and `simulate_transaction`, enabled by `LiteSVM::with_transaction_balance_recording`. Results are returned in `TransactionMetadata::balances`.
+- `FailedTransactionMetadata::fee_charged` reports whether a failed send charged its fee, or a failed simulation would charge it. This works with balance recording disabled.
+
+### Changed
+
+- **Breaking:** struct literals for `TransactionMetadata` must supply `balances` (or use `..Default::default()`), and literals for `FailedTransactionMetadata` must supply `fee_charged`. Use `false` for errors created outside transaction execution. Persistence snapshots omit recorded balances and the recording setting; restored included failures report `fee_charged = true`.
+
 ### Fixed
 
 - Size accounts created by `litesvm-token::CreateAccount` for the extensions required by their Token-2022 mint.

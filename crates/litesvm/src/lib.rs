@@ -331,7 +331,8 @@ use {
         history::TransactionHistory,
         programs::load_default_programs,
         types::{
-            ExecutionResult, FailedTransactionMetadata, TransactionMetadata, TransactionResult,
+            ExecutionResult, FailedTransactionMetadata, TransactionBalances, TransactionMetadata,
+            TransactionResult,
         },
         utils::{
             create_blockhash,
@@ -420,6 +421,7 @@ mod programs;
 pub mod register_tracing;
 #[cfg(feature = "register-tracing")]
 pub mod register_tracing_filter;
+mod transaction_balances;
 mod utils;
 
 /// Latest slot at which mainnet-beta activated a feature in [`MAINNET_ACTIVE_FEATURES`]; LiteSVM's default starting slot.
@@ -446,6 +448,7 @@ pub struct LiteSVM {
     compute_budget: Option<ComputeBudget>,
     sigverify: bool,
     blockhash_check: bool,
+    transaction_balance_recording: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
     custom_syscalls: Vec<(String, BuiltinFunctionRegisterer)>,
@@ -488,6 +491,7 @@ impl LiteSVM {
             compute_budget: None,
             sigverify: false,
             blockhash_check: false,
+            transaction_balance_recording: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
             custom_syscalls: Vec::new(),
@@ -575,6 +579,16 @@ impl LiteSVM {
     /// Enables or disables the blockhash check.
     pub fn with_blockhash_check(mut self, check: bool) -> Self {
         self.set_blockhash_check(check);
+        self
+    }
+
+    /// Enables or disables pre/post lamport and SPL token balance recording.
+    ///
+    /// Recording is disabled by default. When enabled, transactions that reach execution
+    /// return balances in their metadata, including failed transactions. Simulated failures
+    /// report the fee debit that sending would apply, without changing live accounts.
+    pub fn with_transaction_balance_recording(mut self, enabled: bool) -> Self {
+        self.transaction_balance_recording = enabled;
         self
     }
 
@@ -1512,10 +1526,22 @@ impl LiteSVM {
                 Err(value) => return value,
             };
         if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
-            exec_result.tx_result = self
-                .accounts
-                .withdraw(&payer, exec_result.fee)
-                .and(exec_result.tx_result);
+            let withdrawal = self.accounts.withdraw(&payer, exec_result.fee);
+            exec_result.fee_charged = withdrawal.is_ok();
+            exec_result.tx_result = withdrawal.and(exec_result.tx_result);
+            if let Some(balances) = exec_result.balances.as_mut() {
+                if let Some(index) = sanitized_tx
+                    .message()
+                    .account_keys()
+                    .iter()
+                    .position(|key| *key == payer)
+                {
+                    balances.post_balances[index] = self
+                        .accounts
+                        .get_account_ref(&payer)
+                        .map_or(0, ReadableAccount::lamports);
+                }
+            }
         }
         exec_result
     }
@@ -1537,6 +1563,17 @@ impl LiteSVM {
         if self.sigverify && self.history.check_transaction(sanitized_tx.signature()) {
             return Err(TransactionError::AlreadyProcessed.into());
         }
+        let mut balances = self.transaction_balance_recording.then(|| {
+            let (pre_balances, pre_token_balances) =
+                transaction_balances::collect_balances(sanitized_tx.message(), |key| {
+                    self.accounts.get_account_ref(key)
+                });
+            TransactionBalances {
+                pre_balances,
+                pre_token_balances,
+                ..Default::default()
+            }
+        });
         let ProcessedTransaction {
             result,
             compute_units_consumed,
@@ -1573,20 +1610,33 @@ impl LiteSVM {
             .enumerate()
             .filter_map(|(idx, pair)| message.is_writable(idx).then_some(pair))
             .collect();
-        Ok((
-            ExecutionResult {
-                tx_result: result,
-                signature: *sanitized_tx.signature(),
-                post_accounts,
-                inner_instructions,
-                compute_units_consumed,
-                return_data,
-                included: true,
-                fee,
-                loaded_accounts_data_size,
-            },
-            payer_key,
-        ))
+        let mut exec_result = ExecutionResult {
+            tx_result: result,
+            signature: *sanitized_tx.signature(),
+            post_accounts,
+            inner_instructions,
+            compute_units_consumed,
+            return_data,
+            included: true,
+            fee,
+            loaded_accounts_data_size,
+            fee_charged: true,
+            balances: None,
+        };
+        if let Some(balances) = balances.as_mut() {
+            self.record_post_balances(message, &exec_result, balances);
+            if exec_result.tx_result.is_err() {
+                if let Some(index) = message
+                    .account_keys()
+                    .iter()
+                    .position(|key| Some(*key) == payer_key)
+                {
+                    balances.post_balances[index] -= fee;
+                }
+            }
+        }
+        exec_result.balances = balances;
+        Ok((exec_result, payer_key))
     }
 
     /// Submits a signed transaction.
@@ -1606,6 +1656,8 @@ impl LiteSVM {
             included,
             fee,
             loaded_accounts_data_size,
+            balances,
+            fee_charged,
         } = match self.sanitize_transaction(tx.into(), self.sigverify) {
             Ok(s_tx) => self.execute_sanitized_transaction(&s_tx, log_collector.clone()),
             Err(e) => e.into(),
@@ -1621,10 +1673,15 @@ impl LiteSVM {
             signature,
             fee,
             loaded_accounts_data_size,
+            balances,
         };
 
         if let Err(tx_err) = tx_result {
-            let err = TransactionResult::Err(FailedTransactionMetadata { err: tx_err, meta });
+            let err = TransactionResult::Err(FailedTransactionMetadata {
+                err: tx_err,
+                meta,
+                fee_charged,
+            });
             if included && self.history.is_enabled() {
                 self.history.add_new_transaction(signature, err.clone());
             }
@@ -1661,6 +1718,8 @@ impl LiteSVM {
             return_data,
             fee,
             loaded_accounts_data_size,
+            balances,
+            fee_charged,
             ..
         } = self
             .sanitize_transaction(tx.into(), self.sigverify)
@@ -1678,10 +1737,15 @@ impl LiteSVM {
             return_data,
             fee,
             loaded_accounts_data_size,
+            balances,
         };
 
         if let Err(tx_err) = tx_result {
-            Err(FailedTransactionMetadata { err: tx_err, meta })
+            Err(FailedTransactionMetadata {
+                err: tx_err,
+                meta,
+                fee_charged,
+            })
         } else {
             Ok(SimulatedTransactionInfo {
                 meta,
