@@ -27,13 +27,11 @@ fn to<T: WritableAccount>(versioned: &VoteStateVersions, account: &mut T) -> Opt
 
 fn advance_epoch(svm: &mut LiteSVM) {
     refresh_blockhash(svm);
-    let old_clock = svm.get_sysvar::<Clock>();
-    let root_slot = old_clock.slot;
     let slots_per_epoch = svm.get_sysvar::<EpochSchedule>().slots_per_epoch;
-    svm.warp_to_slot(root_slot + slots_per_epoch);
-    let mut new_clock = old_clock;
-    new_clock.epoch += 1;
-    svm.set_sysvar::<Clock>(&new_clock)
+    let mut clock = svm.get_sysvar::<Clock>();
+    clock.slot += slots_per_epoch;
+    clock.epoch += 1;
+    svm.set_sysvar::<Clock>(&clock)
 }
 
 fn refresh_blockhash(svm: &mut LiteSVM) {
