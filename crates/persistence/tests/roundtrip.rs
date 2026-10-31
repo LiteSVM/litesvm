@@ -158,6 +158,34 @@ fn transaction_history_round_trip() {
 }
 
 #[test]
+fn failed_transaction_history_retains_fee_status() {
+    let (svm, kp) = seeded_svm();
+    let mut svm = svm.with_transaction_balance_recording(true);
+    let balance = svm.get_balance(&kp.pubkey()).unwrap();
+    let tx = Transaction::new(
+        &[&kp],
+        Message::new(
+            &[transfer(&kp.pubkey(), &Address::new_unique(), balance)],
+            Some(&kp.pubkey()),
+        ),
+        svm.latest_blockhash(),
+    );
+    let failed = svm.send_transaction(tx).unwrap_err();
+    assert!(failed.fee_charged);
+    assert!(failed.meta.balances.is_some());
+    let restored = from_bytes(&to_bytes(&svm).unwrap()).unwrap();
+    let restored_failure = restored
+        .get_transaction(&failed.meta.signature)
+        .unwrap()
+        .as_ref()
+        .unwrap_err();
+    assert_eq!(restored_failure.err, failed.err);
+    assert_eq!(restored_failure.meta.fee, failed.meta.fee);
+    assert!(restored_failure.fee_charged);
+    assert!(restored_failure.meta.balances.is_none());
+}
+
+#[test]
 fn bytes_round_trip() {
     let (svm, kp) = seeded_svm();
 
