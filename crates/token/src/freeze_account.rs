@@ -39,6 +39,12 @@ impl<'a> FreezeAccount<'a> {
         }
     }
 
+    /// Sets the token account to freeze.
+    pub fn account(mut self, account: &'a Address) -> Self {
+        self.account = Some(account);
+        self
+    }
+
     /// Sets the owner of the account with single owner.
     pub fn owner(mut self, owner: &'a Keypair) -> Self {
         self.owner = Some(owner.pubkey());
