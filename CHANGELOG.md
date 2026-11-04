@@ -10,6 +10,7 @@
 - Keep the variant of a builtin `ProgramError` when converting it to `FailedTransactionMetadata`. Every builtin error used to become `Custom(0)`.
 - Let `litesvm-token::FreezeAccount` and `ThawAccount` target any token account with `account()`. They used to target only the associated token account of the freeze authority.
 - Fail with `InvalidProgramForExecution` when a transaction calls a program that `set_account` deleted. It used to panic while the program was still in the program cache.
+- Evict a program from the program cache when `set_account` replaces it with a non-executable account. A CPI into it used to run the old program.
 
 ## [0.18.1] - 2026-10-19
 

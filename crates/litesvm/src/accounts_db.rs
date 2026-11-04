@@ -136,6 +136,22 @@ impl AccountsDb {
             self.programs_cache
                 .replenish(pubkey, Arc::new(loaded_program));
         } else {
+            // A program replaced by a non-executable account is closed, so its cached
+            // code must not run anymore.
+            if let Some(entry) = self
+                .programs_cache
+                .find(&pubkey)
+                .filter(|entry| !account.executable() && !entry.is_tombstone())
+            {
+                let slot = self.sysvar_cache.get_clock().map(|c| c.slot).unwrap_or(0);
+                self.programs_cache.replenish(
+                    pubkey,
+                    Arc::new(ProgramCacheEntry::new_closed_tombstone(
+                        slot,
+                        entry.account_owner,
+                    )),
+                );
+            }
             self.maybe_handle_sysvar_account(pubkey, &account)?;
         }
         if account.lamports() == 0 {

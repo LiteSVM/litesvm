@@ -6,11 +6,12 @@ use {
         create_lookup_table, extend_lookup_table,
     },
     solana_clock::Clock,
-    solana_instruction::{account_meta::AccountMeta, Instruction},
+    solana_instruction::{account_meta::AccountMeta, error::InstructionError, Instruction},
     solana_keypair::Keypair,
     solana_message::{
         v0::Message as MessageV0, AddressLookupTableAccount, Message, VersionedMessage,
     },
+    solana_sdk_ids::bpf_loader,
     solana_signer::Signer,
     solana_transaction::{versioned::VersionedTransaction, Transaction},
     solana_transaction_error::TransactionError,
@@ -182,6 +183,47 @@ pub fn test_nonexistent_program() {
     );
     let err = svm.send_transaction(tx).unwrap_err();
     assert_eq!(err.err, TransactionError::InvalidProgramForExecution);
+}
+
+#[test]
+pub fn test_cpi_into_replaced_program() {
+    let mut svm = LiteSVM::new();
+    let payer_kp = Keypair::new();
+    let payer_pk = payer_kp.pubkey();
+    svm.airdrop(&payer_pk, 1_000_000_000).unwrap();
+    let cpi_maker_id = Address::new_unique();
+    let program_id = Address::new_unique();
+    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    so_path.push("test_programs/target/deploy/test_program_cpi_maker.so");
+    svm.add_program(cpi_maker_id, &std::fs::read(so_path).unwrap())
+        .unwrap();
+    svm.add_program_with_loader(program_id, &read_counter_program(), bpf_loader::id())
+        .unwrap();
+    // Replace the program with an empty account the loader still owns.
+    svm.set_account(
+        program_id,
+        Account {
+            lamports: 1_000_000_000,
+            owner: bpf_loader::id(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let ix = Instruction {
+        program_id: cpi_maker_id,
+        accounts: vec![AccountMeta::new(program_id, false)],
+        data: program_id.to_bytes().to_vec(),
+    };
+    let tx = Transaction::new(
+        &[&payer_kp],
+        Message::new(&[ix], Some(&payer_pk)),
+        svm.latest_blockhash(),
+    );
+    let err = svm.send_transaction(tx).unwrap_err();
+    assert_eq!(
+        err.err,
+        TransactionError::InstructionError(0, InstructionError::UnsupportedProgramId)
+    );
 }
 
 #[cfg(feature = "register-tracing")]
