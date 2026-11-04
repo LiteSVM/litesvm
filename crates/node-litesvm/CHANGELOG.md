@@ -2,8 +2,21 @@
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-11-04
+
+### Changed
+
+- Upgrade the Rust backend to LiteSVM 0.18.2, including refreshed Cargo dependencies.
+- Bump Agave crates to 4.3.2 [(#449)](https://github.com/LiteSVM/litesvm/pull/449).
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-10-26 [(#445)](https://github.com/LiteSVM/litesvm/pull/445).
+- Reduce unnecessary cloning and allocations in transaction execution and account handling [(#448)](https://github.com/LiteSVM/litesvm/pull/448).
+
 ### Fixed
 
+- Constrain Agave dependencies to 4.3.x so fresh builds do not resolve incompatible 4.4 APIs [(#456)](https://github.com/LiteSVM/litesvm/pull/456).
+- Use the latest blockhash in durable nonce instructions, preventing a nonce from advancing more than once per blockhash [(#443)](https://github.com/LiteSVM/litesvm/pull/443).
+- Return `InvalidProgramForExecution` instead of panicking when a transaction calls a program deleted through `setAccount` [(#454)](https://github.com/LiteSVM/litesvm/pull/454).
+- Evict a program from the program cache when `setAccount` replaces it with a non-executable account, preventing CPI from running the old program [(#454)](https://github.com/LiteSVM/litesvm/pull/454).
 - Make the `StakeHistoryEntry` `activating` and `deactivating` setters write their own fields. Both used to overwrite `effective` and leave the field being set unchanged [(#438)](https://github.com/LiteSVM/litesvm/pull/438).
 
 ## [1.6.1] - 2026-10-19
