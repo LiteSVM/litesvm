@@ -2,16 +2,24 @@
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-11-04
+
+### Changed
+
+- Bump Agave crates and the CI CLI to 4.3.2 ([#449](https://github.com/LiteSVM/litesvm/pull/449)).
+- Update the bundled mainnet feature set to match Solana mainnet-beta as of 2026-10-26 ([#445](https://github.com/LiteSVM/litesvm/pull/445)).
+- Reduce unnecessary cloning and allocations in transaction execution and account handling ([#448](https://github.com/LiteSVM/litesvm/pull/448)).
+
 ### Fixed
 
-- Constrain Agave dependencies to 4.3.x so fresh builds do not resolve incompatible 4.4 APIs ([#455](https://github.com/LiteSVM/litesvm/issues/455)).
-- Size accounts created by `litesvm-token::CreateAccount` for the extensions required by their Token-2022 mint.
-- Use the latest blockhash in durable nonce instructions, not the transaction's recent blockhash. A nonce used to advance more than once per blockhash.
-- Sign `litesvm-loader::set_upgrade_authority` with the current authority. It used to panic with `NotEnoughSigners` when the payer was not the current authority.
-- Keep the variant of a builtin `ProgramError` when converting it to `FailedTransactionMetadata`. Every builtin error used to become `Custom(0)`.
-- Let `litesvm-token::FreezeAccount` and `ThawAccount` target any token account with `account()`. They used to target only the associated token account of the freeze authority.
-- Fail with `InvalidProgramForExecution` when a transaction calls a program that `set_account` deleted. It used to panic while the program was still in the program cache.
-- Evict a program from the program cache when `set_account` replaces it with a non-executable account. A CPI into it used to run the old program.
+- Constrain Agave dependencies to 4.3.x so fresh builds do not resolve incompatible 4.4 APIs ([#456](https://github.com/LiteSVM/litesvm/pull/456)).
+- Size accounts created by `litesvm-token::CreateAccount` for the extensions required by their Token-2022 mint ([#442](https://github.com/LiteSVM/litesvm/pull/442)).
+- Use the latest blockhash in durable nonce instructions, not the transaction's recent blockhash. A nonce used to advance more than once per blockhash ([#443](https://github.com/LiteSVM/litesvm/pull/443)).
+- Sign `litesvm-loader::set_upgrade_authority` with the current authority. It used to panic with `NotEnoughSigners` when the payer was not the current authority ([#446](https://github.com/LiteSVM/litesvm/pull/446)).
+- Keep the variant of a builtin `ProgramError` when converting it to `FailedTransactionMetadata`. Every builtin error used to become `Custom(0)` ([#450](https://github.com/LiteSVM/litesvm/pull/450)).
+- Let `litesvm-token::FreezeAccount` and `ThawAccount` target any token account with `account()`. They used to target only the associated token account of the freeze authority ([#453](https://github.com/LiteSVM/litesvm/pull/453)).
+- Fail with `InvalidProgramForExecution` when a transaction calls a program that `set_account` deleted. It used to panic while the program was still in the program cache ([#454](https://github.com/LiteSVM/litesvm/pull/454)).
+- Evict a program from the program cache when `set_account` replaces it with a non-executable account. A CPI into it used to run the old program ([#454](https://github.com/LiteSVM/litesvm/pull/454)).
 
 ## [0.18.1] - 2026-10-19
 
@@ -379,7 +387,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.18.1...HEAD
+[Unreleased]: https://github.com/LiteSVM/litesvm/compare/v0.18.2...HEAD
+[0.18.2]: https://github.com/LiteSVM/litesvm/compare/v0.18.1...v0.18.2
 [0.18.1]: https://github.com/LiteSVM/litesvm/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/LiteSVM/litesvm/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/LiteSVM/litesvm/compare/v0.16.0...v0.17.0
