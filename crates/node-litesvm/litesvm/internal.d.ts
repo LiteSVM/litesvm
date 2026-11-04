@@ -273,6 +273,12 @@ export declare class InstructionErrorCustom {
   toString(): string
 }
 
+/**
+ * The wrapped `LiteSVM` plus the total bytes currently charged to V8's
+ * external-memory budget for this instance (see `EXTERNAL_MEMORY_HINT_BYTES`).
+ * The second field keeps construction, later state loads and finalization
+ * arithmetically balanced.
+ */
 export declare class LiteSvm {
   /** Creates the basic test environment. */
   constructor()
