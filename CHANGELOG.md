@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Constrain Agave dependencies to 4.3.x so fresh builds do not resolve incompatible 4.4 APIs ([#455](https://github.com/LiteSVM/litesvm/issues/455)).
 - Size accounts created by `litesvm-token::CreateAccount` for the extensions required by their Token-2022 mint.
 - Use the latest blockhash in durable nonce instructions, not the transaction's recent blockhash. A nonce used to advance more than once per blockhash.
 - Sign `litesvm-loader::set_upgrade_authority` with the current authority. It used to panic with `NotEnoughSigners` when the payer was not the current authority.
