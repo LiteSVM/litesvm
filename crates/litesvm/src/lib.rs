@@ -343,7 +343,9 @@ use {
     agave_feature_set::{raise_cpi_nesting_limit_to_8, FeatureSet},
     agave_reserved_account_keys::ReservedAccountKeys,
     log::error,
-    solana_account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
+    solana_account::{
+        state_traits::StateMut, Account, AccountSharedData, ReadableAccount, WritableAccount,
+    },
     solana_address::Address,
     solana_builtins::BUILTINS,
     solana_clock::Clock,
@@ -359,7 +361,11 @@ use {
     solana_loader_v3_interface::state::UpgradeableLoaderState,
     solana_message::{Message, SanitizedMessage, VersionedMessage},
     solana_native_token::LAMPORTS_PER_SOL,
-    solana_nonce::{state::DurableNonce, NONCED_TX_MARKER_IX_INDEX},
+    solana_nonce::{
+        state::{DurableNonce, State as NonceState},
+        versions::Versions as NonceVersions,
+        NONCED_TX_MARKER_IX_INDEX,
+    },
     solana_program_runtime::{
         invoke_context::{BuiltinFunctionRegisterer, EnvironmentConfig, InvokeContext},
         loaded_programs::{ProgramRuntimeEnvironment, ProgramRuntimeEnvironments},
@@ -1500,12 +1506,41 @@ impl LiteSVM {
                 Err(value) => return value,
             };
         if let Some(payer) = payer_key.filter(|_| exec_result.tx_result.is_err()) {
-            exec_result.tx_result = self
-                .accounts
-                .withdraw(&payer, exec_result.fee)
-                .and(exec_result.tx_result);
+            let withdrawn = self.accounts.withdraw(&payer, exec_result.fee);
+            if withdrawn.is_ok() {
+                self.advance_nonce_of_failed_transaction(sanitized_tx);
+            }
+            exec_result.tx_result = withdrawn.and(exec_result.tx_result);
         }
         exec_result
+    }
+
+    /// A failed durable nonce transaction is still committed with its fee, and
+    /// its nonce advances like Agave's rollback nonce, so it cannot be replayed.
+    fn advance_nonce_of_failed_transaction(&mut self, tx: &SanitizedTransaction) {
+        let next_durable_nonce = DurableNonce::from_blockhash(&self.latest_blockhash);
+        if !self.check_transaction_for_nonce(tx, &next_durable_nonce) {
+            return;
+        }
+        let message = tx.message();
+        let Some(nonce_account) = SVMMessage::get_durable_nonce(message)
+            .and_then(|nonce_address| self.accounts.inner.get_mut(nonce_address))
+        else {
+            return;
+        };
+        let Some(nonce_data) =
+            solana_nonce_account::verify_nonce_account(nonce_account, message.recent_blockhash())
+        else {
+            return;
+        };
+        let next_nonce_state = NonceState::new_initialized(
+            &nonce_data.authority,
+            next_durable_nonce,
+            self.fee_structure.lamports_per_signature,
+        );
+        nonce_account
+            .set_state(&NonceVersions::new(next_nonce_state))
+            .expect("Serializing into a validated nonce account cannot fail");
     }
 
     /// Runs the transaction without committing anything. The returned payer is
