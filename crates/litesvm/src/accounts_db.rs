@@ -418,7 +418,12 @@ impl AccountsDb {
             .ok_or(TransactionError::InsufficientFundsForFee)?;
         account
             .checked_sub_lamports(lamports)
-            .map_err(|_| TransactionError::InsufficientFundsForFee)
+            .map_err(|_| TransactionError::InsufficientFundsForFee)?;
+        // Like `add_account`, drop an account the fee drained to zero lamports.
+        if account.lamports() == 0 {
+            self.inner.remove(address);
+        }
+        Ok(())
     }
 
     /// Returns a borrowed slice of ELF bytes for this account.
