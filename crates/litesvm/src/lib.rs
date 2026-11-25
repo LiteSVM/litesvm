@@ -1690,10 +1690,47 @@ impl LiteSVM {
     }
 
     /// Warps the clock to the specified slot.
+    ///
+    /// Warping forward also advances the `SlotHashes` sysvar, mirroring a
+    /// validator, which records one hash per slot: each skipped slot gets a
+    /// chained hash, and entries older than the most recent 512 slots are
+    /// evicted. Without this, address lookup tables would be evaluated
+    /// against a stale deactivation window (see #462).
     pub fn warp_to_slot(&mut self, slot: u64) {
         let mut clock = self.get_sysvar::<Clock>();
+        let old_slot = clock.slot;
         clock.slot = slot;
         self.set_sysvar(&clock);
+        if slot > old_slot {
+            self.advance_slot_hashes(old_slot, slot);
+        }
+    }
+
+    /// Records one hash per slot in `SlotHashes` for the slots in
+    /// `(old_slot, new_slot]`, evicting entries outside the most recent 512
+    /// slots, like `Bank::update_slot_hashes` does on a validator. A jump
+    /// past the 512-slot window only appends the window's tail; the skipped
+    /// slots are outside the window either way.
+    fn advance_slot_hashes(&mut self, old_slot: u64, new_slot: u64) {
+        if self.accounts.get_account_ref(&SlotHashes::id()).is_none() {
+            return;
+        }
+        let mut slot_hashes = self.get_sysvar::<SlotHashes>();
+        // Chain from the most recent known hash so each recorded slot gets a
+        // distinct, deterministic hash.
+        let mut hash = slot_hashes
+            .slot_hashes()
+            .first()
+            .map(|(_, hash)| *hash)
+            .unwrap_or(self.latest_blockhash);
+        let first_slot = new_slot
+            .saturating_sub(solana_slot_hashes::MAX_ENTRIES as u64 - 1)
+            .max(old_slot + 1);
+        for slot in first_slot..=new_slot {
+            hash = create_blockhash(&hash.to_bytes());
+            slot_hashes.add(slot, hash);
+        }
+        self.set_sysvar(&slot_hashes);
     }
 
     /// Gets the current compute budget.
