@@ -145,9 +145,10 @@ fn deactivation_window_boundary_is_512_slots() {
     );
     svm.send_transaction(deactivate_tx).unwrap();
 
-    // 511 slots later the deactivation slot is still the oldest entry in the
-    // 512-slot window, so the table still resolves.
-    svm.warp_to_slot(start + 511);
+    // 512 slots later the deactivation slot is still the oldest entry in the
+    // 512-slot window, so the table still resolves: while slot C is
+    // processing, a validator's SlotHashes holds C-1 down to C-512.
+    svm.warp_to_slot(start + 512);
     svm.expire_blockhash();
     let result = transfer_via_lookup_table(&mut svm, &payer, table, destination.pubkey());
     assert!(
@@ -158,7 +159,7 @@ fn deactivation_window_boundary_is_512_slots() {
 
     // One slot further the deactivation slot leaves SlotHashes and the table
     // can no longer be resolved.
-    svm.warp_to_slot(start + 512);
+    svm.warp_to_slot(start + 513);
     svm.expire_blockhash();
     let result = transfer_via_lookup_table(&mut svm, &payer, table, destination.pubkey());
     assert!(

@@ -1707,10 +1707,14 @@ impl LiteSVM {
     }
 
     /// Records one hash per slot in `SlotHashes` for the slots in
-    /// `(old_slot, new_slot]`, evicting entries outside the most recent 512
-    /// slots, like `Bank::update_slot_hashes` does on a validator. A jump
-    /// past the 512-slot window only appends the window's tail; the skipped
-    /// slots are outside the window either way.
+    /// `[old_slot, new_slot)`, evicting entries outside the most recent 512
+    /// slots, like `Bank::update_slot_hashes` does on a validator. A
+    /// validator records the *parent* slot when a bank is created
+    /// (`slot_hashes.add(self.parent_slot, self.parent_hash)`, agave v4.3.2,
+    /// `runtime/src/bank.rs`), so while slot `C` is processing, `SlotHashes`
+    /// holds `C-1` down to `C-512`, never `C` itself. A jump past the
+    /// 512-slot window only appends the window's tail; the skipped slots
+    /// are outside the window either way.
     fn advance_slot_hashes(&mut self, old_slot: u64, new_slot: u64) {
         if self.accounts.get_account_ref(&SlotHashes::id()).is_none() {
             return;
@@ -1724,9 +1728,9 @@ impl LiteSVM {
             .map(|(_, hash)| *hash)
             .unwrap_or(self.latest_blockhash);
         let first_slot = new_slot
-            .saturating_sub(solana_slot_hashes::MAX_ENTRIES as u64 - 1)
-            .max(old_slot + 1);
-        for slot in first_slot..=new_slot {
+            .saturating_sub(solana_slot_hashes::MAX_ENTRIES as u64)
+            .max(old_slot);
+        for slot in first_slot..new_slot {
             hash = create_blockhash(&hash.to_bytes());
             slot_hashes.add(slot, hash);
         }
