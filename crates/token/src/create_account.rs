@@ -74,6 +74,7 @@ impl<'a> CreateAccount<'a> {
                 .ok_or(FailedTransactionMetadata {
                     err: TransactionError::AccountNotFound,
                     meta: Default::default(),
+                    fee_charged: false,
                 })?;
             try_calculate_account_len_from_mint_data(&mint.data, &[])?
         } else {

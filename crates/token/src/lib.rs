@@ -52,6 +52,7 @@ pub fn get_spl_account<T: Pack + IsInitialized>(
     let account = svm.get_account(account).ok_or(FailedTransactionMetadata {
         err: TransactionError::AccountNotFound,
         meta: Default::default(),
+        fee_charged: false,
     })?;
     let account = T::unpack(account.data.get(..T::LEN).unwrap_or(&account.data))?;
 

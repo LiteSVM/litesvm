@@ -204,7 +204,7 @@ impl From<FeatureActivationWire> for (Address, u64) {
     }
 }
 
-// `loaded_accounts_data_size` is not persisted, so restored history reports 0.
+// Balance recording and loaded data size are not persisted in the version-1 history layout.
 wire!(TransactionMetadataWire => TransactionMetadata [..Default::default()] {
     signature: Signature,
     logs: Vec<String>,
@@ -215,11 +215,32 @@ wire!(TransactionMetadataWire => TransactionMetadata [..Default::default()] {
     fee: u64,
 });
 
-wire!(FailedTransactionMetadataWire => FailedTransactionMetadata {
+#[derive(SchemaWrite, SchemaRead)]
+pub(crate) struct FailedTransactionMetadataWire {
     err: TransactionError,
     #[wincode(with = "FromInto<TransactionMetadataWire, TransactionMetadata>")]
     meta: TransactionMetadata,
-});
+}
+
+impl From<&FailedTransactionMetadata> for FailedTransactionMetadataWire {
+    fn from(value: &FailedTransactionMetadata) -> Self {
+        Self {
+            err: value.err.clone(),
+            meta: value.meta.clone(),
+        }
+    }
+}
+
+impl From<FailedTransactionMetadataWire> for FailedTransactionMetadata {
+    fn from(value: FailedTransactionMetadataWire) -> Self {
+        Self {
+            err: value.err,
+            meta: value.meta,
+            // History only contains failures that reached execution and charged their fee.
+            fee_charged: true,
+        }
+    }
+}
 
 /// Mirror of `Result<TransactionMetadata, FailedTransactionMetadata>` so
 /// wincode can derive a schema for it.
