@@ -84,7 +84,7 @@ Beyond simple transfers, `litesvm` supports:
 cargo add --dev litesvm-token
 ```
 
-See the [SPL token testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-spl-tokens) for a full walkthrough.
+See the [SPL token testing guide](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-spl-tokens) for a full walkthrough.
 
 ### `litesvm-loader`
 
@@ -94,7 +94,7 @@ See the [SPL token testing guide](https://www.litesvm.com/docs/additional-crates
 cargo add --dev litesvm-loader
 ```
 
-See the [loader API docs](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-loader) for the available helpers.
+See the [loader API docs](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-litesvm-loader) for the available helpers.
 
 ### `litesvm-utils`
 
@@ -110,7 +110,7 @@ It also ships a `LiteSVMBuilder` for fluent, chainable test environment setup. T
 cargo add --dev litesvm-utils
 ```
 
-See the [litesvm-utils testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-utils) for a full walkthrough.
+See the [litesvm-utils testing guide](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-litesvm-utils) for a full walkthrough.
 
 ### `anchor-litesvm`
 
@@ -125,11 +125,11 @@ See the [litesvm-utils testing guide](https://www.litesvm.com/docs/additional-cr
 cargo add --dev anchor-litesvm
 ```
 
-See the [anchor-litesvm testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-anchor-litesvm) for a full walkthrough.
+See the [anchor-litesvm testing guide](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-anchor-litesvm) for a full walkthrough.
 
 ## Further Reading
 
-- Full documentation: [litesvm.com](https://litesvm.com)
+- Full documentation: [solana.com/docs/tools/litesvm](https://solana.com/docs/tools/litesvm)
 - Full API reference: [docs.rs/litesvm](https://docs.rs/litesvm/latest/litesvm/)
 - Node.js wrapper: [`litesvm` on npm](https://www.npmjs.com/package/litesvm) — see [`crates/node-litesvm`](crates/node-litesvm) for its README and tutorial
 
