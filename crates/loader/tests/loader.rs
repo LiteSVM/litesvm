@@ -38,7 +38,8 @@ fn hello_world_with_store() {
     assert!(tx_result
         .unwrap()
         .logs
-        .contains(&"Program log: Hello world!".to_string()));
+        .iter()
+        .any(|log| log == "Program log: Hello world!"));
 }
 
 #[test_log::test]
@@ -70,7 +71,8 @@ fn hello_world_with_deploy_upgradeable() {
     assert!(tx_result
         .unwrap()
         .logs
-        .contains(&"Program log: Hello world!".to_string()));
+        .iter()
+        .any(|log| log == "Program log: Hello world!"));
     let new_authority = Keypair::new();
     set_upgrade_authority(
         &mut svm,
