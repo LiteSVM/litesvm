@@ -19,19 +19,23 @@
 
 ### 🔧 Installation
 
+LiteSVM requires Rust 1.97.1 or later.
+
 ```sh
-cargo add --dev litesvm
+cargo add --dev litesvm@0.18 solana-address@2.7 solana-keypair@3 solana-message@4 solana-signer@3 solana-system-interface@3 solana-transaction@4
 ```
+
+The example below imports these Solana crates directly. Use the same major versions as `litesvm`: the latest `solana-keypair`, for example, requires a `solana-address` that `litesvm` 0.18 does not accept, and Cargo fails to resolve the dependencies.
 
 ### 🤖 Minimal Example
 
 ```rust
 use litesvm::LiteSVM;
 use solana_address::Address;
-use solana_keypair::Keypair;
 use solana_message::Message;
-use solana_signer::Signer;
 use solana_system_interface::instruction::transfer;
+use solana_keypair::Keypair;
+use solana_signer::Signer;
 use solana_transaction::Transaction;
 
 let from_keypair = Keypair::new();
@@ -39,7 +43,8 @@ let from = from_keypair.pubkey();
 let to = Address::new_unique();
 
 let mut svm = LiteSVM::new();
-svm.airdrop(&from, 10_000).unwrap();
+svm.airdrop(&from, 1_000_000_000).unwrap();
+svm.airdrop(&to, 1_000_000_000).unwrap();
 
 let instruction = transfer(&from, &to, 64);
 let tx = Transaction::new(
@@ -51,8 +56,8 @@ let tx_res = svm.send_transaction(tx).unwrap();
 
 let from_account = svm.get_account(&from);
 let to_account = svm.get_account(&to);
-assert_eq!(from_account.unwrap().lamports, 4936);
-assert_eq!(to_account.unwrap().lamports, 64);
+assert_eq!(from_account.unwrap().lamports, 999994936);
+assert_eq!(to_account.unwrap().lamports, 1000000064);
 ```
 
 ## Capabilities
@@ -79,7 +84,7 @@ Beyond simple transfers, `litesvm` supports:
 cargo add --dev litesvm-token
 ```
 
-See the [SPL token testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-spl-tokens) for a full walkthrough.
+See the [SPL token testing guide](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-spl-tokens) for a full walkthrough.
 
 ### `litesvm-loader`
 
@@ -89,7 +94,7 @@ See the [SPL token testing guide](https://www.litesvm.com/docs/additional-crates
 cargo add --dev litesvm-loader
 ```
 
-See the [loader API docs](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-loader) for the available helpers.
+See the [loader API docs](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-litesvm-loader) for the available helpers.
 
 ### `litesvm-utils`
 
@@ -105,7 +110,7 @@ It also ships a `LiteSVMBuilder` for fluent, chainable test environment setup. T
 cargo add --dev litesvm-utils
 ```
 
-See the [litesvm-utils testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-litesvm-utils) for a full walkthrough.
+See the [litesvm-utils testing guide](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-litesvm-utils) for a full walkthrough.
 
 ### `anchor-litesvm`
 
@@ -120,11 +125,11 @@ See the [litesvm-utils testing guide](https://www.litesvm.com/docs/additional-cr
 cargo add --dev anchor-litesvm
 ```
 
-See the [anchor-litesvm testing guide](https://www.litesvm.com/docs/additional-crates/testing-with-anchor-litesvm) for a full walkthrough.
+See the [anchor-litesvm testing guide](https://solana.com/docs/tools/litesvm/additional-crates/testing-with-anchor-litesvm) for a full walkthrough.
 
 ## Further Reading
 
-- Full documentation: [litesvm.com](https://litesvm.com)
+- Full documentation: [solana.com/docs/tools/litesvm](https://solana.com/docs/tools/litesvm)
 - Full API reference: [docs.rs/litesvm](https://docs.rs/litesvm/latest/litesvm/)
 - Node.js wrapper: [`litesvm` on npm](https://www.npmjs.com/package/litesvm) — see [`crates/node-litesvm`](crates/node-litesvm) for its README and tutorial
 
